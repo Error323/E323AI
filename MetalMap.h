@@ -1,0 +1,47 @@
+#ifndef METALMAP_H
+#define METALMAP_H
+
+#include "E323AI.h"
+
+class CMetalMap {
+	public:
+		CMetalMap(AIClasses *ai);
+		~CMetalMap();
+
+		struct MSpot {
+			int id;
+			float3 f;				// point in 3d space
+			int c;					// metal coverage
+			
+			MSpot(int id, float3 f, int c) {
+				this->id = id;
+				this->f  = f;
+				this->c  = c;
+			}
+		};
+
+		bool buildMex(int builder, UnitType *mex);
+		std::map<int,float3> taken;
+
+	private:
+		void findBestSpots();
+		int getSaturation(int x, int z, int *k);
+		float euclid(float3 *v0, float3 *v1);
+		int squareDist(int x, int z, int j, int i);
+
+		int X, Z, N;
+		int threshold;
+		int radius;
+		int squareRadius;
+		int diameter;
+		const unsigned char *callMap;
+		unsigned char *map;
+		unsigned int *coverage;
+		unsigned int *bestCoverage;
+		std::vector<MSpot> spots;
+
+		AIClasses *ai;
+		char buf[1024];
+};
+
+#endif
