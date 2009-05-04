@@ -21,6 +21,7 @@ CE323AI::~CE323AI() {
 	delete ai->metaCmds;
 	delete ai->eco;
 	delete ai->logger;
+	delete ai->tasks;
 	delete ai;
 }
 
@@ -51,6 +52,9 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->unitTable	= new CUnitTable(ai);
 	ai->metaCmds	= new CMetaCommands(ai);
 	ai->eco     	= new CEconomy(ai);
+	LOGN("BEFORE CTASKPLAN");
+	ai->tasks     	= new CTaskPlan(ai);
+	LOGN("AFTER CTASKPLAN");
 
 
 	ai->call->SendTextMsg("*** " AI_VERSION " initialized succesfully! ***", 0);
@@ -75,8 +79,6 @@ void CE323AI::UnitCreated(int unit) {
 	if (c&MEXTRACTOR) {
 		ai->metalMap->taken[unit] = ai->call->GetUnitPos(unit);
 		float3 *p = &(ai->metalMap->taken[unit]);
-		sprintf(buf,"mex created @ <%0.2f, %0.2f>", p->x, p->z);
-		LOGS(buf);
 	}
 
 	unitCreated++;
@@ -149,10 +151,8 @@ void CE323AI::UnitIdle(int unit) {
 	UnitType* ut = UT(ud->id);
 	unsigned int c = ut->cats;
 
-	if (c&BUILDER || c&COMMANDER) {
+	if (c&BUILDER || c&COMMANDER)
 		ai->eco->gameIdle[unit] = ut;
-		LOGS("COMMANDER IS IDLE");
-	}
 }
 
 /* Called when unit is damaged */
@@ -217,7 +217,8 @@ void CE323AI::Update() {
 		case 2: /* update military */
 		break;
 
-		case 3: /* update wishlist */
+		case 3: /* update taskplans */
+			ai->tasks->update(frame);
 		break;
 
 		case 4: /* update economy */

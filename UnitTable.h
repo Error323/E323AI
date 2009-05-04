@@ -21,6 +21,11 @@ class CUnitTable {
 		/* Special commander hook, since it's the first to spawn */
 		UnitType *comm;
 
+		/* Returns a unittype with categories that ut can build */
+		UnitType* canBuild(UnitType *ut, unsigned int categories);
+
+		inline UnitType* getUnitType(int unit);
+
 		/* Debugging functions */
 		void debugCategories(UnitType *ut);
 		void debugUnitDefs(UnitType *ut);

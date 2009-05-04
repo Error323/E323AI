@@ -3,6 +3,8 @@
 
 #include "E323AI.h"
 
+#define SCALAR 16.0f
+
 class CMetalMap {
 	public:
 		CMetalMap(AIClasses *ai);
@@ -20,13 +22,12 @@ class CMetalMap {
 			}
 		};
 
-		bool buildMex(int builder, UnitType *mex);
+		float3 buildMex(int builder, UnitType *mex);
 		std::map<int,float3> taken;
 
 	private:
 		void findBestSpots();
 		int getSaturation(int x, int z, int *k);
-		float euclid(float3 *v0, float3 *v1);
 		int squareDist(int x, int z, int j, int i);
 
 		int X, Z, N;

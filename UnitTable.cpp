@@ -226,9 +226,24 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	return cats;
 }
 
+inline UnitType* CUnitTable::getUnitType(int unit) {
+	const UnitDef *ud = ai->call->GetUnitDef(unit);
+	return &(units[ud->id]);
+}
+
 float CUnitTable::calcUnitDps(UnitType *ut) {
 	// FIXME: Make our own *briljant* dps calc here
 	return ut->def->power;
+}
+
+UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int categories) {
+	std::map<int, UnitType*>::iterator j;
+	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); j++)
+		if (j->second->cats&categories)
+			break;
+
+	assert(j->second->cats&categories);
+	return j->second;
 }
 
 void CUnitTable::debugCategories(UnitType *ut) {

@@ -17,9 +17,10 @@ void CEconomy::update(int frame) {
 	/* Update idle units */
 	std::map<int, UnitType*>::iterator i;
 	for (i = ai->eco->gameIdle.begin(); i != ai->eco->gameIdle.end(); i++) {
-		UnitType *ut   = i->second;
-		unsigned int c = ut->cats;
-		int          u = ut->id;
+		UnitType *ut     = i->second;
+		unsigned int c   = ut->cats;
+		int          u   = ut->id;
+		float3       pos = ai->call->GetUnitPos(i->first);
 		
 		if (c&FACTORY) {
 			std::map<int, std::priority_queue<Wish> >::iterator j;
@@ -35,14 +36,17 @@ void CEconomy::update(int frame) {
 		}
 
 		else if (c&COMMANDER) {
-			sprintf(buf, "mIncome-uMIncome = %0.2f", (mIncome-uMIncome));
-			LOGS(buf);
-			if ((mIncome - uMIncome) < 2.0f) {
-				std::map<int, UnitType*>::iterator j;
-				for (j = ut->canBuild.begin(); j != ut->canBuild.end(); j++)
-					if (j->second->cats&MEXTRACTOR)
-						break;
-				bool b = ai->metalMap->buildMex(i->first, j->second);
+			if ((mIncome - uMIncome) < 8.0f) {
+				UnitType *mex = ai->unitTable->canBuild(ut, MEXTRACTOR);
+				float3 goal   = ai->metalMap->buildMex(i->first, mex);
+				float path    = ai->call->GetPathLength(pos, goal, ut->def->movedata->pathType);
+				path -= std::min<float>(ut->def->buildDistance, path);
+				float travelTime = path / (ut->def->speed/30.0f);
+				float buildTime  = mex->def->buildTime / (ut->def->buildSpeed/32.0f);
+				int eta = travelTime + buildTime;
+				sprintf(buf,"turnRate(%0.2f), path(%0.2f), speed(%0.2f), buildTime(%0.2f), buildSpeed(%0.2f)", ut->def->turnRate, path, ut->def->speed, mex->def->buildTime, ut->def->buildSpeed);
+				LOGN(buf);
+				ai->tasks->addTaskPlan(i->first, BUILD_MMAKER, eta);
 			}
 			// If mNow - uMIncome < 2: increase m income
 			// If eNow - uEIncome < 40: increase energy income

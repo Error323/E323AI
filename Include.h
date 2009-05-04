@@ -42,5 +42,6 @@
 #include "UnitTable.h"
 #include "MetaCommands.h"
 #include "Economy.h"
+#include "TaskPlan.h"
 
 #endif

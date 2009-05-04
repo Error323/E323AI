@@ -17,6 +17,7 @@
 #define LOGS(x)     (ai->call->SendTextMsg(x, 0))
 
 /* Misc macro's */
+#define UD(u) (ai->call->GetUnitDef(u))
 #define UT(u) (&(ai->unitTable->units[u]))
 #define COMM ai->unitTable->comm
 
@@ -61,6 +62,14 @@ enum unitCategory {
 	ARTILLERY    = (1<<22),
 	VEHICLE      = (1<<24),
 	KBOT         = (1<<25)
+};
+
+/* Tasks, can be OR-ed */
+enum task {
+	BUILD_MMAKER   = (1<<0),
+	BUILD_EMAKER   = (1<<1),
+	ASSIST_WORKER  = (1<<2),
+	ASSIST_FACTORY = (1<<3)
 };
 
 /* Build priorities */
