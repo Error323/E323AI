@@ -1,12 +1,3 @@
-/*
-std::map<int, UnitType*>::iterator i;
-for (i = ut->canBuild.begin(); i != ut->canBuild.end(); i++)
-	if (i->second->cats & MEXTRACTOR)
-		break;
-float3 pos = ai->call->GetUnitPos(unit), spot;
-ai->metalMap->getNearestSpot(pos, spot);
-ai->metaCmds->build(unit, i->second->def, SOUTH, spot);
-*/
 #include "E323AI.h"
 
 CE323AI::CE323AI() {
@@ -46,18 +37,13 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	printf("logfile @ %s\n", buf);
 
 	ai->logger		= new std::ofstream(buf, std::ios::app);
-	LOGN(AI_VERSION << std::endl);
 
 	ai->metalMap	= new CMetalMap(ai);
 	ai->unitTable	= new CUnitTable(ai);
 	ai->metaCmds	= new CMetaCommands(ai);
 	ai->eco     	= new CEconomy(ai);
-	LOGN("BEFORE CTASKPLAN");
 	ai->tasks     	= new CTaskPlan(ai);
-	LOGN("AFTER CTASKPLAN");
 
-
-	ai->call->SendTextMsg("*** " AI_VERSION " initialized succesfully! ***", 0);
 	ai->call->SendTextMsg("*** " AI_NOTES " ***", 0);
 	ai->call->SendTextMsg("*** " AI_CREDITS " ***", 0);
 }

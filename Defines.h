@@ -2,9 +2,7 @@
 #define DEFINES_H
 
 /* AI meta data */
-#define AI_VERSION_NUMBER "1.00"
-#define AI_VERSION 	      "E323AI v1.00"
-#define AI_NOTES	      "This AI mainly focusses on the XTA mod"
+#define AI_NOTES	      "This A.I. mainly focusses on the XTA mod"
 #define AI_CREDITS        "Error323 - folkerthuizinga@gmail.com"
 
 /* Folders */
@@ -64,7 +62,7 @@ enum unitCategory {
 	KBOT         = (1<<25)
 };
 
-/* Tasks, can be OR-ed */
+/* Tasks */
 enum task {
 	BUILD_MMAKER   = (1<<0),
 	BUILD_EMAKER   = (1<<1),
