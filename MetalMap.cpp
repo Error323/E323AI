@@ -124,6 +124,7 @@ float3 CMetalMap::buildMex(int builder, UnitType *mex) {
 		}
 	}
 
-	ai->metaCmds->build(builder, mex->def, bestMs->f);
+	ai->metalMap->taken[builder] = bestMs->f;
+	ai->metaCmds->build(builder, mex, bestMs->f);
 	return bestMs->f;
 }

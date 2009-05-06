@@ -29,6 +29,7 @@ struct UnitType {
 	float dps;                          /* A `briljant' measurement for the power of a unit :P */
 	float cost;                         /* Cost defined in energy units */
 	float energyMake;                   /* Netto energy this unit provides */
+	float metalMake;                    /* Netto metal this unit provides */
 	unsigned int cats;                  /* Categories this unit belongs, Categories @ Defines.h */
 	std::map<int, UnitType*> buildBy;
 	std::map<int, UnitType*> canBuild;

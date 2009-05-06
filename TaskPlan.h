@@ -25,7 +25,7 @@ class CTaskPlan {
 
 	private:
 		std::map<int, Plan*> taskplans;
-		std::map<task, char*> taskStr;
+		std::map<task, std::string> taskStr;
 		int previousFrame;
 		char buf[1024];
 		AIClasses *ai;

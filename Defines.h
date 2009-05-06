@@ -67,7 +67,8 @@ enum task {
 	BUILD_MMAKER   = (1<<0),
 	BUILD_EMAKER   = (1<<1),
 	BUILD_FACTORY  = (1<<2),
-	ASSIST_FACTORY = (1<<3)
+	ASSIST_FACTORY = (1<<3),
+	UNKNOWN        = (1<<4)
 };
 
 /* Build priorities */
@@ -75,6 +76,13 @@ enum buildPriority {
 	LOW    = 0,
 	NORMAL = 1,
 	HIGH   = 2
+};
+
+enum quadrant {
+	NORTH_WEST,
+	NORTH_EAST,
+	SOUTH_WEST,
+	SOUTH_EAST
 };
 
 #endif

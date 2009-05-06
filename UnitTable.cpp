@@ -108,6 +108,7 @@ UnitType* CUnitTable::insertUnit(const UnitDef *ud) {
 	ut.id         = ud->id;
 	ut.cost       = ud->metalCost*METAL2ENERGY + ud->energyCost;
 	ut.energyMake = ud->energyMake - ud->energyUpkeep;
+	ut.metalMake  = ud->metalMake  - ud->metalUpkeep;
 	ut.dps        = calcUnitDps(&ut);
 	units[ud->id] = ut;
 	return &units[ud->id];

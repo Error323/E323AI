@@ -46,6 +46,11 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 
 	ai->call->SendTextMsg("*** " AI_NOTES " ***", 0);
 	ai->call->SendTextMsg("*** " AI_CREDITS " ***", 0);
+	LOGN("");
+	LOGN("");
+	LOGN("*****************************************************************");
+	LOGN("");
+	LOGN("");
 }
 
 
@@ -64,7 +69,6 @@ void CE323AI::UnitCreated(int unit) {
 
 	if (c&MEXTRACTOR) {
 		ai->metalMap->taken[unit] = ai->call->GetUnitPos(unit);
-		float3 *p = &(ai->metalMap->taken[unit]);
 	}
 
 	unitCreated++;
@@ -83,17 +87,35 @@ void CE323AI::UnitFinished(int unit) {
 
 	if (c&BUILDER && c&MOBILE) {
 		ai->eco->gameBuilders[unit]  = ut;
-		ai->eco->gameIdle[unit]      = ut;
 	}
 
 	if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
 		ai->eco->gameMetal[unit]     = ut;
-		ai->eco->gameIdle[unit]      = ut;
 	}
 
 	if (c&EMAKER || c& ESTORAGE) {
 		ai->eco->gameEnergy[unit]    = ut;
-		ai->eco->gameIdle[unit]      = ut;
+	}
+
+	if (c&MOBILE) {
+		float3 pos = ai->call->GetUnitPos(unit);
+		int f = ai->metaCmds->getBestFacing(pos);
+		float dist = 100.0f;
+		switch(f) {
+			case NORTH:
+				pos.z -= dist;
+			break;
+			case SOUTH:
+				pos.z += dist;
+			break;
+			case EAST:
+				pos.x += dist;
+			break;
+			case WEST:
+				pos.x -= dist;
+			break;
+		}
+		ai->metaCmds->move(unit, pos);
 	}
 
 	ai->unitTable->gameAllUnits[unit]= ut;
@@ -128,6 +150,7 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 
 	map->erase(unit);
 	ai->eco->gameIdle.erase(unit);
+	ai->eco->gameGuarding.erase(unit);
 	ai->unitTable->gameAllUnits.erase(unit);
 }
 
@@ -190,7 +213,7 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
 	
-	if (frame > 1) ai->eco->updateIncomes(5);
+	ai->eco->updateIncomes(5);
 
 	/* Rotate through the different update events to distribute computations */
 	switch(frame % 5) {

@@ -20,6 +20,10 @@ class CEconomy {
 		float uMIncome;
 		/* total units eIncome averaged over 5 logical frames */
 		float uEIncome;
+		/* metal usage averaged over 5 logical frames */
+		float mUsage;
+		/* energy usage averaged over 5 logical frames */
+		float eUsage;
 
 		/* Initialize economy module */
 		void init(int unit);
@@ -42,9 +46,11 @@ class CEconomy {
 		std::map<int, UnitType*> gameMetal;
 		std::map<int, UnitType*> gameEnergy;
 		std::map<int, UnitType*> gameIdle;
+		std::map<int, int>       gameGuarding;
 
-		/* To remove from idle */
+		/* To remove */
 		std::vector<int> removeFromIdle;
+		std::vector<int> removeFromGuarding;
 
 	private:
 		AIClasses *ai;
@@ -62,6 +68,9 @@ class CEconomy {
 				return p < w.p;
 			}
 		};
+
+		/* Can we afford to build this ? */
+		bool canAffordToBuild(UnitType *builder, UnitType *toBuild);
 		
 		/* Holds wishlists, one for each factory type */
 		std::map<int, std::priority_queue<Wish> > wishlist;
@@ -69,8 +78,8 @@ class CEconomy {
 		/* buffer */
 		char buf[1024];
 
-		/* energy provider, factory */
-		UnitType *energyProvider, *factory;
+		/* energy provider, factory, builder */
+		UnitType *energyProvider, *factory, *builder;
 };
 
 #endif

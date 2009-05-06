@@ -4,10 +4,10 @@ CTaskPlan::CTaskPlan(AIClasses *ai) {
 	this->ai = ai;
 	previousFrame = 0;
 
-	taskStr[BUILD_MMAKER]   = "build_mmaker";
-	taskStr[BUILD_EMAKER]   = "build_emaker";
-	taskStr[BUILD_FACTORY]  = "build_factory";
-	taskStr[ASSIST_FACTORY] = "assist_factory";
+	taskStr[BUILD_MMAKER]   = std::string("build_mmaker");
+	taskStr[BUILD_EMAKER]   = std::string("build_emaker");
+	taskStr[BUILD_FACTORY]  = std::string("build_factory");
+	taskStr[ASSIST_FACTORY] = std::string("assist_factory");
 	
 }
 
@@ -15,8 +15,7 @@ void CTaskPlan::addTaskPlan(int unit, task t, int eta) {
 	const UnitDef *ud = UD(unit);
 	
 	taskplans[unit] = new Plan(t, eta);
-	sprintf(buf,"TaskPlan <%s, %s, %d>", ud->humanName.c_str(), taskStr[t], eta);
-	LOGS(buf);
+	sprintf(buf,"TaskPlan <%s, %s, %d>", ud->humanName.c_str(), taskStr[t].c_str(), eta);
 	LOGN(buf);
 }
 
@@ -32,8 +31,7 @@ void CTaskPlan::update(int frame) {
 
 		if (p->eta <= 0) {
 			erase.push_back(i->first);
-			sprintf(buf,"TaskPlan %s removed", taskStr[p->t]);
-			LOGS(buf);
+			sprintf(buf,"TaskPlan %s removed", taskStr[p->t].c_str());
 			LOGN(buf);
 		}
 	}

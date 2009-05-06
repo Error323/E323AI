@@ -13,16 +13,29 @@ class CMetaCommands {
 
 		/* Let unit with id uid build a unit with a certain facing (NORTH,
 		 * SOUTH, EAST, WEST) at position pos */
-		bool build(int uid, const UnitDef *ud, float3 &pos);
+		bool build(int builder, UnitType *toBuild, float3 &pos);
 
-		bool factoryBuild(int factory, const UnitDef *ud);
-		
+		/* Build a unit in a certain factory */
+		bool factoryBuild(int factory, UnitType *toBuild);
+
+		/* Repair (or assist) a certain unit */
+		bool repair(int unit, int target);
+
+		/* Guard a certain unit */
+		bool guard(int unit, int target);
+
+		/* Stop doing what you did */
+		bool stop(int unit);
+
+		/* Get best facing */
+		facing getBestFacing(float3 &pos);
+
 	private:
 		AIClasses *ai;
 		char buf[1024];
 
 		Command createPosCommand(int cmd, float3 pos, float radius = -1.0f, facing f = NONE);
-		facing getBestFacing(float3 &pos);
+		Command createTargetCommand(int cmd, int target);
 };
 
 #endif

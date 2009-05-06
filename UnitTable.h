@@ -13,7 +13,6 @@ class CUnitTable {
 
 		/* Current units ingame, unit-ingame-id as key (See Global AI) */
 		std::map<int, UnitType*> gameAllUnits;
-		std::map<int, UnitType*> gameIdleMilitary;
 
 		/* All units flattened in a map */
 		std::map<int, UnitType> units;
