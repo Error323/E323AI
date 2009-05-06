@@ -6,7 +6,7 @@ CTaskPlan::CTaskPlan(AIClasses *ai) {
 
 	taskStr[BUILD_MMAKER]   = "build_mmaker";
 	taskStr[BUILD_EMAKER]   = "build_emaker";
-	taskStr[ASSIST_WORKER]  = "assist_worker";
+	taskStr[BUILD_FACTORY]  = "build_factory";
 	taskStr[ASSIST_FACTORY] = "assist_factory";
 	
 }

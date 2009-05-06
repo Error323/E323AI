@@ -43,6 +43,7 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 
 	for (j = units.begin(); j != units.end(); j++) {
 		utParent = &(j->second);
+		LOGN("Cost " << utParent->def->humanName << " = " << utParent->cost);
 		debugCategories(utParent);
 		debugUnitDefs(utParent);
 		debugWeapons(utParent);
@@ -60,17 +61,6 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 		}
 		canBuild = canBuild.substr(0, canBuild.length()-2);
 		LOGN(utParent->def->humanName << "\nbuild by : {" << buildBy << "}\ncan build: {" << canBuild << "}\n\n");
-	}
-
-	for (j = units.begin(); j != units.end(); j++) {
-		utParent = &(j->second);
-		unsigned int x = utParent->cats;
-		//if ((x & MSTORAGE) && (x & STATIC) && !(x & ATTACKER) && !(x & FACTORY) && !(x & ASSIST))
-		//if ((x & ATTACKER) && (x & MOBILE) && (x & LAND) && !(x & SCOUT) && !(x & ARTILLERY))
-		//if ((x & ATTACKER) && (x & MOBILE) && (x & LAND) && !(x & SCOUT) && !(x & ARTILLERY)) {
-		if ((x & EMAKER) && (x & STATIC) && (x & LAND)) {
-			debugCategories(utParent);
-		}
 	}
 }
 
@@ -117,6 +107,7 @@ UnitType* CUnitTable::insertUnit(const UnitDef *ud) {
 	ut.def        = ud;
 	ut.id         = ud->id;
 	ut.cost       = ud->metalCost*METAL2ENERGY + ud->energyCost;
+	ut.energyMake = ud->energyMake - ud->energyUpkeep;
 	ut.dps        = calcUnitDps(&ut);
 	units[ud->id] = ut;
 	return &units[ud->id];
@@ -224,11 +215,6 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 		cats |= SCOUT;
 
 	return cats;
-}
-
-inline UnitType* CUnitTable::getUnitType(int unit) {
-	const UnitDef *ud = ai->call->GetUnitDef(unit);
-	return &(units[ud->id]);
 }
 
 float CUnitTable::calcUnitDps(UnitType *ut) {

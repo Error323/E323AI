@@ -9,6 +9,22 @@ void CEconomy::init(int unit) {
 	UnitType *ut = UT(ud->id);
 	ai->eco->gameIdle[unit] = ut;
 	updateIncomes(1);
+
+	/* XXX: temporary factory, kbot lab(82) */
+	factory = UT(82);
+
+	/* Determine wind(172) or solar(136) energy */
+	UnitType *wind  = UT(172);
+	UnitType *solar = UT(136);
+	
+	float avgWind = (ai->call->GetMinWind() + ai->call->GetMaxWind()) / 2.0f;
+	float windProf  = avgWind / wind->cost;
+	float solarProf = solar->energyMake / solar->cost;
+
+	energyProvider = windProf > solarProf ? wind : solar;
+	sprintf(buf, "Energy provider: %s", energyProvider->def->humanName.c_str());
+	LOGS(buf);
+	LOGN(buf);
 }
 
 void CEconomy::update(int frame) {
@@ -36,7 +52,9 @@ void CEconomy::update(int frame) {
 		}
 
 		else if (c&COMMANDER) {
-			if ((mIncome - uMIncome) < 8.0f) {
+			sprintf(buf, "m-u = %0.2f, e-u = %0.2f", (mIncome-uMIncome), (eIncome-uEIncome));
+			LOGS(buf);LOGN(buf);
+			if ((mIncome - uMIncome) < 3.0f) {
 				UnitType *mex = ai->unitTable->canBuild(ut, MEXTRACTOR);
 				float3 goal   = ai->metalMap->buildMex(i->first, mex);
 				float path    = ai->call->GetPathLength(pos, goal, ut->def->movedata->pathType);
@@ -44,15 +62,28 @@ void CEconomy::update(int frame) {
 				float travelTime = path / (ut->def->speed/30.0f);
 				float buildTime  = mex->def->buildTime / (ut->def->buildSpeed/32.0f);
 				int eta = travelTime + buildTime;
-				sprintf(buf,"turnRate(%0.2f), path(%0.2f), speed(%0.2f), buildTime(%0.2f), buildSpeed(%0.2f)", ut->def->turnRate, path, ut->def->speed, mex->def->buildTime, ut->def->buildSpeed);
-				LOGN(buf);
 				ai->tasks->addTaskPlan(i->first, BUILD_MMAKER, eta);
 			}
-			// If mNow - uMIncome < 2: increase m income
-			// If eNow - uEIncome < 40: increase energy income
-			// Als we nog geen factory hebben en we kunnen hem betalen, bouw deze
-			// Anders zorgen we ervoor dat we deze kunnen betalen
-			
+			else if ((eIncome - uEIncome) < 100.0f) {
+				float3 goal = ai->call->ClosestBuildSite(energyProvider->def, pos, 2000.0f, 1, NONE);
+				float path    = ai->call->GetPathLength(pos, goal, ut->def->movedata->pathType);
+				path -= std::min<float>(ut->def->buildDistance, path);
+				float travelTime = path / (ut->def->speed/30.0f);
+				float buildTime  = energyProvider->def->buildTime / (ut->def->buildSpeed/32.0f);
+				int eta = travelTime + buildTime;
+				ai->metaCmds->build(i->first, energyProvider->def, goal);
+				ai->tasks->addTaskPlan(i->first, BUILD_EMAKER, eta);
+			}
+			else if (gameFactories.empty()) {
+				float3 goal = ai->call->ClosestBuildSite(factory->def, pos, 2000.0f, 1, NORTH);
+				float path    = ai->call->GetPathLength(pos, goal, ut->def->movedata->pathType);
+				path -= std::min<float>(ut->def->buildDistance, path);
+				float travelTime = path / (ut->def->speed/30.0f);
+				float buildTime  = factory->def->buildTime / (ut->def->buildSpeed/32.0f);
+				int eta = travelTime + buildTime;
+				ai->metaCmds->build(i->first, factory->def, goal);
+				ai->tasks->addTaskPlan(i->first, BUILD_FACTORY, eta);
+			}
 			// als we genoeg eco hebben om een lab te assisten doe dat dan
 			// Anders breid eco uit
 		}
@@ -90,7 +121,7 @@ void CEconomy::updateIncomes(int N) {
 		const UnitDef *ud = i->second->def;
 		if (!(c&MMAKER) || !(c&EMAKER) || !(c&MEXTRACTOR)) {
 			mU += ud->metalMake;
-			eU += ud->energyMake;
+			eU += i->second->energyMake;
 		}
 	}
 

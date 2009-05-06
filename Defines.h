@@ -66,7 +66,7 @@ enum unitCategory {
 enum task {
 	BUILD_MMAKER   = (1<<0),
 	BUILD_EMAKER   = (1<<1),
-	ASSIST_WORKER  = (1<<2),
+	BUILD_FACTORY  = (1<<2),
 	ASSIST_FACTORY = (1<<3)
 };
 

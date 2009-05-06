@@ -17,12 +17,14 @@ bool CMetaCommands::move(int uid, float3 &pos) {
 }
 
 bool CMetaCommands::build(int uid, const UnitDef *ud, float3 &pos) {
+	ai->call->CreateLineFigure(pos, float3(pos.x,pos.y+100, pos.z), 20, 1, 3600*60, 0);
 	facing f = getBestFacing(pos);
 	//float3 realpos = ai->call->ClosestBuildSite(ud, pos, 5.0f, 2, f);
 	Command c = createPosCommand(-(ud->id), pos, -1.0f, f);
 
 	if (c.id != 0) {
-		ai->call->GiveOrder(uid, &c);
+		int success = ai->call->GiveOrder(uid, &c);
+		LOGN("Building " << ud->humanName << " " << "success = " << success);
 		ai->eco->removeIdleUnit(uid);
 		return true;
 	}
@@ -66,5 +68,5 @@ Command CMetaCommands::createPosCommand(int cmd, float3 pos, float radius, facin
 }
 
 facing CMetaCommands::getBestFacing(float3 &pos) {
-	return NONE;
+	return NORTH;
 }

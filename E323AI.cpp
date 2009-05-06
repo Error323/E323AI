@@ -190,7 +190,7 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
 	
-	ai->eco->updateIncomes(5);
+	if (frame > 1) ai->eco->updateIncomes(5);
 
 	/* Rotate through the different update events to distribute computations */
 	switch(frame % 5) {

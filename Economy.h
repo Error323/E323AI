@@ -65,7 +65,12 @@ class CEconomy {
 		
 		/* Holds wishlists, one for each factory type */
 		std::map<int, std::priority_queue<Wish> > wishlist;
+
+		/* buffer */
 		char buf[1024];
+
+		/* energy provider, factory */
+		UnitType *energyProvider, *factory;
 };
 
 #endif

@@ -17,19 +17,10 @@ CMetalMap::CMetalMap(AIClasses *ai) {
 	coverage = new unsigned int[diameter*diameter];
 	bestCoverage = new unsigned int[diameter*diameter];
 
-	int i;
-	for (i = 0; i < X*Z; i++)
+	for (int i = 0; i < X*Z; i++)
 		map[i] = callMap[i];
 
 	findBestSpots();
-
-
-	MSpot *ms;	
-	for (i = 0; i < spots.size(); i++) {
-		ms = &spots[i];
-		float3 p1(ms->f.x, ms->f.y+100, ms->f.z);
-		ai->call->CreateLineFigure(ms->f, p1, 20, 1, 3600*60, 0);
-	}
 }
 
 CMetalMap::~CMetalMap() {

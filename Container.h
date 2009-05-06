@@ -21,14 +21,15 @@ struct AIClasses {
 	std::ofstream *logger;
 };
 
-/* Unit wrapper class, TODO: extend with more fine grained specs */
+/* Unit wrapper struct */
 struct UnitType {
-	const UnitDef *def;             /* As defined by spring */
-	int id;                         /* Overloading the UnitDef id */
-	int techLevel;                  /* By looking at the factory cost in which it can be build */
-	float dps;                      /* A `briljant' measurement for the power of a unit :P */
-	float cost;                     /* Cost defined in energy units */
-	unsigned int cats;              /* Categories this unit belongs, Categories @ Defines.h */
+	const UnitDef *def;                 /* As defined by spring */
+	int id;                             /* Overloading the UnitDef id */
+	int techLevel;                      /* By looking at the factory cost in which it can be build */
+	float dps;                          /* A `briljant' measurement for the power of a unit :P */
+	float cost;                         /* Cost defined in energy units */
+	float energyMake;                   /* Netto energy this unit provides */
+	unsigned int cats;                  /* Categories this unit belongs, Categories @ Defines.h */
 	std::map<int, UnitType*> buildBy;
 	std::map<int, UnitType*> canBuild;
 };
