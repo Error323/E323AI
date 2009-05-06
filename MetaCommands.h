@@ -30,6 +30,9 @@ class CMetaCommands {
 		/* Get best facing */
 		facing getBestFacing(float3 &pos);
 
+		/* Get quadrant */
+		quadrant getQuadrant(float3 &pos);
+
 	private:
 		AIClasses *ai;
 		char buf[1024];

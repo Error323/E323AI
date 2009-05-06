@@ -170,6 +170,7 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 
 /* Called on move fail e.g. can't reach point */
 void CE323AI::UnitMoveFailed(int unit) {
+	ai->metaCmds->randomMove(unit);
 }
 
 

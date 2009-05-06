@@ -40,3 +40,13 @@ void CTaskPlan::update(int frame) {
 		taskplans.erase(erase[i]);
 	previousFrame = frame;
 }
+
+void CTaskPlan::getTasks(task t, std::vector<int> &units) {
+	std::map<int, Plan*>::iterator i;
+	for (i = taskplans.begin(); i != taskplans.end(); i++) {
+		Plan *p = i->second;
+		int unit = i->first;
+		if (p->t == t)
+			units.push_back(unit);
+	}
+}

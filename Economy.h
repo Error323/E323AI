@@ -24,6 +24,10 @@ class CEconomy {
 		float mUsage;
 		/* energy usage averaged over 5 logical frames */
 		float eUsage;
+		/* metal storage */
+		float mStorage;
+		/* energy storage */
+		float eStorage;
 
 		/* Initialize economy module */
 		void init(int unit);
@@ -71,6 +75,12 @@ class CEconomy {
 
 		/* Can we afford to build this ? */
 		bool canAffordToBuild(UnitType *builder, UnitType *toBuild);
+
+		/* Get the amount of guarding units guarding this unit */
+		int getGuardings(int unit);
+
+		/* See if we can help (guard) a unit with a certain task */
+		bool canHelp(task t, int helper, int &unit, UnitType *helpBuild);
 		
 		/* Holds wishlists, one for each factory type */
 		std::map<int, std::priority_queue<Wish> > wishlist;

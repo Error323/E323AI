@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdarg.h>
 
+#include <cassert>
 #include <string>
 #include <ctime>
 #include <iostream>

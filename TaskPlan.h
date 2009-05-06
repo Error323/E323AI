@@ -22,6 +22,8 @@ class CTaskPlan {
 
 		void update(int frame);
 
+		void getTasks(task t, std::vector<int> &units);
+
 
 	private:
 		std::map<int, Plan*> taskplans;

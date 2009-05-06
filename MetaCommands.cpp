@@ -17,6 +17,11 @@ bool CMetaCommands::move(int unit, float3 &pos) {
 	return false;
 }
 
+bool CMetaCommands::randomMove(int unit) {
+	float3 pos = ai->call->GetUnitPos(unit);
+	//TODO: move random
+}
+
 bool CMetaCommands::guard(int unit, int target) {
 	Command c = createTargetCommand(CMD_GUARD, target);
 
@@ -82,7 +87,24 @@ bool CMetaCommands::build(int builder, UnitType *toBuild, float3 &pos) {
 	if (c.id != 0) {
 		ai->call->GiveOrder(builder, &c);
 		ai->tasks->addTaskPlan(builder, t, eta);
-		ai->call->CreateLineFigure(goal, float3(goal.x,goal.y+100, goal.z), 20, 1, eta, 0);
+		float dist = 100.0f;
+		goal.y += 20;
+		float3 arrow = goal;
+		switch(f) {
+			case NORTH:
+				arrow.z -= dist;
+			break;
+			case SOUTH:
+				arrow.z += dist;
+			break;
+			case EAST:
+				arrow.x += dist;
+			break;
+			case WEST:
+				arrow.x -= dist;
+			break;
+		}
+		ai->call->CreateLineFigure(goal, float3(arrow.x,arrow.y, arrow.z), 20, 1, eta, 1);
 		ai->eco->removeIdleUnit(builder);
 		sprintf(buf, "[CMetaCommands::build] %s builds %s", ud->name.c_str(), toBuild->def->name.c_str());
 		LOGN(buf);
@@ -150,13 +172,10 @@ Command CMetaCommands::createPosCommand(int cmd, float3 pos, float radius, facin
 	return c;
 }
 
-/* From KAIK */
-facing CMetaCommands::getBestFacing(float3 &pos) {
-	/* Introduce some diversity */
+quadrant CMetaCommands::getQuadrant(float3 &pos) {
 	int mapWidth = ai->call->GetMapWidth() * 8;
 	int mapHeight = ai->call->GetMapHeight() * 8;
 	quadrant mapQuadrant = NORTH_EAST;
-	facing f = NONE;
 
 	if (pos.x < (mapWidth >> 1)) {
 		/* left half of map */
@@ -174,6 +193,15 @@ facing CMetaCommands::getBestFacing(float3 &pos) {
 			mapQuadrant = SOUTH_EAST;
 		}
 	}
+	return mapQuadrant;
+}
+
+/* From KAIK */
+facing CMetaCommands::getBestFacing(float3 &pos) {
+	int mapWidth = ai->call->GetMapWidth() * 8;
+	int mapHeight = ai->call->GetMapHeight() * 8;
+	quadrant mapQuadrant = getQuadrant(pos);
+	facing f = NONE;
 
 	switch (mapQuadrant) {
 		case NORTH_WEST: {
@@ -183,10 +211,10 @@ facing CMetaCommands::getBestFacing(float3 &pos) {
 			f = (mapHeight > mapWidth) ? SOUTH: WEST;
 		} break;
 		case SOUTH_WEST: {
-			f = (mapHeight > mapWidth) ? NORTH: WEST;
+			f = (mapHeight > mapWidth) ? NORTH: EAST;
 		} break;
 		case SOUTH_EAST: {
-			f = (mapHeight > mapWidth) ? NORTH: EAST;
+			f = (mapHeight > mapWidth) ? NORTH: WEST;
 		} break;
 	}
 

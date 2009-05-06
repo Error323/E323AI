@@ -28,7 +28,7 @@ void CEconomy::init(int unit) {
 }
 
 void CEconomy::update(int frame) {
-	/* If we are stalling, stop busy workers until we stall no more */
+	/* If we are stalling, stop guarding workers until we stall no more */
 	std::map<int,int>::iterator g;
 	for (g = gameGuarding.begin(); g != gameGuarding.end(); g++) {
 		if ((mNow < 10.0f && mUsage > mIncome) || (eNow < 10.0f && eUsage > eIncome)) {
@@ -49,10 +49,8 @@ void CEconomy::update(int frame) {
 		if (c&FACTORY) {
 			std::map<int, std::priority_queue<Wish> >::iterator j;
 			j = wishlist.find(u);
-
 			/* There are no wishes */
 			if (j == wishlist.end() || j->second.empty()) continue;
-
 			const Wish *w = &(j->second.top());
 			ai->metaCmds->factoryBuild(i->first, w->ut);
 			j->second.pop();
@@ -60,13 +58,13 @@ void CEconomy::update(int frame) {
 
 		else if (c&COMMANDER) {
 			/* If we don't have enough metal income, build a mex */
-			if ((mIncome - uMIncome) < 2.0f) {
+			if ((mIncome - uMIncome) < 1.0f) {
 				UnitType *mex = ai->unitTable->canBuild(ut, MEXTRACTOR);
 				if (canAffordToBuild(ut, mex))
 					ai->metalMap->buildMex(i->first, mex);
 			}
 			/* If we don't have enough energy income, build a energy provider */
-			else if (eIncome < 90.0f) {
+			else if (eUsage > eIncome || eNow < eStorage/2.0f) {
 				if (canAffordToBuild(ut, energyProvider))
 					ai->metaCmds->build(i->first, energyProvider, pos);
 			}
@@ -83,25 +81,29 @@ void CEconomy::update(int frame) {
 		}
 
 		else if (c&BUILDER && c&MOBILE) {
-			/* If we can afford to assist a lab, do it */
+			/* If we can afford to assist a lab, do so */
 			if (canAffordToBuild(ut, builder)) {
 				std::map<int,UnitType*>::iterator fac = gameFactories.begin();
 				ai->metaCmds->guard(i->first, fac->first);
 			}
-			/* Increase metal income */
-			else if (mIncome < mUsage) {
-				/* If no builder is increasing metal income, do it */
-				UnitType *mex = ai->unitTable->canBuild(ut, MEXTRACTOR);
-				ai->metalMap->buildMex(i->first, mex);
-				
-				/* Else see if we can help him or increase metal ourselves */
-			}
-			/* Increase energy income */
-			else if (eIncome < eUsage || eNow < ai->call->GetEnergyStorage()/2.0f) {
-				/* If no builder is increasing energy income, do it */
-				ai->metaCmds->build(i->first, energyProvider, pos);
-				
-				/* Else see if we can help him or increase energy ourselves */
+			/* Increase eco income */
+			else if (mIncome < mUsage || eIncome < eUsage) {
+				int toHelp = 0;
+				if (mNow/mStorage < eNow/eStorage) {
+					UnitType *mex = ai->unitTable->canBuild(ut, MEXTRACTOR);
+					bool canhelp = canHelp(BUILD_MMAKER, i->first, toHelp, mex);
+					if (canhelp)
+						ai->metaCmds->guard(i->first, toHelp);
+					else 
+						ai->metalMap->buildMex(i->first, mex);
+				}
+				else {
+					bool canhelp = canHelp(BUILD_EMAKER, i->first, toHelp, energyProvider);
+					if (canhelp)
+						ai->metaCmds->guard(i->first, toHelp);
+					else
+						ai->metaCmds->build(i->first, energyProvider, pos);
+				}
 			}
 		}
 	}
@@ -117,9 +119,48 @@ void CEconomy::update(int frame) {
 	for (unsigned int i = 0; i < removeFromIdle.size(); i++)
 		gameIdle.erase(removeFromIdle[i]);
 	removeFromIdle.clear();
+	/* Remove guarders */
 	for (unsigned int i = 0; i < removeFromGuarding.size(); i++)
 		gameGuarding.erase(removeFromGuarding[i]);
 	removeFromGuarding.clear();
+}
+
+bool CEconomy::canHelp(task t, int helper, int &unit, UnitType *helpBuild) {
+	std::vector<int> units; 
+	ai->tasks->getTasks(t, units);
+	UnitType *helperUnitType = UT(ai->call->GetUnitDef(helper)->id);
+	if (t == BUILD_MMAKER)
+		helpBuild = ai->unitTable->canBuild(helperUnitType, MEXTRACTOR);
+	else
+		helpBuild = energyProvider;
+
+	if (units.empty())
+		return false;
+	else {
+		float buildTime = helpBuild->def->buildTime / (helperUnitType->def->buildSpeed/32.0f);
+		for (unsigned int uid = 0; uid < units.size(); uid++) {
+			float3 posHelped = ai->call->GetUnitPos(units[uid]);
+			float3 posHelper = ai->call->GetUnitPos(helper);
+			const UnitDef *uud = ai->call->GetUnitDef(units[uid]);
+			float pathLength  = ai->call->GetPathLength(posHelper, posHelped, helperUnitType->def->movedata->pathType);
+			float travelTime  = pathLength / (helperUnitType->def->speed/30.0f);
+			if (travelTime <= buildTime && getGuardings(units[uid]) < 2) {
+				unit = units[uid];
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+int CEconomy::getGuardings(int unit) {
+	std::map<int,int>::iterator g;
+	int guarders = 0;
+	for (g = gameGuarding.begin(); g != gameGuarding.end(); g++) {
+		if (g->second == unit)
+			guarders++;
+	}
+	return guarders;
 }
 
 void CEconomy::updateIncomes(int N) {
@@ -129,6 +170,8 @@ void CEconomy::updateIncomes(int N) {
 	eIncome += ai->call->GetEnergyIncome() / N;
 	mUsage  += ai->call->GetMetalUsage() / N;
 	eUsage  += ai->call->GetEnergyUsage() / N;
+	mStorage = ai->call->GetMetalStorage();
+	eStorage = ai->call->GetEnergyStorage();
 
 	// TODO: subtract predicted usages using taskplanner
 
@@ -154,12 +197,7 @@ bool CEconomy::canAffordToBuild(UnitType *builder, UnitType *toBuild) {
 	float mPrediction = (mIncome-mUsage)*buildTime - mCost + mNow;
 	float ePrediction = (eIncome-eUsage)*buildTime - eCost + eNow;
 
-	sprintf(buf, "%s can afford to build %s if %0.2f >= 0 and %0.2f >= 0", builder->def->name.c_str(), toBuild->def->name.c_str(), mPrediction, ePrediction);
-	if (mPrediction >= 0.0f &&  ePrediction >= 0.0f) {
-		LOGN(buf);
-		return true;
-	}
-	return false;
+	return (mPrediction >= 0.0f &&  ePrediction >= 0.0f);
 }
 
 void CEconomy::addWish(UnitType *fac, UnitType *ut, buildPriority p) {
@@ -175,9 +213,9 @@ void CEconomy::addWish(UnitType *fac, UnitType *ut, buildPriority p) {
 		wishlist[fac->id] = pq;
 	}
 
-	/* No more than 4 units in our priority queue */
+	/* No more than 2 units in our priority queue */
 	// TODO: calc howmuch factories of this type exist
-	if (wishlist[fac->id].size() <= 4)
+	if (wishlist[fac->id].size() <= 2)
 		wishlist[fac->id].push(Wish(ut, p));
 }
 
