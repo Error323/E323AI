@@ -37,6 +37,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	printf("logfile @ %s\n", buf);
 
 	ai->logger		= new std::ofstream(buf, std::ios::app);
+	LOGN("v" << AI_VERSION);
 
 	ai->metalMap	= new CMetalMap(ai);
 	ai->unitTable	= new CUnitTable(ai);

@@ -1,13 +1,16 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+#include "AIExport.h"
+
+#define AI_VERSION  aiexport_getVersion()
+
 /* AI meta data */
-#define AI_NOTES	      "This A.I. mainly focusses on the XTA mod"
-#define AI_CREDITS        "Error323 - folkerthuizinga@gmail.com"
+#define AI_NOTES	"This A.I. mainly focusses on the XTA mod"
+#define AI_CREDITS  "Error323 - folkerthuizinga@gmail.com"
 
 /* Folders */
-#define ROOT_FOLDER "AI/E323AI/"
-#define LOG_FOLDER	"/home/fhuizing/.spring/" ROOT_FOLDER "logs/"
+#define LOG_FOLDER  std::string(aiexport_getDataDir(true)) + "logs/"
 
 /* Logger */
 #define LOG(x)		(*ai->logger << x)

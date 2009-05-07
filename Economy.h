@@ -85,9 +85,6 @@ class CEconomy {
 
 		/* See if we can help (guard) a unit with a certain task */
 		bool canHelp(task t, int helper, int &unit, UnitType *helpBuild);
-		
-		/* Reset some internals */
-		void reset();
 
 		/* Holds wishlists, one for each factory type */
 		std::map<int, std::priority_queue<Wish> > wishlist;

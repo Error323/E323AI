@@ -46,6 +46,16 @@ void CEconomy::update(int frame) {
 		}
 	}
 
+	/* Remove previous guarders */
+	for (unsigned int i = 0; i < removeFromGuarding.size(); i++)
+		gameGuarding.erase(removeFromGuarding[i]);
+	removeFromGuarding.clear();
+
+	/* Remove previous idlers */
+	for (unsigned int i = 0; i < removeFromIdle.size(); i++)
+		gameIdle.erase(removeFromIdle[i]);
+	removeFromIdle.clear();
+
 	/* Update idle units */
 	std::map<int, UnitType*>::iterator i;
 	for (i = gameIdle.begin(); i != gameIdle.end(); i++) {
@@ -126,30 +136,10 @@ void CEconomy::update(int frame) {
 		}
 	}
 
-	reset();
-
-	UnitType *attacker = ai->unitTable->canBuild(factory, ARTILLERY);
-	if (!gameFactories.empty())
-		addWish(factory, attacker, NORMAL);
-
 	if (!gameFactories.empty() && (mRequest || eRequest))
 		if (gameIdle.size() <= 1)
 			addWish(factory, builder, NORMAL);
-}
-
-void CEconomy::reset() {
-	/* Remove previous idlers */
-	for (unsigned int i = 0; i < removeFromIdle.size(); i++)
-		gameIdle.erase(removeFromIdle[i]);
-	removeFromIdle.clear();
-	/* Remove previous guarders */
-	for (unsigned int i = 0; i < removeFromGuarding.size(); i++)
-		gameGuarding.erase(removeFromGuarding[i]);
-	removeFromGuarding.clear();
-	/* Remove previous waiters */
-	for (unsigned int i = 0; i < removeFromWaiting.size(); i++)
-		gameWaiting.erase(removeFromWaiting[i]);
-	removeFromWaiting.clear();
+	addWish(factory, builder, LOW);
 }
 
 bool CEconomy::canHelp(task t, int helper, int &unit, UnitType *helpBuild) {

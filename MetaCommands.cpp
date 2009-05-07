@@ -17,13 +17,6 @@ bool CMetaCommands::move(int unit, float3 &pos) {
 	return false;
 }
 
-/*
-bool CMetaCommands::randomMove(int unit) {
-	float3 pos = ai->call->GetUnitPos(unit);
-	//TODO: move random
-}
-*/
-
 bool CMetaCommands::guard(int unit, int target) {
 	Command c = createTargetCommand(CMD_GUARD, target);
 
@@ -66,6 +59,7 @@ bool CMetaCommands::build(int builder, UnitType *toBuild, float3 &pos) {
 		startRadius += ud->buildDistance;
 		goal = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, 7, f);
 	}
+	//ai->call->DrawUnit(toBuild->def->name.c_str(), goal, 0, 30*60*5, 0, true, true, f);
 
 	Command c = createPosCommand(-(toBuild->id), goal, -1.0f, f);
 	if (c.id != 0) {
