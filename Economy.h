@@ -3,27 +3,29 @@
 
 #include "E323AI.h"
 
+#define alpha 0.001f
+
 class CEconomy {
 	public:
 		CEconomy(AIClasses *ai);
 		~CEconomy(){};
 
 		/* overal mNow averaged over 5 logical frames */
-		float mNow;
+		float mNow, mNowSummed;
 		/* overal eNow averaged over 5 logical frames */
-		float eNow;
+		float eNow, eNowSummed;
 		/* overal mIncome averaged over 5 logical frames */
-		float mIncome;
+		float mIncome, mIncomeSummed;
 		/* overal eIncome averaged over 5 logical frames */
-		float eIncome;
+		float eIncome, eIncomeSummed;
 		/* total units mIncome averaged over 5 logical frames */
-		float uMIncome;
+		float uMIncome, uMIncomeSummed;
 		/* total units eIncome averaged over 5 logical frames */
-		float uEIncome;
+		float uEIncome, uEIncomeSummed;
 		/* metal usage averaged over 5 logical frames */
-		float mUsage;
+		float mUsage, mUsageSummed;
 		/* energy usage averaged over 5 logical frames */
-		float eUsage;
+		float eUsage, eUsageSummed;
 		/* metal storage */
 		float mStorage;
 		/* energy storage */
@@ -36,7 +38,7 @@ class CEconomy {
 		void update(int frame);
 
 		/* Update averaged incomes */
-		void updateIncomes(int N);
+		void updateIncomes(int frame);
 
 		/* Add a unittype to our wishlist */
 		void addWish(UnitType *fac, UnitType *ut, buildPriority p);
@@ -50,11 +52,13 @@ class CEconomy {
 		std::map<int, UnitType*> gameMetal;
 		std::map<int, UnitType*> gameEnergy;
 		std::map<int, UnitType*> gameIdle;
+		std::map<int, UnitType*> gameWaiting;
 		std::map<int, int>       gameGuarding;
 
 		/* To remove */
 		std::vector<int> removeFromIdle;
 		std::vector<int> removeFromGuarding;
+		std::vector<int> removeFromWaiting;
 
 	private:
 		AIClasses *ai;
@@ -82,6 +86,9 @@ class CEconomy {
 		/* See if we can help (guard) a unit with a certain task */
 		bool canHelp(task t, int helper, int &unit, UnitType *helpBuild);
 		
+		/* Reset some internals */
+		void reset();
+
 		/* Holds wishlists, one for each factory type */
 		std::map<int, std::priority_queue<Wish> > wishlist;
 
@@ -90,6 +97,12 @@ class CEconomy {
 
 		/* energy provider, factory, builder */
 		UnitType *energyProvider, *factory, *builder;
+
+		/* Altered by canAfford() */
+		bool eRequest, mRequest;
+
+		/* updateIncomes counter */
+		unsigned int incomes;
 };
 
 #endif

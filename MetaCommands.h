@@ -27,6 +27,9 @@ class CMetaCommands {
 		/* Stop doing what you did */
 		bool stop(int unit);
 
+		/* Wait with what you are doing */
+		bool wait(int unit);
+
 		/* Get best facing */
 		facing getBestFacing(float3 &pos);
 

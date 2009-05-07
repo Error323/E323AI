@@ -8,25 +8,24 @@ class CTaskPlan {
 		CTaskPlan(AIClasses *ai);
 		~CTaskPlan(){};
 
-		struct Plan {
-			int eta;
+		struct BuildPlan {
 			task t;
+			UnitType *toBuild;
 
-			Plan(task t, int eta) {
-				this->t   = t;
-				this->eta = eta;
+			BuildPlan(task t, UnitType *toBuild) {
+				this->t       = t;
+				this->toBuild = toBuild;
 			}
 		};
 
-		void addTaskPlan(int unit, task t, int eta);
+		void addBuildPlan(int unit, UnitType* toBuild);
 
-		void update(int frame);
+		void updateBuildPlans(int unit);
 
 		void getTasks(task t, std::vector<int> &units);
 
-
 	private:
-		std::map<int, Plan*> taskplans;
+		std::map<int, BuildPlan*> buildplans;
 		std::map<task, std::string> taskStr;
 		int previousFrame;
 		char buf[1024];

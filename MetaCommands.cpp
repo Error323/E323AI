@@ -17,10 +17,12 @@ bool CMetaCommands::move(int unit, float3 &pos) {
 	return false;
 }
 
+/*
 bool CMetaCommands::randomMove(int unit) {
 	float3 pos = ai->call->GetUnitPos(unit);
 	//TODO: move random
 }
+*/
 
 bool CMetaCommands::guard(int unit, int target) {
 	Command c = createTargetCommand(CMD_GUARD, target);
@@ -54,39 +56,21 @@ bool CMetaCommands::repair(int builder, int target) {
 }
 
 bool CMetaCommands::build(int builder, UnitType *toBuild, float3 &pos) {
-	Command c;
-	facing f;
-	float pathLength, travelTime, buildTime, startRadius = 0.0f;
-	float3 start, goal;
-	const UnitDef *ud;
-	int eta;
-	task t;
+	const UnitDef *ud = ai->call->GetUnitDef(builder);
+	float startRadius = ud->buildDistance;
+	facing f           = getBestFacing(pos);
+	float3 start       = ai->call->GetUnitPos(builder);
+	float3 goal        = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, 5, f);
 
-	ud          = ai->call->GetUnitDef(builder);
-	start       = ai->call->GetUnitPos(builder);
-	f           = getBestFacing(pos);
-	goal        = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, 5, f);
 	while (goal == ERRORVECTOR) {
-		startRadius += 100.0f;
+		startRadius += ud->buildDistance;
 		goal = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, 5, f);
 	}
-	pathLength  = ai->call->GetPathLength(start, goal, ud->movedata->pathType);
-	pathLength -= std::min<float>(ud->buildDistance, pathLength);
-	travelTime  = pathLength / (ud->speed/30.0f);
-	buildTime   = toBuild->def->buildTime / (ud->buildSpeed/32.0f);
-	eta         = travelTime + buildTime;
 
-	if (toBuild->cats&FACTORY)
-		t = BUILD_FACTORY;
-	else if(toBuild->cats&MEXTRACTOR || toBuild->cats&MMAKER)
-		t = BUILD_MMAKER;
-	else if(toBuild->cats&EMAKER)
-		t = BUILD_EMAKER;
-	
-	c = createPosCommand(-(toBuild->id), goal, -1.0f, f);
+	Command c = createPosCommand(-(toBuild->id), goal, -1.0f, f);
 	if (c.id != 0) {
 		ai->call->GiveOrder(builder, &c);
-		ai->tasks->addTaskPlan(builder, t, eta);
+		ai->tasks->addBuildPlan(builder, toBuild);
 		float dist = 100.0f;
 		goal.y += 20;
 		float3 arrow = goal;
@@ -104,7 +88,6 @@ bool CMetaCommands::build(int builder, UnitType *toBuild, float3 &pos) {
 				arrow.x -= dist;
 			break;
 		}
-		ai->call->CreateLineFigure(goal, float3(arrow.x,arrow.y, arrow.z), 20, 1, eta, 1);
 		ai->eco->removeIdleUnit(builder);
 		sprintf(buf, "[CMetaCommands::build] %s builds %s", ud->name.c_str(), toBuild->def->name.c_str());
 		LOGN(buf);
@@ -117,6 +100,14 @@ bool CMetaCommands::stop(int unit) {
 	assert(ai->call->GetUnitDef(unit) != NULL);
 	Command c;
 	c.id = CMD_STOP;
+	ai->call->GiveOrder(unit, &c);
+	return true;
+}
+
+bool CMetaCommands::wait(int unit) {
+	assert(ai->call->GetUnitDef(unit) != NULL);
+	Command c;
+	c.id = CMD_WAIT;
 	ai->call->GiveOrder(unit, &c);
 	return true;
 }

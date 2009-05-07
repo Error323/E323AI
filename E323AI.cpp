@@ -82,7 +82,8 @@ void CE323AI::UnitFinished(int unit) {
 
 	if (c&FACTORY) {
 		ai->eco->gameFactories[unit] = ut;
-		ai->eco->gameIdle[unit]      = ut;
+		ai->eco->gameIdle[unit]           = ut;
+		ai->tasks->updateBuildPlans(unit);
 	}
 
 	if (c&BUILDER && c&MOBILE) {
@@ -91,16 +92,18 @@ void CE323AI::UnitFinished(int unit) {
 
 	if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
 		ai->eco->gameMetal[unit]     = ut;
+		ai->tasks->updateBuildPlans(unit);
 	}
 
 	if (c&EMAKER || c& ESTORAGE) {
 		ai->eco->gameEnergy[unit]    = ut;
+		ai->tasks->updateBuildPlans(unit);
 	}
 
 	if (c&MOBILE) {
 		float3 pos = ai->call->GetUnitPos(unit);
 		int f = ai->metaCmds->getBestFacing(pos);
-		float dist = 100.0f;
+		float dist = (c&ATTACKER) ? 400.0f : 100.0f;
 		switch(f) {
 			case NORTH:
 				pos.z -= dist;
@@ -118,7 +121,7 @@ void CE323AI::UnitFinished(int unit) {
 		ai->metaCmds->move(unit, pos);
 	}
 
-	ai->unitTable->gameAllUnits[unit]= ut;
+	ai->unitTable->gameAllUnits[unit] = ut;
 }
 
 /* Called on a destroyed unit, wanna take revenge? :P */
@@ -152,6 +155,7 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 	ai->eco->gameIdle.erase(unit);
 	ai->eco->gameGuarding.erase(unit);
 	ai->unitTable->gameAllUnits.erase(unit);
+	ai->tasks->buildplans.erase(unit);
 }
 
 /* Called when unit is idle */
@@ -160,7 +164,7 @@ void CE323AI::UnitIdle(int unit) {
 	UnitType* ut = UT(ud->id);
 	unsigned int c = ut->cats;
 
-	if (c&BUILDER || c&COMMANDER)
+	if (c&BUILDER)
 		ai->eco->gameIdle[unit] = ut;
 }
 
@@ -170,7 +174,6 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 
 /* Called on move fail e.g. can't reach point */
 void CE323AI::UnitMoveFailed(int unit) {
-	ai->metaCmds->randomMove(unit);
 }
 
 
@@ -214,10 +217,10 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
 	
-	ai->eco->updateIncomes(5);
+	ai->eco->updateIncomes(frame);
 
 	/* Rotate through the different update events to distribute computations */
-	switch(frame % 5) {
+	switch(frame % 4) {
 		case 0: /* update threatmap */
 		break;
 
@@ -227,11 +230,7 @@ void CE323AI::Update() {
 		case 2: /* update military */
 		break;
 
-		case 3: /* update taskplans */
-			ai->tasks->update(frame);
-		break;
-
-		case 4: /* update economy */
+		case 3: /* update economy */
 			ai->eco->update(frame);
 		break;
 	}

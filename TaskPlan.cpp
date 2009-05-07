@@ -11,42 +11,55 @@ CTaskPlan::CTaskPlan(AIClasses *ai) {
 	
 }
 
-void CTaskPlan::addTaskPlan(int unit, task t, int eta) {
+void CTaskPlan::addBuildPlan(int unit, UnitType *toBuild) {
 	const UnitDef *ud = UD(unit);
+	task t;
+
+	if (toBuild->cats&FACTORY)
+		t = BUILD_FACTORY;
+	else if(toBuild->cats&MEXTRACTOR || toBuild->cats&MMAKER)
+		t = BUILD_MMAKER;
+	else if(toBuild->cats&EMAKER)
+		t = BUILD_EMAKER;
 	
-	taskplans[unit] = new Plan(t, eta);
-	sprintf(buf,"TaskPlan <%s, %s, %d>", ud->humanName.c_str(), taskStr[t].c_str(), eta);
+	
+	buildplans[unit] = new BuildPlan(t, toBuild);
+	sprintf(buf,"[CTaskPlan::addBuildPlan] <%s, %s>", ud->humanName.c_str(), taskStr[t].c_str());
 	LOGN(buf);
+	LOGS(buf);
 }
 
-void CTaskPlan::update(int frame) {
-	std::map<int, Plan*>::iterator i;
+void CTaskPlan::updateBuildPlans(int unit) {
+	std::map<int, BuildPlan*>::iterator i;
 	std::vector<int> erase;
+	const UnitDef *ud = ai->call->GetUnitDef(unit);
+	float3 buildedPos = ai->call->GetUnitPos(unit);
 
-	int diff = frame - previousFrame;
+	for (i = buildplans.begin(); i != buildplans.end(); i++) {
+		BuildPlan *bp = i->second;
 
-	for (i = taskplans.begin(); i != taskplans.end(); i++) {
-		Plan *p = i->second;
-		p->eta -= diff;
-
-		if (p->eta <= 0) {
-			erase.push_back(i->first);
-			sprintf(buf,"TaskPlan %s removed", taskStr[p->t].c_str());
-			LOGN(buf);
+		if (bp->toBuild->id == ud->id) {
+			const UnitDef *builder = ai->call->GetUnitDef(i->first);
+			float3 builderPos = ai->call->GetUnitPos(i->first);
+			float3 diff = builderPos - buildedPos;
+			if (diff.Length2D() <= builder->buildDistance) {
+				erase.push_back(i->first);
+				sprintf(buf,"[CTaskPlan::update] Remove %s", taskStr[bp->t].c_str());
+				LOGN(buf);
+				LOGS(buf);
+			}
 		}
 	}
-	
+	assert(!erase.empty());
 	for (unsigned int i = 0; i < erase.size(); i++)
-		taskplans.erase(erase[i]);
-	previousFrame = frame;
+		buildplans.erase(erase[i]);
 }
 
 void CTaskPlan::getTasks(task t, std::vector<int> &units) {
-	std::map<int, Plan*>::iterator i;
-	for (i = taskplans.begin(); i != taskplans.end(); i++) {
-		Plan *p = i->second;
-		int unit = i->first;
-		if (p->t == t)
-			units.push_back(unit);
+	std::map<int, BuildPlan*>::iterator i;
+	for (i = buildplans.begin(); i != buildplans.end(); i++) {
+		BuildPlan *bp = i->second;
+		if (bp->t == t)
+			units.push_back(i->first);
 	}
 }
