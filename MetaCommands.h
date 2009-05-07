@@ -42,6 +42,7 @@ class CMetaCommands {
 
 		Command createPosCommand(int cmd, float3 pos, float radius = -1.0f, facing f = NONE);
 		Command createTargetCommand(int cmd, int target);
+		void removeMyGuards(int unit);
 };
 
 #endif
