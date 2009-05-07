@@ -140,12 +140,11 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 
 	if (c&BUILDER && c&MOBILE) {
 		map = &(ai->eco->gameBuilders);
+		ai->metalMap->taken.erase(unit);
 	}
 
 	if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
 		map = &(ai->eco->gameMetal);
-		if (c&MEXTRACTOR)
-			ai->metalMap->taken.erase(unit);
 	}
 
 	if (c&EMAKER || c& ESTORAGE) {

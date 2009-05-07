@@ -49,15 +49,21 @@ bool CMetaCommands::repair(int builder, int target) {
 }
 
 bool CMetaCommands::build(int builder, UnitType *toBuild, float3 &pos) {
+	int mindist = 5;
+	if (toBuild->cats&FACTORY)
+		mindist = 10;
+	else if(toBuild->cats&MEXTRACTOR)
+		mindist = 0;
+
 	const UnitDef *ud = ai->call->GetUnitDef(builder);
 	float startRadius = ud->buildDistance;
 	facing f           = getBestFacing(pos);
 	float3 start       = ai->call->GetUnitPos(builder);
-	float3 goal        = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, 7, f);
+	float3 goal        = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
 
 	while (goal == ERRORVECTOR) {
 		startRadius += ud->buildDistance;
-		goal = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, 7, f);
+		goal = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
 	}
 	//ai->call->DrawUnit(toBuild->def->name.c_str(), goal, 0, 30*60*5, 0, true, true, f);
 

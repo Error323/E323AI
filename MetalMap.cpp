@@ -98,7 +98,8 @@ int CMetalMap::squareDist(int x, int z, int j, int i) {
 	return x*x + z*z;
 }
 
-float3 CMetalMap::buildMex(int builder, UnitType *mex) {
+bool CMetalMap::buildMex(int builder, UnitType *mex) {
+	if (taken.size() == spots.size()) return false;
 	float3 pos = ai->call->GetUnitPos(builder);
 	float pathLength, shortestPathLength = 100000000.0f;
 	int i;
@@ -126,5 +127,5 @@ float3 CMetalMap::buildMex(int builder, UnitType *mex) {
 
 	ai->metalMap->taken[builder] = bestMs->f;
 	ai->metaCmds->build(builder, mex, bestMs->f);
-	return bestMs->f;
+	return true;
 }

@@ -80,7 +80,10 @@ void CEconomy::update(int frame) {
 			/* If we don't have enough metal income, build a mex */
 			if ((mIncome - uMIncome) < 1.0f) {
 				UnitType *mex = ai->unitTable->canBuild(ut, MEXTRACTOR);
-				ai->metalMap->buildMex(i->first, mex);
+				if (!ai->metalMap->buildMex(i->first, mex)) {
+					UnitType *mmaker = ai->unitTable->canBuild(ut, MMAKER);
+					ai->metaCmds->build(i->first, mmaker, pos);
+				}
 			}
 			/* If we don't have enough energy income, build a energy provider */
 			else if (eUsage > eIncome || eNow < eStorage/2.0f || eRequest) {
@@ -111,7 +114,10 @@ void CEconomy::update(int frame) {
 					if (canhelp)
 						ai->metaCmds->guard(i->first, toHelp);
 					else 
-						ai->metalMap->buildMex(i->first, mex);
+						if (!ai->metalMap->buildMex(i->first, mex)) {
+							UnitType *mmaker = ai->unitTable->canBuild(ut, MMAKER);
+							ai->metaCmds->build(i->first, mmaker, pos);
+						}
 					mRequest = false;
 				}
 				else if (eRequest || eIncome < eUsage) {
@@ -139,6 +145,8 @@ void CEconomy::update(int frame) {
 	if (!gameFactories.empty() && (mRequest || eRequest))
 		if (gameIdle.size() <= 1)
 			addWish(factory, builder, NORMAL);
+
+	//XXX: Temporary
 	addWish(factory, builder, LOW);
 }
 
