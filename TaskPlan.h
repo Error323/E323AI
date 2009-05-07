@@ -24,8 +24,9 @@ class CTaskPlan {
 
 		void getTasks(task t, std::vector<int> &units);
 
-	private:
 		std::map<int, BuildPlan*> buildplans;
+
+	private:
 		std::map<task, std::string> taskStr;
 		int previousFrame;
 		char buf[1024];

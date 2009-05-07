@@ -60,11 +60,11 @@ bool CMetaCommands::build(int builder, UnitType *toBuild, float3 &pos) {
 	float startRadius = ud->buildDistance;
 	facing f           = getBestFacing(pos);
 	float3 start       = ai->call->GetUnitPos(builder);
-	float3 goal        = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, 5, f);
+	float3 goal        = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, 7, f);
 
 	while (goal == ERRORVECTOR) {
 		startRadius += ud->buildDistance;
-		goal = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, 5, f);
+		goal = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, 7, f);
 	}
 
 	Command c = createPosCommand(-(toBuild->id), goal, -1.0f, f);
