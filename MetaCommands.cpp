@@ -17,17 +17,9 @@ bool CMetaCommands::move(int unit, float3 &pos) {
 	return false;
 }
 
-void CMetaCommands::removeMyGuards(int unit) {
-	std::map<int,int>::iterator i;
-	for (i = ai->eco->gameGuarding.begin(); i != ai->eco->gameGuarding.end(); i++) {
-		if (i->second == unit)
-			stop(i->first);
-	}
-}
-
 bool CMetaCommands::guard(int unit, int target) {
 	Command c = createTargetCommand(CMD_GUARD, target);
-	removeMyGuards(unit);
+	ai->eco->removeMyGuards(unit);
 
 	if (c.id != 0) {
 		ai->call->GiveOrder(unit, &c);

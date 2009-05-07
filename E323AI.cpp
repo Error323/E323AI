@@ -68,10 +68,6 @@ void CE323AI::UnitCreated(int unit) {
 	if (unitCreated == 1 && ud->isCommander)
 		ai->eco->init(unit);
 
-	if (c&MEXTRACTOR) {
-		ai->metalMap->taken[unit] = ai->call->GetUnitPos(unit);
-	}
-
 	unitCreated++;
 }
 
@@ -94,6 +90,9 @@ void CE323AI::UnitFinished(int unit) {
 	if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
 		ai->eco->gameMetal[unit]     = ut;
 		ai->tasks->updateBuildPlans(unit);
+		if (c&MEXTRACTOR) {
+			ai->metalMap->taken[unit] = ai->call->GetUnitPos(unit);
+		}
 	}
 
 	if (c&EMAKER || c& ESTORAGE) {
@@ -140,11 +139,15 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 
 	if (c&BUILDER && c&MOBILE) {
 		map = &(ai->eco->gameBuilders);
+		ai->eco->removeMyGuards(unit);
 		ai->metalMap->taken.erase(unit);
 	}
 
 	if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
 		map = &(ai->eco->gameMetal);
+		if (c&MEXTRACTOR) {
+			ai->metalMap->removeFromTaken(unit);
+		}
 	}
 
 	if (c&EMAKER || c& ESTORAGE) {

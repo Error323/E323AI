@@ -46,6 +46,9 @@ class CEconomy {
 		/* Put unit in a remove vector */
 		void removeIdleUnit(int unit);
 
+		/* Remove guards of a unit */
+		void removeMyGuards(int unit);
+
 		/* Eco related units */
 		std::map<int, UnitType*> gameFactories;
 		std::map<int, UnitType*> gameBuilders;

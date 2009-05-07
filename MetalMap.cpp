@@ -129,3 +129,16 @@ bool CMetalMap::buildMex(int builder, UnitType *mex) {
 	ai->metaCmds->build(builder, mex, bestMs->f);
 	return true;
 }
+
+void CMetalMap::removeFromTaken(int mex) {
+	float3 pos = ai->call->GetUnitPos(mex);
+	int erase = -1;
+	std::map<int,float3>::iterator i;
+	for (i = taken.begin(); i != taken.end(); i++) {
+		float3 diff = pos - i->second;
+		if (diff.Length2D() <= ai->call->GetExtractorRadius())
+			erase = i->first;
+	}
+	assert(erase != -1);
+	taken.erase(erase);
+}

@@ -265,3 +265,12 @@ void CEconomy::addWish(UnitType *fac, UnitType *ut, buildPriority p) {
 void CEconomy::removeIdleUnit(int unit) {
 	removeFromIdle.push_back(unit);
 }
+
+void CEconomy::removeMyGuards(int unit) {
+	std::map<int,int>::iterator i;
+	for (i = gameGuarding.begin(); i != gameGuarding.end(); i++) {
+		if (i->second == unit)
+			ai->metaCmds->stop(i->first);
+	}
+}
+

@@ -23,6 +23,7 @@ class CMetalMap {
 		};
 
 		bool buildMex(int builder, UnitType *mex);
+		void removeFromTaken(int mex);
 		std::map<int,float3> taken;
 
 	private:
