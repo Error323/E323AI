@@ -128,12 +128,12 @@ void CEconomy::update(int frame) {
 
 	reset();
 
-	UnitType *attacker = ai->unitTable->canBuild(factory, SCOUT);
+	UnitType *attacker = ai->unitTable->canBuild(factory, ARTILLERY);
 	if (!gameFactories.empty())
 		addWish(factory, attacker, NORMAL);
 
 	if (!gameFactories.empty() && (mRequest || eRequest))
-		if (gameIdle.empty() <= 1)
+		if (gameIdle.size() <= 1)
 			addWish(factory, builder, NORMAL);
 }
 
