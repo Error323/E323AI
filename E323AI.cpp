@@ -15,6 +15,7 @@ CE323AI::~CE323AI() {
 	delete ai->tasks;
 	delete ai->threatMap;
 	delete ai->intel;
+	delete ai->military;
 	delete ai;
 }
 
@@ -48,6 +49,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->tasks     	= new CTaskPlan(ai);
 	ai->threatMap   = new CThreatMap(ai);
 	ai->intel       = new CIntel(ai);
+	ai->military    = new CMilitary(ai);
 
 	ai->call->SendTextMsg("*** " AI_NOTES " ***", 0);
 	ai->call->SendTextMsg("*** " AI_CREDITS " ***", 0);
@@ -228,6 +230,7 @@ void CE323AI::Update() {
 		break;
 
 		case 2: /* update military */
+			ai->military->update(frame);
 		break;
 
 		case 3: /* update economy */

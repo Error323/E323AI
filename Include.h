@@ -46,5 +46,6 @@
 #include "TaskPlan.h"
 #include "ThreatMap.h"
 #include "Intel.h"
+#include "Military.h"
 
 #endif

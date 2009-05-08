@@ -9,12 +9,12 @@ class CThreatMap {
 		~CThreatMap();
 
 		void update(int frame);
-		float getThreat(float3 pos);
+		float getThreat(float3 &pos);
+		float getThreat(float3 &center, float radius);
 
 	private:
 		AIClasses *ai;	
 
-		void reset();
 		void draw();
 
 		int W, H;

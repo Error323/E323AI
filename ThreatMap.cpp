@@ -9,7 +9,8 @@ CThreatMap::CThreatMap(AIClasses *ai) {
 
 	map   = new float[W*H];
 	units = new int[MAX_UNITS];
-	reset();
+	for (int i = 0; i < W*H; i++)
+		map[i] = 0.0f;
 }
 
 CThreatMap::~CThreatMap() {
@@ -17,13 +18,40 @@ CThreatMap::~CThreatMap() {
 	delete[] units;
 }
 
-float CThreatMap::getThreat(float3 pos) {
+float CThreatMap::getThreat(float3 &pos) {
 	int x = (int) pos.x/REAL;
 	int z = (int) pos.z/REAL;
-	return map[x*H+z];
+	if (x >= 0 && x < W && z >= 0 && z < H)
+		return map[x*H+z];
+	else
+		return 0.0f;
+}
+
+float CThreatMap::getThreat(float3 &center, float radius) {
+	int R = (int) ceil(radius);
+	float3 pos(0.0f, 0.0f, 0.0f);
+	float summedPower = 0.0f;
+	int count = 0;
+	for (int x = -R; x <= R; x++) {
+		for (int z = -R; z <= R; z++) {
+			pos.x = x;
+			pos.z = z;
+			if (pos.Length2D() <= radius) {
+				pos.x += center.x;
+				pos.z += center.z;
+				summedPower += getThreat(pos);
+				count++;
+			}
+		}
+	}
+	return summedPower/count;
 }
 
 void CThreatMap::update(int frame) {
+	totalPower = 0.0f;
+	for (int i = 0; i < W*H; i++)
+		map[i] *= 0.9f;
+
 	int numUnits = ai->cheat->GetEnemyUnits(units, MAX_UNITS);
 	for (int i = 0; i < numUnits; i++) {
 		const UnitDef *ud = ai->cheat->GetUnitDef(units[i]);
@@ -33,8 +61,10 @@ void CThreatMap::update(int frame) {
 		
 		if (ut->cats&ATTACKER && !ai->cheat->UnitBeingBuilt(units[i])) {
 			float power = ai->cheat->GetUnitPower(units[i]);
+			if (ut->cats&COMMANDER)
+				power = 1000.0f;
 			float range = ud->maxWeaponRange/REAL;
-			int   R = (int) round(range)+1;
+			int   R = (int) ceil(range);
 			for (int x = -R; x <= R; x++) {
 				for (int z = -R; z <= R; z++) {
 					pos.x = x;
@@ -44,35 +74,28 @@ void CThreatMap::update(int frame) {
 						pos.z += upos.z/REAL;
 						int mx = (int) round(pos.x);
 						int mz = (int) round(pos.z);
-						if (mx >= 0 && mx < W && mz >= 0 && mz < H) {
+						if (mx >= 0 && mx < W && mz >= 0 && mz < H)
 							map[mx*H+mz] += power;
-						}
 					}
 				}
 			}
 			totalPower += power;
 		}
 	}
-	reset();
+	draw();
 }
 
 void CThreatMap::draw() {
 	for (int x = 0; x < W; x++) {
 		for (int z = 0; z < H; z++) {
-			if (map[x*H+z] > 0.0f) {
+			if (map[x*H+z] > 1.0f) {
 				float3 p0(x*REAL, 0.0f, z*REAL);
 				float3 p1(p0);
 				p1.y += map[x*H+z]/totalPower;
-				p1.y *= 200.0f;
+				p1.y *= 30.0f;
 				p1.y += 100.0f;
-				ai->call->CreateLineFigure(p0, p1, 20, 1, 100, 1);
+				ai->call->CreateLineFigure(p0, p1, 4, 1, 100, 1);
 			}
 		}
 	}
-}
-
-void CThreatMap::reset() {
-	for (int i = 0; i < W*H; i++)
-		map[i] = 0.0f;
-	totalPower = 0.0f;
 }
