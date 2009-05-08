@@ -8,6 +8,7 @@ class CUnitTable;
 class CMetaCommands;
 class CEconomy;
 class CTaskPlan;
+class CThreatMap;
 
 /* Ensures single instantiation of classes and good reachability */
 struct AIClasses {
@@ -18,6 +19,7 @@ struct AIClasses {
 	CMetaCommands *metaCmds;
 	CEconomy      *eco;
 	CTaskPlan     *tasks;
+	CThreatMap    *threatMap;
 	std::ofstream *logger;
 };
 

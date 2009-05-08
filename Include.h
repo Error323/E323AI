@@ -44,5 +44,6 @@
 #include "MetaCommands.h"
 #include "Economy.h"
 #include "TaskPlan.h"
+#include "ThreatMap.h"
 
 #endif
