@@ -19,6 +19,7 @@ CMetalMap::CMetalMap(AIClasses *ai) {
 
 	for (int i = 0; i < X*Z; i++)
 		map[i] = callMap[i];
+	delete[] callMap;
 
 	findBestSpots();
 }

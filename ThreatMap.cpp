@@ -13,8 +13,8 @@ CThreatMap::CThreatMap(AIClasses *ai) {
 }
 
 CThreatMap::~CThreatMap() {
-	delete map;
-	delete units;
+	delete[] map;
+	delete[] units;
 }
 
 float CThreatMap::getThreat(float3 pos) {

@@ -6,7 +6,7 @@ CIntel::CIntel(AIClasses *ai) {
 }
 
 CIntel::~CIntel() {
-	delete units;
+	delete[] units;
 }
 
 void CIntel::update(int frame) {
