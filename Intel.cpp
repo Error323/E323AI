@@ -5,7 +5,7 @@ CIntel::CIntel(AIClasses *ai) {
 	units = new int[MAX_UNITS];
 }
 
-CIntel::~Cintel() {
+CIntel::~CIntel() {
 	delete units;
 }
 
