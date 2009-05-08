@@ -3,6 +3,11 @@
 
 #include "AIExport.h"
 
+#define MAX_FLOAT 1000000000.0f
+#define MAX_INT   1000000000
+
+#define ERRORVECTOR float3(-1,0,0)
+
 #define AI_VERSION  aiexport_getVersion()
 
 /* AI meta data */
@@ -25,9 +30,9 @@
 /* Metal to Energy ratio */
 #define METAL2ENERGY 45
 
+/* Max enemy units */
 #define MAX_UNITS 500
 
-#define ERRORVECTOR float3(-1,0,0)
 
 /* Facings */
 enum facing {

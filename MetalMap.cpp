@@ -34,6 +34,7 @@ void CMetalMap::findBestSpots() {
 	bool metalSpots;
 	int i, x, z, k, bestX, bestZ, highestSaturation, saturation;
 	int counter = 0;
+	std::list<MSpot>::iterator j;
 
 	while (true) {
 		counter++;
@@ -60,7 +61,11 @@ void CMetalMap::findBestSpots() {
 		if (!metalSpots) break;
 
 		float3 pos = float3(bestX*SCALAR,ai->call->GetElevation(bestX*SCALAR,bestZ*SCALAR), bestZ*SCALAR);
-		spots.push_back(MSpot(spots.size(), pos, highestSaturation));
+		j = spots.begin();
+		int rand = rng.RandInt(spots.size());
+		for (int q = 0; q < rand; q++)
+			j++;
+		spots.insert(j,MSpot(spots.size(), pos, highestSaturation));
 
 		if (counter >= N) {
 			LOGS("Speedmetal infects my skills... I won't play");
@@ -101,30 +106,47 @@ int CMetalMap::squareDist(int x, int z, int j, int i) {
 
 bool CMetalMap::buildMex(int builder, UnitType *mex) {
 	if (taken.size() == spots.size()) return false;
+	std::list<MSpot*> sorted;
+	std::list<MSpot*>::iterator k;
+	std::list<MSpot>::iterator i;
 	float3 pos = ai->call->GetUnitPos(builder);
-	float pathLength, shortestPathLength = 100000000.0f;
-	int i;
+	float pathLength;
 	MSpot *ms, *bestMs;
 	
-	for (i = 0; i < spots.size(); i++) {
-		ms = &spots[i];
-
+	for (i = spots.begin(); i != spots.end(); i++) {
+		ms = &(*i);
+		
 		std::map<int,float3>::iterator j;
 		bool skip = false;
 		for (j = taken.begin(); j != taken.end(); j++) {
 			float3 diff = (j->second - ms->f);
-			if (diff.Length2D() <= ai->call->GetExtractorRadius())
+			if (diff.Length2D() <= ai->call->GetExtractorRadius()*1.5f)
 				skip = true;
 		}
 		if (skip) continue;
-
 		const UnitDef *ud = ai->call->GetUnitDef(builder);
 		pathLength = ai->call->GetPathLength(pos, ms->f, ud->movedata->pathType);
-		if (pathLength < shortestPathLength) {
-			shortestPathLength  = pathLength;
-			bestMs              = ms;
+		ms->dist = pathLength;
+		if (sorted.empty())
+			sorted.push_back(ms);
+		else {
+			for (k = sorted.begin(); k != sorted.end(); k++)
+				if ((*k)->dist > pathLength)
+					sorted.insert(k, ms);
 		}
 	}
+
+	float lowestThreat = MAX_FLOAT;
+	for (k = sorted.begin(); k != sorted.end(); k++) {
+		float threat = ai->threatMap->getThreat((*k)->f);
+		if (threat < lowestThreat) {
+			bestMs = *k;
+			lowestThreat = threat;
+			if (lowestThreat < 1.0f) break;
+		}
+	}
+		
+	if (lowestThreat > 1.0f) return false;
 
 	ai->metalMap->taken[builder] = bestMs->f;
 	ai->metaCmds->build(builder, mex, bestMs->f);

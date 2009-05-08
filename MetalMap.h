@@ -14,11 +14,13 @@ class CMetalMap {
 			int id;
 			float3 f;				// point in 3d space
 			int c;					// metal coverage
+			float dist;
 			
 			MSpot(int id, float3 f, int c) {
 				this->id = id;
 				this->f  = f;
 				this->c  = c;
+				dist = 0.0f;
 			}
 		};
 
@@ -40,7 +42,7 @@ class CMetalMap {
 		unsigned char *map;
 		unsigned int *coverage;
 		unsigned int *bestCoverage;
-		std::vector<MSpot> spots;
+		std::list<MSpot> spots;
 
 		AIClasses *ai;
 		char buf[1024];

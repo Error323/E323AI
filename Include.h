@@ -15,6 +15,7 @@
 #include <map>
 #include <vector>
 #include <queue>
+#include <list>
 
 /* Spring Standard Header */
 #include "System/StdAfx.h"
@@ -38,6 +39,7 @@
 /* E323AI Headers */
 #include "Defines.h"                           /* Definition declarations */
 #include "Container.h"                         /* Class wrapper */
+#include "RNG.h"                               /* Random number generator */
 
 #include "MetalMap.h"
 #include "UnitTable.h"

@@ -37,17 +37,9 @@ void CEconomy::init(int unit) {
 }
 
 void CEconomy::update(int frame) {
-	/* If we are stalling, stop guarding workers (1 per update call) until we stall no more */
-	std::map<int,int>::iterator g;
-	for (g = gameGuarding.begin(); g != gameGuarding.end(); g++) {
-		if ((mNow < 30.0f && mUsage > mIncome) || (eNow < 30.0f && eUsage > eIncome)) {
-			ai->metaCmds->stop(g->first);
-			const UnitDef *guarder = ai->call->GetUnitDef(g->first);
-			removeFromGuarding.push_back(g->first);
-			gameIdle[g->first] = UT(guarder->id);
-			break;
-		}
-	}
+	/* If we are stalling, stop guarding workers (1 per update call), if there
+	 * are none, set a wait factories until we stall no more */
+	preventStalling();
 
 	/* Remove previous guarders */
 	for (unsigned int i = 0; i < removeFromGuarding.size(); i++)
@@ -58,6 +50,11 @@ void CEconomy::update(int frame) {
 	for (unsigned int i = 0; i < removeFromIdle.size(); i++)
 		gameIdle.erase(removeFromIdle[i]);
 	removeFromIdle.clear();
+
+	/* Remove previous waiters */
+	for (unsigned int i = 0; i < removeFromWaiting.size(); i++)
+		gameWaiting.erase(removeFromWaiting[i]);
+	removeFromWaiting.clear();
 
 	/* Update idle units */
 	std::map<int, UnitType*>::iterator i;
@@ -151,6 +148,35 @@ void CEconomy::update(int frame) {
 
 	//XXX: Temporary
 	addWish(factory, hammer, NORMAL);
+}
+
+void CEconomy::preventStalling() {
+	bool stalling = (mNow < 30.0f && mUsage > mIncome) || (eNow < 30.0f && eUsage > eIncome);
+	std::map<int,int>::iterator i;
+	for (i = gameGuarding.begin(); i != gameGuarding.end(); i++) {
+		if (stalling) {
+			ai->metaCmds->stop(i->first);
+			const UnitDef *guarder = ai->call->GetUnitDef(i->first);
+			removeFromGuarding.push_back(i->first);
+			gameIdle[i->first] = UT(guarder->id);
+			break;
+		}
+	}
+	std::map<int, UnitType*>::iterator j;
+	for (j = gameFactories.begin(); j != gameFactories.end(); j++) {
+		bool onWait = gameWaiting.find(j->first) != gameWaiting.end();
+		if (stalling && !onWait) {
+			if (gameGuarding.empty()) {
+				ai->metaCmds->wait(j->first);
+				gameWaiting[j->first] = 0x0;
+			}
+		}
+		/* Remove previous waiting if we aren't stalling factories */
+		else if (!stalling && onWait) {
+			ai->metaCmds->wait(j->first);
+			removeFromWaiting.push_back(j->first);
+		}
+	}
 }
 
 bool CEconomy::canHelp(task t, int helper, int &unit, UnitType *helpBuild) {
