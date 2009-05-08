@@ -6,9 +6,10 @@
 class CThreatMap {
 	public:
 		CThreatMap(AIClasses *ai);
-		~CThreatMap(){};
+		~CThreatMap();
 
 		void update(int frame);
+		float getThreat(float3 pos);
 
 	private:
 		AIClasses *ai;	

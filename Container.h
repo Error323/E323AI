@@ -9,6 +9,7 @@ class CMetaCommands;
 class CEconomy;
 class CTaskPlan;
 class CThreatMap;
+class CIntel;
 
 /* Ensures single instantiation of classes and good reachability */
 struct AIClasses {
@@ -20,6 +21,7 @@ struct AIClasses {
 	CEconomy      *eco;
 	CTaskPlan     *tasks;
 	CThreatMap    *threatMap;
+	CIntel        *intel;
 	std::ofstream *logger;
 };
 

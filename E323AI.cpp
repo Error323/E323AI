@@ -14,6 +14,7 @@ CE323AI::~CE323AI() {
 	delete ai->logger;
 	delete ai->tasks;
 	delete ai->threatMap;
+	delete ai->intel;
 	delete ai;
 }
 
@@ -46,6 +47,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->eco     	= new CEconomy(ai);
 	ai->tasks     	= new CTaskPlan(ai);
 	ai->threatMap   = new CThreatMap(ai);
+	ai->intel       = new CIntel(ai);
 
 	ai->call->SendTextMsg("*** " AI_NOTES " ***", 0);
 	ai->call->SendTextMsg("*** " AI_CREDITS " ***", 0);
@@ -212,7 +214,8 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
 	
-	ai->eco->updateIncomes(frame);
+	if (frame&1)
+		ai->eco->updateIncomes(frame);
 
 	/* Rotate through the different update events to distribute computations */
 	switch(frame % 4) {
@@ -221,6 +224,7 @@ void CE323AI::Update() {
 		break;
 
 		case 1: /* update enemy intel */
+			ai->intel->update(frame);
 		break;
 
 		case 2: /* update military */

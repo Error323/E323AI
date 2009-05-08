@@ -45,5 +45,6 @@
 #include "Economy.h"
 #include "TaskPlan.h"
 #include "ThreatMap.h"
+#include "Intel.h"
 
 #endif

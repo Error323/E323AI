@@ -25,6 +25,8 @@
 /* Metal to Energy ratio */
 #define METAL2ENERGY 45
 
+#define MAX_UNITS 500
+
 #define ERRORVECTOR float3(-1,0,0)
 
 /* Facings */

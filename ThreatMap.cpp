@@ -7,21 +7,31 @@ CThreatMap::CThreatMap(AIClasses *ai) {
 	this->W  = ai->call->GetMapWidth() / RES;
 	this->H  = ai->call->GetMapHeight() / RES;
 
-	printf("ThreatMap <%d, %d>\n", W, H);
 	map   = new float[W*H];
-	units = new int[500];
+	units = new int[MAX_UNITS];
 	reset();
 }
 
+CThreatMap::~CThreatMap() {
+	delete map;
+	delete units;
+}
+
+float CThreatMap::getThreat(float3 pos) {
+	int x = (int) pos.x/REAL;
+	int z = (int) pos.z/REAL;
+	return map[x*H+z];
+}
+
 void CThreatMap::update(int frame) {
-	if (frame < 65) return;
-	int numUnits = ai->cheat->GetEnemyUnits(units, 500);
+	int numUnits = ai->cheat->GetEnemyUnits(units, MAX_UNITS);
 	for (int i = 0; i < numUnits; i++) {
 		const UnitDef *ud = ai->cheat->GetUnitDef(units[i]);
+		UnitType      *ut = UT(ud->id);
 		float3 upos = ai->cheat->GetUnitPos(units[i]);
 		float3 pos(0.0f, 0.0f, 0.0f);
 		
-		if (!ai->cheat->IsUnitNeutral(units[i]) && !ai->cheat->UnitBeingBuilt(units[i])) {
+		if (ut->cats&ATTACKER && !ai->cheat->UnitBeingBuilt(units[i])) {
 			float power = ai->cheat->GetUnitPower(units[i]);
 			float range = ud->maxWeaponRange/REAL;
 			int   R = (int) round(range)+1;
@@ -43,13 +53,10 @@ void CThreatMap::update(int frame) {
 			totalPower += power;
 		}
 	}
-	if (frame % 20 == 0)
-		draw();
 	reset();
 }
 
 void CThreatMap::draw() {
-	ai->call->SetFigureColor(1, 1.0f, 0.0f, 0.0f, 0.5f);
 	for (int x = 0; x < W; x++) {
 		for (int z = 0; z < H; z++) {
 			if (map[x*H+z] > 0.0f) {
@@ -58,8 +65,7 @@ void CThreatMap::draw() {
 				p1.y += map[x*H+z]/totalPower;
 				p1.y *= 200.0f;
 				p1.y += 100.0f;
-				//ai->call->CreateLineFigure(p0, p1, 20, 1, 100, 1);
-				ai->call->DrawUnit("arm_peewee", p1, 0.0f, 20, 0, true, false, 0);
+				ai->call->CreateLineFigure(p0, p1, 20, 1, 100, 1);
 			}
 		}
 	}
