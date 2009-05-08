@@ -47,11 +47,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 
 	ai->call->SendTextMsg("*** " AI_NOTES " ***", 0);
 	ai->call->SendTextMsg("*** " AI_CREDITS " ***", 0);
-	LOGN("");
-	LOGN("");
-	LOGN("*****************************************************************");
-	LOGN("");
-	LOGN("");
+	LOG("\n\n\nBEGIN\n\n\n");
 }
 
 
@@ -62,11 +58,17 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 /* Called when units are spawned in a factory or when game starts */
 void CE323AI::UnitCreated(int unit) {
 	const UnitDef *ud = ai->call->GetUnitDef(unit);
+	sprintf(buf, "[CE323AI::UnitCreated]\t %s(%d) created", ud->humanName.c_str(), unit);
+	LOGN(buf);
 	UnitType *ut = UT(ud->id);
 	unsigned int c = ut->cats;
 
 	if (unitCreated == 1 && ud->isCommander)
 		ai->eco->init(unit);
+
+	if (c&MEXTRACTOR) {
+		ai->metalMap->taken[unit] = ai->call->GetUnitPos(unit);
+	}
 
 	unitCreated++;
 }
@@ -74,6 +76,8 @@ void CE323AI::UnitCreated(int unit) {
 /* Called when units are finished in a factory and able to move */
 void CE323AI::UnitFinished(int unit) {
 	const UnitDef *ud = ai->call->GetUnitDef(unit);
+	sprintf(buf, "[CE323AI::UnitFinished]\t %s(%d) finished", ud->humanName.c_str(), unit);
+	LOGN(buf);
 	UnitType* ut = UT(ud->id);
 	unsigned int c = ut->cats;
 
@@ -101,24 +105,10 @@ void CE323AI::UnitFinished(int unit) {
 	}
 
 	if (c&MOBILE) {
-		float3 pos = ai->call->GetUnitPos(unit);
-		int f = ai->metaCmds->getBestFacing(pos);
-		float dist = (c&ATTACKER) ? 400.0f : 100.0f;
-		switch(f) {
-			case NORTH:
-				pos.z -= dist;
-			break;
-			case SOUTH:
-				pos.z += dist;
-			break;
-			case EAST:
-				pos.x += dist;
-			break;
-			case WEST:
-				pos.x -= dist;
-			break;
-		}
-		ai->metaCmds->move(unit, pos);
+		if (c&BUILDER)
+			ai->metaCmds->moveForward(unit, 60.0f);
+		else
+			ai->metaCmds->moveForward(unit, 300.0f);
 	}
 
 	ai->unitTable->gameAllUnits[unit] = ut;
@@ -127,34 +117,32 @@ void CE323AI::UnitFinished(int unit) {
 /* Called on a destroyed unit, wanna take revenge? :P */
 void CE323AI::UnitDestroyed(int unit, int attacker) {
 	const UnitDef *ud = ai->call->GetUnitDef(unit);
+	sprintf(buf, "[CE323AI::UnitDestroyed]\t %s(%d) destroyed", ud->humanName.c_str(), unit);
+	LOGN(buf);
 	UnitType* ut = UT(ud->id);
 	unsigned int c = ut->cats;
 
-	std::map<int, UnitType*> *map;
-	std::map<int, UnitType*>::iterator i;
-
 	if (c&FACTORY) {
-		map = &(ai->eco->gameFactories);
+		ai->eco->gameFactories.erase(unit);
 	}
 
 	if (c&BUILDER && c&MOBILE) {
-		map = &(ai->eco->gameBuilders);
+		ai->eco->gameBuilders.erase(unit);
 		ai->eco->removeMyGuards(unit);
 		ai->metalMap->taken.erase(unit);
 	}
 
 	if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
-		map = &(ai->eco->gameMetal);
+		ai->eco->gameMetal.erase(unit);
 		if (c&MEXTRACTOR) {
 			ai->metalMap->removeFromTaken(unit);
 		}
 	}
 
 	if (c&EMAKER || c& ESTORAGE) {
-		map = &(ai->eco->gameEnergy);
+		ai->eco->gameEnergy.erase(unit);
 	}
 
-	map->erase(unit);
 	ai->eco->gameIdle.erase(unit);
 	ai->eco->gameGuarding.erase(unit);
 	ai->unitTable->gameAllUnits.erase(unit);
@@ -164,6 +152,8 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 /* Called when unit is idle */
 void CE323AI::UnitIdle(int unit) {
 	const UnitDef *ud = ai->call->GetUnitDef(unit);
+	sprintf(buf, "[CE323AI::UnitIdle]\t %s(%d) idling", ud->humanName.c_str(), unit);
+	LOGN(buf);
 	UnitType* ut = UT(ud->id);
 	unsigned int c = ut->cats;
 

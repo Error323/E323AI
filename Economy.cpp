@@ -16,6 +16,9 @@ void CEconomy::init(int unit) {
 	gameIdle[unit] = ut;
 	mRequest = eRequest = false;
 
+	// XXX: temporary artillery kbot
+	hammer = UT(69);
+
 	/* XXX: temporary factory, kbot lab(82) */
 	factory = UT(82);
 	builder = UT(34);
@@ -147,7 +150,7 @@ void CEconomy::update(int frame) {
 			addWish(factory, builder, NORMAL);
 
 	//XXX: Temporary
-	addWish(factory, builder, LOW);
+	addWish(factory, hammer, NORMAL);
 }
 
 bool CEconomy::canHelp(task t, int helper, int &unit, UnitType *helpBuild) {

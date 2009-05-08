@@ -24,7 +24,7 @@ void CTaskPlan::addBuildPlan(int unit, UnitType *toBuild) {
 	
 	
 	buildplans[unit] = new BuildPlan(t, toBuild);
-	sprintf(buf,"[CTaskPlan::addBuildPlan] <%s(%d), %s(%d)>", ud->humanName.c_str(), unit, taskStr[t].c_str(), toBuild->id);
+	sprintf(buf,"[CTaskPlan::addBuildPlan]\t <%s(%d), %s(%d)>", ud->humanName.c_str(), unit, taskStr[t].c_str(), toBuild->id);
 	LOGN(buf);
 }
 
@@ -43,12 +43,12 @@ void CTaskPlan::updateBuildPlans(int unit) {
 			float3 diff = builderPos - buildedPos;
 			if (diff.Length2D() <= builder->buildDistance+1.0f) {
 				erase.push_back(i->first);
-				sprintf(buf,"[CTaskPlan::update] Remove <%s(%d), %s(%d)>", builder->humanName.c_str(), i->first, taskStr[bp->t].c_str(), bp->toBuild->id);
+				sprintf(buf,"[CTaskPlan::update]\t Remove <%s(%d), %s(%d)>", builder->humanName.c_str(), i->first, taskStr[bp->t].c_str(), bp->toBuild->id);
 				LOGN(buf);
 			}
 		}
 	}
-	assert(!erase.empty());
+	//assert(!erase.empty());
 	for (unsigned int i = 0; i < erase.size(); i++)
 		buildplans.erase(erase[i]);
 }

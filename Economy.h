@@ -96,7 +96,7 @@ class CEconomy {
 		char buf[1024];
 
 		/* energy provider, factory, builder */
-		UnitType *energyProvider, *factory, *builder;
+		UnitType *energyProvider, *factory, *builder, *hammer;
 
 		/* Altered by canAfford() */
 		bool eRequest, mRequest;

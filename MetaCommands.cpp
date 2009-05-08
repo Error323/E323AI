@@ -6,28 +6,97 @@ CMetaCommands::CMetaCommands(AIClasses *ai) {
 
 CMetaCommands::~CMetaCommands() {}
 
-bool CMetaCommands::move(int unit, float3 &pos) {
+void CMetaCommands::moveForward(int unit, float dist) {
+	float3 upos = ai->call->GetUnitPos(unit);
+	facing f = getBestFacing(upos);
+	float3 pos(upos);
+	switch(f) {
+		case NORTH:
+			pos.z -= dist;
+		break;
+		case SOUTH:
+			pos.z += dist;
+		break;
+		case EAST:
+			pos.x += dist;
+		break;
+		case WEST:
+			pos.x -= dist;
+		break;
+	}
+	move(unit, pos);
+}
+
+void CMetaCommands::moveBesidesBase(int unit) {
+	int frame = ai->call->GetCurrentFrame();
+	float3 upos = ai->call->GetUnitPos(unit);
+	float3 pos(upos);
+	facing f = getBestFacing(upos);
+	float dist = 70.0f;
+	switch(f) {
+		case NORTH:
+			pos.z -= dist;
+			move(unit, pos, true);
+			pos.x += (frame&1) ? dist : -dist;
+			move(unit, pos, true);
+			pos.z += dist;
+			move(unit, pos, true);
+		break;
+		case SOUTH:
+			pos.z += dist;
+			move(unit, pos, true);
+			pos.x += (frame&1) ? dist : -dist;
+			move(unit, pos, true);
+			pos.z -= dist;
+			move(unit, pos, true);
+		break;
+		case EAST:
+			pos.x += dist;
+			move(unit, pos, true);
+			pos.z += (frame&1) ? dist : -dist;
+			move(unit, pos, true);
+			pos.x -= dist;
+			move(unit, pos, true);
+		break;
+		case WEST:
+			pos.x -= dist;
+			move(unit, pos, true);
+			pos.z += (frame&1) ? dist : -dist;
+			move(unit, pos, true);
+			pos.x += dist;
+			move(unit, pos, true);
+		break;
+	}
+}
+
+bool CMetaCommands::move(int unit, float3 &pos, bool enqueue) {
 	Command c = createPosCommand(CMD_MOVE, pos);
 	
 	if (c.id != 0) {
+		if (enqueue)
+			c.options |= SHIFT_KEY;
 		ai->call->GiveOrder(unit, &c);
 		return true;
 	}
 	ai->eco->removeIdleUnit(unit);
+	sprintf(buf, "[CMetaCommands::move]\t %s(%d) moves", ai->call->GetUnitDef(unit)->humanName.c_str(), unit);
+	LOGN(buf);
 	return false;
 }
 
-bool CMetaCommands::guard(int unit, int target) {
+bool CMetaCommands::guard(int unit, int target, bool enqueue) {
 	Command c = createTargetCommand(CMD_GUARD, target);
 	ai->eco->removeMyGuards(unit);
 
 	if (c.id != 0) {
+		if (enqueue)
+			c.options |= SHIFT_KEY;
 		ai->call->GiveOrder(unit, &c);
 		ai->eco->gameGuarding[unit] = target;
 		ai->eco->removeIdleUnit(unit);
 		const UnitDef *u = ai->call->GetUnitDef(unit);
 		const UnitDef *t = ai->call->GetUnitDef(target);
-		sprintf(buf, "[CMetaCommands::guard] %s guards %s", u->name.c_str(), t->name.c_str());
+		sprintf(buf, "[CMetaCommands::guard]\t %s(%d) guards %s(%d)", u->humanName.c_str(), unit, t->humanName.c_str(), target);
 		LOGN(buf);
 		return true;
 	}
@@ -42,7 +111,7 @@ bool CMetaCommands::repair(int builder, int target) {
 		ai->eco->removeIdleUnit(builder);
 		const UnitDef *u = ai->call->GetUnitDef(builder);
 		const UnitDef *t = ai->call->GetUnitDef(target);
-		sprintf(buf, "[CMetaCommands::repair] %s repairs %s", u->name.c_str(), t->name.c_str());
+		sprintf(buf, "[CMetaCommands::repair]\t %s repairs %s", u->name.c_str(), t->name.c_str());
 		LOGN(buf);
 		return true;
 	}
@@ -90,7 +159,7 @@ bool CMetaCommands::build(int builder, UnitType *toBuild, float3 &pos) {
 			break;
 		}
 		ai->eco->removeIdleUnit(builder);
-		sprintf(buf, "[CMetaCommands::build] %s builds %s", ud->name.c_str(), toBuild->def->name.c_str());
+		sprintf(buf, "[CMetaCommands::build]\t %s(%d) builds %s", ud->humanName.c_str(), builder, toBuild->def->humanName.c_str());
 		LOGN(buf);
 		return true;
 	}
@@ -102,6 +171,8 @@ bool CMetaCommands::stop(int unit) {
 	Command c;
 	c.id = CMD_STOP;
 	ai->call->GiveOrder(unit, &c);
+	sprintf(buf, "[CMetaCommands::stop]\t %s(%d) stopped", ai->call->GetUnitDef(unit)->humanName.c_str(), unit);
+	LOGN(buf);
 	return true;
 }
 
@@ -110,6 +181,8 @@ bool CMetaCommands::wait(int unit) {
 	Command c;
 	c.id = CMD_WAIT;
 	ai->call->GiveOrder(unit, &c);
+	sprintf(buf, "[CMetaCommands::wait]\t %s(%d) waited", ai->call->GetUnitDef(unit)->humanName.c_str(), unit);
+	LOGN(buf);
 	return true;
 }
 
@@ -121,7 +194,7 @@ bool CMetaCommands::factoryBuild(int factory, UnitType *ut) {
 	ai->call->GiveOrder(factory, &c);
 	ai->eco->removeIdleUnit(factory);
 	const UnitDef *u = ai->call->GetUnitDef(factory);
-	sprintf(buf, "[CMetaCommands::factoryBuild] %s builds %s", u->name.c_str(), ut->def->name.c_str());
+	sprintf(buf, "[CMetaCommands::factoryBuild]\t %s(%d) builds %s", u->humanName.c_str(), factory, ut->def->humanName.c_str());
 	LOGN(buf);
 	return true;
 }

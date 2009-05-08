@@ -8,8 +8,14 @@ class CMetaCommands {
 		CMetaCommands(AIClasses *ai);
 		~CMetaCommands();
 
+		/* Move a unit forward by dist */
+		void moveForward(int unit, float dist);
+
+		/* Move beside base */
+		void moveBesidesBase(int unit);
+
 		/* Move unit with id uid to position pos */
-		bool move(int uid, float3 &pos);
+		bool move(int uid, float3 &pos, bool enqueue = false);
 
 		/* Let unit with id uid build a unit with a certain facing (NORTH,
 		 * SOUTH, EAST, WEST) at position pos */
@@ -22,7 +28,7 @@ class CMetaCommands {
 		bool repair(int unit, int target);
 
 		/* Guard a certain unit */
-		bool guard(int unit, int target);
+		bool guard(int unit, int target, bool enqueue = true);
 
 		/* Stop doing what you did */
 		bool stop(int unit);

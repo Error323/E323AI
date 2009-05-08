@@ -43,7 +43,7 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 
 	for (j = units.begin(); j != units.end(); j++) {
 		utParent = &(j->second);
-		LOGN("Cost " << utParent->def->humanName << " = " << utParent->cost);
+		LOG("Cost " << utParent->def->humanName << " = " << utParent->cost << "\n");
 		debugCategories(utParent);
 		debugUnitDefs(utParent);
 		debugWeapons(utParent);
@@ -60,7 +60,7 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 			canBuild += l->second->def->humanName + "(" + out.str() + "), ";
 		}
 		canBuild = canBuild.substr(0, canBuild.length()-2);
-		LOGN(utParent->def->humanName << "\nbuild by : {" << buildBy << "}\ncan build: {" << canBuild << "}\n\n");
+		LOG(utParent->def->humanName << "\nbuild by : {" << buildBy << "}\ncan build: {" << canBuild << "}\n\n");
 	}
 }
 
@@ -243,24 +243,24 @@ void CUnitTable::debugCategories(UnitType *ut) {
 	}
 	cats = cats.substr(0, cats.length()-3);
 	LOG(ut->def->humanName + " categories: ");
-	LOGN(cats);
+	LOG(cats << "\n");
 }
 
 void CUnitTable::debugUnitDefs(UnitType *ut) {
 	const UnitDef *ud = ut->def;
-	sprintf(buf, "metalUpKeep(%0.2f), metalMake(%0.2f), makesMetal(%0.2f), energyUpkeep(%0.2f), energyMake(%0.2f)", ud->metalUpkeep, ud->metalMake, ud->makesMetal, ud->energyUpkeep, ud->energyMake);
+	sprintf(buf, "metalUpKeep(%0.2f), metalMake(%0.2f), makesMetal(%0.2f), energyUpkeep(%0.2f), energyMake(%0.2f)\n", ud->metalUpkeep, ud->metalMake, ud->makesMetal, ud->energyUpkeep, ud->energyMake);
 	LOG(ud->humanName << " unitdefs: ");
-	LOGN(buf);
+	LOG(buf);
 }
 
 void CUnitTable::debugWeapons(UnitType *ut) {
 	const UnitDef *ud = ut->def;
-	LOGN(ud->humanName << " weapons: ");
+	LOG(ud->humanName << " weapons:\n");
 	for (unsigned int i = 0; i < ud->weapons.size(); i++) {
 		const UnitDef::UnitDefWeapon *w = &(ud->weapons[i]);
 		LOG(w->def->name << ": ");
-		sprintf(buf, "sprayAngle(%0.2f), areaOfEffect(%0.2f)", w->def->sprayAngle, w->def->areaOfEffect);
-		LOGN(buf);
+		sprintf(buf, "sprayAngle(%0.2f), areaOfEffect(%0.2f)\n", w->def->sprayAngle, w->def->areaOfEffect);
+		LOG(buf);
 	}
-	LOGN("");
+	LOG("\n\n");
 }
