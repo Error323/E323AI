@@ -9,10 +9,10 @@ class CMetaCommands {
 		~CMetaCommands();
 
 		/* Move a unit forward by dist */
-		void moveForward(int unit, float dist);
+		bool moveForward(int unit, float dist);
 
-		/* Move beside base */
-		void moveBesidesBase(int unit);
+		/* Move random */
+		bool moveRandom(int unit, float radius);
 
 		/* Move unit with id uid to position pos */
 		bool move(int uid, float3 &pos, bool enqueue = false);

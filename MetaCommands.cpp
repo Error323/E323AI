@@ -6,7 +6,7 @@ CMetaCommands::CMetaCommands(AIClasses *ai) {
 
 CMetaCommands::~CMetaCommands() {}
 
-void CMetaCommands::moveForward(int unit, float dist) {
+bool CMetaCommands::moveForward(int unit, float dist) {
 	float3 upos = ai->call->GetUnitPos(unit);
 	facing f = getBestFacing(upos);
 	float3 pos(upos);
@@ -24,49 +24,17 @@ void CMetaCommands::moveForward(int unit, float dist) {
 			pos.x -= dist;
 		break;
 	}
-	move(unit, pos);
+	return move(unit, pos);
 }
 
-void CMetaCommands::moveBesidesBase(int unit) {
-	int frame = ai->call->GetCurrentFrame();
-	float3 upos = ai->call->GetUnitPos(unit);
-	float3 pos(upos);
-	facing f = getBestFacing(upos);
-	float dist = 70.0f;
-	switch(f) {
-		case NORTH:
-			pos.z -= dist;
-			move(unit, pos, true);
-			pos.x += (frame&1) ? dist : -dist;
-			move(unit, pos, true);
-			pos.z += dist;
-			move(unit, pos, true);
-		break;
-		case SOUTH:
-			pos.z += dist;
-			move(unit, pos, true);
-			pos.x += (frame&1) ? dist : -dist;
-			move(unit, pos, true);
-			pos.z -= dist;
-			move(unit, pos, true);
-		break;
-		case EAST:
-			pos.x += dist;
-			move(unit, pos, true);
-			pos.z += (frame&1) ? dist : -dist;
-			move(unit, pos, true);
-			pos.x -= dist;
-			move(unit, pos, true);
-		break;
-		case WEST:
-			pos.x -= dist;
-			move(unit, pos, true);
-			pos.z += (frame&1) ? dist : -dist;
-			move(unit, pos, true);
-			pos.x += dist;
-			move(unit, pos, true);
-		break;
-	}
+bool CMetaCommands::moveRandom(int unit, float radius) {
+	float3 pos = ai->call->GetUnitPos(unit);
+	float3 newpos(rng.RandFloat(), 0.0f, rng.RandFloat());
+	newpos.Normalize();
+	newpos *= radius;
+	newpos.x += pos.x;
+	newpos.z += pos.z;
+	return move(unit, newpos);
 }
 
 bool CMetaCommands::move(int unit, float3 &pos, bool enqueue) {

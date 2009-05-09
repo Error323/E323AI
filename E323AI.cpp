@@ -88,7 +88,7 @@ void CE323AI::UnitFinished(int unit) {
 	unsigned int c = ut->cats;
 
 	if (c&FACTORY) {
-		ai->eco->gameFactories[unit]      = 0x0;
+		ai->eco->gameFactories[unit]      = false;
 		ai->eco->gameIdle[unit]           = ut;
 		ai->tasks->updateBuildPlans(unit);
 	}
@@ -173,6 +173,7 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 
 /* Called on move fail e.g. can't reach point */
 void CE323AI::UnitMoveFailed(int unit) {
+	ai->metaCmds->moveRandom(unit, 100.0f);
 }
 
 

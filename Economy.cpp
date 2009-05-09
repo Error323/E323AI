@@ -51,11 +51,6 @@ void CEconomy::update(int frame) {
 		gameIdle.erase(removeFromIdle[i]);
 	removeFromIdle.clear();
 
-	/* Remove previous waiters */
-	for (unsigned int i = 0; i < removeFromWaiting.size(); i++)
-		gameWaiting.erase(removeFromWaiting[i]);
-	removeFromWaiting.clear();
-
 	/* Update idle units */
 	std::map<int, UnitType*>::iterator i;
 	for (i = gameIdle.begin(); i != gameIdle.end(); i++) {
@@ -86,7 +81,7 @@ void CEconomy::update(int frame) {
 				}
 			}
 			/* If we don't have enough energy income, build a energy provider */
-			else if (eUsage > eIncome || eNow < eStorage/2.0f || eRequest) {
+			else if (eUsage > eIncome || eNow/eStorage < 0.1f || eRequest) {
 				if (canAffordToBuild(ut, energyProvider)) {
 					ai->metaCmds->build(i->first, energyProvider, pos);
 					eRequest = false;
@@ -99,7 +94,7 @@ void CEconomy::update(int frame) {
 			}
 			/* If we can afford to assist a factory, do so */
 			else if (canAffordToBuild(ut, builder)) {
-				std::map<int,UnitType*>::iterator fac = gameFactories.begin();
+				std::map<int,bool>::iterator fac = gameFactories.begin();
 				ai->metaCmds->guard(i->first, fac->first);
 			}
 		}
@@ -131,7 +126,7 @@ void CEconomy::update(int frame) {
 			}
 			/* If we can afford to assist a lab and it's close enough, do so */
 			else if (canAffordToBuild(ut, builder)) {
-				std::map<int,UnitType*>::iterator fac = gameFactories.begin();
+				std::map<int,bool>::iterator fac = gameFactories.begin();
 				float3 facpos = ai->call->GetUnitPos(fac->first);
 				float dist = ai->call->GetPathLength(pos, facpos, ut->def->movedata->pathType);
 				float travelTime = dist / (ut->def->speed/30.0f);
@@ -151,31 +146,40 @@ void CEconomy::update(int frame) {
 }
 
 void CEconomy::preventStalling() {
-	bool stalling = (mNow < 30.0f && mUsage > mIncome) || (eNow < 30.0f && eUsage > eIncome);
-	std::map<int,int>::iterator i;
-	for (i = gameGuarding.begin(); i != gameGuarding.end(); i++) {
-		if (stalling) {
-			ai->metaCmds->stop(i->first);
-			const UnitDef *guarder = ai->call->GetUnitDef(i->first);
-			removeFromGuarding.push_back(i->first);
-			gameIdle[i->first] = UT(guarder->id);
-			stalling = false;
-			break;
+	std::map<int, bool>::iterator j;
+	bool mstall = (mNow < 30.0f && mUsage > mIncome);
+	bool estall = (eNow < 30.0f && eUsage > eIncome);
+	bool stalling = mstall || estall;
+
+	/* First remove all previous waiting factories */
+	for (j = gameFactories.begin(); j != gameFactories.end(); j++) {
+		if (j->second) {
+			ai->metaCmds->wait(j->first);
+			j->second = false;
 		}
 	}
-	std::map<int, UnitType*>::iterator j;
-	for (j = gameFactories.begin(); j != gameFactories.end(); j++) {
-		bool onWait = gameWaiting.find(j->first) != gameWaiting.end();
-		if (stalling && !onWait) {
-			if (gameGuarding.empty()) {
-				ai->metaCmds->wait(j->first);
-				gameWaiting[j->first] = 0x0;
+
+	/* See if we can put metalmakers on hold */
+	if (estall && !mstall) {
+		//TODO: keep track of metalmakers
+	}
+	/* Stop all guarding workers */
+	if (stalling && !gameGuarding.empty()) {
+		std::map<int,int>::iterator i;
+		for (i = gameGuarding.begin(); i != gameGuarding.end(); i++) {
+			if (stalling) {
+				ai->metaCmds->stop(i->first);
+				const UnitDef *guarder = ai->call->GetUnitDef(i->first);
+				removeFromGuarding.push_back(i->first);
+				gameIdle[i->first] = UT(guarder->id);
 			}
 		}
-		/* Remove previous waiting if we aren't stalling factories */
-		else if (!stalling && onWait) {
+	}
+	/* As our last resort, put factories on wait */
+	else if (stalling) {
+		for (j = gameFactories.begin(); j != gameFactories.end(); j++) {
 			ai->metaCmds->wait(j->first);
-			removeFromWaiting.push_back(j->first);
+			j->second = true;
 		}
 	}
 }
