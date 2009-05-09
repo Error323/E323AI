@@ -50,13 +50,14 @@ class CEconomy {
 		void removeMyGuards(int unit);
 
 		/* Eco related units */
-		std::map<int, bool>      gameFactories; /* <unit id, iswaiting> */
+		std::map<int, bool>      gameFactories;   /* <unit id, isproducing> */
+		std::map<int, bool>      gameMetalMakers; /* <unit id, isproducing> */
 		std::map<int, UnitType*> gameBuilders;
 		std::map<int, UnitType*> gameMetal;
 		std::map<int, UnitType*> gameEnergy;
 		std::map<int, UnitType*> gameIdle;
 		std::map<int, UnitType*> gameWaiting;
-		std::map<int, int>       gameGuarding;  /* <unit id, unit id> */
+		std::map<int, int>       gameGuarding;    /* <unit id, unit id> */
 
 		/* To remove */
 		std::vector<int> removeFromIdle;

@@ -88,7 +88,7 @@ void CE323AI::UnitFinished(int unit) {
 	unsigned int c = ut->cats;
 
 	if (c&FACTORY) {
-		ai->eco->gameFactories[unit]      = false;
+		ai->eco->gameFactories[unit]      = true;
 		ai->eco->gameIdle[unit]           = ut;
 		ai->tasks->updateBuildPlans(unit);
 	}

@@ -82,7 +82,6 @@ void CThreatMap::update(int frame) {
 			totalPower += power;
 		}
 	}
-	draw();
 }
 
 void CThreatMap::draw() {

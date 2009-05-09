@@ -38,7 +38,7 @@ void CEconomy::init(int unit) {
 
 void CEconomy::update(int frame) {
 	/* If we are stalling, stop guarding workers (1 per update call), if there
-	 * are none, set a wait factories until we stall no more */
+	 * are none, set a wait on factories until we stall no more */
 	preventStalling();
 
 	/* Remove previous guarders */
@@ -81,7 +81,7 @@ void CEconomy::update(int frame) {
 				}
 			}
 			/* If we don't have enough energy income, build a energy provider */
-			else if (eUsage > eIncome || eNow/eStorage < 0.1f || eRequest) {
+			else if (eIncome < eUsage || eNow/eStorage < 0.1f || eRequest) {
 				if (canAffordToBuild(ut, energyProvider)) {
 					ai->metaCmds->build(i->first, energyProvider, pos);
 					eRequest = false;
@@ -141,11 +141,12 @@ void CEconomy::update(int frame) {
 		if (gameIdle.size() <= 1)
 			addWish(factory, builder, NORMAL);
 
-	//XXX: Temporary
+	//XXX: temporary
 	addWish(factory, hammer, NORMAL);
 }
 
 void CEconomy::preventStalling() {
+	std::map<int,int>::iterator i;
 	std::map<int, bool>::iterator j;
 	bool mstall = (mNow < 30.0f && mUsage > mIncome);
 	bool estall = (eNow < 30.0f && eUsage > eIncome);
@@ -153,25 +154,35 @@ void CEconomy::preventStalling() {
 
 	/* First remove all previous waiting factories */
 	for (j = gameFactories.begin(); j != gameFactories.end(); j++) {
-		if (j->second) {
+		if (!j->second) {
 			ai->metaCmds->wait(j->first);
-			j->second = false;
+			j->second = true;
+		}
+	}
+	/* Next remove all previous stopped metalmakers */
+	for (j = gameMetalMakers.begin(); j != gameMetalMakers.end(); j++) {
+		if (!j->second) {
+			ai->metaCmds->setOnOff(j->first, true);
+			j->second = true;
 		}
 	}
 
 	/* See if we can put metalmakers on hold */
-	if (estall && !mstall) {
-		//TODO: keep track of metalmakers
+	if (estall && !mstall && !gameMetalMakers.empty()) {
+		for (j = gameMetalMakers.begin(); j != gameMetalMakers.end(); j++) {
+			ai->metaCmds->setOnOff(j->first, false);
+			j->second = false;
+		}
 	}
 	/* Stop all guarding workers */
-	if (stalling && !gameGuarding.empty()) {
-		std::map<int,int>::iterator i;
+	else if (stalling && !gameGuarding.empty()) {
 		for (i = gameGuarding.begin(); i != gameGuarding.end(); i++) {
 			if (stalling) {
 				ai->metaCmds->stop(i->first);
 				const UnitDef *guarder = ai->call->GetUnitDef(i->first);
 				removeFromGuarding.push_back(i->first);
 				gameIdle[i->first] = UT(guarder->id);
+				return;
 			}
 		}
 	}
@@ -179,7 +190,8 @@ void CEconomy::preventStalling() {
 	else if (stalling) {
 		for (j = gameFactories.begin(); j != gameFactories.end(); j++) {
 			ai->metaCmds->wait(j->first);
-			j->second = true;
+			j->second = false;
+			return;
 		}
 	}
 }

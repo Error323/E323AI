@@ -27,12 +27,24 @@ bool CMetaCommands::moveForward(int unit, float dist) {
 	return move(unit, pos);
 }
 
+bool CMetaCommands::setOnOff(int unit, bool on) {
+	Command c = createTargetCommand(CMD_ONOFF, on);
+
+	if (c.id != 0) {
+		ai->call->GiveOrder(unit, &c);
+		return true;
+	}
+	
+	return false;
+}
+
 bool CMetaCommands::moveRandom(int unit, float radius) {
 	float3 pos = ai->call->GetUnitPos(unit);
 	float3 newpos(rng.RandFloat(), 0.0f, rng.RandFloat());
 	newpos.Normalize();
-	newpos *= radius;
+	newpos   *= radius;
 	newpos.x += pos.x;
+	newpos.y  = pos.y;
 	newpos.z += pos.z;
 	return move(unit, newpos);
 }

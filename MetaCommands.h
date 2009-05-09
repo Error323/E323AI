@@ -17,6 +17,9 @@ class CMetaCommands {
 		/* Move unit with id uid to position pos */
 		bool move(int uid, float3 &pos, bool enqueue = false);
 
+		/* Set a unit (e.g. mmaker) on or off */
+		bool setOnOff(int unit, bool on);
+
 		/* Let unit with id uid build a unit with a certain facing (NORTH,
 		 * SOUTH, EAST, WEST) at position pos */
 		bool build(int builder, UnitType *toBuild, float3 &pos);
