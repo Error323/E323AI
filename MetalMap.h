@@ -42,7 +42,7 @@ class CMetalMap {
 		unsigned char *map;
 		unsigned int *coverage;
 		unsigned int *bestCoverage;
-		std::list<MSpot> spots;
+		std::vector<MSpot> spots;
 
 		AIClasses *ai;
 		char buf[1024];

@@ -88,7 +88,7 @@ void CE323AI::UnitFinished(int unit) {
 	unsigned int c = ut->cats;
 
 	if (c&FACTORY) {
-		ai->eco->gameFactories[unit] = ut;
+		ai->eco->gameFactories[unit]      = 0x0;
 		ai->eco->gameIdle[unit]           = ut;
 		ai->tasks->updateBuildPlans(unit);
 	}
@@ -215,12 +215,9 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 /* Update AI per logical frame = 1/30 sec on gamespeed 1.0 */
 void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
-	
-	if (frame&1)
-		ai->eco->updateIncomes(frame);
 
 	/* Rotate through the different update events to distribute computations */
-	switch(frame % 4) {
+	switch(frame % 5) {
 		case 0: /* update threatmap */
 			ai->threatMap->update(frame);
 		break;
@@ -233,7 +230,11 @@ void CE323AI::Update() {
 			ai->military->update(frame);
 		break;
 
-		case 3: /* update economy */
+		case 3: /* update incomes */
+			ai->eco->updateIncomes(frame);
+		break;
+
+		case 4: /* update economy */
 			ai->eco->update(frame);
 		break;
 	}

@@ -159,6 +159,7 @@ void CEconomy::preventStalling() {
 			const UnitDef *guarder = ai->call->GetUnitDef(i->first);
 			removeFromGuarding.push_back(i->first);
 			gameIdle[i->first] = UT(guarder->id);
+			stalling = false;
 			break;
 		}
 	}
@@ -302,4 +303,3 @@ void CEconomy::removeMyGuards(int unit) {
 			ai->metaCmds->stop(i->first);
 	}
 }
-

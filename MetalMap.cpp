@@ -1,5 +1,7 @@
 #include "MetalMap.h"
 
+bool sortme(const CMetalMap::MSpot &a, const CMetalMap::MSpot &b) {return a.dist < b.dist;}
+
 CMetalMap::CMetalMap(AIClasses *ai) {
 	this->ai = ai;
 	threshold = 64;
@@ -34,7 +36,6 @@ void CMetalMap::findBestSpots() {
 	bool metalSpots;
 	int i, x, z, k, bestX, bestZ, highestSaturation, saturation;
 	int counter = 0;
-	std::list<MSpot>::iterator j;
 
 	while (true) {
 		counter++;
@@ -61,11 +62,7 @@ void CMetalMap::findBestSpots() {
 		if (!metalSpots) break;
 
 		float3 pos = float3(bestX*SCALAR,ai->call->GetElevation(bestX*SCALAR,bestZ*SCALAR), bestZ*SCALAR);
-		j = spots.begin();
-		int rand = rng.RandInt(spots.size());
-		for (int q = 0; q < rand; q++)
-			j++;
-		spots.insert(j,MSpot(spots.size(), pos, highestSaturation));
+		spots.push_back(MSpot(spots.size(), pos, highestSaturation));
 
 		if (counter >= N) {
 			LOGS("Speedmetal infects my skills... I won't play");
@@ -75,6 +72,8 @@ void CMetalMap::findBestSpots() {
 		for (i = 0; i < k; i++)
 			map[bestCoverage[i]] = 0;
 	}
+
+	std::random_shuffle(spots.begin(), spots.end());
 }
 
 
@@ -106,15 +105,13 @@ int CMetalMap::squareDist(int x, int z, int j, int i) {
 
 bool CMetalMap::buildMex(int builder, UnitType *mex) {
 	if (taken.size() == spots.size()) return false;
-	std::list<MSpot*> sorted;
-	std::list<MSpot*>::iterator k;
-	std::list<MSpot>::iterator i;
+	std::vector<MSpot> sorted;
 	float3 pos = ai->call->GetUnitPos(builder);
 	float pathLength;
 	MSpot *ms, *bestMs;
 	
-	for (i = spots.begin(); i != spots.end(); i++) {
-		ms = &(*i);
+	for (unsigned i = 0; i < spots.size(); i++) {
+		ms = &(spots[i]);
 		
 		std::map<int,float3>::iterator j;
 		bool skip = false;
@@ -127,20 +124,16 @@ bool CMetalMap::buildMex(int builder, UnitType *mex) {
 		const UnitDef *ud = ai->call->GetUnitDef(builder);
 		pathLength = ai->call->GetPathLength(pos, ms->f, ud->movedata->pathType);
 		ms->dist = pathLength;
-		if (sorted.empty())
-			sorted.push_back(ms);
-		else {
-			for (k = sorted.begin(); k != sorted.end(); k++)
-				if ((*k)->dist > pathLength)
-					sorted.insert(k, ms);
-		}
+		sorted.push_back(*ms);
 	}
 
+	std::sort(sorted.begin(), sorted.end(), sortme);
+
 	float lowestThreat = MAX_FLOAT;
-	for (k = sorted.begin(); k != sorted.end(); k++) {
-		float threat = ai->threatMap->getThreat((*k)->f);
+	for (unsigned i = 0; i < sorted.size(); i++) {
+		float threat = ai->threatMap->getThreat(sorted[i].f);
 		if (threat < lowestThreat) {
-			bestMs = *k;
+			bestMs = &sorted[i];
 			lowestThreat = threat;
 			if (lowestThreat < 1.0f) break;
 		}

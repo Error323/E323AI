@@ -16,6 +16,7 @@
 #include <vector>
 #include <queue>
 #include <list>
+#include <algorithm>
 
 /* Spring Standard Header */
 #include "System/StdAfx.h"
