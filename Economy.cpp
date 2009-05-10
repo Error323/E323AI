@@ -21,7 +21,7 @@ void CEconomy::init(int unit) {
 	UnitType *wind  = ai->unitTable->canBuild(commander, EMAKER|WIND);
 	UnitType *solar = ai->unitTable->canBuild(commander, EMAKER);
 
-	attacker = ai->unitTable->canBuild(factory, ATTACKER|MOBILE);
+	attacker = ai->unitTable->canBuild(factory, ATTACKER|MOBILE|ARTILLERY);
 	builder = ai->unitTable->canBuild(factory, BUILDER|MOBILE);
 
 	
@@ -172,7 +172,6 @@ void CEconomy::preventStalling() {
 				const UnitDef *guarder = ai->call->GetUnitDef(i->first);
 				removeFromGuarding.push_back(i->first);
 				gameIdle[i->first] = UT(guarder->id);
-				return;
 			}
 		}
 	}
@@ -260,9 +259,6 @@ void CEconomy::updateIncomes(int frame) {
 
 	uMIncome = alpha*(uMIncomeSummed / incomes) + (1.0f-alpha)*mU;
 	uEIncome = alpha*(uEIncomeSummed / incomes) + (1.0f-alpha)*eU;
-
-	/* Update tables */
-	updateTables();
 
 	/* If we are stalling, do something about it */
 	preventStalling();
