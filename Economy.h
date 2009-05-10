@@ -89,6 +89,9 @@ class CEconomy {
 		/* See if we can help (guard) a unit with a certain task */
 		bool canHelp(task t, int helper, int &unit, UnitType *helpBuild);
 
+		/* Update ingame-unit tables */
+		void updateTables();
+
 		/* Prevent stalling */
 		void preventStalling();
 
@@ -99,7 +102,7 @@ class CEconomy {
 		char buf[1024];
 
 		/* energy provider, factory, builder */
-		UnitType *energyProvider, *factory, *builder, *hammer;
+		UnitType *energyProvider, *factory, *builder, *attacker, *mex;
 
 		/* Altered by canAfford() */
 		bool eRequest, mRequest;

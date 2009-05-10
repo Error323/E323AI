@@ -181,8 +181,6 @@ bool CMetaCommands::factoryBuild(int factory, UnitType *ut) {
 
 /* From KAIK */
 Command CMetaCommands::createTargetCommand(int cmd, int target) {
-	assert(ai->call->GetUnitDef(target) != NULL);
-
 	Command c;
 	c.id = cmd;
 	c.params.push_back(target);

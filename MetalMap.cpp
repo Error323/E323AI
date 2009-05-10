@@ -152,7 +152,7 @@ void CMetalMap::removeFromTaken(int mex) {
 	std::map<int,float3>::iterator i;
 	for (i = taken.begin(); i != taken.end(); i++) {
 		float3 diff = pos - i->second;
-		if (diff.Length2D() <= ai->call->GetExtractorRadius()*2.0f)
+		if (diff.Length2D() <= ai->call->GetExtractorRadius()*1.2f)
 			erase = i->first;
 	}
 	assert(erase != -1);

@@ -75,6 +75,9 @@ void CE323AI::UnitCreated(int unit) {
 	if (c&MEXTRACTOR) {
 		ai->metalMap->taken[unit] = ai->call->GetUnitPos(unit);
 	}
+	else if (c&MMAKER) {
+		ai->eco->gameMetalMakers[unit] = true;
+	}
 
 	unitCreated++;
 }
@@ -142,6 +145,9 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 		ai->eco->gameMetal.erase(unit);
 		if (c&MEXTRACTOR) {
 			ai->metalMap->removeFromTaken(unit);
+		}
+		else if (c&MMAKER) {
+			ai->eco->gameMetalMakers.erase(unit);
 		}
 	}
 

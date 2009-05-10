@@ -31,6 +31,10 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 	categories[WIND]        = "WIND";  
 	categories[TIDAL]       = "TIDAL";  
 
+	std::map<unitCategory,std::string>::iterator i;
+	for (i = categories.begin(); i != categories.end(); i++)
+		cats.push_back(i->first);
+
 	this->ai = ai;
 
 	std::string def, error;
@@ -47,7 +51,7 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 
 	for (j = units.begin(); j != units.end(); j++) {
 		utParent = &(j->second);
-		LOG("Cost " << utParent->def->humanName << " = " << utParent->cost << "\n");
+		LOG("Cost " << utParent->def->name << " = " << utParent->cost << "\n");
 		debugCategories(utParent);
 		debugUnitDefs(utParent);
 		debugWeapons(utParent);
@@ -55,16 +59,16 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 		for (l = utParent->buildBy.begin(); l != utParent->buildBy.end(); l++) {
 			std::stringstream out;
 			out << l->first;
-			buildBy += l->second->def->humanName + "(" + out.str() + "), ";
+			buildBy += l->second->def->name + "(" + out.str() + "), ";
 		}
 		buildBy = buildBy.substr(0, buildBy.length()-2);
 		for (l = utParent->canBuild.begin(); l != utParent->canBuild.end(); l++) {
 			std::stringstream out;
 			out << l->first;
-			canBuild += l->second->def->humanName + "(" + out.str() + "), ";
+			canBuild += l->second->def->name + "(" + out.str() + "), ";
 		}
 		canBuild = canBuild.substr(0, canBuild.length()-2);
-		LOG(utParent->def->humanName << "\nbuild by : {" << buildBy << "}\ncan build: {" << canBuild << "}\n\n");
+		LOG(utParent->def->name << "\nbuild by : {" << buildBy << "}\ncan build: {" << canBuild << "}\n\n");
 		LOG("\n-------------\n");
 	}
 }
@@ -246,14 +250,23 @@ float CUnitTable::calcUnitDps(UnitType *ut) {
 	return ut->def->power;
 }
 
-UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int categories) {
-	std::map<int, UnitType*>::iterator j;
-	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); j++)
-		if (j->second->cats&categories)
-			break;
+UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
+	std::vector<unitCategory> utcats;
+	for (unsigned int i = 0; i < cats.size(); i++)
+		if (c&cats[i])
+			utcats.push_back(cats[i]);
 
-	assert(j->second->cats&categories);
-	return j->second;
+	std::map<int, UnitType*>::iterator j;
+	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); j++) {
+		bool qualifies = true;
+		unsigned int ccb = j->second->cats;
+		for (unsigned int i = 0; i < utcats.size(); i++)
+			if (!(utcats[i]&ccb))
+				qualifies = false;
+		if (qualifies)
+			return j->second;
+	}
+	return NULL;
 }
 
 void CUnitTable::debugCategories(UnitType *ut) {
@@ -265,24 +278,24 @@ void CUnitTable::debugCategories(UnitType *ut) {
 			cats += i->second + " | ";
 	}
 	cats = cats.substr(0, cats.length()-3);
-	LOG(ut->def->humanName + " categories: ");
+	LOG(ut->def->name + " categories: ");
 	LOG(cats << "\n");
 }
 
 void CUnitTable::debugUnitDefs(UnitType *ut) {
 	const UnitDef *ud = ut->def;
 	sprintf(buf, "metalUpKeep(%0.2f), metalMake(%0.2f), makesMetal(%0.2f), energyUpkeep(%0.2f), energyMake(%0.2f)\n", ud->metalUpkeep, ud->metalMake, ud->makesMetal, ud->energyUpkeep, ud->energyMake);
-	LOG(ud->humanName << " unitdefs: ");
+	LOG(ud->name << " unitdefs: ");
 	LOG(buf);
 }
 
 void CUnitTable::debugWeapons(UnitType *ut) {
 	const UnitDef *ud = ut->def;
-	LOG(ud->humanName << " weapons:\n");
+	LOG(ud->name << " weapons:\n");
 	for (unsigned int i = 0; i < ud->weapons.size(); i++) {
 		const UnitDef::UnitDefWeapon *w = &(ud->weapons[i]);
 		LOG(w->def->name << ": ");
-		sprintf(buf, "sprayAngle(%0.2f), areaOfEffect(%0.2f)\n", w->def->sprayAngle, w->def->areaOfEffect);
+		sprintf(buf, "Weapon name = %s\n", w->def->type.c_str());
 		LOG(buf);
 	}
 	LOG("\n");

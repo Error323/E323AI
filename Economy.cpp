@@ -12,20 +12,18 @@ CEconomy::CEconomy(AIClasses *ai) {
 
 void CEconomy::init(int unit) {
 	const UnitDef *ud = ai->call->GetUnitDef(unit);
-	UnitType *ut = UT(ud->id);
-	gameIdle[unit] = ut;
+	UnitType *commander = UT(ud->id);
+	gameIdle[unit] = commander;
 	mRequest = eRequest = false;
 
-	// XXX: temporary artillery kbot
-	hammer = UT(69);
+	factory = ai->unitTable->canBuild(commander, KBOT|TECH1);
+	mex = ai->unitTable->canBuild(commander, MEXTRACTOR);
+	UnitType *wind  = ai->unitTable->canBuild(commander, EMAKER|WIND);
+	UnitType *solar = ai->unitTable->canBuild(commander, EMAKER);
 
-	/* XXX: temporary factory, kbot lab(82) */
-	factory = UT(82);
-	builder = UT(34);
+	attacker = ai->unitTable->canBuild(factory, ATTACKER|MOBILE);
+	builder = ai->unitTable->canBuild(factory, BUILDER|MOBILE);
 
-	/* XXX: temporary, determine wind(172) or solar(136) energy */
-	UnitType *wind  = UT(172);
-	UnitType *solar = UT(136);
 	
 	float avgWind = (ai->call->GetMinWind() + ai->call->GetMaxWind()) / 2.0f;
 	float windProf  = avgWind / wind->cost;
@@ -37,20 +35,6 @@ void CEconomy::init(int unit) {
 }
 
 void CEconomy::update(int frame) {
-	/* If we are stalling, stop guarding workers (1 per update call), if there
-	 * are none, set a wait on factories until we stall no more */
-	preventStalling();
-
-	/* Remove previous guarders */
-	for (unsigned int i = 0; i < removeFromGuarding.size(); i++)
-		gameGuarding.erase(removeFromGuarding[i]);
-	removeFromGuarding.clear();
-
-	/* Remove previous idlers */
-	for (unsigned int i = 0; i < removeFromIdle.size(); i++)
-		gameIdle.erase(removeFromIdle[i]);
-	removeFromIdle.clear();
-
 	/* Update idle units */
 	std::map<int, UnitType*>::iterator i;
 	for (i = gameIdle.begin(); i != gameIdle.end(); i++) {
@@ -74,8 +58,8 @@ void CEconomy::update(int frame) {
 		else if (c&COMMANDER) {
 			/* If we don't have enough metal income, build a mex */
 			if ((mIncome - uMIncome) < 1.0f) {
-				UnitType *mex = ai->unitTable->canBuild(ut, MEXTRACTOR);
-				if (!ai->metalMap->buildMex(i->first, mex)) {
+				bool canBuildMex = ai->metalMap->buildMex(i->first, mex);
+				if (!canBuildMex) {
 					UnitType *mmaker = ai->unitTable->canBuild(ut, MMAKER);
 					ai->metaCmds->build(i->first, mmaker, pos);
 				}
@@ -104,15 +88,16 @@ void CEconomy::update(int frame) {
 			if (mIncome < mUsage || eIncome < eUsage || eRequest || mRequest) {
 				int toHelp = 0;
 				if (mRequest || mIncome < mUsage) {
-					UnitType *mex = ai->unitTable->canBuild(ut, MEXTRACTOR);
 					bool canhelp = canHelp(BUILD_MMAKER, i->first, toHelp, mex);
 					if (canhelp)
 						ai->metaCmds->guard(i->first, toHelp);
-					else 
-						if (!ai->metalMap->buildMex(i->first, mex)) {
+					else  {
+						bool canBuildMex = ai->metalMap->buildMex(i->first, mex);
+						if (!canBuildMex) {
 							UnitType *mmaker = ai->unitTable->canBuild(ut, MMAKER);
 							ai->metaCmds->build(i->first, mmaker, pos);
 						}
+					}
 					mRequest = false;
 				}
 				else if (eRequest || eIncome < eUsage) {
@@ -140,16 +125,15 @@ void CEconomy::update(int frame) {
 	if (!gameFactories.empty() && (mRequest || eRequest))
 		if (gameIdle.size() <= 1)
 			addWish(factory, builder, NORMAL);
-
-	//XXX: temporary
-	addWish(factory, hammer, NORMAL);
+	addWish(factory, attacker, NORMAL);
+	updateTables();
 }
 
 void CEconomy::preventStalling() {
 	std::map<int,int>::iterator i;
 	std::map<int, bool>::iterator j;
 	bool mstall = (mNow < 30.0f && mUsage > mIncome);
-	bool estall = (eNow < 30.0f && eUsage > eIncome);
+	bool estall = (eNow/eStorage < 0.3f && eUsage > eIncome);
 	bool stalling = mstall || estall;
 
 	/* First remove all previous waiting factories */
@@ -159,23 +143,29 @@ void CEconomy::preventStalling() {
 			j->second = true;
 		}
 	}
-	/* Next remove all previous stopped metalmakers */
-	for (j = gameMetalMakers.begin(); j != gameMetalMakers.end(); j++) {
-		if (!j->second) {
-			ai->metaCmds->setOnOff(j->first, true);
-			j->second = true;
-		}
-	}
 
-	/* See if we can put metalmakers on hold */
+	/* If we are only stalling energy, see if we can turn metalmakers off */
 	if (estall && !mstall && !gameMetalMakers.empty()) {
 		for (j = gameMetalMakers.begin(); j != gameMetalMakers.end(); j++) {
-			ai->metaCmds->setOnOff(j->first, false);
-			j->second = false;
+			if (j->second) {
+				ai->metaCmds->setOnOff(j->first, false);
+				j->second = false;
+				return;
+			}
+		}
+	}
+	/* If we are only stalling metal, see if we can turn metalmakers on */
+	if (mstall && !estall && !gameMetalMakers.empty()) {
+		for (j = gameMetalMakers.begin(); j != gameMetalMakers.end(); j++) {
+			if (!j->second) {
+				ai->metaCmds->setOnOff(j->first, true);
+				j->second = true;
+				return;
+			}
 		}
 	}
 	/* Stop all guarding workers */
-	else if (stalling && !gameGuarding.empty()) {
+	if (stalling && !gameGuarding.empty()) {
 		for (i = gameGuarding.begin(); i != gameGuarding.end(); i++) {
 			if (stalling) {
 				ai->metaCmds->stop(i->first);
@@ -187,11 +177,10 @@ void CEconomy::preventStalling() {
 		}
 	}
 	/* As our last resort, put factories on wait */
-	else if (stalling) {
+	if (stalling) {
 		for (j = gameFactories.begin(); j != gameFactories.end(); j++) {
 			ai->metaCmds->wait(j->first);
 			j->second = false;
-			return;
 		}
 	}
 }
@@ -271,7 +260,46 @@ void CEconomy::updateIncomes(int frame) {
 
 	uMIncome = alpha*(uMIncomeSummed / incomes) + (1.0f-alpha)*mU;
 	uEIncome = alpha*(uEIncomeSummed / incomes) + (1.0f-alpha)*eU;
+
+	/* Update tables */
+	updateTables();
+
+	/* If we are stalling, do something about it */
+	preventStalling();
+
+	/* Update tables */
+	updateTables();
 }
+
+void CEconomy::updateTables() {
+	/* Remove previous guarders */
+	for (unsigned int i = 0; i < removeFromGuarding.size(); i++)
+		gameGuarding.erase(removeFromGuarding[i]);
+	removeFromGuarding.clear();
+
+	/* Remove previous idlers */
+	for (unsigned int i = 0; i < removeFromIdle.size(); i++)
+		gameIdle.erase(removeFromIdle[i]);
+	removeFromIdle.clear();
+}
+
+/*
+bool CEconomy::canAffordToAssistFactory(int unit) {
+	if (gameFactories.empty()) return false;
+	float3 upos = ai->call->GetUnitPos(unit);
+	std::map<int,bool>::iterator i;
+	int fac = -1;
+	float smallestDist = MAX_FLOAT;
+	for (i = gameFactories.begin(); i != gameFactories.end(); i++) {
+		float3 facpos = ai->call->GetUnitPos(i->first);
+		float3 dist = facpos - upos;
+		if (dist.Length2D() <= smallestDist) {
+			fac = i->first;
+			smalles
+		}
+	}
+}
+*/
 
 bool CEconomy::canAffordToBuild(UnitType *builder, UnitType *toBuild) {
 	/* NOTE: "Salary" is provided every 32 logical frames */
