@@ -26,6 +26,10 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 	categories[ARTILLERY]   = "ARTILLERY";  
 	categories[KBOT]        = "KBOT";  
 	categories[VEHICLE]     = "VEHICLE";  
+	categories[TECH1]       = "TECH1";  
+	categories[TECH2]       = "TECH2";  
+	categories[WIND]        = "WIND";  
+	categories[TIDAL]       = "TIDAL";  
 
 	this->ai = ai;
 
@@ -61,6 +65,7 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 		}
 		canBuild = canBuild.substr(0, canBuild.length()-2);
 		LOG(utParent->def->humanName << "\nbuild by : {" << buildBy << "}\ncan build: {" << canBuild << "}\n\n");
+		LOG("\n-------------\n");
 	}
 }
 
@@ -169,18 +174,30 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->canResurrect)
 		cats |= RESURRECTOR;
 
-/*
-	if (ud->movedata->moveFamily == MoveData::MoveFamily::Tank)
-		cats |= VEHICLE;
-
-	if (ud->movedata->moveFamily == MoveData::MoveFamily::KBot)
-		cats |= KBOT;
-*/
-
 	if ((!ud->buildOptions.empty() && !ud->canmove) || ud->TEDClassString == "PLANT") {
-		if (ud->metalCost < 2000.0f) {
-			cats |= FACTORY;
+		cats |= FACTORY;
+
+		std::map<int, std::string>::iterator j;
+		std::map<int, std::string> buildOptions = ud->buildOptions;
+		for (j = buildOptions.begin(); j != buildOptions.end(); j++) {
+			const UnitDef *canbuild = ai->call->GetUnitDef(j->second.c_str());
+			if (canbuild->movedata == NULL) continue;
+			if (canbuild->movedata->moveFamily == MoveData::KBot &&
+				ud->minWaterDepth < 0.0f) {
+				cats |= KBOT;
+				break;
+			}
+			else if (canbuild->movedata->moveFamily == MoveData::Tank &&
+				ud->minWaterDepth < 0.0f) {
+				cats |= VEHICLE;
+				break;
+			}
 		}
+		//XXX: hack
+		if (ud->metalCost < 2000.0f)
+			cats |= TECH1;
+		else
+			cats |= TECH2;
 	}
 
 	if (ud->metalStorage / ut->cost > 0.1f)
@@ -195,6 +212,12 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if ((ud->energyMake - ud->energyUpkeep) / ut->cost > 0.002 ||
 		ud->tidalGenerator || ud->windGenerator)
 		cats |= EMAKER;
+
+	if (ud->windGenerator)
+		cats |= WIND;
+
+	if (ud->tidalGenerator)
+		cats |= TIDAL;
 
 	if (ud->extractsMetal)
 		cats |= MEXTRACTOR;
@@ -262,5 +285,5 @@ void CUnitTable::debugWeapons(UnitType *ut) {
 		sprintf(buf, "sprayAngle(%0.2f), areaOfEffect(%0.2f)\n", w->def->sprayAngle, w->def->areaOfEffect);
 		LOG(buf);
 	}
-	LOG("\n\n");
+	LOG("\n");
 }

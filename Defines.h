@@ -69,7 +69,11 @@ enum unitCategory {
 	SCOUT        = (1<<21),
 	ARTILLERY    = (1<<22),
 	VEHICLE      = (1<<24),
-	KBOT         = (1<<25)
+	KBOT         = (1<<25),
+	TECH1        = (1<<26),
+	TECH2        = (1<<27),
+	TIDAL        = (1<<28),
+	WIND         = (1<<29)
 };
 
 /* Tasks */
