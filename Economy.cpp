@@ -35,6 +35,12 @@ void CEconomy::init(int unit) {
 }
 
 void CEconomy::update(int frame) {
+	/* If we are stalling, do something about it */
+	preventStalling();
+
+	/* Update tables */
+	updateTables();
+
 	/* Update idle units */
 	std::map<int, UnitType*>::iterator i;
 	for (i = gameIdle.begin(); i != gameIdle.end(); i++) {
@@ -126,23 +132,25 @@ void CEconomy::update(int frame) {
 		if (gameIdle.size() <= 1)
 			addWish(factory, builder, NORMAL);
 	addWish(factory, attacker, NORMAL);
-	updateTables();
 }
 
 void CEconomy::preventStalling() {
 	std::map<int,int>::iterator i;
 	std::map<int, bool>::iterator j;
 	bool mstall = (mNow < 30.0f && mUsage > mIncome);
-	bool estall = (eNow/eStorage < 0.3f && eUsage > eIncome);
+	bool estall = (eNow/eStorage < 0.1f && eUsage > eIncome);
 	bool stalling = mstall || estall;
 
-	/* First remove all previous waiting factories */
+	/* Always remove all previous waiting factories */
 	for (j = gameFactories.begin(); j != gameFactories.end(); j++) {
 		if (!j->second) {
 			ai->metaCmds->wait(j->first);
 			j->second = true;
 		}
 	}
+
+	/* If we aren't stalling, return */
+	if (!stalling) return;
 
 	/* If we are only stalling energy, see if we can turn metalmakers off */
 	if (estall && !mstall && !gameMetalMakers.empty()) {
@@ -165,22 +173,19 @@ void CEconomy::preventStalling() {
 		}
 	}
 	/* Stop all guarding workers */
-	if (stalling && !gameGuarding.empty()) {
+	if (!gameGuarding.empty()) {
 		for (i = gameGuarding.begin(); i != gameGuarding.end(); i++) {
-			if (stalling) {
-				ai->metaCmds->stop(i->first);
-				const UnitDef *guarder = ai->call->GetUnitDef(i->first);
-				removeFromGuarding.push_back(i->first);
-				gameIdle[i->first] = UT(guarder->id);
-			}
+			ai->metaCmds->stop(i->first);
+			const UnitDef *guarder = ai->call->GetUnitDef(i->first);
+			removeFromGuarding.push_back(i->first);
+			gameIdle[i->first] = UT(guarder->id);
+			return;
 		}
 	}
 	/* As our last resort, put factories on wait */
-	if (stalling) {
-		for (j = gameFactories.begin(); j != gameFactories.end(); j++) {
-			ai->metaCmds->wait(j->first);
-			j->second = false;
-		}
+	for (j = gameFactories.begin(); j != gameFactories.end(); j++) {
+		ai->metaCmds->wait(j->first);
+		j->second = false;
 	}
 }
 
@@ -259,12 +264,6 @@ void CEconomy::updateIncomes(int frame) {
 
 	uMIncome = alpha*(uMIncomeSummed / incomes) + (1.0f-alpha)*mU;
 	uEIncome = alpha*(uEIncomeSummed / incomes) + (1.0f-alpha)*eU;
-
-	/* If we are stalling, do something about it */
-	preventStalling();
-
-	/* Update tables */
-	updateTables();
 }
 
 void CEconomy::updateTables() {
@@ -313,7 +312,6 @@ void CEconomy::addWish(UnitType *fac, UnitType *ut, buildPriority p) {
 	assert(ut->cats&MOBILE);
 
 	std::map<int, std::priority_queue<Wish> >::iterator k;
-
 	k = wishlist.find(fac->id);
 
 	/* Initialize new priority queue for this factorytype */
@@ -323,7 +321,6 @@ void CEconomy::addWish(UnitType *fac, UnitType *ut, buildPriority p) {
 	}
 
 	/* If a certain unit is already in the top of our wishlist, don't add it */
-	// TODO: calc howmuch factories of this type exist
 	if (!wishlist[fac->id].empty()) {
 		const Wish *w = &wishlist[fac->id].top();
 		if (w->ut->id == ut->id || wishlist[fac->id].size() > 2)
@@ -339,7 +336,11 @@ void CEconomy::removeIdleUnit(int unit) {
 void CEconomy::removeMyGuards(int unit) {
 	std::map<int,int>::iterator i;
 	for (i = gameGuarding.begin(); i != gameGuarding.end(); i++) {
-		if (i->second == unit)
+		if (i->second == unit) {
 			ai->metaCmds->stop(i->first);
+			const UnitDef *guarder = ai->call->GetUnitDef(i->first);
+			gameIdle[i->first] = UT(guarder->id);
+			removeFromGuarding.push_back(i->first);
+		}
 	}
 }
