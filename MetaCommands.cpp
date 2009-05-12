@@ -100,7 +100,7 @@ bool CMetaCommands::repair(int builder, int target) {
 
 bool CMetaCommands::build(int builder, UnitType *toBuild, float3 &pos) {
 	int mindist = 5;
-	if (toBuild->cats&FACTORY)
+	if (toBuild->cats&FACTORY || toBuild->cats&EMAKER)
 		mindist = 10;
 	else if(toBuild->cats&MEXTRACTOR)
 		mindist = 0;

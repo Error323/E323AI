@@ -115,7 +115,7 @@ void CE323AI::UnitFinished(int unit) {
 
 	if (c&MOBILE) {
 		if (c&BUILDER)
-			ai->metaCmds->moveForward(unit, 60.0f);
+			ai->metaCmds->moveForward(unit, 70.0f);
 		else
 			ai->metaCmds->moveForward(unit, 300.0f);
 	}
@@ -133,6 +133,7 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 
 	if (c&FACTORY) {
 		ai->eco->gameFactories.erase(unit);
+		ai->eco->gameFactoriesBuilding.erase(unit);
 	}
 
 	if (c&BUILDER && c&MOBILE) {

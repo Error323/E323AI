@@ -31,6 +31,9 @@ class CEconomy {
 		/* energy storage */
 		float eStorage;
 
+		/* stalling vars, updated in preventStalling() */
+		bool mstall, estall, stalling;
+
 		/* Initialize economy module */
 		void init(int unit);
 
@@ -50,14 +53,15 @@ class CEconomy {
 		void removeMyGuards(int unit);
 
 		/* Eco related units */
-		std::map<int, bool>      gameFactories;   /* <unit id, isproducing> */
-		std::map<int, bool>      gameMetalMakers; /* <unit id, isproducing> */
+		std::map<int, bool>      gameMetalMakers;       /* <unit id, isproducing> */
+		std::map<int, bool>      gameFactories;         /* <unit id, isproducing> */
+		std::map<int, UnitType*> gameFactoriesBuilding; /* <unit id, building> */
 		std::map<int, UnitType*> gameBuilders;
 		std::map<int, UnitType*> gameMetal;
 		std::map<int, UnitType*> gameEnergy;
 		std::map<int, UnitType*> gameIdle;
 		std::map<int, UnitType*> gameWaiting;
-		std::map<int, int>       gameGuarding;    /* <unit id, unit id> */
+		std::map<int, int>       gameGuarding;          /* <unit id, unit id> */
 
 		/* To remove */
 		std::vector<int> removeFromIdle;
@@ -81,7 +85,10 @@ class CEconomy {
 		};
 
 		/* Can we afford to build this ? */
-		bool canAffordToBuild(UnitType *builder, UnitType *toBuild);
+		bool canAffordToBuild(int builder, UnitType *toBuild);
+
+		/* Can we afford to assist a factory ? */
+		bool canAffordToAssistFactory(int unit, int &fac);
 
 		/* Get the amount of guarding units guarding this unit */
 		int getGuardings(int unit);
