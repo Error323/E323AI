@@ -69,8 +69,10 @@ void CE323AI::UnitCreated(int unit) {
 	UnitType *ut = UT(ud->id);
 	unsigned int c = ut->cats;
 
-	if (unitCreated == 1 && ud->isCommander)
+	if (unitCreated == 1 && ud->isCommander) {
 		ai->eco->init(unit);
+		ai->military->init(unit);
+	}
 
 	if (c&MEXTRACTOR) {
 		ai->metalMap->taken[unit] = ai->call->GetUnitPos(unit);
@@ -90,34 +92,38 @@ void CE323AI::UnitFinished(int unit) {
 	UnitType* ut = UT(ud->id);
 	unsigned int c = ut->cats;
 
-	if (c&FACTORY) {
-		ai->eco->gameFactories[unit]      = true;
-		ai->eco->gameIdle[unit]           = ut;
-		ai->tasks->updateBuildPlans(unit);
-	}
+	if (!(c&ATTACKER) || c&COMMANDER) {
+		if (c&FACTORY) {
+			ai->eco->gameFactories[unit]      = true;
+			ai->eco->gameIdle[unit]           = ut;
+			ai->tasks->updateBuildPlans(unit);
+		}
 
-	if (c&BUILDER && c&MOBILE) {
-		ai->eco->gameBuilders[unit]  = ut;
-	}
+		if (c&BUILDER && c&MOBILE) {
+			ai->eco->gameBuilders[unit]  = ut;
+			ai->metaCmds->moveForward(unit, 70.0f);
+		}
 
-	if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
-		ai->eco->gameMetal[unit]     = ut;
-		ai->tasks->updateBuildPlans(unit);
-		if (c&MEXTRACTOR) {
-			ai->metalMap->taken[unit] = ai->call->GetUnitPos(unit);
+		if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
+			ai->eco->gameMetal[unit]     = ut;
+			ai->tasks->updateBuildPlans(unit);
+			if (c&MEXTRACTOR) {
+				ai->metalMap->taken[unit] = ai->call->GetUnitPos(unit);
+			}
+		}
+
+		if (c&EMAKER || c& ESTORAGE) {
+			ai->eco->gameEnergy[unit]    = ut;
+			ai->tasks->updateBuildPlans(unit);
 		}
 	}
-
-	if (c&EMAKER || c& ESTORAGE) {
-		ai->eco->gameEnergy[unit]    = ut;
-		ai->tasks->updateBuildPlans(unit);
-	}
-
-	if (c&MOBILE) {
-		if (c&BUILDER)
-			ai->metaCmds->moveForward(unit, 70.0f);
-		else
+	else {
+		if (c&MOBILE) {
 			ai->metaCmds->moveForward(unit, 300.0f);
+			if (c&SCOUT) {
+				ai->military->scouts[unit] = unit;
+			}
+		}
 	}
 
 	ai->unitTable->gameAllUnits[unit] = ut;
@@ -131,33 +137,40 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 	UnitType* ut = UT(ud->id);
 	unsigned int c = ut->cats;
 
-	if (c&FACTORY) {
-		ai->eco->gameFactories.erase(unit);
-		ai->eco->gameFactoriesBuilding.erase(unit);
-	}
-
-	if (c&BUILDER && c&MOBILE) {
-		ai->eco->gameBuilders.erase(unit);
-		ai->eco->removeMyGuards(unit);
-		ai->metalMap->taken.erase(unit);
-	}
-
-	if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
-		ai->eco->gameMetal.erase(unit);
-		if (c&MEXTRACTOR) {
-			ai->metalMap->removeFromTaken(unit);
+	if (!(c&ATTACKER) || c&COMMANDER) {
+		if (c&FACTORY) {
+			ai->eco->gameFactories.erase(unit);
+			ai->eco->gameFactoriesBuilding.erase(unit);
 		}
-		else if (c&MMAKER) {
-			ai->eco->gameMetalMakers.erase(unit);
+
+		if (c&BUILDER && c&MOBILE) {
+			ai->eco->gameBuilders.erase(unit);
+			ai->eco->removeMyGuards(unit);
+			ai->metalMap->taken.erase(unit);
+		}
+
+		if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
+			ai->eco->gameMetal.erase(unit);
+			if (c&MEXTRACTOR) {
+				ai->metalMap->removeFromTaken(unit);
+			}
+			else if (c&MMAKER) {
+				ai->eco->gameMetalMakers.erase(unit);
+			}
+		}
+
+		if (c&EMAKER || c& ESTORAGE) {
+			ai->eco->gameEnergy.erase(unit);
+		}
+		ai->eco->gameIdle.erase(unit);
+		ai->eco->gameGuarding.erase(unit);
+	}
+	else {
+		if (c&SCOUT) {
+			ai->military->scouts.erase(unit);
 		}
 	}
 
-	if (c&EMAKER || c& ESTORAGE) {
-		ai->eco->gameEnergy.erase(unit);
-	}
-
-	ai->eco->gameIdle.erase(unit);
-	ai->eco->gameGuarding.erase(unit);
 	ai->unitTable->gameAllUnits.erase(unit);
 	ai->tasks->buildplans.erase(unit);
 }

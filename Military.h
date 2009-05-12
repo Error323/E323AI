@@ -8,10 +8,21 @@ class CMilitary {
 		CMilitary(AIClasses *ai);
 		~CMilitary(){};
 
+		void init(int unit);
+
 		void update(int frame);
+
+		/* military units */
+		std::map<int, int> scouts;
+		std::map<int, int> artillery;
+		std::map<int, int> antiairs;
+		std::map<int, int> groups;
 
 	private:
 		AIClasses *ai;
+
+		UnitType *scout, *artie, *antiair, *factory;
+
 };
 
 #endif
