@@ -34,6 +34,7 @@ class CMilitary {
 		int currentGroup;
 		float currentGroupStrength;
 
+		UnitType* randomUnit();
 };
 
 #endif

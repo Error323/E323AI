@@ -20,14 +20,24 @@ void CMilitary::update(int frame) {
 	/* Always have enough scouts lying around */
 	if (scouts.size() < ai->intel->mobileBuilders.size())
 		ai->eco->addWish(factory, scout, HIGH);
-
+	
 	/* If we have a scout, harras the enemy */
 	if (!scouts.empty()) {
 	}
 	
-	/* If enemy offensive is moving towards us, attack it */
+	/* Always build some unit */
+	ai->eco->addWish(factory, randomUnit(), NORMAL);
 
-	/* Else obtain a target, decide group power required and attack */
+	/* If enemy offensive is within our perimeter, attack it */
+	if (ai->intel->enemyInbound()) {
+		/* Regroup our offensives such that we have enough power to engage */
+
+		/* If we cannot get the power, put factories on HIGH priority for offensives */
+	}
+
+	/* Else pick a target, decide group power required and attack */
+	else {
+	}
 
 	/* Update group paths and locations, while maintaining coherent */
 }
@@ -52,5 +62,14 @@ void CMilitary::removeFromGroup(int unit) {
 		groups.erase(group);
 		ai->call->EraseGroup(group);
 		ai->tasks->militaryplans.erase(group);
+	}
+}
+
+UnitType* CMilitary::randomUnit() {
+	int r = rng.RandInt(3);
+	switch(r) {
+		case 0: return scout;
+		case 1: return artie;
+		case 2: return antiair;
 	}
 }

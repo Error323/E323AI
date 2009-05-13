@@ -11,6 +11,7 @@ class CIntel {
 		bool hasAir;
 
 		void update(int frame);
+		bool enemyInbound();
 
 		std::vector<int> factories;
 		std::vector<int> attackers;

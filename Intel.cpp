@@ -42,3 +42,7 @@ void CIntel::update(int frame) {
 		}
 	}
 }
+
+bool CIntel::enemyInbound() {
+	return false;
+}
