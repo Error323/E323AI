@@ -6,6 +6,19 @@ CMetaCommands::CMetaCommands(AIClasses *ai) {
 
 CMetaCommands::~CMetaCommands() {}
 
+void CMetaCommands::moveGroup(int group, std::vector<float3> &positions) {
+	move(group, positions[0]);
+	for (unsigned i = 1; i < positions.size(); i++)
+		move(group, positions[i], true);
+}
+
+void CMetaCommands::moveGroup(int group, float3 &pos, bool enqueue) {
+	std::map<int, bool>::iterator i;
+	std::map<int, bool> *G = &(ai->military->groups[group]);
+	for (i = G->begin(); i != G->end(); i++)
+		move(i->first, pos, enqueue);
+}
+
 bool CMetaCommands::moveForward(int unit, float dist) {
 	float3 upos = ai->call->GetUnitPos(unit);
 	facing f = getBestFacing(upos);
@@ -26,6 +39,7 @@ bool CMetaCommands::moveForward(int unit, float dist) {
 	}
 	return move(unit, pos);
 }
+
 
 bool CMetaCommands::setOnOff(int unit, bool on) {
 	Command c = createTargetCommand(CMD_ONOFF, on);

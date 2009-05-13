@@ -8,6 +8,12 @@ class CMetaCommands {
 		CMetaCommands(AIClasses *ai);
 		~CMetaCommands();
 
+		/* Move a group along a vector of positions */
+		void moveGroup(int group, std::vector<float3> &positions);
+
+		/* Move a group to pos */
+		void moveGroup(int group, float3 &pos, bool enqueue = false);
+
 		/* Move a unit forward by dist */
 		bool moveForward(int unit, float dist);
 

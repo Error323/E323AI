@@ -103,7 +103,7 @@ void CE323AI::UnitFinished(int unit) {
 
 		if (c&BUILDER && c&MOBILE) {
 			ai->eco->gameBuilders[unit]  = ut;
-			ai->metaCmds->moveForward(unit, 70.0f);
+			ai->metaCmds->moveForward(unit, -70.0f);
 		}
 
 		if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
@@ -124,6 +124,9 @@ void CE323AI::UnitFinished(int unit) {
 			ai->metaCmds->moveForward(unit, 300.0f);
 			if (c&SCOUT) {
 				ai->military->scouts[unit] = unit;
+			}
+			else {
+				ai->military->addToGroup(unit);
 			}
 		}
 	}
