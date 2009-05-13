@@ -18,13 +18,28 @@ class CTaskPlan {
 			}
 		};
 
+		struct MilitaryPlan {
+			task t;
+			int target;
+			MilitaryPlan(task t, int target) {
+				this->t = t;
+				this->target = target;
+			}
+		};
+			
+
+		void addMilitaryPlan(task t, int unitOrGroup, int target);
+
 		void addBuildPlan(int unit, UnitType* toBuild);
 
 		void updateBuildPlans(int unit);
 
-		void getTasks(task t, std::vector<int> &units);
+		void getBuildTasks(task t, std::vector<int> &units);
+
+		void getMilitaryTasks(task t, std::vector<int> &targets);
 
 		std::map<int, BuildPlan*> buildplans;
+		std::map<int, MilitaryPlan*> militaryplans;
 
 	private:
 		std::map<task, std::string> taskStr;

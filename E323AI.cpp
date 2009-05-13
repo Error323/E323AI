@@ -174,6 +174,9 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 		if (c&SCOUT) {
 			ai->military->scouts.erase(unit);
 		}
+		else {
+			ai->military->removeFromGroup(unit);
+		}
 	}
 
 	ai->unitTable->gameAllUnits.erase(unit);

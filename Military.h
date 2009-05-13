@@ -32,6 +32,7 @@ class CMilitary {
 
 		UnitType *scout, *artie, *antiair, *factory;
 		int currentGroup;
+		float currentGroupStrength;
 
 };
 

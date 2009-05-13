@@ -24,6 +24,10 @@ void CIntel::update(int frame) {
 		}
 		else if (c&FACTORY) {
 			factories.push_back(units[i]);
+			if (c&AIR)
+				hasAir = true;
+			else
+				hasAir = false;
 		}
 		else if (c&BUILDER && c&MOBILE) {
 			economy.push_back(units[i]);

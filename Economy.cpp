@@ -193,7 +193,7 @@ void CEconomy::preventStalling() {
 
 bool CEconomy::canHelp(task t, int helper, int &unit, UnitType *helpBuild) {
 	std::vector<int> busyUnits; 
-	ai->tasks->getTasks(t, busyUnits);
+	ai->tasks->getBuildTasks(t, busyUnits);
 	UnitType *helperUnitType = UT(ai->call->GetUnitDef(helper)->id);
 	if (t == BUILD_MMAKER)
 		helpBuild = ai->unitTable->canBuild(helperUnitType, MEXTRACTOR);

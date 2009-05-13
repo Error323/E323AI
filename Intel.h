@@ -8,6 +8,8 @@ class CIntel {
 		CIntel(AIClasses *ai);
 		~CIntel();
 
+		bool hasAir;
+
 		void update(int frame);
 
 		std::vector<int> economy;

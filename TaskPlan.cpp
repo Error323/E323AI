@@ -8,7 +8,16 @@ CTaskPlan::CTaskPlan(AIClasses *ai) {
 	taskStr[BUILD_EMAKER]   = std::string("build_emaker");
 	taskStr[BUILD_FACTORY]  = std::string("build_factory");
 	taskStr[ASSIST_FACTORY] = std::string("assist_factory");
+	taskStr[HARRAS]          = std::string("harras");
+	taskStr[ATTACK]         = std::string("attack");
 	
+}
+
+void CTaskPlan::addMilitaryPlan(task t, int unitOrGroup, int target) {
+	militaryplans[unitOrGroup] = new MilitaryPlan(t, target);
+	const UnitDef *ud = UD(target);
+	sprintf(buf,"[CTaskPlan::addMilitaryPlan]\t <%s, %s>", taskStr[t].c_str(), ud->humanName.c_str());
+	LOGN(buf);
 }
 
 void CTaskPlan::addBuildPlan(int unit, UnitType *toBuild) {
@@ -53,7 +62,16 @@ void CTaskPlan::updateBuildPlans(int unit) {
 		buildplans.erase(erase[i]);
 }
 
-void CTaskPlan::getTasks(task t, std::vector<int> &units) {
+void CTaskPlan::getMilitaryTasks(task t, std::vector<int> &targets) {
+	std::map<int, MilitaryPlan*>::iterator i;
+	for (i = militaryplans.begin(); i != militaryplans.end(); i++) {
+		MilitaryPlan *mp = i->second;
+		if (mp->t == t)
+			targets.push_back(i->first);
+	}
+}
+
+void CTaskPlan::getBuildTasks(task t, std::vector<int> &units) {
 	std::map<int, BuildPlan*>::iterator i;
 	for (i = buildplans.begin(); i != buildplans.end(); i++) {
 		BuildPlan *bp = i->second;

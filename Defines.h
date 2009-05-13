@@ -82,7 +82,9 @@ enum task {
 	BUILD_EMAKER   = (1<<1),
 	BUILD_FACTORY  = (1<<2),
 	ASSIST_FACTORY = (1<<3),
-	UNKNOWN        = (1<<4)
+	HARRAS         = (1<<4),
+	ATTACK         = (1<<5),
+	UNKNOWN        = (1<<6)
 };
 
 /* Build priorities */
