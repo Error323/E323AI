@@ -31,21 +31,24 @@ void CMilitary::update(int frame) {
 	/* Else pick a target, decide group power required and attack */
 	else {
 		/* Pick a target */
-		int target = (ai->intel->factories.empty()) ? ai->intel->energyMakers[0] : ai->intel->factories[0];
-		float3 goal = ai->cheat->GetUnitPos(target);
-		float enemyStrength = ai->threatMap->getThreat(goal, 100.0f);
+		int target;
+		if (!ai->intel->factories.empty() || !ai->intel->energyMakers.empty()) {
+			target = (ai->intel->factories.empty()) ? ai->intel->energyMakers[0] : ai->intel->factories[0];
+			float3 goal = ai->cheat->GetUnitPos(target);
+			float enemyStrength = ai->threatMap->getThreat(goal, 100.0f);
 
-		/* If we can confront the enemy, do so */
-		if (currentGroupStrength >= enemyStrength*1.1f) {
-			/* Add the taskplan */
-			ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
+			/* If we can confront the enemy, do so */
+			if (currentGroupStrength >= enemyStrength*1.1f) {
+				/* Add the taskplan */
+				ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
 
-			/* Bootstrap the path */
-			float3 start = getGroupPos(currentGroup);
-			ai->pf->addPath(currentGroup, start, goal); 
+				/* Bootstrap the path */
+				float3 start = getGroupPos(currentGroup);
+				ai->pf->addPath(currentGroup, start, goal); 
 
-			/* Create new group */
-			currentGroup = createNewGroup();
+				/* Create new group */
+				currentGroup = createNewGroup();
+			}
 		}
 	}
 

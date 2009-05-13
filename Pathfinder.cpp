@@ -19,7 +19,15 @@ void CPathfinder::updateMap(float *weights) {
 }
 
 void CPathfinder::updatePaths() {
-	
+	std::map<int, std::vector<float3> >::iterator i;
+	for (i = paths.begin(); i != paths.end(); i++) {
+		if (ai->military->groups.find(i->first) == ai->military->groups.end()) {
+			// ignore for now
+		}
+		else {
+			
+		}
+	}
 }
 
 void CPathfinder::addPath(int unitOrGroup, float3 &start, float3 &goal) {
@@ -51,10 +59,8 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path) {
 	int gx  = int(round(g.x/RES)); gx = std::max<int>(gx, 1); gx = std::min<int>(gx, X-2);
 	int gz  = int(round(g.z/RES)); gz = std::max<int>(gz, 1); gz = std::min<int>(gz, Z-2);
 	
-	int ids = id(sx, sz);
-	int idg = id(gx, gz);
-	start = &map[ids];
-	goal = &map[idg];
+	start = &map[id(sx, sz)];
+	goal = &map[id(gx, gz)];
 	std::vector<ANode*> nodepath;
 	bool success = findPath(nodepath);
 	if (success) {
