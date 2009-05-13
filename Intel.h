@@ -12,9 +12,11 @@ class CIntel {
 
 		void update(int frame);
 
-		std::vector<int> economy;
 		std::vector<int> factories;
 		std::vector<int> attackers;
+		std::vector<int> mobileBuilders;
+		std::vector<int> metalMakers;
+		std::vector<int> energyMakers;
 
 	private:
 		AIClasses *ai;

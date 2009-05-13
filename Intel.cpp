@@ -10,9 +10,11 @@ CIntel::~CIntel() {
 }
 
 void CIntel::update(int frame) {
-	economy.clear();
+	mobileBuilders.clear();
 	factories.clear();
 	attackers.clear();
+	metalMakers.clear();
+	energyMakers.clear();
 	int numUnits = ai->cheat->GetEnemyUnits(units, MAX_UNITS);
 	for (int i = 0; i < numUnits; i++) {
 		const UnitDef *ud = ai->cheat->GetUnitDef(units[i]);
@@ -30,7 +32,13 @@ void CIntel::update(int frame) {
 				hasAir = false;
 		}
 		else if (c&BUILDER && c&MOBILE) {
-			economy.push_back(units[i]);
+			mobileBuilders.push_back(units[i]);
+		}
+		else if (c&MEXTRACTOR || c&MMAKER) {
+			metalMakers.push_back(units[i]);
+		}
+		else if (c&EMAKER) {
+			energyMakers.push_back(units[i]);
 		}
 	}
 }

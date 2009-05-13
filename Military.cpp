@@ -17,9 +17,19 @@ void CMilitary::init(int unit) {
 }
 
 void CMilitary::update(int frame) {
-	/* Always have some scouts lying around */
-	if (scouts.size() < 2) ai->eco->addWish(factory, scout, HIGH);
+	/* Always have enough scouts lying around */
+	if (scouts.size() < ai->intel->mobileBuilders.size())
+		ai->eco->addWish(factory, scout, HIGH);
 
+	/* If we have a scout, harras the enemy */
+	if (!scouts.empty()) {
+	}
+	
+	/* If enemy offensive is moving towards us, attack it */
+
+	/* Else obtain a target, decide group power required and attack */
+
+	/* Update group paths and locations, while maintaining coherent */
 }
 
 int CMilitary::createNewGroup() {
@@ -41,5 +51,6 @@ void CMilitary::removeFromGroup(int unit) {
 	if (groups[group].empty() && group != currentGroup) {
 		groups.erase(group);
 		ai->call->EraseGroup(group);
+		ai->tasks->militaryplans.erase(group);
 	}
 }
