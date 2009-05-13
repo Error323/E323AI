@@ -48,6 +48,8 @@
 #include "Economy.h"
 #include "TaskPlan.h"
 #include "ThreatMap.h"
+#include "AAStar.h"
+#include "Pathfinder.h"
 #include "Intel.h"
 #include "Military.h"
 

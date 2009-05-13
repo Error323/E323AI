@@ -9,6 +9,7 @@ class CMetaCommands;
 class CEconomy;
 class CTaskPlan;
 class CThreatMap;
+class CPathfinder;
 class CIntel;
 class CMilitary;
 
@@ -22,6 +23,7 @@ struct AIClasses {
 	CEconomy      *eco;
 	CTaskPlan     *tasks;
 	CThreatMap    *threatMap;
+	CPathfinder   *pf;
 	CIntel        *intel;
 	CMilitary     *military;
 	std::ofstream *logger;

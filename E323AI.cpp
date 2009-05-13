@@ -14,6 +14,7 @@ CE323AI::~CE323AI() {
 	delete ai->logger;
 	delete ai->tasks;
 	delete ai->threatMap;
+	delete ai->pf;
 	delete ai->intel;
 	delete ai->military;
 	delete ai;
@@ -48,6 +49,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->eco     	= new CEconomy(ai);
 	ai->tasks     	= new CTaskPlan(ai);
 	ai->threatMap   = new CThreatMap(ai);
+	ai->pf          = new CPathfinder(ai, ai->threatMap->W, ai->threatMap->H, ai->threatMap->REAL);
 	ai->intel       = new CIntel(ai);
 	ai->military    = new CMilitary(ai);
 
@@ -237,25 +239,47 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
 
+	if (frame > 1 && frame % 200 == 0) {
+		float3 start, goal;
+		start.x = rng.RandFloat()*ai->call->GetMapWidth()*8;
+		start.z = rng.RandFloat()*ai->call->GetMapHeight()*8;
+		start.y = ai->call->GetElevation(start.x, start.z);
+		goal.x = rng.RandFloat()*ai->call->GetMapWidth()*8;
+		goal.z = rng.RandFloat()*ai->call->GetMapHeight()*8;
+		goal.y = ai->call->GetElevation(goal.x, goal.z);
+		std::vector<float3> path;
+		ai->pf->path(start, goal, path);
+		float color[] = {1.0f,0.0f,0.0f,0.5f};
+		ai->call->LineDrawerStartPath(path[0], color);
+		for (unsigned i = 1; i < path.size(); i++) {
+			ai->call->LineDrawerDrawLine(path[i], color);
+		}
+		ai->call->LineDrawerFinishPath();
+	}
+
 	/* Rotate through the different update events to distribute computations */
-	switch(frame % 5) {
+	switch(frame % 6) {
 		case 0: /* update threatmap */
 			ai->threatMap->update(frame);
 		break;
 
-		case 1: /* update enemy intel */
+		case 1: /* update pathfinder with threatmap */
+			ai->pf->update(ai->threatMap->map);
+		break;
+
+		case 2: /* update enemy intel */
 			ai->intel->update(frame);
 		break;
 
-		case 2: /* update military */
+		case 3: /* update military */
 			ai->military->update(frame);
 		break;
 
-		case 3: /* update incomes */
+		case 4: /* update incomes */
 			ai->eco->updateIncomes(frame);
 		break;
 
-		case 4: /* update economy */
+		case 5: /* update economy */
 			ai->eco->update(frame);
 		break;
 	}

@@ -11,17 +11,17 @@ class CThreatMap {
 		void update(int frame);
 		float getThreat(float3 &pos);
 		float getThreat(float3 &center, float radius);
+		int W, H;
+		float *map;
+		float REAL;
 
 	private:
 		AIClasses *ai;	
 
 		void draw();
 
-		int W, H;
-		float *map;
 		int   *units;
 		int RES;
-		float REAL;
 		float totalPower;
 };
 

@@ -1,13 +1,13 @@
 #include "Economy.h"
 
 CEconomy::CEconomy(AIClasses *ai) {
+	this->ai = ai;
 	incomes = 0;
 	mNow = mNowSummed = eNow = eNowSummed = 0.0f;
 	mIncome = mIncomeSummed = eIncome = eIncomeSummed = 0.0f;
 	uMIncome = uMIncomeSummed = uEIncome = uEIncomeSummed = 0.0f;
 	mUsage = mUsageSummed = eUsage = eUsageSummed = 0.0f;
 	mStorage = eStorage = 0.0f;
-	this->ai = ai;
 }
 
 void CEconomy::init(int unit) {
