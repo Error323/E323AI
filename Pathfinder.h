@@ -45,6 +45,9 @@ class CPathfinder: public AAStar {
 
 		/* get the id of the node */
 		inline int id(int x, int z) { return x*Z+z; }
+
+		/* draw the path ? */
+		bool draw;
 };
 
 #endif

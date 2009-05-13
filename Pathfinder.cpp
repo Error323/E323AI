@@ -10,6 +10,7 @@ CPathfinder::CPathfinder(AIClasses *ai, int X, int Z, float RES) {
 	for (int x = 0; x < X; x++)
 		for (int z = 0; z < Z; z++)
 			map.push_back(Node(id(x,z), x, z, 1.0f));
+	draw = true;
 }
 
 void CPathfinder::update(float *weights) {
@@ -50,6 +51,10 @@ bool CPathfinder::path(float3 &s, float3 &g, std::vector<float3> &path) {
 			f *= RES;
 			f.y = ai->call->GetElevation(f.x,f.z)+10;
 			path.push_back(f);
+			if (draw && i > 0) {
+				ai->call->CreateLineFigure(path[i-1], path[i], 10, 0, 300, 1);
+				ai->call->CreateLineFigure(path[i-1], path[i], 10, 0, 300, 1);
+			}
 		}
 	}
 	return success;
