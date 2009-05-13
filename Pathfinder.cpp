@@ -13,24 +13,38 @@ CPathfinder::CPathfinder(AIClasses *ai, int X, int Z, float RES) {
 	draw = true;
 }
 
-void CPathfinder::update(float *weights) {
+void CPathfinder::updateMap(float *weights) {
 	for (unsigned i = 0; i < map.size(); i++)
 		map[i].w = weights[i];
 }
 
-void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
-	Node *s, *n = dynamic_cast<Node*>(an);
-	s = &map[id(n->x-1, n->z-1)]; succ.push(s); /* Top left  */
-	s = &map[id(n->x  , n->z-1)]; succ.push(s); /* Top mid   */
-	s = &map[id(n->x+1, n->z-1)]; succ.push(s); /* Top right */
-	s = &map[id(n->x-1, n->z  )]; succ.push(s); /* Mid left  */
-	s = &map[id(n->x+1, n->z  )]; succ.push(s); /* Mid right */
-	s = &map[id(n->x-1, n->z+1)]; succ.push(s); /* Bot left  */
-	s = &map[id(n->x  , n->z+1)]; succ.push(s); /* Bot mid   */
-	s = &map[id(n->x+1, n->z+1)]; succ.push(s); /* Bot right */
+void CPathfinder::updatePaths() {
+	
 }
 
-bool CPathfinder::path(float3 &s, float3 &g, std::vector<float3> &path) {
+void CPathfinder::addPath(int unitOrGroup, float3 &start, float3 &goal) {
+	std::vector<float3> path;
+	getPath(start, goal, path);
+	paths[unitOrGroup] = path;
+}
+
+void CPathfinder::removePath(int unitOrGroup) {
+	paths.erase(unitOrGroup);
+}
+
+void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
+	Node *s, *n = dynamic_cast<Node*>(an);
+	s = &map[id(n->x-1, n->z-1)]; succ.push(s); /* NW */
+	s = &map[id(n->x  , n->z-1)]; succ.push(s); /* N  */
+	s = &map[id(n->x+1, n->z-1)]; succ.push(s); /* NE */
+	s = &map[id(n->x-1, n->z  )]; succ.push(s); /* W  */
+	s = &map[id(n->x+1, n->z  )]; succ.push(s); /* E  */
+	s = &map[id(n->x-1, n->z+1)]; succ.push(s); /* SW */
+	s = &map[id(n->x  , n->z+1)]; succ.push(s); /* S  */
+	s = &map[id(n->x+1, n->z+1)]; succ.push(s); /* SE */
+}
+
+bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path) {
 	/* If exceeding, snap to boundaries */
 	int sx  = int(round(s.x/RES)); sx = std::max<int>(sx, 1); sx = std::min<int>(sx, X-2);
 	int sz  = int(round(s.z/RES)); sz = std::max<int>(sz, 1); sz = std::min<int>(sz, Z-2);

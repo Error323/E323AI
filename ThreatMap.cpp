@@ -62,7 +62,7 @@ void CThreatMap::update(int frame) {
 		if (ut->cats&ATTACKER && !ai->cheat->UnitBeingBuilt(units[i])) {
 			float power = ai->cheat->GetUnitPower(units[i]);
 			if (ut->cats&COMMANDER)
-				power = 1000.0f;
+				power = 500.0f;
 			float range = ud->maxWeaponRange/REAL;
 			int   R = (int) ceil(range);
 			for (int x = -R; x <= R; x++) {

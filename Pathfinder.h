@@ -25,9 +25,13 @@ class CPathfinder: public AAStar {
 				float3 toFloat3() {return float3(x,0.0f,z);}
 		};
 
-		void update(float* weights);
+		void updateMap(float* weights);
 
-		bool path(float3 &s, float3 &g, std::vector<float3> &path);
+		void updatePaths();
+
+		void addPath(int unitOrGroup, float3 &start, float3 &goal);
+
+		void removePath(int unitOrGroup);
 
 		int X,Z;
 		float RES;
@@ -45,6 +49,12 @@ class CPathfinder: public AAStar {
 
 		/* get the id of the node */
 		inline int id(int x, int z) { return x*Z+z; }
+
+		/* Start pathfinding */
+		bool getPath(float3 &s, float3 &g, std::vector<float3> &path);
+
+		/* The paths for individual units, or groups */
+		std::map<int, std::vector<float3> > paths;
 
 		/* draw the path ? */
 		bool draw;

@@ -14,9 +14,6 @@ class CMilitary {
 		/* update callin */
 		void update(int frame);
 
-		/* Instantiates a new group */
-		int createNewGroup();
-
 		/* add a unit to the current group */
 		void addToGroup(int unit);
 
@@ -34,7 +31,15 @@ class CMilitary {
 		int currentGroup;
 		float currentGroupStrength;
 
+		/* Instantiates a new group */
+		int createNewGroup();
+
+		/* Request a random unit for building */
 		UnitType* randomUnit();
+
+		/* Get the position of a group */
+		float3 getGroupPos(int group);
+		
 };
 
 #endif

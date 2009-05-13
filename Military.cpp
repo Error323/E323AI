@@ -17,17 +17,10 @@ void CMilitary::init(int unit) {
 }
 
 void CMilitary::update(int frame) {
-	/* Always have enough scouts lying around */
-	if (scouts.size() < ai->intel->mobileBuilders.size())
-		ai->eco->addWish(factory, scout, HIGH);
-	
 	/* If we have a scout, harras the enemy */
 	if (!scouts.empty()) {
 	}
 	
-	/* Always build some unit */
-	ai->eco->addWish(factory, randomUnit(), NORMAL);
-
 	/* If enemy offensive is within our perimeter, attack it */
 	if (ai->intel->enemyInbound()) {
 		/* Regroup our offensives such that we have enough power to engage */
@@ -37,9 +30,36 @@ void CMilitary::update(int frame) {
 
 	/* Else pick a target, decide group power required and attack */
 	else {
+		/* Pick a target */
+		int target = (ai->intel->factories.empty()) ? ai->intel->energyMakers[0] : ai->intel->factories[0];
+		float3 goal = ai->cheat->GetUnitPos(target);
+		float enemyStrength = ai->threatMap->getThreat(goal, 100.0f);
+
+		/* If we can confront the enemy, do so */
+		if (currentGroupStrength >= enemyStrength*1.1f) {
+			/* Add the taskplan */
+			ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
+
+			/* Bootstrap the path */
+			float3 start = getGroupPos(currentGroup);
+			ai->pf->addPath(currentGroup, start, goal); 
+
+			/* Create new group */
+			currentGroup = createNewGroup();
+		}
 	}
 
-	/* Update group paths and locations, while maintaining coherent */
+	/* Always build some unit */
+	ai->eco->addWish(factory, randomUnit(), NORMAL);
+
+	/* Always have enough scouts lying around */
+	if (scouts.size() < ai->intel->mobileBuilders.size())
+		ai->eco->addWish(factory, scout, HIGH);
+}
+
+float3 CMilitary::getGroupPos(int group) {
+	std::map<int, bool>::iterator i = groups[group].begin();
+	return ai->call->GetUnitPos(i->first);
 }
 
 int CMilitary::createNewGroup() {
@@ -57,11 +77,13 @@ void CMilitary::addToGroup(int unit) {
 
 void CMilitary::removeFromGroup(int unit) {
 	int group = ai->call->GetUnitGroup(unit);
+	ai->call->RemoveUnitFromGroup(unit);
 	groups[group].erase(unit);
 	if (groups[group].empty() && group != currentGroup) {
 		groups.erase(group);
 		ai->call->EraseGroup(group);
 		ai->tasks->militaryplans.erase(group);
+		ai->pf->removePath(group);
 	}
 }
 
