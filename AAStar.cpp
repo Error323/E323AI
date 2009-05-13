@@ -7,7 +7,7 @@ void AAStar::init() {
 
 	visited.clear();
 	history.clear();
-	open.clear();
+	while(!open.empty()) open.pop();
 }
 
 bool AAStar::findPath(std::vector<ANode*>& path) {
@@ -36,7 +36,7 @@ bool AAStar::findPath(std::vector<ANode*>& path) {
 		successors(x, succs);
 		while (!succs.empty()) {
 			y = succs.front(); succs.pop();
-			c = x->g + (y->w * heuristic(x, y));
+			c = x->g + y->w*heuristic(x, y);
 
 			if (y->open && c < y->g)
 				y->open = false;
@@ -46,9 +46,9 @@ bool AAStar::findPath(std::vector<ANode*>& path) {
 				y->closed = false;
 			
 			if (!y->open && !y->closed) {
-				y->g = (unsigned int) c;
+				y->g = c;
 				y->parent = x;
-				y->h = (y->w * heuristic(y, goal));
+				y->h = heuristic(y, goal);
 				open.push(y);
 				y->open = true;
 

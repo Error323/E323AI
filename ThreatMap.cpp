@@ -10,7 +10,7 @@ CThreatMap::CThreatMap(AIClasses *ai) {
 	map   = new float[W*H];
 	units = new int[MAX_UNITS];
 	for (int i = 0; i < W*H; i++)
-		map[i] = 0.0f;
+		map[i] = 1.0f;
 }
 
 CThreatMap::~CThreatMap() {
@@ -50,7 +50,7 @@ float CThreatMap::getThreat(float3 &center, float radius) {
 void CThreatMap::update(int frame) {
 	totalPower = 0.0f;
 	for (int i = 0; i < W*H; i++)
-		map[i] *= 0.9f;
+		map[i] = std::max<float>(map[i]*0.9f, 1.0f);
 
 	int numUnits = ai->cheat->GetEnemyUnits(units, MAX_UNITS);
 	for (int i = 0; i < numUnits; i++) {
@@ -93,7 +93,7 @@ void CThreatMap::draw() {
 				p1.y += map[x*H+z]/totalPower;
 				p1.y *= 30.0f;
 				p1.y += 100.0f;
-				ai->call->CreateLineFigure(p0, p1, 4, 1, 100, 1);
+				ai->call->CreateLineFigure(p0, p1, 4, 1, 300, 1);
 			}
 		}
 	}

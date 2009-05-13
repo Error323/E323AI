@@ -239,22 +239,20 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
 
-	if (frame > 1 && frame % 200 == 0) {
+	if (frame > 1 && frame % 300 == 0) {
 		float3 start, goal;
-		start.x = rng.RandFloat()*ai->call->GetMapWidth()*8;
-		start.z = rng.RandFloat()*ai->call->GetMapHeight()*8;
+		start.x = 100.0f;
+		start.z = 100.0f;
 		start.y = ai->call->GetElevation(start.x, start.z);
-		goal.x = rng.RandFloat()*ai->call->GetMapWidth()*8;
-		goal.z = rng.RandFloat()*ai->call->GetMapHeight()*8;
-		goal.y = ai->call->GetElevation(goal.x, goal.z);
+		goal.x = ai->call->GetMapWidth()*8-rng.RandFloat()*500-100.0f;
+		goal.z = ai->call->GetMapHeight()*8-rng.RandFloat()*500-100.0f;
+		goal.y = ai->call->GetElevation(goal.x, goal.z)+10;
 		std::vector<float3> path;
 		ai->pf->path(start, goal, path);
-		float color[] = {1.0f,0.0f,0.0f,0.5f};
-		ai->call->LineDrawerStartPath(path[0], color);
 		for (unsigned i = 1; i < path.size(); i++) {
-			ai->call->LineDrawerDrawLine(path[i], color);
+			ai->call->CreateLineFigure(path[i-1], path[i], 10, 0, 300, 1);
+			ai->call->CreateLineFigure(path[i-1], path[i], 10, 0, 300, 1);
 		}
-		ai->call->LineDrawerFinishPath();
 	}
 
 	/* Rotate through the different update events to distribute computations */

@@ -12,12 +12,12 @@ CPathfinder::CPathfinder(AIClasses *ai, int X, int Z, float RES) {
 			map.push_back(Node(id(x,z), x, z, 1.0f));
 }
 
-CPathfinder::update(float *weights) {
+void CPathfinder::update(float *weights) {
 	for (unsigned i = 0; i < map.size(); i++)
 		map[i].w = weights[i];
 }
 
-CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
+void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	Node *s, *n = dynamic_cast<Node*>(an);
 	int x,z;
 
@@ -28,7 +28,7 @@ CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 			x = n->x+i; z = n->z+j;
 
 			/* Check we are within boundaries */
-			if (x < X && x >= 0 && y < Y && y >= 0 && z < Z && z >= 0) { 
+			if (x < X && x >= 0 && z < Z && z >= 0) { 
 				s = &map[id(x, z)];
 				if (!s->blocked()) succ.push(s);
 			}
@@ -37,8 +37,8 @@ CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 }
 
 bool CPathfinder::path(float3 &s, float3 &g, std::vector<float3> &path) {
-	int ids = id(round(s.x/REAL), round(s.z/REAL));
-	int idg = id(round(g.x/REAL), round(g.z/REAL));
+	int ids = id(round(s.x/RES), round(s.z/RES));
+	int idg = id(round(g.x/RES), round(g.z/RES));
 	start = &map[ids];
 	goal = &map[idg];
 	std::vector<ANode*> nodepath;
@@ -48,6 +48,7 @@ bool CPathfinder::path(float3 &s, float3 &g, std::vector<float3> &path) {
 			Node *n = dynamic_cast<Node*>(nodepath[i]);
 			float3 f = n->toFloat3();
 			f *= RES;
+			f.y = ai->call->GetElevation(f.x,f.z)+10;
 			path.push_back(f);
 		}
 	}

@@ -26,7 +26,7 @@ class AAStar {
 
 				unsigned int id;
 
-				unsigned int g;
+				float g;
 				float h;
 				float w;
 
@@ -50,7 +50,7 @@ class AAStar {
 		};
 
 		std::vector<ANode*> history;
-		void findPath(std::vector<ANode*> &path);
+		bool findPath(std::vector<ANode*> &path);
 		ANode* start;
 		ANode* goal;
 
