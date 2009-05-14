@@ -41,6 +41,8 @@ class CPathfinder: public AAStar {
 	private:
 		AIClasses *ai;
 
+		char buf[1024];
+
 		/* overload */
 		void successors(ANode *an, std::queue<ANode*> &succ);
 

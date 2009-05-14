@@ -15,7 +15,7 @@ CTaskPlan::CTaskPlan(AIClasses *ai) {
 
 void CTaskPlan::addMilitaryPlan(task t, int unitOrGroup, int target) {
 	militaryplans[unitOrGroup] = new MilitaryPlan(t, target);
-	const UnitDef *ud = UD(target);
+	const UnitDef *ud = ai->cheat->GetUnitDef(target);
 	sprintf(buf,"[CTaskPlan::addMilitaryPlan]\t <%s, %s>", taskStr[t].c_str(), ud->humanName.c_str());
 	LOGN(buf);
 }

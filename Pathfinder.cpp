@@ -6,6 +6,9 @@ CPathfinder::CPathfinder(AIClasses *ai, int X, int Z, float RES) {
 	this->Z   = Z;
 	this->RES = RES;
 
+	sprintf(buf, "[CPathfinder::CPathfinder]\t <%d, %d, %0.2f>", X, Z, RES);
+	LOGN(buf);
+
 	/* initialize nodes */
 	for (int x = 0; x < X; x++)
 		for (int z = 0; z < Z; z++)
@@ -42,14 +45,21 @@ void CPathfinder::removePath(int unitOrGroup) {
 
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	Node *s, *n = dynamic_cast<Node*>(an);
-	s = &map[id(n->x-1, n->z-1)]; succ.push(s); /* NW */
-	s = &map[id(n->x  , n->z-1)]; succ.push(s); /* N  */
-	s = &map[id(n->x+1, n->z-1)]; succ.push(s); /* NE */
-	s = &map[id(n->x-1, n->z  )]; succ.push(s); /* W  */
-	s = &map[id(n->x+1, n->z  )]; succ.push(s); /* E  */
-	s = &map[id(n->x-1, n->z+1)]; succ.push(s); /* SW */
-	s = &map[id(n->x  , n->z+1)]; succ.push(s); /* S  */
-	s = &map[id(n->x+1, n->z+1)]; succ.push(s); /* SE */
+	int x,z;
+
+	for (int i = -1; i <= 1; i++) {
+		for (int j = -1; j <= 1; j++) {
+			/* Don't add the parent node */
+			if (i == 0 && j == 0) continue;
+			x = n->x+i; z = n->z+j;
+
+			/* Check we are within boundaries */
+			if (x < X && x >= 0 && z < Z && z >= 0) { 
+				s = &map[id(x, z)];
+				if (!s->blocked()) succ.push(s);
+			}
+		}
+	}
 }
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path) {
@@ -58,7 +68,8 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path) {
 	int sz  = int(round(s.z/RES)); sz = std::max<int>(sz, 1); sz = std::min<int>(sz, Z-2);
 	int gx  = int(round(g.x/RES)); gx = std::max<int>(gx, 1); gx = std::min<int>(gx, X-2);
 	int gz  = int(round(g.z/RES)); gz = std::max<int>(gz, 1); gz = std::min<int>(gz, Z-2);
-	
+	sprintf(buf, "[CPathfinder::getPath]\t <%d, %d> : <%d, %d>", sx, sz, gx, gz);
+	LOGN(buf);
 	start = &map[id(sx, sz)];
 	goal = &map[id(gx, gz)];
 	std::vector<ANode*> nodepath;
