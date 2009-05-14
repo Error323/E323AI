@@ -6,9 +6,6 @@ CPathfinder::CPathfinder(AIClasses *ai, int X, int Z, float RES) {
 	this->Z   = Z;
 	this->RES = RES;
 
-	sprintf(buf, "[CPathfinder::CPathfinder]\t <%d, %d, %0.2f>", X, Z, RES);
-	LOGN(buf);
-
 	/* initialize nodes */
 	for (int x = 0; x < X; x++)
 		for (int z = 0; z < Z; z++)
@@ -68,10 +65,10 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path) {
 	int sz  = int(round(s.z/RES)); sz = std::max<int>(sz, 1); sz = std::min<int>(sz, Z-2);
 	int gx  = int(round(g.x/RES)); gx = std::max<int>(gx, 1); gx = std::min<int>(gx, X-2);
 	int gz  = int(round(g.z/RES)); gz = std::max<int>(gz, 1); gz = std::min<int>(gz, Z-2);
-	sprintf(buf, "[CPathfinder::getPath]\t <%d, %d> : <%d, %d>", sx, sz, gx, gz);
-	LOGN(buf);
 	start = &map[id(sx, sz)];
 	goal = &map[id(gx, gz)];
+	dx2 = sx - gx;
+	dz2 = sz - gz;
 	std::vector<ANode*> nodepath;
 	bool success = findPath(nodepath);
 	if (success) {
@@ -95,5 +92,6 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 	Node *n2 = dynamic_cast<Node*>(an2);
 	int dx = n1->x - n2->x;
 	int dz = n1->z - n2->z;
-	return sqrt(dx*dx + dz*dz);
+	float h = sqrt(dx*dx + dz*dz);
+	return h + abs(dx*dz2 - dx2*dz)*0.001;
 }

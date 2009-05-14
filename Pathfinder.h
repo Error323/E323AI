@@ -33,7 +33,7 @@ class CPathfinder: public AAStar {
 
 		void removePath(int unitOrGroup);
 
-		int X,Z;
+		int X,Z,dx2,dz2;
 		float RES;
 
 		std::vector<Node> map;
