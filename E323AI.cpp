@@ -97,8 +97,8 @@ void CE323AI::UnitFinished(int unit) {
 	if (!(c&ATTACKER) || c&COMMANDER) {
 		if (c&FACTORY) {
 			ai->eco->gameFactories[unit]      = true;
-			ai->eco->gameIdle[unit]           = ut;
 			ai->tasks->updateBuildPlans(unit);
+			ai->eco->gameIdle[unit]           = ut;
 		}
 
 		if (c&BUILDER && c&MOBILE) {
@@ -122,15 +122,9 @@ void CE323AI::UnitFinished(int unit) {
 	else {
 		if (c&MOBILE) {
 			ai->metaCmds->moveForward(unit, 300.0f);
-			if (c&SCOUT) {
-				ai->military->scouts[unit] = unit;
-			}
-			else {
-				ai->military->addToGroup(unit);
-			}
+			ai->military->addToGroup(unit);
 		}
 	}
-
 	ai->unitTable->gameAllUnits[unit] = ut;
 }
 
@@ -167,7 +161,6 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 		if (c&EMAKER || c& ESTORAGE) {
 			ai->eco->gameEnergy.erase(unit);
 		}
-		ai->eco->gameIdle.erase(unit);
 		ai->eco->gameGuarding.erase(unit);
 	}
 	else {
@@ -181,6 +174,7 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 
 	ai->unitTable->gameAllUnits.erase(unit);
 	ai->tasks->buildplans.erase(unit);
+	ai->eco->gameIdle.erase(unit);
 }
 
 /* Called when unit is idle */
@@ -191,8 +185,7 @@ void CE323AI::UnitIdle(int unit) {
 	UnitType* ut = UT(ud->id);
 	unsigned int c = ut->cats;
 
-	if (c&BUILDER)
-		ai->eco->gameIdle[unit] = ut;
+	ai->eco->gameIdle[unit] = ut;
 }
 
 /* Called when unit is damaged */

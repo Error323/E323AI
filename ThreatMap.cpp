@@ -60,10 +60,8 @@ void CThreatMap::update(int frame) {
 		float3 pos(0.0f, 0.0f, 0.0f);
 		
 		if (ut->cats&ATTACKER && !ai->cheat->UnitBeingBuilt(units[i])) {
-			float power = ai->cheat->GetUnitPower(units[i]);
-			if (ut->cats&COMMANDER)
-				power = 500.0f;
 			float range = ud->maxWeaponRange/REAL;
+			float power = /*(range*2*M_PI) /*/ ai->cheat->GetUnitPower(units[i]);
 			int   R = (int) ceil(range);
 			for (int x = -R; x <= R; x++) {
 				for (int z = -R; z <= R; z++) {

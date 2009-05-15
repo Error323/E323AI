@@ -70,9 +70,9 @@ bool CMetaCommands::move(int unit, float3 &pos, bool enqueue) {
 		if (enqueue)
 			c.options |= SHIFT_KEY;
 		ai->call->GiveOrder(unit, &c);
+		ai->eco->removeIdleUnit(unit);
 		return true;
 	}
-	ai->eco->removeIdleUnit(unit);
 	sprintf(buf, "[CMetaCommands::move]\t %s(%d) moves", ai->call->GetUnitDef(unit)->humanName.c_str(), unit);
 	LOGN(buf);
 	return false;

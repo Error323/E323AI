@@ -32,13 +32,15 @@ class CMilitary {
 		float currentGroupStrength;
 
 		/* Instantiates a new group */
-		int createNewGroup();
+		void createNewGroup();
 
 		/* Request a random unit for building */
 		UnitType* randomUnit();
 
 		/* Get the position of a group */
 		float3 getGroupPos(int group);
+
+		char buf[1024];
 		
 };
 

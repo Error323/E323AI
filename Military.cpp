@@ -2,6 +2,7 @@
 
 CMilitary::CMilitary(AIClasses *ai) {
 	this->ai = ai;
+	currentGroup = 0;
 }
 
 void CMilitary::init(int unit) {
@@ -13,7 +14,7 @@ void CMilitary::init(int unit) {
 	scout = ai->unitTable->canBuild(factory, ATTACKER|MOBILE|SCOUT);
 	artie = ai->unitTable->canBuild(factory, ATTACKER|MOBILE|ARTILLERY);
 	antiair = ai->unitTable->canBuild(factory, ATTACKER|MOBILE|ANTIAIR);
-	currentGroup = createNewGroup();
+	createNewGroup();
 }
 
 void CMilitary::update(int frame) {
@@ -38,7 +39,7 @@ void CMilitary::update(int frame) {
 			float enemyStrength = ai->threatMap->getThreat(goal, 100.0f);
 
 			/* If we can confront the enemy, do so */
-			if (currentGroupStrength >= enemyStrength*1.1f) {
+			if (groups[currentGroup].size() >= 2) {
 				/* Add the taskplan */
 				ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
 
@@ -47,7 +48,7 @@ void CMilitary::update(int frame) {
 				ai->pf->addPath(currentGroup, start, goal); 
 
 				/* Create new group */
-				currentGroup = createNewGroup();
+				createNewGroup();
 			}
 		}
 	}
@@ -56,8 +57,8 @@ void CMilitary::update(int frame) {
 	ai->eco->addWish(factory, randomUnit(), NORMAL);
 
 	/* Always have enough scouts lying around */
-	if (scouts.size() < ai->intel->mobileBuilders.size())
-		ai->eco->addWish(factory, scout, HIGH);
+	//if (scouts.size() < ai->intel->mobileBuilders.size())
+	//	ai->eco->addWish(factory, scout, HIGH);
 }
 
 float3 CMilitary::getGroupPos(int group) {
@@ -65,22 +66,24 @@ float3 CMilitary::getGroupPos(int group) {
 	return ai->call->GetUnitPos(i->first);
 }
 
-int CMilitary::createNewGroup() {
-	int group = ai->call->CreateGroup();
+void CMilitary::createNewGroup() {
+	currentGroup+=10;
 	std::map<int, bool> G;
-	groups[group] = G;
+	groups[currentGroup] = G;
 	currentGroupStrength = 0.0f;
-	return group;
+	sprintf(buf, "[CMilitary::createNewGroup]\t New group(%d)", currentGroup);
+	LOGN(buf);
 }
 
 void CMilitary::addToGroup(int unit) {
 	groups[currentGroup][unit] = true;
 	currentGroupStrength += ai->call->GetUnitPower(unit) * ai->call->GetUnitMaxRange(unit);
+	sprintf(buf, "[CMilitary::addToGroup]\t Group(%d) adding %s new size %d", currentGroup, ai->call->GetUnitDef(unit)->name.c_str(), groups[currentGroup].size());
+	LOGN(buf);
 }
 
 void CMilitary::removeFromGroup(int unit) {
-	int group = ai->call->GetUnitGroup(unit);
-	ai->call->RemoveUnitFromGroup(unit);
+	int group = currentGroup;
 	groups[group].erase(unit);
 	if (groups[group].empty() && group != currentGroup) {
 		groups.erase(group);
@@ -97,4 +100,5 @@ UnitType* CMilitary::randomUnit() {
 		case 1: return artie;
 		case 2: return antiair;
 	}
+	return NULL;
 }
