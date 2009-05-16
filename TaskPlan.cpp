@@ -79,3 +79,7 @@ void CTaskPlan::getBuildTasks(task t, std::vector<int> &units) {
 			units.push_back(i->first);
 	}
 }
+
+int CTaskPlan::getTarget(int unitOrGroup) {
+	return militaryplans[unitOrGroup]->target;
+}

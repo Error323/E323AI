@@ -89,9 +89,12 @@ void CPathfinder::updatePaths() {
 				}
 				else break;
 			}
-			// TODO:
-			// if waypoint % N == 0: re-calculate the path from waypoint to target
-			// retrieve target by groupid
+			/* Recalculate the path every now and then */
+			int target = ai->tasks->getTarget(p->first);
+			float3 goal = ai->cheat->GetUnitPos(target);
+			if (waypoint % 3 == 0) {
+				addPath(p->first, p->second[waypoint], goal);
+			}
 		}
 	}
 }

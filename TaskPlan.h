@@ -38,6 +38,8 @@ class CTaskPlan {
 
 		void getMilitaryTasks(task t, std::vector<int> &targets);
 
+		int getTarget(int unitOrGroup);
+
 		std::map<int, BuildPlan*> buildplans;
 		std::map<int, MilitaryPlan*> militaryplans;
 
