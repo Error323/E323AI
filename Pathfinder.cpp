@@ -32,10 +32,9 @@ void CPathfinder::updatePaths() {
 
 		/* Else its a group path */
 		else {
-			float maxGroupLength = ai->military->groups[p->first].size()*10.0f;
-			float front = -MAX_FLOAT; /* The pathlength of the unit up front */
-			float rear  =  MAX_FLOAT; /* The pathlength of the unit in the rear */
-			int   waypoint = -1;
+			float maxGroupLength = ai->military->groups[p->first].size()*30.0f;
+			std::map<float, int> M;
+			int   waypoint = 0;
 
 			/* Go through all the units in a group */
 			for (u = ai->military->groups[p->first].begin(); u != ai->military->groups[p->first].end(); u++) {
@@ -45,21 +44,22 @@ void CPathfinder::updatePaths() {
 					u->second = true;
 				}
 
-				int s1 = -1, s2 = -1;
-				float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
+				float segDist = MAX_FLOAT;
+				int s1 = 0, s2 = 0;
 				float3 upos = ai->call->GetUnitPos(u->first);
 
-				/* Go through the path for the unit to determine its segment on the path */
+				/* Go through the path to determine the unit's segment on the path */
 				unsigned s;
 				for (s = 1; s < p->second.size(); s++) {
-					float3 d1       = upos - p->second[s-1];
-					float3 d2       = upos - p->second[s];
-					float l1        = d1.Length2D();
-					float l2        = d2.Length2D();
-
-					/* When sl{1,2} is increasing again, we found the segment: break */
-					if (l1 < sl1) {sl1 = l1; s1 = s-1; s2 = s;} else break;
-					if (l2 < sl2) {sl2 = l2; s1 = s-1; s2 = s;} else break;
+					float3 d1  = upos - p->second[s-1];
+					float3 d2  = upos - p->second[s];
+					float dist = d1.Length2D() + d2.Length2D();
+					/* When the dist between the unit and the segment is increasing: break */
+					if (dist > segDist) break;
+					waypoint = s > waypoint ? s : waypoint;
+					segDist  = dist; 
+					s1       = s-1; 
+					s2       = s;
 				}
 
 				/* Move the unit to the next two waypoints */
@@ -68,25 +68,30 @@ void CPathfinder::updatePaths() {
 					ai->metaCmds->move(u->first, p->second[s2], true);
 				}
 				
-				/* Now calculate the projection of upos onto the vector spawned by s1-s2 */
-				float3 uP = (p->second[s1] - p->second[s2]).Normalize();
-				float3 up = upos - p->second[s2];
+				/* Now calculate the projection of upos onto the line spanned by s2-s1 */
+				float3 uP = (p->second[s2] - p->second[s1]).Normalize();
+				float3 up = upos - p->second[s1];
 				/* proj_P(x) = (x dot u) * u */
 				float3 uproj = uP * up.dot(uP);
 				/* calc pos on total path */
 				float uposonpath = uproj.Length2D() + (s1*RES);
-				if (uposonpath > front) {front = uposonpath; waypoint = s2;}
-				if (uposonpath < rear)  rear = uposonpath;
-				printf("front = %0.2f, rear = %0.2f, front-rear = %0.2f, maxGroupLength = %0.2f\n", front, rear, (front-rear), maxGroupLength);
-				if ((front - rear) > maxGroupLength && s2 == waypoint) {
-					/* if it's not waiting yet, wait it */
-					if (u->second) {
-						ai->metaCmds->wait(u->first);
-						u->second = false;
+				/* A map sorts on key (low to high) by default */
+				M[uposonpath] = u->first;
+			}
+			float rearval = M.begin()->first;
+			for (std::map<float,int>::iterator i = --M.end(); i != M.begin(); i--) {
+				if ((i->first - rearval) > maxGroupLength) {
+					/* Make the unit wait */
+					if (ai->military->groups[p->first][i->second]) {
+						ai->metaCmds->wait(i->second);
+						ai->military->groups[p->first][i->second] = false;
 					}
 				}
+				else break;
 			}
-			//if (waypoint % 4 == 0) addPath(p->first;
+			// TODO:
+			// if waypoint % N == 0: re-calculate the path from waypoint to target
+			// retrieve target by groupid
 		}
 	}
 }
@@ -137,12 +142,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path) {
 			Node *n = dynamic_cast<Node*>(nodepath[i]);
 			float3 f = n->toFloat3();
 			f *= RES;
-			f.y = ai->call->GetElevation(f.x,f.z)+10;
 			path.push_back(f);
-			if (draw && i < nodepath.size()-2) {
-				ai->call->CreateLineFigure(path[i], path[i+1], 10, 0, 300, 1);
-				//ai->call->CreateLineFigure(path[i], path[i], 10, 0, 300, 1);
-			}
 		}
 	}
 	return success;
