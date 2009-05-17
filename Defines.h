@@ -8,6 +8,7 @@
 #define EPSILON   1.0f/MAX_FLOAT
 
 #define ERRORVECTOR float3(-1,0,0)
+#define NULLVECTOR  float3(0,0,0)
 
 #define AI_VERSION  aiexport_getVersion()
 

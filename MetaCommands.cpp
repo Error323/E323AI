@@ -19,6 +19,23 @@ void CMetaCommands::moveGroup(int group, float3 &pos, bool enqueue) {
 		move(i->first, pos, enqueue);
 }
 
+void CMetaCommands::attackGroup(int group, int target) {
+	std::map<int, bool>::iterator i;
+	std::map<int, bool> *G = &(ai->military->groups[group]);
+	for (i = G->begin(); i != G->end(); i++)
+		attack(i->first, target);
+}
+
+bool CMetaCommands::attack(int unit, int target) {
+	Command c = createTargetCommand(CMD_ATTACK, target);
+
+	if (c.id != 0) {
+		ai->call->GiveOrder(unit, &c);
+		return true;
+	}
+	return false;
+}
+
 bool CMetaCommands::moveForward(int unit, float dist) {
 	float3 upos = ai->call->GetUnitPos(unit);
 	facing f = getBestFacing(upos);
@@ -60,6 +77,7 @@ bool CMetaCommands::moveRandom(int unit, float radius, bool enqueue) {
 	newpos.x += pos.x;
 	newpos.y  = pos.y;
 	newpos.z += pos.z;
+	ai->eco->removeIdleUnit(unit);
 	return move(unit, newpos, enqueue);
 }
 

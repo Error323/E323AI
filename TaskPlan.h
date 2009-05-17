@@ -34,6 +34,8 @@ class CTaskPlan {
 
 		void updateBuildPlans(int unit);
 
+		void updateMilitaryPlans();
+
 		void getBuildTasks(task t, std::vector<int> &units);
 
 		void getMilitaryTasks(task t, std::vector<int> &targets);

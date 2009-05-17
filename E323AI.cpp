@@ -94,6 +94,7 @@ void CE323AI::UnitFinished(int unit) {
 	UnitType* ut = UT(ud->id);
 	unsigned int c = ut->cats;
 
+	/* Eco unit */
 	if (!(c&ATTACKER) || c&COMMANDER) {
 		if (c&FACTORY) {
 			ai->eco->gameFactories[unit]      = true;
@@ -120,10 +121,14 @@ void CE323AI::UnitFinished(int unit) {
 			ai->tasks->updateBuildPlans(unit);
 		}
 	}
+	/* Military unit */
 	else {
 		if (c&MOBILE) {
 			ai->metaCmds->moveForward(unit, 100.0f);
-			ai->military->addToGroup(unit);
+			if (c&SCOUT)
+				ai->military->scouts[unit] = false;
+			else
+				ai->military->addToGroup(unit);
 		}
 	}
 	ai->unitTable->gameAllUnits[unit] = ut;
@@ -165,12 +170,10 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 		ai->eco->gameGuarding.erase(unit);
 	}
 	else {
-		if (c&SCOUT) {
+		if (c&SCOUT)
 			ai->military->scouts.erase(unit);
-		}
-		else {
+		else
 			ai->military->removeFromGroup(unit);
-		}
 	}
 
 	ai->unitTable->gameAllUnits.erase(unit);
@@ -186,7 +189,9 @@ void CE323AI::UnitIdle(int unit) {
 	UnitType* ut = UT(ud->id);
 	unsigned int c = ut->cats;
 
-	ai->eco->gameIdle[unit] = ut;
+	if (!(c&ATTACKER) || c&COMMANDER) {
+		ai->eco->gameIdle[unit] = ut;
+	}
 }
 
 /* Called when unit is damaged */
@@ -240,7 +245,7 @@ void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
 
 	/* Rotate through the different update events to distribute computations */
-	switch(frame % 7) {
+	switch(frame % 8) {
 		case 0: /* update threatmap */
 			ai->threatMap->update(frame);
 		break;
@@ -267,6 +272,10 @@ void CE323AI::Update() {
 
 		case 6: /* update economy */
 			ai->eco->update(frame);
+		break;
+
+		case 7: /* update military tasks */
+			ai->tasks->updateMilitaryPlans();
 		break;
 	}
 }

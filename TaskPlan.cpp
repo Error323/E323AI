@@ -62,6 +62,34 @@ void CTaskPlan::updateBuildPlans(int unit) {
 		buildplans.erase(erase[i]);
 }
 
+void CTaskPlan::updateMilitaryPlans() {
+	std::map<int, MilitaryPlan*>::iterator i;
+	std::vector<int> erase;
+	for (i = militaryplans.begin(); i != militaryplans.end(); i++) {
+		MilitaryPlan *mp = i->second;
+		float3 target = ai->cheat->GetUnitPos(mp->target);
+		if (target == NULLVECTOR) {
+			erase.push_back(i->first);
+			continue;
+		}
+		bool isgroup = ai->military->groups.find(i->first) != ai->military->groups.end();
+		float3 pos;
+		if (isgroup)
+			pos = ai->military->getGroupPos(i->first);
+		else
+			pos = ai->call->GetUnitPos(i->first);
+		if ((pos - target).Length2D() <= 300.0f) {
+			ai->pf->removePath(i->first);
+			if (isgroup)
+				ai->metaCmds->attackGroup(i->first, mp->target);
+			else
+				ai->metaCmds->attack(i->first, mp->target);
+		}
+	}
+	for (unsigned int i = 0; i < erase.size(); i++)
+		militaryplans.erase(erase[i]);
+}
+
 void CTaskPlan::getMilitaryTasks(task t, std::vector<int> &targets) {
 	std::map<int, MilitaryPlan*>::iterator i;
 	for (i = militaryplans.begin(); i != militaryplans.end(); i++) {
@@ -81,5 +109,6 @@ void CTaskPlan::getBuildTasks(task t, std::vector<int> &units) {
 }
 
 int CTaskPlan::getTarget(int unitOrGroup) {
+	if (militaryplans.find(unitOrGroup) == militaryplans.end()) return -1;
 	return militaryplans[unitOrGroup]->target;
 }

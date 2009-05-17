@@ -20,9 +20,13 @@ class CMilitary {
 		/* remove a unit from its group, erase group when empty and not current */
 		void removeFromGroup(int unit);
 
+		/* Get the position of a group */
+		float3 getGroupPos(int group);
+
 		/* military units */
-		std::map<int, int> scouts;                  /* <unit id, unit id> */
+		std::map<int, bool> scouts;                 /* <unit id, isharrasing> */
 		std::map<int, std::map<int, bool> > groups; /* <group id, <unit id, isactive> > */
+		std::map<int, int> units;                   /* <unit id, group id> */
 
 	private:
 		AIClasses *ai;
@@ -37,11 +41,7 @@ class CMilitary {
 		/* Request a random unit for building */
 		UnitType* randomUnit();
 
-		/* Get the position of a group */
-		float3 getGroupPos(int group);
-
 		char buf[1024];
-		
 };
 
 #endif

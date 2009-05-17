@@ -32,7 +32,7 @@ class CEconomy {
 		float eStorage;
 
 		/* stalling vars, updated in preventStalling() */
-		bool mstall, estall, stalling;
+		bool mstall, estall, stalling, exceeding;
 
 		/* Initialize economy module */
 		void init(int unit);

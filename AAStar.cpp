@@ -16,7 +16,6 @@ bool AAStar::findPath(std::vector<ANode*>& path) {
 
 	init();
 
-	printf("Pathfinding...");
 	open.push(start);
 	start->open = true;
 	visited.push_back(start);
@@ -27,7 +26,6 @@ bool AAStar::findPath(std::vector<ANode*>& path) {
 
 		if (x == goal) {
 			tracePath(path);
-			printf("[done]\n");
 			return true;
 		}
 
@@ -58,8 +56,6 @@ bool AAStar::findPath(std::vector<ANode*>& path) {
 			}
 		}
 	}
-
-	printf("[failed]\n");
 	return false;
 }
 

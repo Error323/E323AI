@@ -131,12 +131,9 @@ void CEconomy::update(int frame) {
 		}
 	}
 
-	if (!gameFactories.empty()) {
-		if (gameIdle.size() <= 1 && (mRequest || eRequest))
+	if (!gameFactories.empty()) 
+		if (stalling || exceeding || mRequest)
 			addWish(factory, builder, NORMAL);
-		if (gameBuilders.size() <= 1)
-			addWish(factory, builder, HIGH);
-	}
 }
 
 void CEconomy::preventStalling() {
@@ -145,6 +142,7 @@ void CEconomy::preventStalling() {
 	mstall = (mNow < 30.0f && mUsage > mIncome);
 	estall = (eNow/eStorage < 0.1f && eUsage > eIncome);
 	stalling = mstall || estall;
+	exceeding = (eNow > eStorage && eUsage < eIncome) || (mNow > mStorage && mUsage < mIncome);
 
 	/* Always remove all previous waiting factories */
 	for (j = gameFactories.begin(); j != gameFactories.end(); j++) {
@@ -212,7 +210,7 @@ bool CEconomy::canHelp(task t, int helper, int &unit, UnitType *helpBuild) {
 			float3 posHelper = ai->call->GetUnitPos(helper);
 			float pathLength  = ai->call->GetPathLength(posHelper, posToHelp, helperUnitType->def->movedata->pathType);
 			float travelTime  = pathLength / (helperUnitType->def->speed/30.0f);
-			if (travelTime <= buildTime && getGuardings(busyUnits[uid]) < 2) {
+			if (travelTime <= buildTime && getGuardings(busyUnits[uid]) < 1) {
 				unit = busyUnits[uid];
 				/* Only if the worker itself isn't guarding */
 				if (gameGuarding.find(busyUnits[uid]) == gameGuarding.end())
@@ -327,7 +325,7 @@ void CEconomy::addWish(UnitType *fac, UnitType *ut, buildPriority p) {
 	/* If a certain unit is already in the top of our wishlist, don't add it */
 	if (!wishlist[fac->id].empty()) {
 		const Wish *w = &wishlist[fac->id].top();
-		if (w->ut->id == ut->id || wishlist[fac->id].size() > 2)
+		if (w->ut->id == ut->id || wishlist[fac->id].size() > 3)
 			return;
 	}
 	wishlist[fac->id].push(Wish(ut, p));
