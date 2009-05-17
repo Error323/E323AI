@@ -39,7 +39,7 @@ void CMilitary::update(int frame) {
 			float enemyStrength = ai->threatMap->getThreat(goal, 100.0f);
 
 			/* If we can confront the enemy, do so */
-			if (groups[currentGroup].size() >= 5) {
+			if (groups[currentGroup].size() >= 30) {
 				/* Add the taskplan */
 				ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
 

@@ -19,16 +19,6 @@ void CMetaCommands::moveGroup(int group, float3 &pos, bool enqueue) {
 		move(i->first, pos, enqueue);
 }
 
-bool CMetaCommands::moveSemiRand(int unit, float3 &pos, bool enqueue) {
-	float3 newpos(rng.RandFloat(), 0.0f, rng.RandFloat());
-	newpos.Normalize();
-	newpos   *= 50.0f;
-	newpos.x += pos.x;
-	newpos.y  = pos.y;
-	newpos.z += pos.z;
-	return move(unit, newpos, enqueue);
-}
-
 bool CMetaCommands::moveForward(int unit, float dist) {
 	float3 upos = ai->call->GetUnitPos(unit);
 	facing f = getBestFacing(upos);

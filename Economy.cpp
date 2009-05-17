@@ -131,9 +131,12 @@ void CEconomy::update(int frame) {
 		}
 	}
 
-	if (!gameFactories.empty() && (mRequest || eRequest))
-		if (gameIdle.size() <= 1)
+	if (!gameFactories.empty()) {
+		if (gameIdle.size() <= 1 && (mRequest || eRequest))
 			addWish(factory, builder, NORMAL);
+		if (gameBuilders.size() <= 1)
+			addWish(factory, builder, HIGH);
+	}
 }
 
 void CEconomy::preventStalling() {
@@ -207,7 +210,6 @@ bool CEconomy::canHelp(task t, int helper, int &unit, UnitType *helpBuild) {
 		for (unsigned int uid = 0; uid < busyUnits.size(); uid++) {
 			float3 posToHelp = ai->call->GetUnitPos(busyUnits[uid]);
 			float3 posHelper = ai->call->GetUnitPos(helper);
-			const UnitDef *uud = ai->call->GetUnitDef(busyUnits[uid]);
 			float pathLength  = ai->call->GetPathLength(posHelper, posToHelp, helperUnitType->def->movedata->pathType);
 			float travelTime  = pathLength / (helperUnitType->def->speed/30.0f);
 			if (travelTime <= buildTime && getGuardings(busyUnits[uid]) < 2) {

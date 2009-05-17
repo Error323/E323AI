@@ -21,10 +21,7 @@ class CMetaCommands {
 		bool moveRandom(int unit, float radius, bool enqueue = false);
 
 		/* Move unit with id uid to position pos */
-		bool moveSemiRand(int uid, float3 &pos, bool enqueue = false);
-
-		/* Move unit with id uid to position pos */
-		bool move(int uid, float3 &pos, bool enqueue = false);
+		bool move(int unit, float3 &pos, bool enqueue = false);
 
 		/* Set a unit (e.g. mmaker) on or off */
 		bool setOnOff(int unit, bool on);

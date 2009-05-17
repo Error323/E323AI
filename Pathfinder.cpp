@@ -10,7 +10,7 @@ CPathfinder::CPathfinder(AIClasses *ai, int X, int Z, float RES) {
 	for (int x = 0; x < X; x++)
 		for (int z = 0; z < Z; z++)
 			map.push_back(Node(id(x,z), x, z, 1.0f));
-	draw = true;
+	draw = false;
 }
 
 void CPathfinder::updateMap(float *weights) {
@@ -32,7 +32,7 @@ void CPathfinder::updatePaths() {
 
 		/* Else its a group path */
 		else {
-			float maxGroupLength = ai->military->groups[p->first].size()*50.0f;
+			float maxGroupLength = ai->military->groups[p->first].size()*10.0f;
 			std::map<float, int> M;
 			int   waypoint = 0;
 
@@ -50,25 +50,25 @@ void CPathfinder::updatePaths() {
 				float3 upos = ai->call->GetUnitPos(u->first);
 
 				/* Go through the path to determine the unit's segment on the path */
-				for (unsigned s = 1; s < p->second.size(); s++) {
+				for (unsigned s = 1; s < p->second.size()-3; s++) {
 					float3 d1  = upos - p->second[s-1];
 					float3 d2  = upos - p->second[s];
 					float l1 = d1.Length2D();
 					float l2 = d2.Length2D();
 					/* When the dist between the unit and the segment is increasing: break */
+					length  += (p->second[s1] - p->second[s2]).Length2D();
+					waypoint = s > waypoint ? s : waypoint;
 					if (l1 > sl1 || l2 > sl2) break;
 					s1       = s-1;
 					s2       = s;
-					length  += (p->second[s1] - p->second[s2]).Length2D();
-					waypoint = s > waypoint ? s : waypoint;
 					sl1      = l1; 
 					sl2      = l2; 
 				}
 
 				/* Move the unit to the next two waypoints */
-				if (ai->eco->gameIdle.find(u->first) != ai->eco->gameIdle.end()) {
-					ai->metaCmds->moveSemiRand(u->first, p->second[s2]);
-					ai->metaCmds->moveSemiRand(u->first, p->second[s2+1], true);
+				if (ai->call->GetCurrentUnitCommands(u->first)->size() <= 1) {
+					ai->metaCmds->move(u->first, p->second[s2+2]);
+					ai->metaCmds->move(u->first, p->second[s2+3], true);
 				}
 				
 				/* Now calculate the projection of upos onto the line spanned by s2-s1 */
@@ -76,17 +76,13 @@ void CPathfinder::updatePaths() {
 				float3 up = upos - p->second[s2];
 				/* proj_P(x) = (x dot u) * u */
 				float3 uproj = uP * (up.x * uP.x + up.z * uP.z);
-				float3 PP = uproj + p->second[s2];
-				ai->call->CreateLineFigure(upos, PP, 8.0f, 1, 30*6, 3);
-				ai->call->SetFigureColor(3, 1.0f, 0.0f, 0.0f, 1.0f);
 				/* calc pos on total path */
-				float uposonpath = uproj.Length2D() + length;
+				float uposonpath = length - uproj.Length2D();
 				/* A map sorts on key (low to high) by default */
 				M[uposonpath] = u->first;
 			}
+			/* Set a wait cmd on units that are going to fast */
 			float rearval = M.begin()->first;
-			float3 rearunitpos = ai->call->GetUnitPos(M.begin()->second);
-			ai->call->CreateLineFigure(rearunitpos, float3(rearunitpos.x, rearunitpos.y+100,rearunitpos.z), 8.0f, 1, 30, 2);
 			for (std::map<float,int>::iterator i = --M.end(); i != M.begin(); i--) {
 				if (i->first - rearval > maxGroupLength) {
 					if (ai->military->groups[p->first][i->second]) {
@@ -97,14 +93,12 @@ void CPathfinder::updatePaths() {
 				else break;
 			}
 			/* Recalculate the path every now and then */
-			/* this still messes things up a bit hehe
 			if (waypoint % 3 == 0) {
 				if (draw) ai->call->DeleteFigureGroup(1);
 				int target = ai->tasks->getTarget(p->first);
 				float3 goal = ai->cheat->GetUnitPos(target);
 				addPath(p->first, p->second[waypoint], goal);
 			}
-			*/
 		}
 	}
 }
@@ -151,11 +145,11 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path) {
 	std::vector<ANode*> nodepath;
 	bool success = findPath(nodepath);
 	if (success) {
-		//HACKISH
+		/* Insert a pre-waypoint at the beginning of the path */
 		float3 s0 = dynamic_cast<Node*>(nodepath[nodepath.size()-1])->toFloat3();
 		float3 s1 = dynamic_cast<Node*>(nodepath[nodepath.size()-2])->toFloat3();
 		float3 seg= s0 - s1;
-		seg *= 6.0f;
+		seg *= 10.0f;
 		seg += s0;
 		seg *= RES;
 		seg.y = ai->call->GetElevation(seg.x, seg.z)+10;
