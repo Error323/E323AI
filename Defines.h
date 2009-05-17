@@ -5,6 +5,7 @@
 
 #define MAX_FLOAT 1000000000.0f
 #define MAX_INT   1000000000
+#define EPSILON   1.0f/MAX_FLOAT
 
 #define ERRORVECTOR float3(-1,0,0)
 

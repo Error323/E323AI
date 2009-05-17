@@ -49,7 +49,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->eco     	= new CEconomy(ai);
 	ai->tasks     	= new CTaskPlan(ai);
 	ai->threatMap   = new CThreatMap(ai);
-	ai->pf          = new CPathfinder(ai, ai->threatMap->W, ai->threatMap->H, ai->threatMap->REAL);
+	ai->pf          = new CPathfinder(ai, ai->threatMap->W, ai->threatMap->H, ai->threatMap->RES);
 	ai->intel       = new CIntel(ai);
 	ai->military    = new CMilitary(ai);
 
@@ -201,7 +201,7 @@ void CE323AI::UnitMoveFailed(int unit) {
 
 
 /***********************
- * LOS related callins *
+ * Enemy related callins *
  ***********************/
 
 void CE323AI::EnemyEnterLOS(int enemy) {

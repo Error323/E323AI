@@ -34,7 +34,7 @@ class CPathfinder: public AAStar {
 		void removePath(int unitOrGroup);
 
 		int X,Z,dx2,dz2;
-		float RES;
+		float RES, REAL;
 
 		std::vector<Node> map;
 
@@ -53,10 +53,12 @@ class CPathfinder: public AAStar {
 		inline int id(int x, int z) { return x*Z+z; }
 
 		/* Start pathfinding */
-		bool getPath(float3 &s, float3 &g, std::vector<float3> &path);
+		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, float radius = EPSILON);
 
 		/* The paths for individual units, or groups */
 		std::map<int, std::vector<float3> > paths;
+
+		std::vector<float> heightMap, slopeMap;
 
 		/* draw the path ? */
 		bool draw;

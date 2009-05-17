@@ -13,7 +13,7 @@ class CThreatMap {
 		float getThreat(float3 &center, float radius);
 		int W, H;
 		float *map;
-		float REAL;
+		int RES;
 
 	private:
 		AIClasses *ai;	
@@ -21,8 +21,8 @@ class CThreatMap {
 		void draw();
 
 		int   *units;
-		int RES;
 		float totalPower;
+		float REAL;
 };
 
 #endif

@@ -5,17 +5,31 @@ CPathfinder::CPathfinder(AIClasses *ai, int X, int Z, float RES) {
 	this->X   = X;
 	this->Z   = Z;
 	this->RES = RES;
+	this->REAL= RES*8.0f;
 
 	/* initialize nodes */
 	for (int x = 0; x < X; x++)
 		for (int z = 0; z < Z; z++)
 			map.push_back(Node(id(x,z), x, z, 1.0f));
-	draw = false;
+	
+	heightMap.resize(X*Z, 0.0f);
+	slopeMap.resize(X*Z, 0.0f);
+
+	for (int x = 0; x < X; x++) {
+		for (int z = 0; z < Z; z++) {
+			heightMap[id(x,z)] = *(ai->call->GetHeightMap() + int(x*RES*Z+z*RES));
+			slopeMap[id(x,z)]  = *(ai->call->GetSlopeMap() + int(x*RES*Z+z*RES));
+		}
+	}
+
+	draw = true;
 }
 
 void CPathfinder::updateMap(float *weights) {
-	for (unsigned i = 0; i < map.size(); i++)
-		map[i].w = weights[i];
+	for (unsigned i = 0; i < map.size(); i++) {
+		map[i].w = weights[i] + slopeMap[i];
+		
+	}
 }
 
 void CPathfinder::updatePaths() {
@@ -24,6 +38,7 @@ void CPathfinder::updatePaths() {
 
 	/* Go through all the paths */
 	for (p = paths.begin(); p != paths.end(); p++) {
+		int waypoint = 0;
 
 		/* if this path isn't found in a group, it's a path for a single unit */
 		if (ai->military->groups.find(p->first) == ai->military->groups.end()) {
@@ -32,9 +47,8 @@ void CPathfinder::updatePaths() {
 
 		/* Else its a group path */
 		else {
-			float maxGroupLength = ai->military->groups[p->first].size()*10.0f;
+			float maxGroupLength = std::max<float>(ai->military->groups[p->first].size()*10.0f, 100.0f);
 			std::map<float, int> M;
-			int   waypoint = 0;
 
 			/* Go through all the units in a group */
 			for (u = ai->military->groups[p->first].begin(); u != ai->military->groups[p->first].end(); u++) {
@@ -50,7 +64,7 @@ void CPathfinder::updatePaths() {
 				float3 upos = ai->call->GetUnitPos(u->first);
 
 				/* Go through the path to determine the unit's segment on the path */
-				for (unsigned s = 1; s < p->second.size()-3; s++) {
+				for (unsigned s = 1; s < p->second.size()-4; s++) {
 					float3 d1  = upos - p->second[s-1];
 					float3 d2  = upos - p->second[s];
 					float l1 = d1.Length2D();
@@ -68,7 +82,7 @@ void CPathfinder::updatePaths() {
 				/* Move the unit to the next two waypoints */
 				if (ai->call->GetCurrentUnitCommands(u->first)->size() <= 1) {
 					ai->metaCmds->move(u->first, p->second[s2+2]);
-					ai->metaCmds->move(u->first, p->second[s2+3], true);
+					ai->metaCmds->move(u->first, p->second[s2+4], true);
 				}
 				
 				/* Now calculate the projection of upos onto the line spanned by s2-s1 */
@@ -94,20 +108,20 @@ void CPathfinder::updatePaths() {
 				}
 				else break;
 			}
-			/* Recalculate the path every now and then */
-			if (waypoint % 3 == 0) {
-				if (draw) ai->call->DeleteFigureGroup(1);
-				int target = ai->tasks->getTarget(p->first);
-				float3 goal = ai->cheat->GetUnitPos(target);
-				addPath(p->first, p->second[waypoint], goal);
-			}
+		}
+		/* Recalculate the path every now and then */
+		if (waypoint % 3 == 0) {
+			if (draw) ai->call->DeleteFigureGroup(1);
+			int target = ai->tasks->getTarget(p->first);
+			float3 goal = ai->cheat->GetUnitPos(target);
+			addPath(p->first, p->second[waypoint], goal);
 		}
 	}
 }
 
 void CPathfinder::addPath(int unitOrGroup, float3 &start, float3 &goal) {
 	std::vector<float3> path;
-	getPath(start, goal, path);
+	getPath(start, goal, path, 200.0f);
 	paths[unitOrGroup] = path;
 }
 
@@ -134,12 +148,12 @@ void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	}
 }
 
-bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path) {
+bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, float radius) {
 	/* If exceeding, snap to boundaries */
-	int sx  = int(round(s.x/RES)); sx = std::max<int>(sx, 1); sx = std::min<int>(sx, X-2);
-	int sz  = int(round(s.z/RES)); sz = std::max<int>(sz, 1); sz = std::min<int>(sz, Z-2);
-	int gx  = int(round(g.x/RES)); gx = std::max<int>(gx, 1); gx = std::min<int>(gx, X-2);
-	int gz  = int(round(g.z/RES)); gz = std::max<int>(gz, 1); gz = std::min<int>(gz, Z-2);
+	int sx  = int(round(s.x/REAL)); sx = std::max<int>(sx, 1); sx = std::min<int>(sx, X-2);
+	int sz  = int(round(s.z/REAL)); sz = std::max<int>(sz, 1); sz = std::min<int>(sz, Z-2);
+	int gx  = int(round(g.x/REAL)); gx = std::max<int>(gx, 1); gx = std::min<int>(gx, X-2);
+	int gz  = int(round(g.z/REAL)); gz = std::max<int>(gz, 1); gz = std::min<int>(gz, Z-2);
 	start = &map[id(sx, sz)];
 	goal = &map[id(gx, gz)];
 	dx2 = sx - gx;
@@ -153,16 +167,17 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path) {
 		float3 seg= s0 - s1;
 		seg *= 10.0f;
 		seg += s0;
-		seg *= RES;
+		seg *= REAL;
 		seg.y = ai->call->GetElevation(seg.x, seg.z)+10;
 		path.push_back(seg);
 
 		for (unsigned i = nodepath.size()-1; i > 0; i--) {
 			Node *n = dynamic_cast<Node*>(nodepath[i]);
 			float3 f = n->toFloat3();
-			f *= RES;
+			f *= REAL;
 			f.y = ai->call->GetElevation(f.x, f.z)+10;
 			path.push_back(f);
+			if ((f-g).Length2D() <= radius) break;
 		}
 
 		if (draw) {
@@ -180,5 +195,5 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 	int dx = n1->x - n2->x;
 	int dz = n1->z - n2->z;
 	float h = sqrt(dx*dx + dz*dz);
-	return h + abs(dx*dz2 - dx2*dz)*0.001;
+	return h + abs(dx*dz2 - dx2*dz)*EPSILON;
 }

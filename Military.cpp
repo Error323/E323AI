@@ -39,7 +39,7 @@ void CMilitary::update(int frame) {
 			float enemyStrength = ai->threatMap->getThreat(goal, 100.0f);
 
 			/* If we can confront the enemy, do so */
-			if (groups[currentGroup].size() >= 30) {
+			if (currentGroupStrength >= enemyStrength*1.2f) {
 				/* Add the taskplan */
 				ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
 
@@ -55,10 +55,6 @@ void CMilitary::update(int frame) {
 
 	/* Always build some unit */
 	ai->eco->addWish(factory, randomUnit(), NORMAL);
-
-	/* Always have enough scouts lying around */
-	//if (scouts.size() < ai->intel->mobileBuilders.size())
-	//	ai->eco->addWish(factory, scout, HIGH);
 }
 
 float3 CMilitary::getGroupPos(int group) {
@@ -94,7 +90,7 @@ void CMilitary::removeFromGroup(int unit) {
 }
 
 UnitType* CMilitary::randomUnit() {
-	int r = rng.RandInt(2);
+	int r = rng.RandInt(3);
 	switch(r) {
 		case 0: return scout;
 		case 1: return antiair;
