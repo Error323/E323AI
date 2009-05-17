@@ -18,7 +18,10 @@ class CMetaCommands {
 		bool moveForward(int unit, float dist);
 
 		/* Move random */
-		bool moveRandom(int unit, float radius);
+		bool moveRandom(int unit, float radius, bool enqueue = false);
+
+		/* Move unit with id uid to position pos */
+		bool moveSemiRand(int uid, float3 &pos, bool enqueue = false);
 
 		/* Move unit with id uid to position pos */
 		bool move(int uid, float3 &pos, bool enqueue = false);

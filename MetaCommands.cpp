@@ -19,6 +19,16 @@ void CMetaCommands::moveGroup(int group, float3 &pos, bool enqueue) {
 		move(i->first, pos, enqueue);
 }
 
+bool CMetaCommands::moveSemiRand(int unit, float3 &pos, bool enqueue) {
+	float3 newpos(rng.RandFloat(), 0.0f, rng.RandFloat());
+	newpos.Normalize();
+	newpos   *= 50.0f;
+	newpos.x += pos.x;
+	newpos.y  = pos.y;
+	newpos.z += pos.z;
+	return move(unit, newpos, enqueue);
+}
+
 bool CMetaCommands::moveForward(int unit, float dist) {
 	float3 upos = ai->call->GetUnitPos(unit);
 	facing f = getBestFacing(upos);
@@ -52,7 +62,7 @@ bool CMetaCommands::setOnOff(int unit, bool on) {
 	return false;
 }
 
-bool CMetaCommands::moveRandom(int unit, float radius) {
+bool CMetaCommands::moveRandom(int unit, float radius, bool enqueue) {
 	float3 pos = ai->call->GetUnitPos(unit);
 	float3 newpos(rng.RandFloat(), 0.0f, rng.RandFloat());
 	newpos.Normalize();
@@ -60,7 +70,7 @@ bool CMetaCommands::moveRandom(int unit, float radius) {
 	newpos.x += pos.x;
 	newpos.y  = pos.y;
 	newpos.z += pos.z;
-	return move(unit, newpos);
+	return move(unit, newpos, enqueue);
 }
 
 bool CMetaCommands::move(int unit, float3 &pos, bool enqueue) {

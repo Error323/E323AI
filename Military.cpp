@@ -39,7 +39,7 @@ void CMilitary::update(int frame) {
 			float enemyStrength = ai->threatMap->getThreat(goal, 100.0f);
 
 			/* If we can confront the enemy, do so */
-			if (groups[currentGroup].size() >= 2) {
+			if (groups[currentGroup].size() >= 5) {
 				/* Add the taskplan */
 				ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
 
@@ -54,7 +54,7 @@ void CMilitary::update(int frame) {
 	}
 
 	/* Always build some unit */
-	ai->eco->addWish(factory, randomUnit(), LOW);
+	ai->eco->addWish(factory, randomUnit(), NORMAL);
 
 	/* Always have enough scouts lying around */
 	//if (scouts.size() < ai->intel->mobileBuilders.size())

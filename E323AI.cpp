@@ -122,7 +122,7 @@ void CE323AI::UnitFinished(int unit) {
 	}
 	else {
 		if (c&MOBILE) {
-			ai->metaCmds->moveForward(unit, 300.0f);
+			ai->metaCmds->moveForward(unit, 100.0f);
 			ai->military->addToGroup(unit);
 		}
 	}
