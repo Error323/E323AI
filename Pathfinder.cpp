@@ -45,7 +45,7 @@ void CPathfinder::updatePaths() {
 				}
 
 				float segDist = MAX_FLOAT;
-				int s1 = 0, s2 = 0;
+				int s1 = -1, s2 = 0;
 				float3 upos = ai->call->GetUnitPos(u->first);
 
 				/* Go through the path to determine the unit's segment on the path */
@@ -69,30 +69,37 @@ void CPathfinder::updatePaths() {
 				}
 				
 				/* Now calculate the projection of upos onto the line spanned by s2-s1 */
-				float3 uP = (p->second[s2] - p->second[s1]).Normalize();
+				float3 uP = (p->second[s2] - p->second[s1]).Normalize2D();
 				float3 up = upos - p->second[s1];
 				/* proj_P(x) = (x dot u) * u */
-				float3 uproj = uP * up.dot(uP);
+				float3 uproj = uP * (up.x * uP.x + up.z * uP.z);
+				//float3 PP = uproj + p->second[s1];
+				//ai->call->SetFigureColor(3, 1.0f, 0.0f, 0.0f, 1.0f);
+				//ai->call->CreateLineFigure(PP, float3(PP.x, PP.y+100,PP.z), 8.0f, 1, 30*6, 3);
 				/* calc pos on total path */
 				float uposonpath = uproj.Length2D() + (s1*RES);
 				/* A map sorts on key (low to high) by default */
 				M[uposonpath] = u->first;
 			}
 			float rearval = M.begin()->first;
+			//float3 rearunitpos = ai->call->GetUnitPos(M.begin()->second);
+			//ai->call->DeleteFigureGroup(2);
+			//ai->call->CreateLineFigure(rearunitpos, float3(rearunitpos.x, rearunitpos.y+100,rearunitpos.z), 8.0f, 1, 30, 2);
 			for (std::map<float,int>::iterator i = --M.end(); i != M.begin(); i--) {
-				if ((i->first - rearval) > maxGroupLength) {
+				if (i->first - rearval > maxGroupLength) {
 					/* Make the unit wait */
-					if (ai->military->groups[p->first][i->second]) {
-						ai->metaCmds->wait(i->second);
-						ai->military->groups[p->first][i->second] = false;
-					}
+					//if (ai->military->groups[p->first][i->second]) {
+					//	ai->metaCmds->wait(i->second);
+					//	ai->military->groups[p->first][i->second] = false;
+					//}
 				}
 				else break;
 			}
 			/* Recalculate the path every now and then */
-			int target = ai->tasks->getTarget(p->first);
-			float3 goal = ai->cheat->GetUnitPos(target);
 			if (waypoint % 3 == 0) {
+				if (draw) ai->call->DeleteFigureGroup(1);
+				int target = ai->tasks->getTarget(p->first);
+				float3 goal = ai->cheat->GetUnitPos(target);
 				addPath(p->first, p->second[waypoint], goal);
 			}
 		}
@@ -141,12 +148,22 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path) {
 	std::vector<ANode*> nodepath;
 	bool success = findPath(nodepath);
 	if (success) {
+		//Node *n1 = dynamic_cast<Node*>(nodepath[nodepath.size()-1]);
+		//Node *n2 = dynamic_cast<Node*>(nodepath[nodepath.size()-2]);
+		//float3 f1 = n1->toFloat3() - n2->toFloat3();
+		//f1 *= 1000.0f;
+		//path.push_back(f1);
 		for (unsigned i = nodepath.size()-1; i > 0; i--) {
 			Node *n = dynamic_cast<Node*>(nodepath[i]);
 			float3 f = n->toFloat3();
 			f *= RES;
+			f.y = ai->call->GetElevation(f.x, f.z)+10;
 			path.push_back(f);
 		}
+
+		if (draw)
+			for (unsigned i = 1; i < path.size(); i++) 
+				ai->call->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 3000, 1);
 	}
 	return success;
 }

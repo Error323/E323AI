@@ -54,7 +54,7 @@ void CMilitary::update(int frame) {
 	}
 
 	/* Always build some unit */
-	ai->eco->addWish(factory, randomUnit(), NORMAL);
+	ai->eco->addWish(factory, randomUnit(), LOW);
 
 	/* Always have enough scouts lying around */
 	//if (scouts.size() < ai->intel->mobileBuilders.size())
@@ -94,11 +94,11 @@ void CMilitary::removeFromGroup(int unit) {
 }
 
 UnitType* CMilitary::randomUnit() {
-	int r = rng.RandInt(3);
+	int r = rng.RandInt(2);
 	switch(r) {
 		case 0: return scout;
-		case 1: return artie;
-		case 2: return antiair;
+		case 1: return antiair;
+		case 2: return artie;
 	}
 	return NULL;
 }

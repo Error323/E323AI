@@ -103,7 +103,8 @@ void CE323AI::UnitFinished(int unit) {
 
 		if (c&BUILDER && c&MOBILE) {
 			ai->eco->gameBuilders[unit]  = ut;
-			ai->metaCmds->moveForward(unit, -70.0f);
+			if (!(c&COMMANDER))
+				ai->metaCmds->moveForward(unit, -70.0f);
 		}
 
 		if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
