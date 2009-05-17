@@ -72,7 +72,9 @@ void CPathfinder::updatePaths() {
 				}
 				
 				/* Now calculate the projection of upos onto the line spanned by s2-s1 */
-				float3 uP = (p->second[s1] - p->second[s2]).Normalize2D();
+				float3 uP = (p->second[s1] - p->second[s2]);
+				uP.y = 0.0f;
+				uP.Normalize();
 				float3 up = upos - p->second[s2];
 				/* proj_P(x) = (x dot u) * u */
 				float3 uproj = uP * (up.x * uP.x + up.z * uP.z);
