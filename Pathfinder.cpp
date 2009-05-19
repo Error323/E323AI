@@ -89,8 +89,8 @@ void CPathfinder::updatePaths() {
 				}
 
 				/* We are very close, no need for calculation */
-				if (p->second.size() <= 1) {
-					ai->metaCmds->moveGroup(p->first, p->second[p->second.size()-1]);
+				if (p->second.size() == 1) {
+					ai->metaCmds->moveGroup(p->first, p->second[0], true);
 					continue;
 				}
 
