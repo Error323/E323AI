@@ -6,10 +6,11 @@
 
 class CPathfinder: public AAStar {
 	public:
+		enum nodeType{BLOCKED, START, GOAL, NORMAL};
+
 		CPathfinder(AIClasses *ai);
 		~CPathfinder(){};
 
-		enum nodeType{BLOCKED, START, GOAL, NORMAL};
 
 		class Node : public ANode {
 			public:
@@ -21,7 +22,7 @@ class CPathfinder: public AAStar {
 				CPathfinder::nodeType type;
 				int x, z;
 				bool blocked() {return type == CPathfinder::BLOCKED;}
-				void setType(CPathfinder::nodeType nt) {type = nt;}
+				void setType(nodeType nt) {type = nt;}
 				float3 toFloat3() {return float3(x,0.0f,z);}
 		};
 

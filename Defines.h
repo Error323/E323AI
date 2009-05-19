@@ -39,6 +39,9 @@
 /* Threatmap resolution */
 #define THREATRES 8
 
+/* Minimal group size */
+#define MINGROUPSIZE 5
+
 
 /* Facings */
 enum facing {

@@ -22,16 +22,17 @@ CPathfinder::CPathfinder(AIClasses *ai) {
 		}
 	}
 
-/*
-	for (int x = 1; x < X-1; x++) {
-		map[id(x,0  )].setType(CPathfinder::BLOCKED);
-		map[id(x,Z-1)].setType(CPathfinder::BLOCKED);
+	/* Block the borders */
+	for (int x = 0; x < X; x++) {
+		map[id(x,0  )].setType(BLOCKED);
+		map[id(x,(Z-1))].setType(BLOCKED);
 	}
-	for (int z = 1; z < Z-1; z++) {
-		map[id(0,  z)].setType(CPathfinder::BLOCKED);
-		map[id(X-1,z)].setType(CPathfinder::BLOCKED);
+
+	for (int z = 0; z < Z; z++) {
+		map[id(0,  z)].setType(BLOCKED);
+		map[id((X-1),z)].setType(BLOCKED);
 	}
-*/
+
 	draw = false;
 }
 
@@ -49,8 +50,10 @@ void CPathfinder::updatePaths() {
 	for (p = paths.begin(); p != paths.end(); p++) {
 		int waypoint = 0;
 
-		/* if this path isn't found in a group, it's a path for a single unit */
-		if (ai->military->groups.find(p->first) == ai->military->groups.end()) {
+		/* if this path isn't found in a group or the group has size 1, it's a path for a single unit */
+		if (ai->military->groups.find(p->first) == ai->military->groups.end() || 
+            ai->military->groups[p->first].size() <= 1) {
+
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
 			int s1 = 0, s2 = 1;
 			float3 upos = ai->call->GetUnitPos(p->first);
@@ -120,7 +123,7 @@ void CPathfinder::updatePaths() {
 			}
 			ai->metaCmds->moveGroup(p->first, p->second[waypoint]);
 
-			/* Set a wait cmd on units that are going to fast */
+			/* Set a wait cmd on units that are going to fast, (They can still attack during a wait) */
 			float rearval = M.begin()->first;
 			for (std::map<float,int>::iterator i = --M.end(); i != M.begin(); i--) {
 				if (i->first - rearval > maxGroupLength) {
@@ -187,7 +190,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int u
 		float3 s0 = dynamic_cast<Node*>(nodepath[nodepath.size()-1])->toFloat3();
 		float3 s1 = dynamic_cast<Node*>(nodepath[nodepath.size()-2])->toFloat3();
 		float3 seg= s0 - s1;
-		seg *= 10.0f;
+		seg *= 100.0f;
 		seg += s0;
 		seg *= REAL;
 		seg.y = ai->call->GetElevation(seg.x, seg.z)+10;
@@ -228,7 +231,7 @@ void CPathfinder::drawMap() {
 			float3 p1(p0);
 			p1.y += map[id(x,z)].w/100.0f;
 			ai->call->CreateLineFigure(p0, p1, 4, 1, 8*30, 4);
-			if (map[id(x,z)].type == CPathfinder::BLOCKED)
+			if (map[id(x,z)].type == BLOCKED)
 				ai->call->SetFigureColor(4, 1.0f, 0.0f, 0.0f, 1.0f);
 			else
 				ai->call->SetFigureColor(4, 0.0f, 1.0f, 0.0f, 1.0f);

@@ -20,15 +20,24 @@ void CMilitary::init(int unit) {
 int CMilitary::selectHarrasTarget(int scout) {
 	std::vector<int> occupiedTargets;
 	ai->tasks->getMilitaryTasks(HARRAS, occupiedTargets);
-	int target = -1;
+	int target;
 
 	/* First sort the targets on distance */
 	std::map<float, int> M;
 	float3 pos = ai->call->GetUnitPos(scout);
-	for (unsigned i = 0; i < ai->intel->metalMakers.size(); i++) {
-		int t = ai->intel->metalMakers[i];
+	target = selectTarget(pos, ai->intel->metalMakers, occupiedTargets);
+	return target;
+}
+
+int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vector<int> &occupied) {
+	int target = -1;
+	std::map<float, int> M;
+
+	/* First sort the targets on distance */
+	for (unsigned i = 0; i < targets.size(); i++) {
+		int t = targets[i];
 		float3 epos = ai->cheat->GetUnitPos(t);
-		float dist = (epos-pos).Length2D();
+		float dist = (epos-ourPos).Length2D();
 		M[dist] = t;
 	}
 
@@ -36,8 +45,8 @@ int CMilitary::selectHarrasTarget(int scout) {
 	for (std::map<float,int>::iterator i = M.begin(); i != M.end(); i++) {
 		target = i->second;
 		bool isOccupied = false;
-		for (unsigned j = 0; j < occupiedTargets.size(); j++) {
-			if (target == occupiedTargets[j]) {
+		for (unsigned j = 0; j < occupied.size(); j++) {
+			if (target == occupied[j]) {
 				isOccupied = true;
 				break;
 			}
@@ -48,9 +57,61 @@ int CMilitary::selectHarrasTarget(int scout) {
 	return target;
 }
 
+int CMilitary::selectAttackTarget(int group) {
+	std::vector<int> occupiedTargets;
+	ai->tasks->getMilitaryTasks(ATTACK, occupiedTargets);
+	int target;
+	float3 pos = getGroupPos(group);
+
+	/* Select an energyMaking target */
+	target = selectTarget(pos, ai->intel->energyMakers, occupiedTargets);
+	if (target != -1) return target;
+
+	/* Select a mobile builder target */
+	target = selectTarget(pos, ai->intel->mobileBuilders, occupiedTargets);
+	if (target != -1) return target;
+
+	/* Select a factory target */
+	target = selectTarget(pos, ai->intel->factories, occupiedTargets);
+	if (target != -1) return target;
+
+	/* Select an offensive target */
+	target = selectTarget(pos, ai->intel->attackers, occupiedTargets);
+	if (target != -1) return target;
+
+	return -1;
+}
+
 void CMilitary::update(int frame) {
+	/* Always have enough scouts */
 	if (scouts.size() < ai->intel->metalMakers.size())
 		ai->eco->addWish(factory, scout, NORMAL);
+
+	/* Give idle groups a new attack plan */
+	std::map<int, std::map<int, bool> >::iterator i;
+	for (i = groups.begin(); i != groups.end(); i++) {
+		bool currentGroup  = (i->first == currentGroup);
+		bool busy = (ai->tasks->militaryplans.find(i->first) != ai->tasks->militaryplans.end());
+
+		if (currentGroup || busy) continue;
+
+		int target = selectAttackTarget(i->first);
+		if (target != -1) {
+			float3 goal = ai->cheat->GetUnitPos(target);
+			float enemyStrength = ai->threatMap->getThreat(goal, 50.0f);
+
+			/* If we can confront the enemy, do so */
+			if (strength[i->first] >= enemyStrength*1.2f) {
+				/* Add the taskplan */
+				ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
+
+				/* Bootstrap the path */
+				float3 start = getGroupPos(currentGroup);
+				ai->pf->addPath(currentGroup, start, goal); 
+				break;
+			}
+		}
+	}
 
 	/* If we have a scout, harras the enemy */
 	if (!scouts.empty()) {
@@ -69,18 +130,6 @@ void CMilitary::update(int frame) {
 				ai->pf->addPath(scout, start, goal);
 				scouts[scout] = true;
 			}
-		/*
-			for (unsigned i = 0; i < ai->intel->metalMakers.size(); i++) {
-				int target      = ai->intel->metalMakers[i];
-				float3 metalPos = ai->cheat->GetUnitPos(target);
-				if (ai->threatMap->getThreat(metalPos, 10.0f) < 50.0f) {
-					ai->tasks->addMilitaryPlan(HARRAS, scout, target);
-					float3 start = ai->call->GetUnitPos(scout);
-					ai->pf->addPath(scout, start, metalPos);
-					scouts[scout] = true;
-				}
-			}
-		*/
 		}
 	} else ai->eco->addWish(factory, scout, HIGH);
 	
@@ -94,24 +143,24 @@ void CMilitary::update(int frame) {
 	/* Else pick a target, decide group power required and attack */
 	else {
 		/* Pick a target */
-		int target;
-		if (!ai->intel->factories.empty() || !ai->intel->energyMakers.empty()) {
-			target = (ai->intel->factories.empty()) ? ai->intel->energyMakers[0] : ai->intel->factories[0];
-			float3 goal = ai->cheat->GetUnitPos(target);
-			float enemyStrength = ai->threatMap->getThreat(goal, 10.0f);
+		if (groups[currentGroup].size() >= MINGROUPSIZE) {
+			int target = selectAttackTarget(currentGroup);
+			if (target != -1) {
+				float3 goal = ai->cheat->GetUnitPos(target);
+				float enemyStrength = ai->threatMap->getThreat(goal, 100.0f);
 
-			/* If we can confront the enemy, do so */
-			if (currentGroupStrength >= enemyStrength*1.2f && groups[currentGroup].size() >= 5) {
-			//if (groups[currentGroup].size() >= 4) {
-				/* Add the taskplan */
-				ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
+				/* If we can confront the enemy, do so */
+				if (strength[currentGroup] >= enemyStrength*1.2f) {
+					/* Add the taskplan */
+					ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
 
-				/* Bootstrap the path */
-				float3 start = getGroupPos(currentGroup);
-				ai->pf->addPath(currentGroup, start, goal); 
+					/* Bootstrap the path */
+					float3 start = getGroupPos(currentGroup);
+					ai->pf->addPath(currentGroup, start, goal); 
 
-				/* Create new group */
-				createNewGroup();
+					/* Create new group */
+					createNewGroup();
+				}
 			}
 		}
 	}
@@ -129,37 +178,34 @@ void CMilitary::createNewGroup() {
 	currentGroup+=10;
 	std::map<int, bool> G;
 	groups[currentGroup] = G;
-	currentGroupStrength = 0.0f;
-	sprintf(buf, "[CMilitary::createNewGroup]\t New group(%d)", currentGroup);
-	LOGN(buf);
+	strength[currentGroup] = 0.0f;
 }
 
 void CMilitary::addToGroup(int unit) {
 	groups[currentGroup][unit] = true;
 	units[unit] = currentGroup;
-	//currentGroupStrength += ai->call->GetUnitPower(unit) * ai->call->GetUnitMaxRange(unit);
-	currentGroupStrength += ai->call->GetUnitPower(unit);
-	sprintf(buf, "[CMilitary::addToGroup]\t Group(%d) adding %s new size %d", currentGroup, ai->call->GetUnitDef(unit)->name.c_str(), groups[currentGroup].size());
-	LOGN(buf);
+	strength[currentGroup] += (ai->call->GetUnitPower(unit) * ai->call->GetUnitMaxRange(unit));
 }
 
 void CMilitary::removeFromGroup(int unit) {
 	int group = units[unit];
 	groups[group].erase(unit);
 	units.erase(unit);
+	strength[group] -= ai->call->GetUnitPower(unit) * ai->call->GetUnitMaxRange(unit);
 	if (groups[group].empty() && group != currentGroup) {
 		groups.erase(group);
-		ai->call->EraseGroup(group);
+		strength.erase(group);
 		ai->tasks->militaryplans.erase(group);
 		ai->pf->removePath(group);
 	}
 }
 
 UnitType* CMilitary::randomUnit() {
-	int r = rng.RandInt(2);
-	switch(r) {
-		case 0: return antiair;
-		case 1: return artie;
-	}
-	return NULL;
+	float r = rng.RandFloat();
+	if (r > 0.1 && r < 0.6)
+		return artie;
+	else if(r >= 0.6)
+		return antiair;
+	else 
+		return scout;
 }

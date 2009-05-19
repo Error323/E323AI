@@ -24,9 +24,10 @@ class CMilitary {
 		float3 getGroupPos(int group);
 
 		/* military units */
-		std::map<int, bool> scouts;                 /* <unit id, isharrasing> */
-		std::map<int, std::map<int, bool> > groups; /* <group id, <unit id, isactive> > */
-		std::map<int, int> units;                   /* <unit id, group id> */
+		std::map<int, bool>                 scouts;   /* <unit id, isharrasing> */
+		std::map<int, std::map<int, bool> > groups;   /* <group id, <unit id, isactive> > */
+		std::map<int, int>                  units;    /* <unit id, group id> */
+		std::map<int, float>                strength; /* <group id, strength> */
 
 	private:
 		AIClasses *ai;
@@ -39,6 +40,10 @@ class CMilitary {
 		void createNewGroup();
 
 		int selectHarrasTarget(int unit);
+
+		int selectAttackTarget(int group);
+
+		int selectTarget(float3 &ourPos, std::vector<int> &targets, std::vector<int> &occupied);
 
 		/* Request a random unit for building */
 		UnitType* randomUnit();
