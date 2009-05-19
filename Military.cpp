@@ -99,11 +99,11 @@ void CMilitary::update(int frame) {
 			/* If we can confront the enemy, do so */
 			if (strength[i->first] >= enemyStrength*1.2f) {
 				/* Add the taskplan */
-				ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
+				ai->tasks->addMilitaryPlan(ATTACK, i->first, target);
 
 				/* Bootstrap the path */
-				float3 start = getGroupPos(currentGroup);
-				ai->pf->addPath(currentGroup, start, goal); 
+				float3 start = getGroupPos(i->first);
+				ai->pf->addPath(i->first, start, goal); 
 				break;
 			}
 		}
