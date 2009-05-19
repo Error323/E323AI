@@ -86,10 +86,10 @@ void CMilitary::update(int frame) {
 	/* Give idle groups a new attack plan */
 	std::map<int, std::map<int, bool> >::iterator i;
 	for (i = groups.begin(); i != groups.end(); i++) {
-		bool currentGroup  = (i->first == currentGroup);
-		bool busy = (ai->tasks->militaryplans.find(i->first) != ai->tasks->militaryplans.end());
+		bool isCurrentGroup  = (i->first == currentGroup);
+		bool isBusy = (ai->tasks->militaryplans.find(i->first) != ai->tasks->militaryplans.end());
 
-		if (currentGroup || busy) continue;
+		if (isCurrentGroup || isBusy) continue;
 
 		int target = selectAttackTarget(i->first);
 		if (target != -1) {
