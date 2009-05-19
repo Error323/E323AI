@@ -22,15 +22,17 @@ CPathfinder::CPathfinder(AIClasses *ai) {
 		}
 	}
 
-	for (int x = 0; x < X; x++) {
-		map[id(x,0)].setType(CPathfinder::BLOCKED);
+/*
+	for (int x = 1; x < X-1; x++) {
+		map[id(x,0  )].setType(CPathfinder::BLOCKED);
 		map[id(x,Z-1)].setType(CPathfinder::BLOCKED);
 	}
-	for (int z = 0; z < Z; z++) {
-		map[id(0,z)].setType(CPathfinder::BLOCKED);
+	for (int z = 1; z < Z-1; z++) {
+		map[id(0,  z)].setType(CPathfinder::BLOCKED);
 		map[id(X-1,z)].setType(CPathfinder::BLOCKED);
 	}
-	draw = true;
+*/
+	draw = false;
 }
 
 void CPathfinder::updateMap(float *weights) {
@@ -72,7 +74,7 @@ void CPathfinder::updatePaths() {
 
 		/* Else its a group path */
 		else {
-			float maxGroupLength = std::max<float>(ai->military->groups[p->first].size()*10.0f, 100.0f);
+			float maxGroupLength = std::max<float>(ai->military->groups[p->first].size()*30.0f, 100.0f);
 			std::map<float, int> M;
 
 			/* Go through all the units in a group */
@@ -141,7 +143,7 @@ void CPathfinder::updatePaths() {
 
 void CPathfinder::addPath(int unitOrGroup, float3 &start, float3 &goal) {
 	std::vector<float3> path;
-	getPath(start, goal, path, unitOrGroup, 100.0f);
+	getPath(start, goal, path, unitOrGroup);
 	paths[unitOrGroup] = path;
 }
 

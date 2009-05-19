@@ -68,11 +68,12 @@ void CTaskPlan::updateMilitaryPlans() {
 	for (i = militaryplans.begin(); i != militaryplans.end(); i++) {
 		MilitaryPlan *mp = i->second;
 		float3 target = ai->cheat->GetUnitPos(mp->target);
+		bool isgroup = ai->military->groups.find(i->first) != ai->military->groups.end();
 		if (target == NULLVECTOR) {
+			if (!isgroup) ai->military->scouts[i->first] = false;
 			erase.push_back(i->first);
 			continue;
 		}
-		bool isgroup = ai->military->groups.find(i->first) != ai->military->groups.end();
 		float3 pos;
 		if (isgroup)
 			pos = ai->military->getGroupPos(i->first);
@@ -86,8 +87,10 @@ void CTaskPlan::updateMilitaryPlans() {
 				ai->metaCmds->attack(i->first, mp->target);
 		}
 	}
-	for (unsigned int i = 0; i < erase.size(); i++)
+	for (unsigned int i = 0; i < erase.size(); i++) {
+		ai->pf->removePath(erase[i]);
 		militaryplans.erase(erase[i]);
+	}
 }
 
 void CTaskPlan::getMilitaryTasks(task t, std::vector<int> &targets) {

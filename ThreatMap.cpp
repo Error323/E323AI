@@ -49,7 +49,7 @@ float CThreatMap::getThreat(float3 &center, float radius) {
 void CThreatMap::update(int frame) {
 	totalPower = 0.0f;
 	for (int i = 0; i < X*Z; i++)
-		map[i] = std::max<float>(map[i]*0.9f, 1.0f);
+		map[i] = 1.0f;
 
 	int numUnits = ai->cheat->GetEnemyUnits(units, MAX_UNITS);
 	for (int i = 0; i < numUnits; i++) {
@@ -59,8 +59,8 @@ void CThreatMap::update(int frame) {
 		float3 pos(0.0f, 0.0f, 0.0f);
 		
 		if (ut->cats&ATTACKER && !ai->cheat->UnitBeingBuilt(units[i])) {
-			float range = ud->maxWeaponRange/REAL;
-			float power = /*(range*2*M_PI) /*/ ai->cheat->GetUnitPower(units[i]);
+			float range = (ud->maxWeaponRange*1.1f)/REAL;
+			float power = ai->cheat->GetUnitPower(units[i]);
 			int   R = (int) ceil(range);
 			for (int x = -R; x <= R; x++) {
 				for (int z = -R; z <= R; z++) {

@@ -38,6 +38,8 @@ class CMilitary {
 		/* Instantiates a new group */
 		void createNewGroup();
 
+		int selectHarrasTarget(int unit);
+
 		/* Request a random unit for building */
 		UnitType* randomUnit();
 

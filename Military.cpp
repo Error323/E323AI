@@ -17,6 +17,37 @@ void CMilitary::init(int unit) {
 	createNewGroup();
 }
 
+int CMilitary::selectHarrasTarget(int scout) {
+	std::vector<int> occupiedTargets;
+	ai->tasks->getMilitaryTasks(HARRAS, occupiedTargets);
+	int target = -1;
+
+	/* First sort the targets on distance */
+	std::map<float, int> M;
+	float3 pos = ai->call->GetUnitPos(scout);
+	for (unsigned i = 0; i < ai->intel->metalMakers.size(); i++) {
+		int t = ai->intel->metalMakers[i];
+		float3 epos = ai->cheat->GetUnitPos(t);
+		float dist = (epos-pos).Length2D();
+		M[dist] = t;
+	}
+
+	/* Select a non taken target */
+	for (std::map<float,int>::iterator i = M.begin(); i != M.end(); i++) {
+		target = i->second;
+		bool isOccupied = false;
+		for (unsigned j = 0; j < occupiedTargets.size(); j++) {
+			if (target == occupiedTargets[j]) {
+				isOccupied = true;
+				break;
+			}
+		}
+		if (isOccupied) continue;
+		else break;
+	}
+	return target;
+}
+
 void CMilitary::update(int frame) {
 	if (scouts.size() < ai->intel->metalMakers.size())
 		ai->eco->addWish(factory, scout, NORMAL);
@@ -30,6 +61,15 @@ void CMilitary::update(int frame) {
 				scout = s->first;
 
 		if (scout != -1) {
+			int target = selectHarrasTarget(scout);
+			if (target != -1) {
+				ai->tasks->addMilitaryPlan(HARRAS, scout, target);
+				float3 start = ai->call->GetUnitPos(scout);
+				float3 goal  = ai->cheat->GetUnitPos(target);
+				ai->pf->addPath(scout, start, goal);
+				scouts[scout] = true;
+			}
+		/*
 			for (unsigned i = 0; i < ai->intel->metalMakers.size(); i++) {
 				int target      = ai->intel->metalMakers[i];
 				float3 metalPos = ai->cheat->GetUnitPos(target);
@@ -40,6 +80,7 @@ void CMilitary::update(int frame) {
 					scouts[scout] = true;
 				}
 			}
+		*/
 		}
 	} else ai->eco->addWish(factory, scout, HIGH);
 	
@@ -60,7 +101,7 @@ void CMilitary::update(int frame) {
 			float enemyStrength = ai->threatMap->getThreat(goal, 10.0f);
 
 			/* If we can confront the enemy, do so */
-			if (currentGroupStrength >= enemyStrength*1.2f && groups[currentGroup].size() >= 30) {
+			if (currentGroupStrength >= enemyStrength*1.2f && groups[currentGroup].size() >= 5) {
 			//if (groups[currentGroup].size() >= 4) {
 				/* Add the taskplan */
 				ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
