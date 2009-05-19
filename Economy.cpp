@@ -131,9 +131,12 @@ void CEconomy::update(int frame) {
 		}
 	}
 
-	if (!gameFactories.empty()) 
+	if (!gameFactories.empty()) {
+		if (gameBuilders.size() <= 1)
+			addWish(factory, builder, HIGH);
 		if (stalling || exceeding || mRequest)
 			addWish(factory, builder, NORMAL);
+	}
 }
 
 void CEconomy::preventStalling() {

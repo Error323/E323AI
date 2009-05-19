@@ -17,13 +17,6 @@ void CMilitary::init(int unit) {
 	createNewGroup();
 }
 
-int CMilitary::selectHarrasTarget(int scout) {
-	std::vector<int> occupiedTargets;
-	ai->tasks->getMilitaryTasks(HARRAS, occupiedTargets);
-	float3 pos = ai->call->GetUnitPos(scout);
-	return selectTarget(pos, ai->intel->metalMakers, occupiedTargets);
-}
-
 int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vector<int> &occupied) {
 	int target = -1;
 	std::map<float, int> M;
@@ -51,6 +44,13 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vect
 		else break;
 	}
 	return target;
+}
+
+int CMilitary::selectHarrasTarget(int scout) {
+	std::vector<int> occupiedTargets;
+	ai->tasks->getMilitaryTasks(HARRAS, occupiedTargets);
+	float3 pos = ai->call->GetUnitPos(scout);
+	return selectTarget(pos, ai->intel->metalMakers, occupiedTargets);
 }
 
 int CMilitary::selectAttackTarget(int group) {
@@ -166,8 +166,12 @@ void CMilitary::update(int frame) {
 }
 
 float3 CMilitary::getGroupPos(int group) {
-	std::map<int, bool>::iterator i = groups[group].begin();
-	return ai->call->GetUnitPos(i->first);
+	std::map<int, bool>::iterator i;
+	float3 pos(0.0f, 0.0f, 0.0f);
+	for (i = groups[group].begin(); i != groups[group].end(); i++)
+		pos += ai->call->GetUnitPos(i->first);
+	pos /= groups[group].size();
+	return pos;
 }
 
 void CMilitary::createNewGroup() {

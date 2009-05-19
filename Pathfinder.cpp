@@ -88,6 +88,12 @@ void CPathfinder::updatePaths() {
 					u->second = true;
 				}
 
+				/* We are very close, no need for calculation */
+				if (p->second.size() <= 1) {
+					ai->metaCmds->moveGroup(p->first, p->second[p->second.size()-1]);
+					continue;
+				}
+
 				float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
 				float length = 0.0f;
 				int s1 = 0, s2 = 1;
@@ -187,14 +193,16 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int u
 	bool success = findPath(nodepath);
 	if (success) {
 		/* Insert a pre-waypoint at the beginning of the path */
-		float3 s0 = dynamic_cast<Node*>(nodepath[nodepath.size()-1])->toFloat3();
-		float3 s1 = nodepath.size() >= 2 ? (dynamic_cast<Node*>(nodepath[nodepath.size()-2])->toFloat3()) : g;
-		float3 seg= s0 - s1;
-		seg *= 100.0f;
-		seg += s0;
-		seg *= REAL;
-		seg.y = ai->call->GetElevation(seg.x, seg.z)+10;
-		path.push_back(seg);
+		if (nodepath.size() >= 2) {
+			float3 s0 = dynamic_cast<Node*>(nodepath[nodepath.size()-1])->toFloat3();
+			float3 s1 = dynamic_cast<Node*>(nodepath[nodepath.size()-2])->toFloat3();
+			float3 seg= s0 - s1;
+			seg *= 100.0f;
+			seg += s0;
+			seg *= REAL;
+			seg.y = ai->call->GetElevation(seg.x, seg.z)+10;
+			path.push_back(seg);
+		}
 
 		for (unsigned i = nodepath.size()-1; i > 0; i--) {
 			Node *n = dynamic_cast<Node*>(nodepath[i]);
