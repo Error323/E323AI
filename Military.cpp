@@ -20,13 +20,8 @@ void CMilitary::init(int unit) {
 int CMilitary::selectHarrasTarget(int scout) {
 	std::vector<int> occupiedTargets;
 	ai->tasks->getMilitaryTasks(HARRAS, occupiedTargets);
-	int target;
-
-	/* First sort the targets on distance */
-	std::map<float, int> M;
 	float3 pos = ai->call->GetUnitPos(scout);
-	target = selectTarget(pos, ai->intel->metalMakers, occupiedTargets);
-	return target;
+	return selectTarget(pos, ai->intel->metalMakers, occupiedTargets);
 }
 
 int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vector<int> &occupied) {
@@ -37,6 +32,7 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vect
 	for (unsigned i = 0; i < targets.size(); i++) {
 		int t = targets[i];
 		float3 epos = ai->cheat->GetUnitPos(t);
+		if (epos == NULLVECTOR) continue;
 		float dist = (epos-ourPos).Length2D();
 		M[dist] = t;
 	}
@@ -60,7 +56,7 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vect
 int CMilitary::selectAttackTarget(int group) {
 	std::vector<int> occupiedTargets;
 	ai->tasks->getMilitaryTasks(ATTACK, occupiedTargets);
-	int target;
+	int target = -1;
 	float3 pos = getGroupPos(group);
 
 	/* Select an energyMaking target */
@@ -79,7 +75,7 @@ int CMilitary::selectAttackTarget(int group) {
 	target = selectTarget(pos, ai->intel->attackers, occupiedTargets);
 	if (target != -1) return target;
 
-	return -1;
+	return target;
 }
 
 void CMilitary::update(int frame) {
