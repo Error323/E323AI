@@ -188,7 +188,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int u
 	if (success) {
 		/* Insert a pre-waypoint at the beginning of the path */
 		float3 s0 = dynamic_cast<Node*>(nodepath[nodepath.size()-1])->toFloat3();
-		float3 s1 = dynamic_cast<Node*>(nodepath[nodepath.size()-2])->toFloat3();
+		float3 s1 = nodepath.size() >= 2 ? (dynamic_cast<Node*>(nodepath[nodepath.size()-2])->toFloat3()) : g;
 		float3 seg= s0 - s1;
 		seg *= 100.0f;
 		seg += s0;
