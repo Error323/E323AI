@@ -50,7 +50,7 @@ class CPathfinder: public AAStar {
 		float heuristic(ANode *an1, ANode *an2);
 
 		/* Start pathfinding */
-		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, float radius = EPSILON);
+		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int unitOrGroup, float radius = EPSILON);
 
 		void drawMap();
 

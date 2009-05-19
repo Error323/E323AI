@@ -35,7 +35,7 @@ CPathfinder::CPathfinder(AIClasses *ai) {
 
 void CPathfinder::updateMap(float *weights) {
 	for (unsigned i = 0; i < map.size(); i++) {
-		map[i].w = weights[i] + heightMap[i]*slopeMap[i];
+		map[i].w = weights[i] + slopeMap[i]*10.0f;
 	}
 }
 
@@ -141,7 +141,7 @@ void CPathfinder::updatePaths() {
 
 void CPathfinder::addPath(int unitOrGroup, float3 &start, float3 &goal) {
 	std::vector<float3> path;
-	getPath(start, goal, path, 100.0f);
+	getPath(start, goal, path, unitOrGroup, 100.0f);
 	paths[unitOrGroup] = path;
 }
 
@@ -168,7 +168,7 @@ void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	}
 }
 
-bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, float radius) {
+bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int unitOrGroup, float radius) {
 	/* If exceeding, snap to boundaries */
 	int sx  = int(round(s.x/REAL)); sx = std::max<int>(sx, 1); sx = std::min<int>(sx, X-2);
 	int sz  = int(round(s.z/REAL)); sz = std::max<int>(sz, 1); sz = std::min<int>(sz, Z-2);
@@ -195,14 +195,15 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, float
 			Node *n = dynamic_cast<Node*>(nodepath[i]);
 			float3 f = n->toFloat3();
 			f *= REAL;
-			f.y = ai->call->GetElevation(f.x, f.z)+10;
+			f.y = ai->call->GetElevation(f.x, f.z)+20;
 			path.push_back(f);
 		}
 
 		if (draw) {
 			for (unsigned i = 2; i < path.size(); i++) 
-				ai->call->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, 1);
-			ai->call->SetFigureColor(1, 0.0f, 0.0f, 1.0f, 1.0f);
+				ai->call->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, unitOrGroup);
+			float3 c((unitOrGroup%1)/1.0f, (unitOrGroup%2)/2.0f, (unitOrGroup%3)/3.0f);
+			ai->call->SetFigureColor(unitOrGroup, c[0], c[1], c[2], 1.0f);
 		}
 	}
 	return success;
