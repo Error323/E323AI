@@ -200,7 +200,16 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 
 /* Called on move fail e.g. can't reach point */
 void CE323AI::UnitMoveFailed(int unit) {
-	ai->metaCmds->moveRandom(unit, 100.0f);
+	const UnitDef *ud = ai->call->GetUnitDef(unit);
+	sprintf(buf, "[CE323AI::UnitMoveFailed]\t %s(%d) failed moving", ud->humanName.c_str(), unit);
+	LOGN(buf);
+	UnitType* ut = UT(ud->id);
+	unsigned int c = ut->cats;
+
+	if (!(c&ATTACKER) || c&COMMANDER) {
+		ai->metaCmds->moveRandom(unit, 100.0f);
+	}
+	
 }
 
 
@@ -236,6 +245,20 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 }
 
 int CE323AI::HandleEvent(int msg, const void* data) {
+	const ChangeTeamEvent* cte = (const ChangeTeamEvent*) data;
+	switch(msg) {
+		case AI_EVENT_UNITGIVEN:
+			/* Unit gained */
+			if ((cte->newteam) == (ai->call->GetMyTeam()))
+				UnitFinished(cte->unit);
+		break;
+
+		case AI_EVENT_UNITCAPTURED:
+			/* Unit lost */
+			if ((cte->oldteam) == (ai->call->GetMyTeam()))
+				UnitDestroyed(cte->unit, 0);
+		break;
+	}
 	return 0;
 }
 
