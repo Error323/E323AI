@@ -1,15 +1,14 @@
 #include "ThreatMap.h"
 
 CThreatMap::CThreatMap(AIClasses *ai) {
-	RES = 8;
-	REAL = RES*8.0f;
+	REAL = THREATRES*8.0f;
 	this->ai = ai;
-	this->W  = ai->call->GetMapWidth() / RES;
-	this->H  = ai->call->GetMapHeight() / RES;
+	this->X  = ai->call->GetMapWidth() / THREATRES;
+	this->Z  = ai->call->GetMapHeight() / THREATRES;
 
-	map   = new float[W*H];
+	map   = new float[X*Z];
 	units = new int[MAX_UNITS];
-	for (int i = 0; i < W*H; i++)
+	for (int i = 0; i < X*Z; i++)
 		map[i] = 1.0f;
 }
 
@@ -21,8 +20,8 @@ CThreatMap::~CThreatMap() {
 float CThreatMap::getThreat(float3 &pos) {
 	int x = (int) pos.x/REAL;
 	int z = (int) pos.z/REAL;
-	if (x >= 0 && x < W && z >= 0 && z < H)
-		return map[x*H+z];
+	if (x >= 0 && x < X && z >= 0 && z < Z)
+		return map[id(x,z)];
 	else
 		return 0.0f;
 }
@@ -49,7 +48,7 @@ float CThreatMap::getThreat(float3 &center, float radius) {
 
 void CThreatMap::update(int frame) {
 	totalPower = 0.0f;
-	for (int i = 0; i < W*H; i++)
+	for (int i = 0; i < X*Z; i++)
 		map[i] = std::max<float>(map[i]*0.9f, 1.0f);
 
 	int numUnits = ai->cheat->GetEnemyUnits(units, MAX_UNITS);
@@ -72,8 +71,8 @@ void CThreatMap::update(int frame) {
 						pos.z += upos.z/REAL;
 						int mx = (int) round(pos.x);
 						int mz = (int) round(pos.z);
-						if (mx >= 0 && mx < W && mz >= 0 && mz < H)
-							map[mx*H+mz] += power;
+						if (mx >= 0 && mx < X && mz >= 0 && mz < Z)
+							map[id(mx,mz)] += power;
 					}
 				}
 			}
@@ -83,12 +82,12 @@ void CThreatMap::update(int frame) {
 }
 
 void CThreatMap::draw() {
-	for (int x = 0; x < W; x++) {
-		for (int z = 0; z < H; z++) {
-			if (map[x*H+z] > 1.0f) {
+	for (int x = 0; x < X; x++) {
+		for (int z = 0; z < Z; z++) {
+			if (map[id(x,z)] > 1.0f) {
 				float3 p0(x*REAL, 0.0f, z*REAL);
 				float3 p1(p0);
-				p1.y += map[x*H+z]/totalPower;
+				p1.y += map[id(x,z)]/totalPower;
 				p1.y *= 30.0f;
 				p1.y += 100.0f;
 				ai->call->CreateLineFigure(p0, p1, 4, 1, 300, 1);

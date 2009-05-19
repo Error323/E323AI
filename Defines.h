@@ -28,12 +28,16 @@
 #define UD(u) (ai->call->GetUnitDef(u))
 #define UT(u) (&(ai->unitTable->units[u]))
 #define COMM ai->unitTable->comm
+#define id(x,z) (x*Z+z)
 
 /* Metal to Energy ratio */
 #define METAL2ENERGY 45
 
 /* Max enemy units */
 #define MAX_UNITS 500
+
+/* Threatmap resolution */
+#define THREATRES 8
 
 
 /* Facings */

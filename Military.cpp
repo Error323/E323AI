@@ -60,7 +60,7 @@ void CMilitary::update(int frame) {
 			float enemyStrength = ai->threatMap->getThreat(goal, 10.0f);
 
 			/* If we can confront the enemy, do so */
-			if (currentGroupStrength >= enemyStrength*1.2f && groups[currentGroup].size() >= 4) {
+			if (currentGroupStrength >= enemyStrength*1.2f && groups[currentGroup].size() >= 30) {
 			//if (groups[currentGroup].size() >= 4) {
 				/* Add the taskplan */
 				ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
@@ -76,7 +76,7 @@ void CMilitary::update(int frame) {
 	}
 
 	/* Always build some unit */
-	ai->eco->addWish(factory, randomUnit(), LOW);
+	ai->eco->addWish(factory, randomUnit(), NORMAL);
 }
 
 float3 CMilitary::getGroupPos(int group) {

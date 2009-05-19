@@ -49,7 +49,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->eco     	= new CEconomy(ai);
 	ai->tasks     	= new CTaskPlan(ai);
 	ai->threatMap   = new CThreatMap(ai);
-	ai->pf          = new CPathfinder(ai, ai->threatMap->W, ai->threatMap->H, ai->threatMap->RES);
+	ai->pf          = new CPathfinder(ai);
 	ai->intel       = new CIntel(ai);
 	ai->military    = new CMilitary(ai);
 

@@ -1,11 +1,11 @@
 #include "Pathfinder.h"
 
-CPathfinder::CPathfinder(AIClasses *ai, int X, int Z, float RES) {
+CPathfinder::CPathfinder(AIClasses *ai) {
 	this->ai  = ai;
-	this->X   = X;
-	this->Z   = Z;
-	this->RES = RES;
-	this->REAL= RES*8.0f;
+	this->X   = int(ai->call->GetMapWidth() / THREATRES);
+	this->Z   = int(ai->call->GetMapHeight() / THREATRES);
+	this->REAL= THREATRES*8.0f;
+	int SLOPE = THREATRES/2.0f;
 
 	/* initialize nodes */
 	for (int x = 0; x < X; x++)
@@ -17,8 +17,8 @@ CPathfinder::CPathfinder(AIClasses *ai, int X, int Z, float RES) {
 
 	for (int x = 0; x < X; x++) {
 		for (int z = 0; z < Z; z++) {
-			heightMap[id(x,z)] = *(ai->call->GetHeightMap() + int(x*RES*Z+z*RES));
-			slopeMap[id(x,z)]  = *(ai->call->GetSlopeMap() + int(x*RES*Z+z*RES));
+			heightMap[id(x,z)] = *(ai->call->GetHeightMap() + int(z*THREATRES*THREATRES*X+x*THREATRES));
+			slopeMap[id(x,z)]  = *(ai->call->GetSlopeMap() + int(z*SLOPE*SLOPE*X+x*SLOPE));
 		}
 	}
 
@@ -30,14 +30,12 @@ CPathfinder::CPathfinder(AIClasses *ai, int X, int Z, float RES) {
 		map[id(0,z)].setType(CPathfinder::BLOCKED);
 		map[id(X-1,z)].setType(CPathfinder::BLOCKED);
 	}
-
 	draw = true;
 }
 
 void CPathfinder::updateMap(float *weights) {
 	for (unsigned i = 0; i < map.size(); i++) {
-		map[i].w = weights[i] + slopeMap[i];
-		
+		map[i].w = weights[i] + heightMap[i]*slopeMap[i];
 	}
 }
 
@@ -133,7 +131,7 @@ void CPathfinder::updatePaths() {
 			}
 		}
 		/* Recalculate the path every now and then */
-		if (waypoint % 4 == 0) {
+		if (waypoint > 0 && waypoint % 4 == 0) {
 			int target = ai->tasks->getTarget(p->first);
 			float3 goal = ai->cheat->GetUnitPos(target);
 			addPath(p->first, p->second[waypoint], goal);
@@ -217,4 +215,20 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 	int dz = n1->z - n2->z;
 	float h = sqrt(dx*dx + dz*dz);
 	return h + abs(dx*dz2 - dx2*dz)*EPSILON;
+}
+
+void CPathfinder::drawMap() {
+	for (int x = 0; x < X; x+=1) {
+		for (int z = 0; z < Z; z+=1) {
+			if (map[id(x,z)].w <= 2.0f) continue;
+			float3 p0(x*REAL, ai->call->GetElevation(x*REAL,z*REAL), z*REAL);
+			float3 p1(p0);
+			p1.y += map[id(x,z)].w/100.0f;
+			ai->call->CreateLineFigure(p0, p1, 4, 1, 8*30, 4);
+			if (map[id(x,z)].type == CPathfinder::BLOCKED)
+				ai->call->SetFigureColor(4, 1.0f, 0.0f, 0.0f, 1.0f);
+			else
+				ai->call->SetFigureColor(4, 0.0f, 1.0f, 0.0f, 1.0f);
+		}
+	}
 }

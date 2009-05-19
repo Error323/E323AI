@@ -6,7 +6,7 @@
 
 class CPathfinder: public AAStar {
 	public:
-		CPathfinder(AIClasses *ai, int X, int Z, float RES);
+		CPathfinder(AIClasses *ai);
 		~CPathfinder(){};
 
 		enum nodeType{BLOCKED, START, GOAL, NORMAL};
@@ -34,7 +34,7 @@ class CPathfinder: public AAStar {
 		void removePath(int unitOrGroup);
 
 		int X,Z,dx2,dz2;
-		float RES, REAL;
+		float REAL;
 
 		std::vector<Node> map;
 
@@ -49,17 +49,16 @@ class CPathfinder: public AAStar {
 		/* overload */
 		float heuristic(ANode *an1, ANode *an2);
 
-		/* get the id of the node */
-		inline int id(int x, int z) { return x*Z+z; }
-
 		/* Start pathfinding */
 		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, float radius = EPSILON);
+
+		void drawMap();
 
 		/* The paths for individual units, or groups */
 		std::map<int, std::vector<float3> > paths;
 
 		std::vector<float> heightMap, slopeMap;
-
+	
 		/* draw the path ? */
 		bool draw;
 };
