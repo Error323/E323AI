@@ -232,14 +232,23 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->highTrajectoryType == 2)
 		cats |= ARTILLERY;
 
-	/* As we can see here, a scout is rather subjective */
-	if (
-			!(cats & BUILDER) && 
-			ut->cost < 8000.0f && 
-			ud->speed >= 50.0f && 
-			ud->buildTime <= 4000.0f
-	   )
-		cats |= SCOUT;
+	if (cats&ATTACKER && cats&MOBILE && !(cats&BUILDER) && ud->speed >= 50.0f) {
+		std::map<int, UnitType*>::iterator i,j;
+		for (i = ut->buildBy.begin(); i != ut->buildBy.end(); i++) {
+			bool isCheapest = true;
+			UnitType *bb = i->second;
+			for (j = bb->canBuild.begin(); j != bb->canBuild.end(); j++) {
+				if (ut->cost > j->second->cost && !j->second->def->weapons.empty()) {
+					isCheapest = false;
+					break;
+				}
+			}
+			if (isCheapest) {
+				cats |= SCOUT;
+				break;
+			}
+		}
+	}
 
 	return cats;
 }
