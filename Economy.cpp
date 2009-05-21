@@ -45,19 +45,17 @@ void CEconomy::update(int frame) {
 	for (i = gameIdle.begin(); i != gameIdle.end(); i++) {
 		UnitType *ut     = i->second;
 		unsigned int c   = ut->cats;
-		int          u   = ut->id;
 		float3       pos = ai->call->GetUnitPos(i->first);
 		
 		if (c&FACTORY) {
-			std::map<int, std::priority_queue<Wish> >::iterator j;
-			j = wishlist.find(u);
 			/* There are no wishes */
-			if (j == wishlist.end() || j->second.empty()) continue;
-			const Wish *w = &(j->second.top());
-			if (canAffordToBuild(i->first, w->ut)) {
-				ai->metaCmds->factoryBuild(i->first, w->ut);
-				gameFactoriesBuilding[i->first] = w->ut;
-				j->second.pop();
+			if (ai->wl->empty(i->first)) continue;
+
+			UnitType *toBuild = ai->wl->top(i->first);
+			if (canAffordToBuild(i->first, toBuild)) {
+				ai->metaCmds->factoryBuild(i->first, toBuild);
+				gameFactoriesBuilding[i->first] = toBuild;
+				ai->wl->pop(i->first);
 			}
 			else {
 				gameFactoriesBuilding[i->first] = NULL;
@@ -131,12 +129,10 @@ void CEconomy::update(int frame) {
 		}
 	}
 
-	if (!gameFactories.empty()) {
-		if (gameBuilders.size() <= 1)
-			addWish(factory, builder, HIGH);
-		if (stalling || exceeding || mRequest)
-			addWish(factory, builder, NORMAL);
-	}
+	if (gameBuilders.size() <= 1)
+		ai->wl->push(BUILDER, HIGH);
+	if (stalling || exceeding || mRequest)
+		ai->wl->push(BUILDER, NORMAL);
 }
 
 void CEconomy::preventStalling() {
@@ -311,27 +307,6 @@ bool CEconomy::canAffordToBuild(int unit, UnitType *toBuild) {
 	if (mPrediction < 0.0f) mRequest = true;
 	if (ePrediction < 0.0f) eRequest = true;
 	return (mPrediction >= 0.0f &&  ePrediction >= 0.0f);
-}
-
-void CEconomy::addWish(UnitType *fac, UnitType *ut, buildPriority p) {
-	assert(ut->cats&MOBILE);
-
-	std::map<int, std::priority_queue<Wish> >::iterator k;
-	k = wishlist.find(fac->id);
-
-	/* Initialize new priority queue for this factorytype */
-	if (k == wishlist.end()) {
-		std::priority_queue<Wish> pq;
-		wishlist[fac->id] = pq;
-	}
-
-	/* If a certain unit is already in the top of our wishlist, don't add it */
-	if (!wishlist[fac->id].empty()) {
-		const Wish *w = &wishlist[fac->id].top();
-		if (w->ut->id == ut->id || wishlist[fac->id].size() > 3)
-			return;
-	}
-	wishlist[fac->id].push(Wish(ut, p));
 }
 
 void CEconomy::removeIdleUnit(int unit) {

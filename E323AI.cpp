@@ -47,6 +47,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->unitTable	= new CUnitTable(ai);
 	ai->metaCmds	= new CMetaCommands(ai);
 	ai->eco     	= new CEconomy(ai);
+	ai->wl          = new CWishList(ai);
 	ai->tasks     	= new CTaskPlan(ai);
 	ai->threatMap   = new CThreatMap(ai);
 	ai->pf          = new CPathfinder(ai);
@@ -98,7 +99,6 @@ void CE323AI::UnitFinished(int unit) {
 	if (!(c&ATTACKER) || c&COMMANDER) {
 		if (c&FACTORY) {
 			ai->eco->gameFactories[unit]      = true;
-			ai->tasks->updateBuildPlans(unit);
 			ai->eco->gameIdle[unit]           = ut;
 		}
 
@@ -116,7 +116,7 @@ void CE323AI::UnitFinished(int unit) {
 			}
 		}
 
-		if (c&EMAKER || c& ESTORAGE) {
+		if (c&EMAKER || c&ESTORAGE) {
 			ai->eco->gameEnergy[unit]    = ut;
 			ai->tasks->updateBuildPlans(unit);
 		}

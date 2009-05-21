@@ -46,7 +46,7 @@ class CMilitary {
 		int selectTarget(float3 &ourPos, std::vector<int> &targets, std::vector<int> &occupied);
 
 		/* Request a random unit for building */
-		UnitType* randomUnit();
+		unsigned randomUnit();
 
 		char buf[1024];
 };

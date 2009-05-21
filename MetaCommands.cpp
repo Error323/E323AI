@@ -22,8 +22,14 @@ void CMetaCommands::moveGroup(int group, float3 &pos, bool enqueue) {
 void CMetaCommands::attackGroup(int group, int target) {
 	std::map<int, bool>::iterator i;
 	std::map<int, bool> *G = &(ai->military->groups[group]);
-	for (i = G->begin(); i != G->end(); i++)
+	/* Only send the attack command when it's not attacking already */
+	for (i = G->begin(); i != G->end(); i++) {
+		if (!ai->call->GetCurrentUnitCommands(i->first)->empty()) {
+			Command c = ai->call->GetCurrentUnitCommands(i->first)->front();
+			if (c.id == CMD_ATTACK) continue;
+		}
 		attack(i->first, target);
+	}
 }
 
 bool CMetaCommands::attack(int unit, int target) {

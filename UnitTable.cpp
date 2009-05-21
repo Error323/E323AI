@@ -43,10 +43,9 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 	buildTechTree();
 	
 	std::map<int, UnitType>::iterator j;
-	UnitType *utParent, *utChild;
+	UnitType *utParent;
 
 	std::map<int, UnitType*>::iterator l;
-	UnitType *ut;
 	std::string buildBy, canBuild;
 
 	for (j = units.begin(); j != units.end(); j++) {
@@ -255,7 +254,6 @@ UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
 	for (unsigned int i = 0; i < cats.size(); i++)
 		if (c&cats[i])
 			utcats.push_back(cats[i]);
-
 	std::map<int, UnitType*>::iterator j;
 	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); j++) {
 		bool qualifies = true;

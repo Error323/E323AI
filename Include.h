@@ -46,6 +46,7 @@
 #include "UnitTable.h"
 #include "MetaCommands.h"
 #include "Economy.h"
+#include "WishList.h"
 #include "TaskPlan.h"
 #include "ThreatMap.h"
 #include "AAStar.h"

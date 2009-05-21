@@ -43,9 +43,6 @@ class CEconomy {
 		/* Update averaged incomes */
 		void updateIncomes(int frame);
 
-		/* Add a unittype to our wishlist */
-		void addWish(UnitType *fac, UnitType *ut, buildPriority p);
-
 		/* Put unit in a remove vector */
 		void removeIdleUnit(int unit);
 
@@ -70,20 +67,6 @@ class CEconomy {
 	private:
 		AIClasses *ai;
 
-		struct Wish {
-			buildPriority p;
-			UnitType *ut;
-
-			Wish(UnitType *ut, buildPriority p) {
-				this->ut = ut;
-				this->p  = p;
-			}
-
-			bool operator< (const Wish &w) const {
-				return p < w.p;
-			}
-		};
-
 		/* Can we afford to build this ? */
 		bool canAffordToBuild(int builder, UnitType *toBuild);
 
@@ -101,9 +84,6 @@ class CEconomy {
 
 		/* Prevent stalling */
 		void preventStalling();
-
-		/* Holds wishlists, one for each factory type */
-		std::map<int, std::priority_queue<Wish> > wishlist;
 
 		/* buffer */
 		char buf[1024];

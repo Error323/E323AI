@@ -81,7 +81,7 @@ int CMilitary::selectAttackTarget(int group) {
 void CMilitary::update(int frame) {
 	/* Always have enough scouts */
 	if (scouts.size() < ai->intel->metalMakers.size())
-		ai->eco->addWish(factory, scout, NORMAL);
+		ai->wl->push(SCOUT, NORMAL);
 
 	/* Give idle groups a new attack plan */
 	std::map<int, std::map<int, bool> >::iterator i;
@@ -127,7 +127,7 @@ void CMilitary::update(int frame) {
 				scouts[scout] = true;
 			}
 		}
-	} else ai->eco->addWish(factory, scout, HIGH);
+	} else ai->wl->push(SCOUT, HIGH);
 	
 	/* If enemy offensive is within our perimeter, attack it */
 	if (ai->intel->enemyInbound()) {
@@ -162,7 +162,7 @@ void CMilitary::update(int frame) {
 	}
 
 	/* Always build some unit */
-	ai->eco->addWish(factory, randomUnit(), NORMAL);
+	ai->wl->push(randomUnit(), NORMAL);
 }
 
 float3 CMilitary::getGroupPos(int group) {
@@ -200,12 +200,12 @@ void CMilitary::removeFromGroup(int unit) {
 	}
 }
 
-UnitType* CMilitary::randomUnit() {
+unsigned CMilitary::randomUnit() {
 	float r = rng.RandFloat();
 	if (r > 0.1 && r < 0.6)
-		return artie;
+		return MOBILE|ARTILLERY;
 	else if(r >= 0.6)
-		return antiair;
+		return MOBILE|ANTIAIR;
 	else 
-		return scout;
+		return MOBILE|SCOUT;
 }
