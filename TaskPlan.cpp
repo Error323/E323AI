@@ -8,9 +8,8 @@ CTaskPlan::CTaskPlan(AIClasses *ai) {
 	taskStr[BUILD_EMAKER]   = std::string("build_emaker");
 	taskStr[BUILD_FACTORY]  = std::string("build_factory");
 	taskStr[ASSIST_FACTORY] = std::string("assist_factory");
-	taskStr[HARRAS]          = std::string("harras");
+	taskStr[HARRAS]         = std::string("harras");
 	taskStr[ATTACK]         = std::string("attack");
-	
 }
 
 void CTaskPlan::addMilitaryPlan(task t, int unitOrGroup, int target) {

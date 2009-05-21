@@ -48,7 +48,7 @@ void CPathfinder::updatePaths() {
 
 	/* Go through all the paths */
 	for (p = paths.begin(); p != paths.end(); p++) {
-		int waypoint = 0;
+		unsigned waypoint = 0;
 
 		/* if this path isn't found in a group or the group has size 1, it's a path for a single unit */
 		if (ai->military->groups.find(p->first) == ai->military->groups.end() || 
@@ -59,7 +59,7 @@ void CPathfinder::updatePaths() {
 			float3 upos = ai->call->GetUnitPos(p->first);
 
 			/* Go through the path to determine the unit's segment on the path */
-			for (int s = 1; s < p->second.size()-waypoint; s++) {
+			for (unsigned s = 1; s < p->second.size()-waypoint-1; s++) {
 				float3 d1  = upos - p->second[s-1];
 				float3 d2  = upos - p->second[s];
 				float l1 = d1.Length2D();
@@ -73,6 +73,7 @@ void CPathfinder::updatePaths() {
 				sl2      = l2; 
 			}
 			ai->metaCmds->move(p->first, p->second[waypoint]);
+			ai->metaCmds->move(p->first, p->second[waypoint+1], true);
 		}
 
 		/* Else its a group path */
@@ -100,7 +101,7 @@ void CPathfinder::updatePaths() {
 				float3 upos = ai->call->GetUnitPos(u->first);
 
 				/* Go through the path to determine the unit's segment on the path */
-				for (int s = 1; s < p->second.size()-waypoint; s++) {
+				for (unsigned s = 1; s < p->second.size()-waypoint-1; s++) {
 					float3 d1  = upos - p->second[s-1];
 					float3 d2  = upos - p->second[s];
 					float l1 = d1.Length2D();
@@ -128,6 +129,7 @@ void CPathfinder::updatePaths() {
 				M[uposonpath] = u->first;
 			}
 			ai->metaCmds->moveGroup(p->first, p->second[waypoint]);
+			ai->metaCmds->moveGroup(p->first, p->second[waypoint+1], true);
 
 			/* Set a wait cmd on units that are going to fast, (They can still attack during a wait) */
 			float rearval = M.begin()->first;
@@ -193,23 +195,32 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int u
 	bool success = findPath(nodepath);
 	if (success) {
 		/* Insert a pre-waypoint at the beginning of the path */
+		float3 s0, s1;
 		if (nodepath.size() >= 2) {
-			float3 s0 = dynamic_cast<Node*>(nodepath[nodepath.size()-1])->toFloat3();
-			float3 s1 = dynamic_cast<Node*>(nodepath[nodepath.size()-2])->toFloat3();
-			float3 seg= s0 - s1;
-			seg *= 100.0f;
-			seg += s0;
-			seg *= REAL;
-			seg.y = ai->call->GetElevation(seg.x, seg.z)+10;
-			path.push_back(seg);
+			s0 = dynamic_cast<Node*>(nodepath[nodepath.size()-1])->toFloat3();
+			s1 = dynamic_cast<Node*>(nodepath[nodepath.size()-2])->toFloat3();
+		} 
+		else {
+			s0 = s;
+			s1 = g;
 		}
+		float3 seg= s0 - s1;
+		seg *= 100.0f;
+		seg += s0;
+		seg *= REAL;
+		seg.y = ai->call->GetElevation(seg.x, seg.z)+10;
+		path.push_back(seg);
 
-		for (unsigned i = nodepath.size()-1; i > 0; i--) {
-			Node *n = dynamic_cast<Node*>(nodepath[i]);
-			float3 f = n->toFloat3();
-			f *= REAL;
-			f.y = ai->call->GetElevation(f.x, f.z)+20;
-			path.push_back(f);
+		if (nodepath.size() < 2)
+			path.push_back(g);
+		else {
+			for (unsigned i = nodepath.size()-1; i > 0; i--) {
+				Node *n = dynamic_cast<Node*>(nodepath[i]);
+				float3 f = n->toFloat3();
+				f *= REAL;
+				f.y = ai->call->GetElevation(f.x, f.z)+20;
+				path.push_back(f);
+			}
 		}
 
 		if (draw) {

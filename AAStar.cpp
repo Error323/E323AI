@@ -61,7 +61,6 @@ bool AAStar::findPath(std::vector<ANode*>& path) {
 
 void AAStar::tracePath(std::vector<ANode*>& path) {
 	ANode* n = goal;
-
 	while (n != start) {
 		path.push_back(n);
 		history.push_back(n);

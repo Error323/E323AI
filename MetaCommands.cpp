@@ -24,17 +24,17 @@ void CMetaCommands::attackGroup(int group, int target) {
 	std::map<int, bool> *G = &(ai->military->groups[group]);
 	/* Only send the attack command when it's not attacking already */
 	for (i = G->begin(); i != G->end(); i++) {
-		if (!ai->call->GetCurrentUnitCommands(i->first)->empty()) {
-			Command c = ai->call->GetCurrentUnitCommands(i->first)->front();
-			if (c.id == CMD_ATTACK) continue;
-		}
 		attack(i->first, target);
 	}
 }
 
 bool CMetaCommands::attack(int unit, int target) {
-	Command c = createTargetCommand(CMD_ATTACK, target);
-
+	Command c;
+	if (!ai->call->GetCurrentUnitCommands(unit)->empty()) {
+		c = ai->call->GetCurrentUnitCommands(unit)->front();
+		if (c.id == CMD_ATTACK) return true;
+	}
+ 	c = createTargetCommand(CMD_ATTACK, target);
 	if (c.id != 0) {
 		ai->call->GiveOrder(unit, &c);
 		return true;

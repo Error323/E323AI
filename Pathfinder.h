@@ -26,12 +26,16 @@ class CPathfinder: public AAStar {
 				float3 toFloat3() {return float3(x,0.0f,z);}
 		};
 
+		/* Update the map weights */
 		void updateMap(float* weights);
 
+		/* Update unit/group paths */
 		void updatePaths();
 
+		/* Add a path to a unit or group */
 		void addPath(int unitOrGroup, float3 &start, float3 &goal);
 
+		/* Remove a path from a unit or group */
 		void removePath(int unitOrGroup);
 
 		int X,Z,dx2,dz2;

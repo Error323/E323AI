@@ -42,7 +42,10 @@ int CMilitary::selectHarrasTarget(int scout) {
 	std::vector<int> occupiedTargets;
 	ai->tasks->getMilitaryTasks(HARRAS, occupiedTargets);
 	float3 pos = ai->call->GetUnitPos(scout);
-	return selectTarget(pos, ai->intel->metalMakers, occupiedTargets);
+	std::vector<int> targets;
+	targets.insert(targets.begin(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
+	targets.insert(targets.begin(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
+	return selectTarget(pos, targets, occupiedTargets);
 }
 
 int CMilitary::selectAttackTarget(int group) {
