@@ -6,14 +6,6 @@ CMilitary::CMilitary(AIClasses *ai) {
 }
 
 void CMilitary::init(int unit) {
-	const UnitDef *ud = ai->call->GetUnitDef(unit);
-	UnitType *commander = UT(ud->id);
-
-	factory = ai->unitTable->canBuild(commander, KBOT|TECH1);
-
-	scout = ai->unitTable->canBuild(factory, ATTACKER|MOBILE|SCOUT);
-	artie = ai->unitTable->canBuild(factory, ATTACKER|MOBILE|ARTILLERY);
-	antiair = ai->unitTable->canBuild(factory, ATTACKER|MOBILE|ANTIAIR);
 	createNewGroup();
 }
 

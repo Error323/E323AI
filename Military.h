@@ -32,7 +32,6 @@ class CMilitary {
 	private:
 		AIClasses *ai;
 
-		UnitType *scout, *artie, *antiair, *factory;
 		int currentGroup;
 		float currentGroupStrength;
 
