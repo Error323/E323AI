@@ -17,7 +17,8 @@
 #define AI_CREDITS  "Error323 - folkerthuizinga@gmail.com"
 
 /* Folders */
-#define LOG_FOLDER  std::string(aiexport_getDataDir(true)) + "logs/"
+#define LOG_FOLDER  "logs/"
+#define LOG_PATH    std::string(aiexport_getDataDir(true)) + LOG_FOLDER
 
 /* Logger */
 #define LOG(x)		(*ai->logger << x)
