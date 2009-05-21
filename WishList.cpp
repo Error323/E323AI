@@ -11,21 +11,19 @@ void CWishList::push(unsigned categories, buildPriority p) {
 	for (;itFac != ai->eco->gameFactories.end(); itFac++) {
 		fac = UT(ai->call->GetUnitDef(itFac->first)->id);
 		ut = ai->unitTable->canBuild(fac, categories);
-		if (ut != NULL) break;
+		if (ut != NULL) { 
+			/* Initialize new std::vector */
+			if (wishlist.find(fac->id) == wishlist.end()) {
+				std::vector<Wish> L;
+				wishlist[fac->id] = L;
+			}
+
+			/* pushback, uniqify, stable sort */
+			wishlist[fac->id].push_back(Wish(ut, p));
+			unique(wishlist[fac->id]);
+			std::stable_sort(wishlist[fac->id].begin(), wishlist[fac->id].end());
+		}
 	}
-
-	if (ut == NULL) return;
-
-	/* Initialize new std::vector */
-	if (wishlist.find(fac->id) == wishlist.end()) {
-		std::vector<Wish> L;
-		wishlist[fac->id] = L;
-	}
-
-	/* pushback, uniqify, stable sort */
-	wishlist[fac->id].push_back(Wish(ut, p));
-	unique(wishlist[fac->id]);
-	std::stable_sort(wishlist[fac->id].begin(), wishlist[fac->id].end());
 }
 
 UnitType* CWishList::top(int factory) {

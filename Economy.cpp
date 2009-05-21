@@ -12,23 +12,22 @@ CEconomy::CEconomy(AIClasses *ai) {
 
 void CEconomy::init(int unit) {
 	const UnitDef *ud = ai->call->GetUnitDef(unit);
-	UnitType *commander = UT(ud->id);
-	gameIdle[unit] = commander;
+	UnitType *utCommander = UT(ud->id);
+	gameIdle[unit] = utCommander;
 	mRequest = eRequest = false;
 
-	factory = ai->unitTable->canBuild(commander, KBOT|TECH1);
-	mex = ai->unitTable->canBuild(commander, MEXTRACTOR);
-	UnitType *wind  = ai->unitTable->canBuild(commander, EMAKER|WIND);
-	UnitType *solar = ai->unitTable->canBuild(commander, EMAKER);
+	factory = ai->unitTable->canBuild(utCommander, KBOT|TECH1);
+	mex = ai->unitTable->canBuild(utCommander, MEXTRACTOR);
+	UnitType *utWind  = ai->unitTable->canBuild(utCommander, EMAKER|WIND);
+	UnitType *utSolar = ai->unitTable->canBuild(utCommander, EMAKER);
 
-	attacker = ai->unitTable->canBuild(factory, ATTACKER|MOBILE|SCOUT);
 	builder = ai->unitTable->canBuild(factory, BUILDER|MOBILE);
 
 	float avgWind = (ai->call->GetMinWind() + ai->call->GetMaxWind()) / 2.0f;
-	float windProf  = avgWind / wind->cost;
-	float solarProf = solar->energyMake / solar->cost;
+	float windProf  = avgWind / utWind->cost;
+	float solarProf = utSolar->energyMake / utSolar->cost;
 
-	energyProvider = windProf > solarProf ? wind : solar;
+	energyProvider = windProf > solarProf ? utWind : utSolar;
 	sprintf(buf, "Energy provider: %s", energyProvider->def->humanName.c_str());
 	LOGN(buf);
 }
@@ -51,15 +50,13 @@ void CEconomy::update(int frame) {
 			/* There are no wishes */
 			if (ai->wl->empty(i->first)) continue;
 
-			UnitType *toBuild = ai->wl->top(i->first);
-			if (canAffordToBuild(i->first, toBuild)) {
-				ai->metaCmds->factoryBuild(i->first, toBuild);
-				gameFactoriesBuilding[i->first] = toBuild;
+			UnitType *utToBuild = ai->wl->top(i->first);
+			if (canAffordToBuild(i->first, utToBuild)) {
+				ai->metaCmds->factoryBuild(i->first, utToBuild);
+				gameFactoriesBuilding[i->first] = utToBuild;
 				ai->wl->pop(i->first);
 			}
-			else {
-				gameFactoriesBuilding[i->first] = NULL;
-			}
+			else gameFactoriesBuilding[i->first] = NULL;
 		}
 
 		else if (c&COMMANDER) {
@@ -120,11 +117,16 @@ void CEconomy::update(int frame) {
 			/* If we can afford to assist a lab and it's close enough, do so */
 			else if (canAffordToAssistFactory(i->first, fac)) {
 				float3 facpos = ai->call->GetUnitPos(fac);
-				float dist = ai->call->GetPathLength(pos, facpos, ut->def->movedata->pathType);
+				float dist = (pos - facpos).Length2D();
 				float travelTime = dist / (ut->def->speed/30.0f);
 				float buildTime = builder->def->buildTime / (factory->def->buildSpeed/32.0f);
 				if (travelTime <= buildTime)
 					ai->metaCmds->guard(i->first, fac);
+				else if (gameFactories.size() < 2){
+					UnitType *airlab = ai->unitTable->canBuild(ut, FACTORY|AIR|TECH1);
+					if (canAffordToBuild(i->first, airlab));
+						ai->metaCmds->build(i->first, airlab, pos);
+				}
 			}
 		}
 	}
@@ -191,24 +193,24 @@ void CEconomy::preventStalling() {
 	}
 }
 
-bool CEconomy::canHelp(task t, int helper, int &unit, UnitType *helpBuild) {
+bool CEconomy::canHelp(task t, int helper, int &unit, UnitType *utToBuild) {
 	std::vector<int> busyUnits; 
 	ai->tasks->getBuildTasks(t, busyUnits);
-	UnitType *helperUnitType = UT(ai->call->GetUnitDef(helper)->id);
+	UnitType *utHelper = UT(ai->call->GetUnitDef(helper)->id);
 	if (t == BUILD_MMAKER)
-		helpBuild = ai->unitTable->canBuild(helperUnitType, MEXTRACTOR);
+		utToBuild = ai->unitTable->canBuild(utHelper, MEXTRACTOR);
 	else
-		helpBuild = energyProvider;
+		utToBuild = energyProvider;
 
 	if (busyUnits.empty())
 		return false;
 	else {
-		float buildTime = helpBuild->def->buildTime / (helperUnitType->def->buildSpeed/32.0f);
+		float buildTime = utToBuild->def->buildTime / (utHelper->def->buildSpeed/32.0f);
 		for (unsigned int uid = 0; uid < busyUnits.size(); uid++) {
 			float3 posToHelp = ai->call->GetUnitPos(busyUnits[uid]);
 			float3 posHelper = ai->call->GetUnitPos(helper);
-			float pathLength  = ai->call->GetPathLength(posHelper, posToHelp, helperUnitType->def->movedata->pathType);
-			float travelTime  = pathLength / (helperUnitType->def->speed/30.0f);
+			float pathLength = (posHelper - posToHelp).Length2D();
+			float travelTime  = pathLength / (utHelper->def->speed/30.0f);
 			if (travelTime <= buildTime && getGuardings(busyUnits[uid]) < 1) {
 				unit = busyUnits[uid];
 				/* Only if the worker itself isn't guarding */
@@ -296,12 +298,12 @@ bool CEconomy::canAffordToAssistFactory(int unit, int &fac) {
 	return (building == NULL || canAffordToBuild(unit, building));
 }
 
-bool CEconomy::canAffordToBuild(int unit, UnitType *toBuild) {
+bool CEconomy::canAffordToBuild(int unit, UnitType *utToBuild) {
 	/* NOTE: "Salary" is provided every 32 logical frames */
 	UnitType *builder = UT(ai->call->GetUnitDef(unit)->id);
-	float buildTime   = (toBuild->def->buildTime / (builder->def->buildSpeed/32.0f)) / 32.0f;
-	float mCost       = toBuild->def->metalCost;
-	float eCost       = toBuild->def->energyCost;
+	float buildTime   = (utToBuild->def->buildTime / (builder->def->buildSpeed/32.0f)) / 32.0f;
+	float mCost       = utToBuild->def->metalCost;
+	float eCost       = utToBuild->def->energyCost;
 	float mPrediction = (mIncome-mUsage)*buildTime - mCost + mNow;
 	float ePrediction = (eIncome-eUsage)*buildTime - eCost + eNow;
 	if (mPrediction < 0.0f) mRequest = true;

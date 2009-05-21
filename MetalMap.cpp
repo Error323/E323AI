@@ -122,7 +122,7 @@ bool CMetalMap::buildMex(int builder, UnitType *mex) {
 		}
 		if (skip) continue;
 		const UnitDef *ud = ai->call->GetUnitDef(builder);
-		pathLength = ai->call->GetPathLength(pos, ms->f, ud->movedata->pathType);
+		pathLength = (pos - ms->f).Length2D();
 		ms->dist = pathLength;
 		sorted.push_back(*ms);
 	}

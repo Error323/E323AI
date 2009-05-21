@@ -184,6 +184,11 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 		std::map<int, std::string> buildOptions = ud->buildOptions;
 		for (j = buildOptions.begin(); j != buildOptions.end(); j++) {
 			const UnitDef *canbuild = ai->call->GetUnitDef(j->second.c_str());
+			if (canbuild->canfly) {
+				cats |= AIR;
+				cats -= LAND;
+				break;
+			}
 			if (canbuild->movedata == NULL) continue;
 			if (canbuild->movedata->moveFamily == MoveData::KBot &&
 				ud->minWaterDepth < 0.0f) {

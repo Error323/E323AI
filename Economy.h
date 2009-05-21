@@ -68,7 +68,7 @@ class CEconomy {
 		AIClasses *ai;
 
 		/* Can we afford to build this ? */
-		bool canAffordToBuild(int builder, UnitType *toBuild);
+		bool canAffordToBuild(int builder, UnitType *utToBuild);
 
 		/* Can we afford to assist a factory ? */
 		bool canAffordToAssistFactory(int unit, int &fac);
@@ -77,7 +77,7 @@ class CEconomy {
 		int getGuardings(int unit);
 
 		/* See if we can help (guard) a unit with a certain task */
-		bool canHelp(task t, int helper, int &unit, UnitType *helpBuild);
+		bool canHelp(task t, int helper, int &unit, UnitType *utToBuild);
 
 		/* Update ingame-unit tables */
 		void updateTables();
@@ -89,7 +89,7 @@ class CEconomy {
 		char buf[1024];
 
 		/* energy provider, factory, builder */
-		UnitType *energyProvider, *factory, *builder, *attacker, *mex;
+		UnitType *energyProvider, *factory, *builder, *mex;
 
 		/* Altered by canAfford() */
 		bool eRequest, mRequest;
