@@ -10,7 +10,7 @@ void AAStar::init() {
 	while(!open.empty()) open.pop();
 }
 
-bool AAStar::findPath(std::vector<ANode*>& path) {
+bool AAStar::findPath(std::list<ANode*>& path) {
 	float c;
 	ANode *x, *y;
 
@@ -59,10 +59,10 @@ bool AAStar::findPath(std::vector<ANode*>& path) {
 	return false;
 }
 
-void AAStar::tracePath(std::vector<ANode*>& path) {
+void AAStar::tracePath(std::list<ANode*>& path) {
 	ANode* n = goal;
 	while (n != start) {
-		path.push_back(n);
+		path.push_front(n);
 		history.push_back(n);
 		n = n->parent;
 	}

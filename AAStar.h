@@ -4,6 +4,7 @@
 #include <queue>
 #include <vector>
 #include <iterator>
+#include <list>
 
 class AAStar {
 	public:
@@ -50,7 +51,7 @@ class AAStar {
 		};
 
 		std::vector<ANode*> history;
-		bool findPath(std::vector<ANode*> &path);
+		bool findPath(std::list<ANode*> &path);
 		ANode* start;
 		ANode* goal;
 
@@ -72,7 +73,7 @@ class AAStar {
 		std::queue<ANode*> succs;
 
 		/* traces the path from the goal node through its parents */
-		void tracePath(std::vector<ANode*> &path);
+		void tracePath(std::list<ANode*> &path);
 };
 
 #endif

@@ -28,6 +28,7 @@ class CMilitary {
 		std::map<int, std::map<int, bool> > groups;   /* <group id, <unit id, isactive> > */
 		std::map<int, int>                  units;    /* <unit id, group id> */
 		std::map<int, float>                strength; /* <group id, strength> */
+		std::map<int, float>                range;    /* <group id, range> */
 
 	private:
 		AIClasses *ai;

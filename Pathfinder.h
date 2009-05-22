@@ -38,6 +38,8 @@ class CPathfinder: public AAStar {
 		/* Remove a path from a unit or group */
 		void removePath(int unitOrGroup);
 
+		bool hasPath(int unitOrGroup);
+
 		int X,Z,dx2,dz2;
 		float REAL;
 

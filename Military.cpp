@@ -174,12 +174,15 @@ void CMilitary::createNewGroup() {
 	std::map<int, bool> G;
 	groups[currentGroup] = G;
 	strength[currentGroup] = 0.0f;
+	range[currentGroup] = 0.0f;
 }
 
 void CMilitary::addToGroup(int unit) {
 	groups[currentGroup][unit] = true;
 	units[unit] = currentGroup;
-	strength[currentGroup] += (ai->call->GetUnitPower(unit) * ai->call->GetUnitMaxRange(unit));
+	//strength[currentGroup] += (ai->call->GetUnitPower(unit) * ai->call->GetUnitMaxRange(unit));
+	strength[currentGroup] += (ai->call->GetUnitPower(unit));
+	range[currentGroup] = std::max<float>(range[currentGroup], ai->call->GetUnitMaxRange(unit));
 }
 
 void CMilitary::removeFromGroup(int unit) {

@@ -19,7 +19,7 @@ void CEconomy::init(int unit) {
 	factory = ai->unitTable->canBuild(utCommander, KBOT|TECH1);
 	mex = ai->unitTable->canBuild(utCommander, MEXTRACTOR);
 	UnitType *utWind  = ai->unitTable->canBuild(utCommander, EMAKER|WIND);
-	UnitType *utSolar = ai->unitTable->canBuild(utCommander, EMAKER);
+	utSolar = ai->unitTable->canBuild(utCommander, EMAKER);
 
 	builder = ai->unitTable->canBuild(factory, BUILDER|MOBILE);
 
@@ -69,17 +69,23 @@ void CEconomy::update(int frame) {
 					ai->metaCmds->build(i->first, mmaker, pos);
 				}
 			}
+			/* If we don't have a factory, build one */
+			else if (gameFactories.empty()) {
+				if (canAffordToBuild(i->first, factory))
+					ai->metaCmds->build(i->first, factory, pos);
+			}
 			/* If we don't have enough energy income, build a energy provider */
 			else if (estall || eRequest) {
 				if (canAffordToBuild(i->first, energyProvider)) {
 					ai->metaCmds->build(i->first, energyProvider, pos);
 					eRequest = false;
 				}
-			}
-			/* If we don't have a factory, build one */
-			else if (gameFactories.empty()) {
-				if (canAffordToBuild(i->first, factory))
-					ai->metaCmds->build(i->first, factory, pos);
+				else if (energyProvider->id != utSolar->id) {
+					if (canAffordToBuild(i->first, utSolar)) {
+						ai->metaCmds->build(i->first, utSolar, pos);
+						eRequest = false;
+					}
+				}
 			}
 			/* If we can afford to assist a factory, do so */
 			else if (canAffordToAssistFactory(i->first,fac)) {
@@ -122,7 +128,7 @@ void CEconomy::update(int frame) {
 				float buildTime = builder->def->buildTime / (factory->def->buildSpeed/32.0f);
 				if (travelTime <= buildTime)
 					ai->metaCmds->guard(i->first, fac);
-				else if (gameFactories.size() < 2){
+				else if (gameFactories.size() < 2 && exceeding){
 					UnitType *airlab = ai->unitTable->canBuild(ut, FACTORY|AIR|TECH1);
 					if (canAffordToBuild(i->first, airlab));
 						ai->metaCmds->build(i->first, airlab, pos);
@@ -197,10 +203,12 @@ bool CEconomy::canHelp(task t, int helper, int &unit, UnitType *utToBuild) {
 	std::vector<int> busyUnits; 
 	ai->tasks->getBuildTasks(t, busyUnits);
 	UnitType *utHelper = UT(ai->call->GetUnitDef(helper)->id);
+/*
 	if (t == BUILD_MMAKER)
 		utToBuild = ai->unitTable->canBuild(utHelper, MEXTRACTOR);
 	else
 		utToBuild = energyProvider;
+*/
 
 	if (busyUnits.empty())
 		return false;

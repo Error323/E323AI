@@ -76,16 +76,21 @@ void CTaskPlan::updateMilitaryPlans() {
 			continue;
 		}
 		float3 pos;
-		if (isgroup)
+		float range;
+		if (isgroup) {
 			pos = ai->military->getGroupPos(i->first);
-		else
+			range = ai->military->range[i->first];
+		}
+		else {
 			pos = ai->call->GetUnitPos(i->first);
-		if ((pos - target).Length2D() <= 300.0f) {
-			ai->pf->removePath(i->first);
+			range = ai->call->GetUnitMaxRange(i->first);
+		}
+		if ((pos - target).Length2D() <= range) {
 			if (isgroup)
 				ai->metaCmds->attackGroup(i->first, mp->target);
 			else
 				ai->metaCmds->attack(i->first, mp->target);
+			ai->pf->removePath(i->first);
 		}
 	}
 	for (unsigned int i = 0; i < erase.size(); i++) {
