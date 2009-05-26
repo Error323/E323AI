@@ -67,7 +67,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
  ************************/
 
 /* Called when units are spawned in a factory or when game starts */
-void CE323AI::UnitCreated(int unit) {
+void CE323AI::UnitCreated(int unit, int builder) {
 	const UnitDef *ud = ai->call->GetUnitDef(unit);
 	sprintf(buf, "[CE323AI::UnitCreated]\t %s(%d) created", ud->humanName.c_str(), unit);
 	LOGN(buf);

@@ -10,7 +10,7 @@ class CE323AI: public IGlobalAI {
 
 		void InitAI(IGlobalAICallback* callback, int team);
 
-		void UnitCreated(int unit);
+		void UnitCreated(int unit, int builder);
 		void UnitFinished(int unit);
 		void UnitDestroyed(int unit, int attacker);
 		void UnitIdle(int unit);
