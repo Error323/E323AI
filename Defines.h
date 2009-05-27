@@ -42,7 +42,7 @@
 #define THREATRES 8
 
 /* Minimal group size */
-#define MINGROUPSIZE 2
+#define MINGROUPSIZE 3
 
 
 /* Facings */

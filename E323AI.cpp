@@ -48,15 +48,15 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 		mapname.c_str(), 
 		team
 	);
-	std::string version("*** " + AI_VERSION + " ***");
+	ai->logger		= new std::ofstream(buf, std::ios::app);
 
+	std::string version("*** " + AI_VERSION + " ***");
 	LOGS(version.c_str());
 	LOGS("*** " AI_CREDITS " ***");
 	LOGS("*** " AI_NOTES " ***");
 	LOGS(buf);
 	LOGN(AI_VERSION);
 
-	ai->logger		= new std::ofstream(buf, std::ios::app);
 	ai->metalMap	= new CMetalMap(ai);
 	ai->unitTable	= new CUnitTable(ai);
 	ai->metaCmds	= new CMetaCommands(ai);
@@ -148,7 +148,7 @@ void CE323AI::UnitFinished(int unit) {
 	ai->unitTable->gameAllUnits[unit] = ut;
 }
 
-/* Called on a destroyed unit, wanna take revenge? :P */
+/* Called on a destroyed unit */
 void CE323AI::UnitDestroyed(int unit, int attacker) {
 	const UnitDef *ud = ai->call->GetUnitDef(unit);
 	sprintf(buf, "[CE323AI::UnitDestroyed]\t %s(%d) destroyed", ud->humanName.c_str(), unit);
@@ -193,6 +193,7 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 	ai->unitTable->gameAllUnits.erase(unit);
 	ai->tasks->buildplans.erase(unit);
 	ai->eco->gameIdle.erase(unit);
+	ai->eco->gameBuilding.erase(unit);
 }
 
 /* Called when unit is idle */

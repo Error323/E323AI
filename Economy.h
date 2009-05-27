@@ -62,6 +62,7 @@ class CEconomy {
 		std::map<int, int>       gameBuilding;          /* <unit id building, unit id builder> */
 
 		/* To remove */
+		std::vector<int> removeFromIdle;
 		std::vector<int> removeFromGuarding;
 
 	private:
