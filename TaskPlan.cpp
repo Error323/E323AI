@@ -47,15 +47,10 @@ void CTaskPlan::updateBuildPlans(int unit) {
 	for (i = buildplans.begin(); i != buildplans.end(); i++) {
 		BuildPlan *bp = i->second;
 
-		if (bp->toBuild->id == ud->id) {
-			const UnitDef *builder = ai->call->GetUnitDef(i->first);
-			float3 builderPos = ai->call->GetUnitPos(i->first);
-			float3 diff = builderPos - buildedPos;
-			if (diff.Length2D() <= builder->buildDistance+1.0f) {
+		if (ai->eco->gameBuilding[unit] == i->first) {
 				erase.push_back(i->first);
-				sprintf(buf,"[CTaskPlan::update]\t Remove <%s(%d), %s(%d)>", builder->humanName.c_str(), i->first, taskStr[bp->t].c_str(), bp->toBuild->id);
+				sprintf(buf,"[CTaskPlan::update]\t Remove <%s(%d), %s(%d)>", ai->call->GetUnitDef(i->first)->humanName.c_str(), i->first, taskStr[bp->t].c_str(), bp->toBuild->id);
 				LOGN(buf);
-			}
 		}
 	}
 	//assert(!erase.empty());

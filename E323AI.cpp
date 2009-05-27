@@ -36,15 +36,27 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 
 	sprintf(buf, "%s", LOG_FOLDER);
 	ai->call->GetValue(AIVAL_LOCATE_FILE_W, buf);
-	std::sprintf(buf, "%s-%2.2d-%2.2d-%4.4d-%2.2d%2.2d-%s-team(%d).log", 
-		std::string(LOG_PATH).c_str(), now2->tm_mon + 1, 
-		now2->tm_mday, now2->tm_year + 1900, now2->tm_hour, now2->tm_min, mapname.c_str(), team);
+	std::sprintf(
+		buf, 
+		"%s%2.2d%2.2d%2.2d%2.2d%2.2d-%s-team(%d).log", 
+		std::string(LOG_PATH).c_str(), 
+		now2->tm_year + 1900, 
+		now2->tm_mon + 1, 
+		now2->tm_mday, 
+		now2->tm_hour, 
+		now2->tm_min, 
+		mapname.c_str(), 
+		team
+	);
+	std::string version("*** " + AI_VERSION + " ***");
 
-	printf("logfile @ %s\n", buf);
+	LOGS(version.c_str());
+	LOGS("*** " AI_CREDITS " ***");
+	LOGS("*** " AI_NOTES " ***");
+	LOGS(buf);
+	LOGN(AI_VERSION);
 
 	ai->logger		= new std::ofstream(buf, std::ios::app);
-	LOGN("v" << AI_VERSION);
-
 	ai->metalMap	= new CMetalMap(ai);
 	ai->unitTable	= new CUnitTable(ai);
 	ai->metaCmds	= new CMetaCommands(ai);
@@ -56,8 +68,6 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->intel       = new CIntel(ai);
 	ai->military    = new CMilitary(ai);
 
-	ai->call->SendTextMsg("*** " AI_NOTES " ***", 0);
-	ai->call->SendTextMsg("*** " AI_CREDITS " ***", 0);
 	LOG("\n\n\nBEGIN\n\n\n");
 }
 
@@ -85,6 +95,8 @@ void CE323AI::UnitCreated(int unit, int builder) {
 	else if (c&MMAKER) {
 		ai->eco->gameMetalMakers[unit] = true;
 	}
+
+	ai->eco->gameBuilding[unit] = builder;
 
 	unitCreated++;
 }

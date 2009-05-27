@@ -282,11 +282,6 @@ void CEconomy::updateTables() {
 	for (unsigned int i = 0; i < removeFromGuarding.size(); i++)
 		gameGuarding.erase(removeFromGuarding[i]);
 	removeFromGuarding.clear();
-
-	/* Remove previous idlers */
-	for (unsigned int i = 0; i < removeFromIdle.size(); i++)
-		gameIdle.erase(removeFromIdle[i]);
-	removeFromIdle.clear();
 }
 
 bool CEconomy::canAffordToAssistFactory(int unit, int &fac) {
@@ -320,7 +315,7 @@ bool CEconomy::canAffordToBuild(int unit, UnitType *utToBuild) {
 }
 
 void CEconomy::removeIdleUnit(int unit) {
-	removeFromIdle.push_back(unit);
+	gameIdle.erase(unit);
 }
 
 void CEconomy::removeMyGuards(int unit) {

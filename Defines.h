@@ -10,11 +10,12 @@
 #define ERRORVECTOR float3(-1,0,0)
 #define NULLVECTOR  float3(0,0,0)
 
-#define AI_VERSION  aiexport_getVersion()
 
 /* AI meta data */
-#define AI_NOTES	"This A.I. mainly focusses on the XTA mod"
-#define AI_CREDITS  "Error323 - folkerthuizinga@gmail.com"
+#define AI_VERSION_NR  aiexport_getVersion()
+#define AI_VERSION     std::string("E323AI ") + AI_VERSION_NR + " - Mutalisk"
+#define AI_CREDITS     "Error323 - folkerthuizinga@gmail.com"
+#define AI_NOTES	   "This A.I. mainly focusses on the XTA mod"
 
 /* Folders */
 #define LOG_FOLDER  "logs/"
