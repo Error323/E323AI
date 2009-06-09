@@ -130,8 +130,7 @@ void CEconomy::update(int frame) {
 					ai->metaCmds->guard(i->first, fac);
 				else if (gameFactories.size() < 2 && exceeding){
 					UnitType *airlab = ai->unitTable->canBuild(ut, FACTORY|AIR|TECH1);
-					if (canAffordToBuild(i->first, airlab));
-						ai->metaCmds->build(i->first, airlab, pos);
+					ai->metaCmds->build(i->first, airlab, pos);
 				}
 			}
 		}
@@ -149,7 +148,7 @@ void CEconomy::preventStalling() {
 	mstall = (mNow < 30.0f && mUsage > mIncome);
 	estall = (eNow/eStorage < 0.1f && eUsage > eIncome);
 	stalling = mstall || estall;
-	exceeding = (eNow > eStorage && eUsage < eIncome) || (mNow > mStorage && mUsage < mIncome);
+	exceeding = (eNow > eStorage*0.9f && eUsage < eIncome) || (mNow > mStorage*0.9f && mUsage < mIncome);
 
 	/* Always remove all previous waiting factories */
 	for (j = gameFactories.begin(); j != gameFactories.end(); j++) {
@@ -203,12 +202,6 @@ bool CEconomy::canHelp(task t, int helper, int &unit, UnitType *utToBuild) {
 	std::vector<int> busyUnits; 
 	ai->tasks->getBuildTasks(t, busyUnits);
 	UnitType *utHelper = UT(ai->call->GetUnitDef(helper)->id);
-/*
-	if (t == BUILD_MMAKER)
-		utToBuild = ai->unitTable->canBuild(utHelper, MEXTRACTOR);
-	else
-		utToBuild = energyProvider;
-*/
 
 	if (busyUnits.empty())
 		return false;

@@ -43,8 +43,8 @@ int CMilitary::selectHarrasTarget(int scout) {
 	ai->tasks->getMilitaryTasks(HARRAS, occupiedTargets);
 	float3 pos = ai->call->GetUnitPos(scout);
 	std::vector<int> targets;
-	targets.insert(targets.begin(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
-	targets.insert(targets.begin(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
+	targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
+	targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
 	return selectTarget(pos, targets, occupiedTargets);
 }
 
@@ -89,7 +89,7 @@ void CMilitary::update(int frame) {
 		int target = selectAttackTarget(i->first);
 		if (target != -1) {
 			float3 goal = ai->cheat->GetUnitPos(target);
-			float enemyStrength = ai->threatMap->getThreat(goal, 50.0f);
+			float enemyStrength = ai->threatMap->getThreat(goal, 100.0f);
 
 			/* If we can confront the enemy, do so */
 			if (strength[i->first] >= enemyStrength*1.2f) {

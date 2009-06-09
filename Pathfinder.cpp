@@ -33,7 +33,7 @@ CPathfinder::CPathfinder(AIClasses *ai) {
 		map[id((X-1),z)].setType(BLOCKED);
 	}
 
-	draw = true;
+	draw = false;
 }
 
 void CPathfinder::updateMap(float *weights) {
@@ -50,10 +50,9 @@ void CPathfinder::updatePaths() {
 	for (p = paths.begin(); p != paths.end(); p++) {
 		unsigned s = 1;
 		int wp = 1;
-
+		bool isgroup = ai->military->groups.find(p->first) != ai->military->groups.end();
 		/* if this path isn't found in a group or the group has size 1, it's a path for a single unit */
-		if (ai->military->groups.find(p->first) == ai->military->groups.end() || 
-            ai->military->groups[p->first].size() <= 1) {
+		if (!isgroup) {
 
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
 			int s1 = 0, s2 = 1;
@@ -77,7 +76,7 @@ void CPathfinder::updatePaths() {
 
 		/* Else its a group path */
 		else {
-			float maxGroupLength = std::max<float>(ai->military->groups[p->first].size()*30.0f, 100.0f);
+			float maxGroupLength = std::max<float>(ai->military->groups[p->first].size()*50.0f, 200.0f);
 			std::map<float, int> M;
 
 			/* Go through all the units in a group */
@@ -138,7 +137,12 @@ void CPathfinder::updatePaths() {
 		if (s % 4 == 0) {
 			int target = ai->tasks->getTarget(p->first);
 			float3 goal = ai->cheat->GetUnitPos(target);
-			addPath(p->first, p->second[s], goal);
+			float3 pos;
+			if (isgroup)
+				pos = ai->military->getGroupPos(p->first);
+			else
+				pos = ai->call->GetUnitPos(p->first);
+			addPath(p->first, pos, goal);
 		}
 	}
 }

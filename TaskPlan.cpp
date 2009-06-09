@@ -53,7 +53,6 @@ void CTaskPlan::updateBuildPlans(int unit) {
 				LOGN(buf);
 		}
 	}
-	//assert(!erase.empty());
 	for (unsigned int i = 0; i < erase.size(); i++)
 		buildplans.erase(erase[i]);
 }
@@ -99,7 +98,7 @@ void CTaskPlan::getMilitaryTasks(task t, std::vector<int> &targets) {
 	for (i = militaryplans.begin(); i != militaryplans.end(); i++) {
 		MilitaryPlan *mp = i->second;
 		if (mp->t == t)
-			targets.push_back(i->first);
+			targets.push_back(mp->target);
 	}
 }
 
