@@ -104,7 +104,7 @@ void CE323AI::UnitCreated(int unit, int builder) {
 /* Called when units are finished in a factory and able to move */
 void CE323AI::UnitFinished(int unit) {
 	const UnitDef *ud = ai->call->GetUnitDef(unit);
-	sprintf(buf, "[CE323AI::UnitFinished]\t %s(%d) finished", ud->humanName.c_str(), unit);
+	//sprintf(buf, "[CE323AI::UnitFinished]\t %s(%d) finished", ud->humanName.c_str(), unit);
 	LOGN(buf);
 	UnitType* ut = UT(ud->id);
 	unsigned int c = ut->cats;
