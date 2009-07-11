@@ -2,11 +2,12 @@
 
 CMilitary::CMilitary(AIClasses *ai) {
 	this->ai = ai;
-	currentGroup = 0;
+	currentGroup = 10;
+	currentScout = 1;
 }
 
 void CMilitary::init(int unit) {
-	createNewGroup();
+	createNewGroup(groups, currentGroup);
 }
 
 int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vector<int> &occupied) {
@@ -92,7 +93,7 @@ void CMilitary::update(int frame) {
 			float enemyStrength = ai->threatMap->getThreat(goal, 100.0f);
 
 			/* If we can confront the enemy, do so */
-			if (strength[i->first] >= enemyStrength*1.2f) {
+			if (i->second.strength >= enemyStrength*1.2f) {
 				/* Add the taskplan */
 				ai->tasks->addMilitaryPlan(ATTACK, i->first, target);
 
@@ -141,16 +142,16 @@ void CMilitary::update(int frame) {
 				float enemyStrength = ai->threatMap->getThreat(goal, 100.0f);
 
 				/* If we can confront the enemy, do so */
-				if (strength[currentGroup] >= enemyStrength*1.2f) {
+				if (groups[currentGroup].strength >= enemyStrength*1.2f) {
 					/* Add the taskplan */
 					ai->tasks->addMilitaryPlan(ATTACK, currentGroup, target);
 
 					/* Bootstrap the path */
-					float3 start = getGroupPos(currentGroup);
+					float3 start = groups[currentGroup].pos();
 					ai->pf->addPath(currentGroup, start, goal); 
 
 					/* Create new group */
-					createNewGroup();
+					createNewGroup(groups, currentGroup);
 				}
 			}
 		}
@@ -160,39 +161,23 @@ void CMilitary::update(int frame) {
 	ai->wl->push(randomUnit(), NORMAL);
 }
 
-float3 CMilitary::getGroupPos(int group) {
-	std::map<int, bool>::iterator i;
-	float3 pos(0.0f, 0.0f, 0.0f);
-	for (i = groups[group].begin(); i != groups[group].end(); i++)
-		pos += ai->call->GetUnitPos(i->first);
-	pos /= groups[group].size();
-	return pos;
-}
-
-void CMilitary::createNewGroup() {
-	currentGroup+=10;
-	std::map<int, bool> G;
-	groups[currentGroup] = G;
-	strength[currentGroup] = 0.0f;
-	range[currentGroup] = 0.0f;
+void CMilitary::createNewGroup(std::map<int, CGroup> &groups, int &group) {
+	CGroup G(ai, group);
+	groups[group]  = G;
+	group         += 10;
 }
 
 void CMilitary::addToGroup(int unit) {
-	groups[currentGroup][unit] = true;
+	groups[currentGroup].add(unit);
 	units[unit] = currentGroup;
-	//strength[currentGroup] += (ai->call->GetUnitPower(unit) * ai->call->GetUnitMaxRange(unit));
-	strength[currentGroup] += (ai->call->GetUnitPower(unit));
-	range[currentGroup] = std::max<float>(range[currentGroup], ai->call->GetUnitMaxRange(unit));
 }
 
 void CMilitary::removeFromGroup(int unit) {
 	int group = units[unit];
-	groups[group].erase(unit);
+	groups[group].remove(unit);
 	units.erase(unit);
-	strength[group] -= ai->call->GetUnitPower(unit) * ai->call->GetUnitMaxRange(unit);
 	if (groups[group].empty() && group != currentGroup) {
 		groups.erase(group);
-		strength.erase(group);
 		ai->tasks->militaryplans.erase(group);
 		ai->pf->removePath(group);
 	}

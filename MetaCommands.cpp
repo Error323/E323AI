@@ -14,7 +14,7 @@ void CMetaCommands::moveGroup(int group, std::vector<float3> &positions) {
 
 void CMetaCommands::moveGroup(int group, float3 &pos, bool enqueue) {
 	std::map<int, bool>::iterator i;
-	std::map<int, bool> *G = &(ai->military->groups[group]);
+	std::map<int, bool> *G = &(ai->military->groups[group].units);
 	for (i = G->begin(); i != G->end(); i++)
 		move(i->first, pos, enqueue);
 }

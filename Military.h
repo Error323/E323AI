@@ -2,6 +2,7 @@
 #define MILITARY_H
 
 #include "E323AI.h"
+#include "CGroup.h"
 
 class CMilitary {
 	public:
@@ -17,33 +18,30 @@ class CMilitary {
 		/* add a unit to the current group */
 		void addToGroup(int unit);
 
-		/* remove a unit from its group, erase group when empty and not current */
+		/* remove a unit from its group, erase group when empty and not current
+		 */
 		void removeFromGroup(int unit);
 
-		/* Get the position of a group */
-		float3 getGroupPos(int group);
-
 		/* military units */
-		std::map<int, bool>                 scouts;   /* <unit id, isharrasing> */
-		std::map<int, std::map<int, bool> > groups;   /* <group id, <unit id, isactive> > */
-		std::map<int, int>                  units;    /* <unit id, group id> */
-		std::map<int, float>                strength; /* <group id, strength> */
-		std::map<int, float>                range;    /* <group id, range> */
+		std::map<int, CGroup> scouts; /* <group id, CGroup> */
+		std::map<int, CGroup> groups; /* <group id, CGroup> */
+		std::map<int, int>    units;  /* <unit id, group id> */
 
 	private:
 		AIClasses *ai;
 
 		int currentGroup;
-		float currentGroupStrength;
+		int currentScout;
 
 		/* Instantiates a new group */
-		void createNewGroup();
+		void createNewGroup(std::map<int, CGroup> &groups, int group);
 
 		int selectHarrasTarget(int unit);
 
 		int selectAttackTarget(int group);
 
-		int selectTarget(float3 &ourPos, std::vector<int> &targets, std::vector<int> &occupied);
+		int selectTarget(float3 &ourPos, std::vector<int> &targets,
+						 std::vector<int> &occupied);
 
 		/* Request a random unit for building */
 		unsigned randomUnit();

@@ -47,105 +47,187 @@ void CPathfinder::updatePaths() {
 	std::map<int, bool>::iterator u;
 
 	/* Go through all the paths */
-	for (p = paths.begin(); p != paths.end(); p++) {
-		unsigned s = 1;
-		int wp = 1;
-		bool isgroup = ai->military->groups.find(p->first) != ai->military->groups.end();
-		/* if this path isn't found in a group or the group has size 1, it's a path for a single unit */
-		if (!isgroup) {
+	for (path = paths.begin(); path != paths.end(); path++) {
+		unsigned segment = 1;
+		int     waypoint = 1;
+		CGroup *group    = &(ai->military->groups[path->first]);
+		float maxGroupLength = std::max<float>(group->units.size()*50.0f, 200.0f);
+		std::map<float, int> M;
+
+		/* Go through all the units in a group */
+		for (u = group->units.begin(); u != group->units.end(); u++) {
+			/* unwait all waiters */
+			if (!u->second) {
+				ai->metaCmds->wait(u->first);
+				u->second = false;
+			}
 
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
+			float length = 0.0f;
 			int s1 = 0, s2 = 1;
-			float3 upos = ai->call->GetUnitPos(p->first);
+			float3 upos = ai->call->GetUnitPos(u->first);
 
-			/* Go through the path to determine the unit's segment on the path */
-			for (s = 1; s < p->second.size() - wp; s++) {
-				float3 d1  = upos - p->second[s-1];
-				float3 d2  = upos - p->second[s];
+			/* Go through the path to determine the unit's segment on the path
+			 */
+			for (segment = 1; segment < path->second.size()-waypoint; segment++) {
+				float3 d1  = upos - path->second[segment-1];
+				float3 d2  = upos - path->second[segment];
 				float l1 = d1.Length2D();
 				float l2 = d2.Length2D();
-				/* When the dist between the unit and the segment is increasing: break */
+				/* When the dist between the unit and the segment is
+                 * increasing: break 
+				 */
+				length  += (path->second[s1] - path->second[s2]).Length2D();
 				if (l1 > sl1 || l2 > sl2) break;
-				s1       = s-1;
-				s2       = s;
+				s1       = segment-1;
+				s2       = segment;
 				sl1      = l1; 
 				sl2      = l2; 
 			}
-			ai->metaCmds->move(p->first, p->second[s+wp]);
+
+			/* Now calculate the projection of upos onto the line spanned by
+			 * s2-s1 
+			 */
+			float3 uP = (path->second[s1] - path->second[s2]);
+			uP.y = 0.0f;
+			uP.Normalize();
+			float3 up = upos - path->second[s2];
+			/* proj_P(x) = (x dot u) * u */
+			float3 uproj = uP * (up.x * uP.x + up.z * uP.z);
+			/* calc pos on total path */
+			float uposonpath = length - uproj.Length2D();
+			/* A map sorts on key (low to high) by default */
+			M[uposonpath] = u->first;
 		}
+		ai->metaCmds->moveGroup(path->first, path->second[segment+waypoint]);
 
-		/* Else its a group path */
-		else {
-			float maxGroupLength = std::max<float>(ai->military->groups[p->first].size()*50.0f, 200.0f);
-			std::map<float, int> M;
-
-			/* Go through all the units in a group */
-			for (u = ai->military->groups[p->first].begin(); u != ai->military->groups[p->first].end(); u++) {
-				/* unwait all waiters */
-				if (!u->second) {
-					ai->metaCmds->wait(u->first);
-					u->second = true;
+		/* Set a wait cmd on units that are going to fast, (They can still
+		 * attack during a wait) 
+         */
+		float rearval = M.begin()->first;
+		for (std::map<float,int>::iterator i = --M.end(); i != M.begin(); i--) {
+			if (i->first - rearval > maxGroupLength) {
+				if (group->units[i->second]) {
+					ai->metaCmds->wait(i->second);
+					group->units[i->second] = true;
 				}
-
-				float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
-				float length = 0.0f;
-				int s1 = 0, s2 = 1;
-				float3 upos = ai->call->GetUnitPos(u->first);
-
-				/* Go through the path to determine the unit's segment on the path */
-				for (s = 1; s < p->second.size()-wp; s++) {
-					float3 d1  = upos - p->second[s-1];
-					float3 d2  = upos - p->second[s];
-					float l1 = d1.Length2D();
-					float l2 = d2.Length2D();
-					/* When the dist between the unit and the segment is increasing: break */
-					length  += (p->second[s1] - p->second[s2]).Length2D();
-					if (l1 > sl1 || l2 > sl2) break;
-					s1       = s-1;
-					s2       = s;
-					sl1      = l1; 
-					sl2      = l2; 
-				}
-
-				/* Now calculate the projection of upos onto the line spanned by s2-s1 */
-				float3 uP = (p->second[s1] - p->second[s2]);
-				uP.y = 0.0f;
-				uP.Normalize();
-				float3 up = upos - p->second[s2];
-				/* proj_P(x) = (x dot u) * u */
-				float3 uproj = uP * (up.x * uP.x + up.z * uP.z);
-				/* calc pos on total path */
-				float uposonpath = length - uproj.Length2D();
-				/* A map sorts on key (low to high) by default */
-				M[uposonpath] = u->first;
 			}
-			ai->metaCmds->moveGroup(p->first, p->second[s+wp]);
-
-			/* Set a wait cmd on units that are going to fast, (They can still attack during a wait) */
-			float rearval = M.begin()->first;
-			for (std::map<float,int>::iterator i = --M.end(); i != M.begin(); i--) {
-				if (i->first - rearval > maxGroupLength) {
-					if (ai->military->groups[p->first][i->second]) {
-						ai->metaCmds->wait(i->second);
-						ai->military->groups[p->first][i->second] = false;
-					}
-				}
-				else break;
-			}
+			else break;
 		}
 		/* Recalculate the path every now and then */
-		if (s % 4 == 0) {
-			int target = ai->tasks->getTarget(p->first);
-			float3 goal = ai->cheat->GetUnitPos(target);
-			float3 pos;
-			if (isgroup)
-				pos = ai->military->getGroupPos(p->first);
-			else
-				pos = ai->call->GetUnitPos(p->first);
-			addPath(p->first, pos, goal);
+		if (segment % 4 == 0) {
+			int target   = ai->tasks->getTarget(path->first);
+			float3 goal  = ai->cheat->GetUnitPos(target);
+			float3 start = group->pos();
+			addPath(path->first, start, goal);
 		}
 	}
 }
+
+//void CPathfinder::updatePaths() {
+//	std::map<int, std::vector<float3> >::iterator p;
+//	std::map<int, bool>::iterator u;
+//
+//	/* Go through all the paths */
+//	for (p = paths.begin(); p != paths.end(); p++) {
+//		unsigned s = 1;
+//		int wp = 1;
+//		bool isgroup = ai->military->groups.count(p->first) > 0;
+//		/* if this path isn't found in a group or the group has size 1, it's a path for a single unit */
+//		if (!isgroup) {
+//
+//			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
+//			int s1 = 0, s2 = 1;
+//			float3 upos = ai->call->GetUnitPos(p->first);
+//
+//			/* Go through the path to determine the unit's segment on the path */
+//			for (s = 1; s < p->second.size() - wp; s++) {
+//				float3 d1  = upos - p->second[s-1];
+//				float3 d2  = upos - p->second[s];
+//				float l1 = d1.Length2D();
+//				float l2 = d2.Length2D();
+//				/* When the dist between the unit and the segment is increasing: break */
+//				if (l1 > sl1 || l2 > sl2) break;
+//				s1       = s-1;
+//				s2       = s;
+//				sl1      = l1; 
+//				sl2      = l2; 
+//			}
+//			ai->metaCmds->move(p->first, p->second[s+wp]);
+//		}
+//
+//		/* Else its a group path */
+//		else {
+//			float maxGroupLength = std::max<float>(ai->military->groups[p->first].size()*50.0f, 200.0f);
+//			std::map<float, int> M;
+//
+//			/* Go through all the units in a group */
+//			for (u = ai->military->groups[p->first].begin(); u != ai->military->groups[p->first].end(); u++) {
+//				/* unwait all waiters */
+//				if (!u->second) {
+//					ai->metaCmds->wait(u->first);
+//					u->second = true;
+//				}
+//
+//				float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
+//				float length = 0.0f;
+//				int s1 = 0, s2 = 1;
+//				float3 upos = ai->call->GetUnitPos(u->first);
+//
+//				/* Go through the path to determine the unit's segment on the path */
+//				for (s = 1; s < p->second.size()-wp; s++) {
+//					float3 d1  = upos - p->second[s-1];
+//					float3 d2  = upos - p->second[s];
+//					float l1 = d1.Length2D();
+//					float l2 = d2.Length2D();
+//					/* When the dist between the unit and the segment is increasing: break */
+//					length  += (p->second[s1] - p->second[s2]).Length2D();
+//					if (l1 > sl1 || l2 > sl2) break;
+//					s1       = s-1;
+//					s2       = s;
+//					sl1      = l1; 
+//					sl2      = l2; 
+//				}
+//
+//				/* Now calculate the projection of upos onto the line spanned by s2-s1 */
+//				float3 uP = (p->second[s1] - p->second[s2]);
+//				uP.y = 0.0f;
+//				uP.Normalize();
+//				float3 up = upos - p->second[s2];
+//				/* proj_P(x) = (x dot u) * u */
+//				float3 uproj = uP * (up.x * uP.x + up.z * uP.z);
+//				/* calc pos on total path */
+//				float uposonpath = length - uproj.Length2D();
+//				/* A map sorts on key (low to high) by default */
+//				M[uposonpath] = u->first;
+//			}
+//			ai->metaCmds->moveGroup(p->first, p->second[s+wp]);
+//
+//			/* Set a wait cmd on units that are going to fast, (They can still attack during a wait) */
+//			float rearval = M.begin()->first;
+//			for (std::map<float,int>::iterator i = --M.end(); i != M.begin(); i--) {
+//				if (i->first - rearval > maxGroupLength) {
+//					if (ai->military->groups[p->first][i->second]) {
+//						ai->metaCmds->wait(i->second);
+//						ai->military->groups[p->first][i->second] = false;
+//					}
+//				}
+//				else break;
+//			}
+//		}
+//		/* Recalculate the path every now and then */
+//		if (s % 4 == 0) {
+//			int target = ai->tasks->getTarget(p->first);
+//			float3 goal = ai->cheat->GetUnitPos(target);
+//			float3 pos;
+//			if (isgroup)
+//				pos = ai->military->getGroupPos(p->first);
+//			else
+//				pos = ai->call->GetUnitPos(p->first);
+//			addPath(p->first, pos, goal);
+//		}
+//	}
+//}
 
 void CPathfinder::addPath(int unitOrGroup, float3 &start, float3 &goal) {
 	std::vector<float3> path;
