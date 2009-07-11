@@ -34,11 +34,6 @@ local infos = {
 		desc   = 'tooltip.',
 	},
 	{
-		key    = 'url',
-		value  = 'http://spring.clan-sy.com/wiki/AI:KAIK',
-		desc   = 'URL with more detailed info about the AI',
-	},
-	{
 		key    = 'loadSupported',
 		value  = 'no',
 		desc   = 'whether this AI supports loading or not',
