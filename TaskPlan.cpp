@@ -73,7 +73,7 @@ void CTaskPlan::updateMilitaryPlans() {
 			continue;
 		}
 
-		float range = G->range;
+		float range = G->range*0.8;
 		float3 pos  = G->pos();
 
 		/* If we are in attack range, start attacking */
