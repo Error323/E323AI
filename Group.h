@@ -1,13 +1,13 @@
-#ifndef MYGROUP_H
-#define MYGROUP_H
+#ifndef E323AIGROUP_H
+#define E323AIGROUP_H
 
 #include "E323AI.h"
 
 class CMyGroup {
 	public:
-		enum groupType{WORKER, SCOUT, ATTACKER};
 
 		CMyGroup(AIClasses *ai, int id, groupType type);
+		CMyGroup(){};
 		~CMyGroup(){};
 
 		/* The group id */

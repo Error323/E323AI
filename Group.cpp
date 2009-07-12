@@ -13,7 +13,7 @@ CMyGroup::CMyGroup(AIClasses *ai, int id, groupType type) {
 void CMyGroup::add(int unit) {
 	units[unit] = false;
 	strength += ai->call->GetUnitPower(unit);
-	range = std::max<float>(ai->call->GetUnitRange(unit), range);
+	range = std::max<float>(ai->call->GetUnitMaxRange(unit), range);
 }
 
 void CMyGroup::remove(int unit) {
@@ -21,8 +21,9 @@ void CMyGroup::remove(int unit) {
 	strength -= ai->call->GetUnitPower(unit);
 
 	/* Recalculate max range of the group */
+	std::map<int, bool>::iterator i;
 	for (i = units.begin(); i != units.end(); i++)
-		range = std::max<float>(ai->call->GetUnitRange(i->first), range);
+		range = std::max<float>(ai->call->GetUnitMaxRange(i->first), range);
 }
 
 void CMyGroup::merge(CMyGroup &group) {

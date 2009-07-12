@@ -13,6 +13,7 @@ class CThreatMap;
 class CPathfinder;
 class CIntel;
 class CMilitary;
+class CMyGroup;
 
 /* Ensures single instantiation of classes and good reachability */
 struct AIClasses {

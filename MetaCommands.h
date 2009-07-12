@@ -8,14 +8,11 @@ class CMetaCommands {
 		CMetaCommands(AIClasses *ai);
 		~CMetaCommands();
 
-		/* Move a group along a vector of positions */
-		void moveGroup(int group, std::vector<float3> &positions);
-
 		/* Move a group to pos */
 		void moveGroup(int group, float3 &pos, bool enqueue = false);
 
 		/* Attack a unit with a group */
-		void attackGroup(int unit, int target);
+		void attackGroup(int group, int target);
 
 		/* Attack a unit */
 		bool attack(int unit, int target);

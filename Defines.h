@@ -108,6 +108,7 @@ enum buildPriority {
 	HIGH   = 2
 };
 
+/* Quadrants */
 enum quadrant {
 	NORTH_WEST,
 	NORTH_EAST,
@@ -115,4 +116,10 @@ enum quadrant {
 	SOUTH_EAST
 };
 
+/* Group types */
+enum groupType {
+	G_WORKER, 
+	G_SCOUT, 
+	G_ATTACKER
+};
 #endif

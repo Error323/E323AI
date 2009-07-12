@@ -65,21 +65,20 @@ void CTaskPlan::updateMilitaryPlans() {
 	for (i = militaryplans.begin(); i != militaryplans.end(); i++) {
 		MilitaryPlan *mp = i->second;
 		float3 target = ai->cheat->GetUnitPos(mp->target);
+		CMyGroup *G = &(ai->military->groups[i->first]);
 
 		/* Target is destroyed */
 		if (target == NULLVECTOR) {
 			erase.push_back(i->first);
-			ai->military->groups[i->first].busy = false;
-			ai->pf->removePath(i->first);
 			continue;
 		}
 
-		float3 pos  = ai->military->groups[i->first].pos();
-		float range = ai->military->groups[i->first].range;
+		float range = G->range;
+		float3 pos  = G->pos();
 
 		/* If we are in attack range, start attacking */
 		if ((pos - target).Length2D() <= range) {
-			ai->metaCmds->attackGroup(ai->military->groups[i->first], mp->target);
+			ai->metaCmds->attackGroup(i->first, mp->target);
 			ai->pf->removePath(i->first);
 		}
 	}
@@ -88,6 +87,8 @@ void CTaskPlan::updateMilitaryPlans() {
 	for (unsigned int i = 0; i < erase.size(); i++) {
 		ai->pf->removePath(erase[i]);
 		militaryplans.erase(erase[i]);
+		CMyGroup *G = &(ai->military->groups[erase[i]]);
+		G->busy     = false;
 	}
 }
 

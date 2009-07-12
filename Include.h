@@ -42,6 +42,7 @@
 #include "Container.h"                         /* Class wrapper */
 #include "RNG.h"                               /* Random number generator */
 
+#include "Group.h"
 #include "MetalMap.h"
 #include "UnitTable.h"
 #include "MetaCommands.h"

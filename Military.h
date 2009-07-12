@@ -2,7 +2,6 @@
 #define MILITARY_H
 
 #include "E323AI.h"
-#include "CGroup.h"
 
 class CMilitary {
 	public:
@@ -15,31 +14,33 @@ class CMilitary {
 		/* update callin */
 		void update(int frame);
 
-		/* add a unit to the current group */
-		void addToGroup(int unit);
+		/* add a unit to a certain group */
+		void addToGroup(int unit, groupType type);
 
-		/* remove a unit from its group, erase group when empty and not current
+		/* remove a unit from its group, erase group when empty and not 
+		 * current
 		 */
 		void removeFromGroup(int unit);
 
-		/* military units */
-		std::map<int, CGroup> scouts; /* <group id, CGroup> */
-		std::map<int, CGroup> groups; /* <group id, CGroup> */
-		std::map<int, int>    units;  /* <unit id, group id> */
+		std::map<int, CMyGroup> groups; /* <group id, CMyGroup> */
+		std::map<int, int>      units;  /* <unit id, group id> */
 
 	private:
 		AIClasses *ai;
 
-		int currentGroup;
-		int currentScout;
+		int scoutGroup;
+		int attackerGroup;
 
 		/* Instantiates a new group */
-		void createNewGroup(std::map<int, CGroup> &groups, int group);
+		void createNewGroup(groupType type);
 
+		/* Scout and annoy >:) */
 		int selectHarrasTarget(int unit);
 
+		/* All targets in a certain order */
 		int selectAttackTarget(int group);
 
+		/* Subfunction for select*Target */
 		int selectTarget(float3 &ourPos, std::vector<int> &targets,
 						 std::vector<int> &occupied);
 

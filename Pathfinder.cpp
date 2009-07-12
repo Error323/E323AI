@@ -43,14 +43,14 @@ void CPathfinder::updateMap(float *weights) {
 }
 
 void CPathfinder::updatePaths() {
-	std::map<int, std::vector<float3> >::iterator p;
+	std::map<int, std::vector<float3> >::iterator path;
 	std::map<int, bool>::iterator u;
 
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		unsigned segment = 1;
 		int     waypoint = 1;
-		CGroup *group    = &(ai->military->groups[path->first]);
+		CMyGroup *group  = &(ai->military->groups[path->first]);
 		float maxGroupLength = std::max<float>(group->units.size()*50.0f, 200.0f);
 		std::map<float, int> M;
 
