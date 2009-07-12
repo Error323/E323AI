@@ -1,18 +1,29 @@
-#ifndef GROUP_H
-#define GROUP_H
+#ifndef MYGROUP_H
+#define MYGROUP_H
 
 #include "E323AI.h"
 
-class CGroup {
+class CMyGroup {
 	public:
-		CGroup(AIClasses *ai, int id);
-		~CGroup(){};
+		enum groupType{WORKER, SCOUT, ATTACKER};
+
+		CMyGroup(AIClasses *ai, int id, groupType type);
+		~CMyGroup(){};
 
 		/* The group id */
 		int id;
 
+		/* The group type */
+		groupType type;
+
 		/* The group strength */
 		float strength;
+
+		/* The group maxrange */
+		float range;
+
+		/* Is this group busy? */
+		bool busy;
 
 		/* The group unit <id,iswaiting> */
 		std::map<int, bool> units;
@@ -24,7 +35,7 @@ class CGroup {
 		void remove(int unit);
 
 		/* Merge another group with this group */
-		void merge(CGroup &group);
+		void merge(CMyGroup &group);
 
 		/* Get the position of the group */
 		float3 pos();

@@ -1,22 +1,31 @@
 #include "Group.h"
 
-CGroup::CGroup(AIClasses *ai, int id) {
-	this->ai = ai;
-	this->id = id;
-	strength = 0.0f;
+CMyGroup::CMyGroup(AIClasses *ai, int id, groupType type) {
+	this->ai   = ai;
+	this->id   = id;
+	this->type = type;
+
+	strength   = 0.0f;
+	range      = 0.0f;
+	busy       = false;
 }
 
-void CGroup::add(int unit) {
+void CMyGroup::add(int unit) {
 	units[unit] = false;
 	strength += ai->call->GetUnitPower(unit);
+	range = std::max<float>(ai->call->GetUnitRange(unit), range);
 }
 
-void CGroup::remove(int unit) {
+void CMyGroup::remove(int unit) {
 	units.erase(unit);
 	strength -= ai->call->GetUnitPower(unit);
+
+	/* Recalculate max range of the group */
+	for (i = units.begin(); i != units.end(); i++)
+		range = std::max<float>(ai->call->GetUnitRange(i->first), range);
 }
 
-void CGroup::merge(CGroup &group) {
+void CMyGroup::merge(CMyGroup &group) {
 	std::map<int, bool>::iterator i;
 	for (i = group.units.begin(); i != group.units.end(); i++)
 		units[i->first] = i->second;
@@ -24,7 +33,7 @@ void CGroup::merge(CGroup &group) {
 	strength += group.strength;
 }
 
-float3 CGroup::pos() {
+float3 CMyGroup::pos() {
 	std::map<int, bool>::iterator i;
 	float3 pos(0.0f, 0.0f, 0.0f);
 
