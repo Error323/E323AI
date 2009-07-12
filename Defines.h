@@ -44,6 +44,9 @@
 /* Minimal group size */
 #define MINGROUPSIZE 3
 
+/* Compute the sign of an int */
+#define SIGN(x) (+1 | (x >> (sizeof(int) * 8 - 1)))
+
 
 /* Facings */
 enum facing {
