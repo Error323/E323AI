@@ -11,12 +11,14 @@ CMyGroup::CMyGroup(AIClasses *ai, int id, groupType type) {
 }
 
 void CMyGroup::add(int unit) {
+	assert(ai != NULL);
 	units[unit] = false;
 	strength += ai->call->GetUnitPower(unit);
 	range = std::max<float>(ai->call->GetUnitMaxRange(unit), range);
 }
 
 void CMyGroup::remove(int unit) {
+	assert(ai != NULL);
 	units.erase(unit);
 	strength -= ai->call->GetUnitPower(unit);
 

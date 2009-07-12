@@ -35,7 +35,7 @@ class CMilitary {
 		void createNewGroup(groupType type);
 
 		/* Scout and annoy >:) */
-		int selectHarrasTarget(int unit);
+		int selectHarrasTarget(int group);
 
 		/* All targets in a certain order */
 		int selectAttackTarget(int group);

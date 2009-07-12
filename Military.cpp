@@ -2,12 +2,13 @@
 
 CMilitary::CMilitary(AIClasses *ai) {
 	this->ai      = ai;
-	scoutGroup    =  1;
-	attackerGroup = -1;
+	scoutGroup    = -1;
+	attackerGroup = +1;
 }
 
 void CMilitary::init(int unit) {
 	createNewGroup(G_ATTACKER);
+	createNewGroup(G_SCOUT);
 }
 
 int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vector<int> &occupied) {
@@ -39,10 +40,10 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vect
 	return target;
 }
 
-int CMilitary::selectHarrasTarget(int scout) {
+int CMilitary::selectHarrasTarget(int group) {
 	std::vector<int> occupiedTargets;
 	ai->tasks->getMilitaryTasks(HARRAS, occupiedTargets);
-	float3 pos = ai->call->GetUnitPos(scout);
+	float3 pos = groups[group].pos();
 	std::vector<int> targets;
 	targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
 	targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
@@ -150,7 +151,7 @@ void CMilitary::update(int frame) {
 				float enemyStrength = ai->threatMap->getThreat(goal, 100.0f);
 
 				/* If we can confront the enemy, do so */
-				if (groups[attackerGroup].strength >= enemyStrength*1.2f) {
+				if (groups[attackerGroup].strength >= enemyStrength) {
 					/* Add the taskplan */
 					ai->tasks->addMilitaryPlan(ATTACK, attackerGroup, target);
 
@@ -177,10 +178,12 @@ void CMilitary::createNewGroup(groupType type) {
 
 	switch (type) {
 		case G_ATTACKER:
-			group = attackerGroup++;
+			attackerGroup++;
+			group = attackerGroup;
 		break;
 		case G_SCOUT:
-			group = scoutGroup--;
+			scoutGroup--;
+			group = scoutGroup;
 		break;
 		default: return;
 	}
@@ -191,13 +194,16 @@ void CMilitary::createNewGroup(groupType type) {
 
 void CMilitary::addToGroup(int unit, groupType type) {
 	int group;
-
 	switch (type) {
 		case G_ATTACKER:
 			group = attackerGroup;
+			sprintf(buf, "****unit(%d) = ATTACKER", unit);
+			LOGN(buf);
 		break;
 		case G_SCOUT:
 			group = scoutGroup;
+			sprintf(buf, "****unit(%d) = SCOUT", unit);
+			LOGN(buf);
 			/* Scout groups initially have one unit, so create a new group */
 			createNewGroup(type);
 		break;
