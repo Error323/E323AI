@@ -63,27 +63,27 @@ void CTaskPlan::updateMilitaryPlans() {
 	for (i = militaryplans.begin(); i != militaryplans.end(); i++) {
 		MilitaryPlan *mp = i->second;
 		float3 target = ai->cheat->GetUnitPos(mp->target);
-		bool isgroup = ai->military->groups.find(i->first) != ai->military->groups.end();
+		bool isscout = ai->military->harras.count(i->first) > 0;
 		if (target == NULLVECTOR) {
-			if (!isgroup) ai->military->scouts[i->first] = false;
+			if (isscout) ai->military->harras[i->first] = false;
 			erase.push_back(i->first);
 			continue;
 		}
 		float3 pos;
 		float range;
-		if (isgroup) {
-			pos = ai->military->getGroupPos(i->first);
-			range = ai->military->range[i->first];
+		if (!isscout) {
+			pos   = ai->military->groups[i->first].pos();
+			range = ai->military->groups[i->first].range;
 		}
 		else {
-			pos = ai->call->GetUnitPos(i->first);
-			range = ai->call->GetUnitMaxRange(i->first);
+			pos   = ai->military->scouts[i->first].pos();
+			range = ai->military->scouts[i->first].range;
 		}
 		if ((pos - target).Length2D() <= range) {
-			if (isgroup)
-				ai->metaCmds->attackGroup(i->first, mp->target);
+			if (!isscout)
+				ai->metaCmds->attackGroup(ai->military->groups[i->first], mp->target);
 			else
-				ai->metaCmds->attack(i->first, mp->target);
+				ai->metaCmds->attackGroup(ai->military->scouts[i->first], mp->target);
 			ai->pf->removePath(i->first);
 		}
 	}
