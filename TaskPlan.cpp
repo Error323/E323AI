@@ -60,33 +60,31 @@ void CTaskPlan::updateBuildPlans(int unit) {
 void CTaskPlan::updateMilitaryPlans() {
 	std::map<int, MilitaryPlan*>::iterator i;
 	std::vector<int> erase;
+	
+	/* Update military plans */
 	for (i = militaryplans.begin(); i != militaryplans.end(); i++) {
 		MilitaryPlan *mp = i->second;
 		float3 target = ai->cheat->GetUnitPos(mp->target);
-		bool isscout = ai->military->harras.count(i->first) > 0;
+
+		/* Target is destroyed */
 		if (target == NULLVECTOR) {
-			if (isscout) ai->military->harras[i->first] = false;
 			erase.push_back(i->first);
+			ai->military->groups[i->first].busy = false;
+			ai->pf->removePath(i->first);
 			continue;
 		}
-		float3 pos;
-		float range;
-		if (!isscout) {
-			pos   = ai->military->groups[i->first].pos();
-			range = ai->military->groups[i->first].range;
-		}
-		else {
-			pos   = ai->military->scouts[i->first].pos();
-			range = ai->military->scouts[i->first].range;
-		}
+
+		float3 pos  = ai->military->groups[i->first].pos();
+		float range = ai->military->groups[i->first].range;
+
+		/* If we are in attack range, start attacking */
 		if ((pos - target).Length2D() <= range) {
-			if (!isscout)
-				ai->metaCmds->attackGroup(ai->military->groups[i->first], mp->target);
-			else
-				ai->metaCmds->attackGroup(ai->military->scouts[i->first], mp->target);
+			ai->metaCmds->attackGroup(ai->military->groups[i->first], mp->target);
 			ai->pf->removePath(i->first);
 		}
 	}
+
+	/* Erase successfully executed plans */
 	for (unsigned int i = 0; i < erase.size(); i++) {
 		ai->pf->removePath(erase[i]);
 		militaryplans.erase(erase[i]);
