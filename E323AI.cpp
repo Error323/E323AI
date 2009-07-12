@@ -112,8 +112,8 @@ void CE323AI::UnitFinished(int unit) {
 	/* Eco unit */
 	if (!(c&ATTACKER) || c&COMMANDER) {
 		if (c&FACTORY) {
-			ai->eco->gameFactories[unit]      = true;
-			ai->eco->gameIdle[unit]           = ut;
+			ai->eco->gameFactories[unit] = true;
+			ai->eco->gameIdle[unit]      = ut;
 		}
 
 		if (c&BUILDER && c&MOBILE) {

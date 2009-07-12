@@ -112,7 +112,7 @@ void CMilitary::update(int frame) {
 			float enemyStrength = ai->threatMap->getThreat(goal, G->range);
 
 			/* If we can confront the enemy, do so */
-			if (strength >= enemyStrength*1.2f) {
+			if (strength >= enemyStrength) {
 
 				/* Add the taskplan */
 				ai->tasks->addMilitaryPlan(plan, i->first, target);
@@ -197,13 +197,9 @@ void CMilitary::addToGroup(int unit, groupType type) {
 	switch (type) {
 		case G_ATTACKER:
 			group = attackerGroup;
-			sprintf(buf, "****unit(%d) = ATTACKER", unit);
-			LOGN(buf);
 		break;
 		case G_SCOUT:
 			group = scoutGroup;
-			sprintf(buf, "****unit(%d) = SCOUT", unit);
-			LOGN(buf);
 			/* Scout groups initially have one unit, so create a new group */
 			createNewGroup(type);
 		break;
