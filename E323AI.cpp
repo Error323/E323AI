@@ -166,6 +166,7 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 			ai->eco->gameBuilders.erase(unit);
 			ai->eco->removeMyGuards(unit);
 			ai->metalMap->taken.erase(unit);
+			ai->tasks->buildplans.erase(unit);
 		}
 
 		if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
@@ -182,15 +183,14 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 			ai->eco->gameEnergy.erase(unit);
 		}
 		ai->eco->gameGuarding.erase(unit);
+		ai->eco->gameIdle.erase(unit);
+		ai->eco->gameBuilding.erase(unit);
 	}
 	else {
 		ai->military->removeFromGroup(unit);
 	}
 
 	ai->unitTable->gameAllUnits.erase(unit);
-	ai->tasks->buildplans.erase(unit);
-	ai->eco->gameIdle.erase(unit);
-	ai->eco->gameBuilding.erase(unit);
 }
 
 /* Called when unit is idle */
@@ -280,37 +280,39 @@ void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
 
 	/* Rotate through the different update events to distribute computations */
-	switch(frame % 8) {
-		case 0: /* update threatmap */
+	switch(frame % 16) {
+		case 1: /* update threatmap */
 			ai->threatMap->update(frame);
 		break;
 
-		case 1: /* update pathfinder with threatmap */
+		case 3: /* update pathfinder with threatmap */
 			ai->pf->updateMap(ai->threatMap->map);
 		break;
 
-		case 2: /* update the unit or group paths */
+		case 5: /* update the unit or group paths */
 			ai->pf->updatePaths();
 		break;
 
-		case 3: /* update enemy intel */
+		case 7: /* update enemy intel */
 			ai->intel->update(frame);
 		break;
 
-		case 4: /* update military */
+		case 9: /* update military */
 			ai->military->update(frame);
 		break;
 
-		case 5: /* update incomes */
+		case 11: /* update incomes */
 			ai->eco->updateIncomes(frame);
 		break;
 
-		case 6: /* update economy */
+		case 13: /* update economy */
 			ai->eco->update(frame);
 		break;
 
-		case 7: /* update military tasks */
+		case 15: /* update military tasks */
 			ai->tasks->updateMilitaryPlans();
 		break;
+
+		default: return;
 	}
 }
