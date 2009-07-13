@@ -4,6 +4,8 @@ CMilitary::CMilitary(AIClasses *ai) {
 	this->ai      = ai;
 	scoutGroup    = -1;
 	attackerGroup = +1;
+	minGroupSize  = 3;
+	maxGroupSize  = 4;
 }
 
 void CMilitary::init(int unit) {
@@ -144,7 +146,7 @@ void CMilitary::update(int frame) {
 	/* Else pick a target, decide group power required and attack */
 	else {
 		/* Pick a target */
-		if (groups[attackerGroup].units.size() >= MINGROUPSIZE) {
+		if (groups[attackerGroup].units.size() >= groupSize) {
 			int target = selectAttackTarget(attackerGroup);
 			if (target != -1) {
 				float3 goal = ai->cheat->GetUnitPos(target);
@@ -180,6 +182,9 @@ void CMilitary::createNewGroup(groupType type) {
 		case G_ATTACKER:
 			attackerGroup++;
 			group = attackerGroup;
+			groupSize = rng.RandInt(maxGroupSize-minGroupSize) + minGroupSize;
+			minGroupSize++;
+			maxGroupSize+=2;
 		break;
 		case G_SCOUT:
 			scoutGroup--;
