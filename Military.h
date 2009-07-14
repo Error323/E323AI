@@ -29,7 +29,7 @@ class CMilitary {
 		std::map<int, std::map<int, CMyGroup> > groups;
 
 		/* factory->unit->group <factory, <unit, group> > */
-		std::map<int, std::map<int, int> >      units;
+		std::map<int, std::map<int, int> > units;
 
 	private:
 		AIClasses *ai;

@@ -3,7 +3,7 @@
 CMilitary::CMilitary(AIClasses *ai) {
 	this->ai      = ai;
 	minGroupSize  = 3;
-	maxGroupSize  = 5;
+	maxGroupSize  = 7;
 }
 
 void CMilitary::init(int unit) {
