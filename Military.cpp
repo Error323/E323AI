@@ -3,14 +3,15 @@
 CMilitary::CMilitary(AIClasses *ai) {
 	this->ai      = ai;
 	minGroupSize  = 3;
-	maxGroupSize  = 4;
+	maxGroupSize  = 5;
 }
 
 void CMilitary::init(int unit) {
 }
 
 int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vector<int> &occupied) {
-	int target = -1;
+	int target;
+	bool isOccupied = true;
 	std::map<float, int> M;
 
 	/* First sort the targets on distance */
@@ -25,7 +26,7 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vect
 	/* Select a non taken target */
 	for (std::map<float,int>::iterator i = M.begin(); i != M.end(); i++) {
 		target = i->second;
-		bool isOccupied = false;
+		isOccupied = false;
 		for (unsigned j = 0; j < occupied.size(); j++) {
 			if (target == occupied[j]) {
 				isOccupied = true;
@@ -35,7 +36,7 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vect
 		if (isOccupied) continue;
 		else break;
 	}
-	return target;
+	return isOccupied ? -1 : target;
 }
 
 int CMilitary::selectHarrasTarget(CMyGroup &G) {
@@ -167,8 +168,6 @@ void CMilitary::createNewGroup(groupType type, int factory) {
 			attackGroup[factory]++;
 			group     = attackGroup[factory];
 			groupSize = rng.RandInt(maxGroupSize-minGroupSize) + minGroupSize;
-			minGroupSize++;
-			maxGroupSize+=2;
 		break;
 		case G_SCOUT:
 			scoutGroup[factory]--;
