@@ -1,0 +1,5 @@
+# compiled releases
+/releases
+
+# vim swapfiles
+.*.swp
