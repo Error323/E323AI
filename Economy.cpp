@@ -113,6 +113,7 @@ void CEconomy::update(int frame) {
 				}
 				else if (eRequest || estall) {
 					bool canhelp = canHelp(BUILD_EMAKER, i->first, toHelp, energyProvider);
+ 					//FIXME: segfaults sometimes, cause by toHelp being 0x0 ??
 					if (canhelp)
 						ai->metaCmds->guard(i->first, toHelp);
 					else
@@ -129,8 +130,10 @@ void CEconomy::update(int frame) {
 				if (travelTime <= buildTime)
 					ai->metaCmds->guard(i->first, fac);
 				else if (gameFactories.size() < 2 && exceeding){
-					UnitType *airlab = ai->unitTable->canBuild(ut, FACTORY|AIR|TECH1);
-					ai->metaCmds->build(i->first, airlab, pos);
+					UnitType *lab = ai->unitTable->canBuild(ut, KBOT|TECH2);
+					if (lab == NULL)
+						lab = ai->unitTable->canBuild(ut, VEHICLE|TECH1);
+					ai->metaCmds->build(i->first, lab, pos);
 				}
 			}
 		}
@@ -213,10 +216,11 @@ bool CEconomy::canHelp(task t, int helper, int &unit, UnitType *utToBuild) {
 			float pathLength = (posHelper - posToHelp).Length2D();
 			float travelTime  = pathLength / (utHelper->def->speed/30.0f);
 			if (travelTime <= buildTime && getGuardings(busyUnits[uid]) < 1) {
-				unit = busyUnits[uid];
 				/* Only if the worker itself isn't guarding */
-				if (gameGuarding.find(busyUnits[uid]) == gameGuarding.end())
+				if (gameGuarding.find(busyUnits[uid]) == gameGuarding.end()) {
+					unit = busyUnits[uid];
 					return true;
+				}
 			}
 		}
 	}
