@@ -70,7 +70,6 @@ bool CMetaCommands::moveRandom(int unit, float radius, bool enqueue) {
 	newpos.x += pos.x;
 	newpos.y  = pos.y;
 	newpos.z += pos.z;
-	ai->eco->removeIdleUnit(unit);
 	return move(unit, newpos, enqueue);
 }
 
@@ -130,17 +129,25 @@ bool CMetaCommands::build(int builder, UnitType *toBuild, float3 &pos) {
 	else if(toBuild->cats&MEXTRACTOR)
 		mindist = 0;
 
-	const UnitDef *ud = ai->call->GetUnitDef(builder);
-	float startRadius = ud->buildDistance;
+	const UnitDef *ud  = ai->call->GetUnitDef(builder);
+	float startRadius  = ud->buildDistance;
 	facing f           = getBestFacing(pos);
 	float3 start       = ai->call->GetUnitPos(builder);
 	float3 goal        = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
 
+	int i = 0;
 	while (goal == ERRORVECTOR) {
 		startRadius += ud->buildDistance;
 		goal = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
+		sprintf(buf, "------%s(%d) trying to build %s iteration %d", ud->name.c_str(), builder, toBuild->def->name.c_str(), i);
+		LOGN(buf);
+		i++;
+		if (i > 10) {
+			/* Building in this area seems impossible, relocate builder */
+			moveRandom(builder, startRadius);
+			return false;
+		}
 	}
-	//ai->call->DrawUnit(toBuild->def->name.c_str(), goal, 0, 30*60*5, 0, true, true, f);
 
 	Command c = createPosCommand(-(toBuild->id), goal, -1.0f, f);
 	if (c.id != 0) {
