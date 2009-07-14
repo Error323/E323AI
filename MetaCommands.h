@@ -9,10 +9,10 @@ class CMetaCommands {
 		~CMetaCommands();
 
 		/* Move a group to pos */
-		void moveGroup(int group, float3 &pos, bool enqueue = false);
+		void moveGroup(CMyGroup &G, float3 &pos, bool enqueue = false);
 
 		/* Attack a unit with a group */
-		void attackGroup(int group, int target);
+		void attackGroup(CMyGroup &G, int target);
 
 		/* Attack a unit */
 		bool attack(int unit, int target);

@@ -1,11 +1,11 @@
 #include "Pathfinder.h"
 
 CPathfinder::CPathfinder(AIClasses *ai) {
-	this->ai  = ai;
-	this->X   = int(ai->call->GetMapWidth() / THREATRES);
-	this->Z   = int(ai->call->GetMapHeight() / THREATRES);
-	this->REAL= THREATRES*8.0f;
-	int SLOPE = THREATRES/2.0f;
+	this->ai   = ai;
+	this->X    = int(ai->call->GetMapWidth() / THREATRES);
+	this->Z    = int(ai->call->GetMapHeight() / THREATRES);
+	this->REAL = THREATRES*8.0f;
+	int SLOPE  = THREATRES/2.0f;
 
 	/* initialize nodes */
 	for (int x = 0; x < X; x++)
@@ -44,13 +44,14 @@ void CPathfinder::updateMap(float *weights) {
 
 void CPathfinder::updatePaths() {
 	std::map<int, std::vector<float3> >::iterator path;
+	
 	std::map<int, bool>::iterator u;
 
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
-		unsigned segment = 1;
-		int     waypoint = 1;
-		CMyGroup *group  = &(ai->military->groups[path->first]);
+		unsigned segment     = 1;
+		int     waypoint     = 1;
+		CMyGroup *group      = groups[path->first];
 		float maxGroupLength = std::max<float>(group->units.size()*50.0f, 200.0f);
 		std::map<float, int> M;
 
@@ -99,7 +100,7 @@ void CPathfinder::updatePaths() {
 			/* A map sorts on key (low to high) by default */
 			M[uposonpath] = u->first;
 		}
-		ai->metaCmds->moveGroup(path->first, path->second[segment+waypoint]);
+		ai->metaCmds->moveGroup(*group, path->second[segment+waypoint]);
 
 		/* Set a wait cmd on units that are going to fast, (They can still
 		 * attack during a wait) 
@@ -127,18 +128,20 @@ void CPathfinder::updatePaths() {
 	}
 }
 
-void CPathfinder::addPath(int unitOrGroup, float3 &start, float3 &goal) {
+void CPathfinder::addGroup(CMyGroup &G, float3 &start, float3 &goal) {
+	groups[G.id] = &G;
+	addPath(G.id, start, goal);
+}
+
+void CPathfinder::removeGroup(CMyGroup &G) {
+	paths.erase(G.id);
+	groups.erase(G.id);
+}
+
+void CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 	std::vector<float3> path;
-	getPath(start, goal, path, unitOrGroup);
-	paths[unitOrGroup] = path;
-}
-
-void CPathfinder::removePath(int unitOrGroup) {
-	paths.erase(unitOrGroup);
-}
-
-bool CPathfinder::hasPath(int unitOrGroup) {
-	return paths.find(unitOrGroup) != paths.end();
+	getPath(start, goal, path, group);
+	paths[group] = path;
 }
 
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
@@ -160,7 +163,7 @@ void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	}
 }
 
-bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int unitOrGroup, float radius) {
+bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius) {
 	/* If exceeding, snap to boundaries */
 	int sx  = int(round(s.x/REAL)); sx = std::max<int>(sx, 1); sx = std::min<int>(sx, X-2);
 	int sz  = int(round(s.z/REAL)); sz = std::max<int>(sz, 1); sz = std::min<int>(sz, Z-2);
@@ -197,9 +200,9 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int u
 
 		if (draw) {
 			for (unsigned i = 2; i < path.size(); i++) 
-				ai->call->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, unitOrGroup);
-			float3 c((unitOrGroup%1)/1.0f, (unitOrGroup%2)/2.0f, (unitOrGroup%3)/3.0f);
-			ai->call->SetFigureColor(unitOrGroup, c[0], c[1], c[2], 1.0f);
+				ai->call->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, group);
+			float3 c((group%1)/1.0f, (group%2)/2.0f, (group%3)/3.0f);
+			ai->call->SetFigureColor(group, c[0], c[1], c[2], 1.0f);
 		}
 	}
 	return success;

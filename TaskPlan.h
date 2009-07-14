@@ -21,14 +21,16 @@ class CTaskPlan {
 		struct MilitaryPlan {
 			task t;
 			int target;
-			MilitaryPlan(task t, int target) {
-				this->t = t;
+			CMyGroup *G;
+			MilitaryPlan(task t, int target, CMyGroup &G) {
+				this->t      = t;
 				this->target = target;
+				this->G      = &G;
 			}
 		};
 			
 
-		void addMilitaryPlan(task t, int unitOrGroup, int target);
+		void addMilitaryPlan(task t, CMyGroup &G, int target);
 
 		void addBuildPlan(int unit, UnitType* toBuild);
 

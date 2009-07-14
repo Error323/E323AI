@@ -114,6 +114,7 @@ void CE323AI::UnitFinished(int unit) {
 		if (c&FACTORY) {
 			ai->eco->gameFactories[unit] = true;
 			ai->eco->gameIdle[unit]      = ut;
+			ai->military->initSubGroups(unit);
 		}
 
 		if (c&BUILDER && c&MOBILE) {
@@ -140,9 +141,9 @@ void CE323AI::UnitFinished(int unit) {
 		if (c&MOBILE) {
 			ai->metaCmds->moveForward(unit, 100.0f);
 			if (c&SCOUT)
-				ai->military->addToGroup(unit, G_SCOUT);
+				ai->military->addToGroup(ai->eco->gameBuilding[unit], unit, G_SCOUT);
 			else
-				ai->military->addToGroup(unit, G_ATTACKER);
+				ai->military->addToGroup(ai->eco->gameBuilding[unit], unit, G_ATTACKER);
 		}
 	}
 	ai->unitTable->gameAllUnits[unit] = ut;
@@ -187,7 +188,7 @@ void CE323AI::UnitDestroyed(int unit, int attacker) {
 		ai->eco->gameBuilding.erase(unit);
 	}
 	else {
-		ai->military->removeFromGroup(unit);
+		ai->military->removeFromGroup(ai->eco->gameBuilding[unit], unit);
 	}
 
 	ai->unitTable->gameAllUnits.erase(unit);

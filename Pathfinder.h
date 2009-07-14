@@ -29,16 +29,15 @@ class CPathfinder: public AAStar {
 		/* Update the map weights */
 		void updateMap(float* weights);
 
-		/* Update unit/group paths */
+		/* Update group paths */
 		void updatePaths();
 
-		/* Add a path to a unit or group */
-		void addPath(int unitOrGroup, float3 &start, float3 &goal);
+		/* Register subgroups */
+		void addGroup(CMyGroup &G, float3 &start, float3 & goal);
 
 		/* Remove a path from a unit or group */
-		void removePath(int unitOrGroup);
+		void removeGroup(CMyGroup &G);
 
-		bool hasPath(int unitOrGroup);
 
 		int X,Z,dx2,dz2;
 		float REAL;
@@ -50,24 +49,33 @@ class CPathfinder: public AAStar {
 
 		char buf[1024];
 
+		/* The paths <group, path> */
+		std::map<int, std::vector<float3> > paths;
+
+		/* The group pointers */
+		std::map<int, CMyGroup*> groups;
+
+		/* spring maps */
+		std::vector<float> heightMap, slopeMap;
+	
+		/* draw the path ? */
+		bool draw;
+
 		/* overload */
 		void successors(ANode *an, std::queue<ANode*> &succ);
 
 		/* overload */
 		float heuristic(ANode *an1, ANode *an2);
 
-		/* Start pathfinding */
-		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int unitOrGroup, float radius = EPSILON);
+		/* Add a path to a unit or group */
+		void addPath(int group, float3 &start, float3 &goal);
 
+		/* Start pathfinding */
+		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius = EPSILON);
+
+		/* Draw the map */
 		void drawMap();
 
-		/* The paths for individual units, or groups */
-		std::map<int, std::vector<float3> > paths;
-
-		std::vector<float> heightMap, slopeMap;
-	
-		/* draw the path ? */
-		bool draw;
 };
 
 #endif

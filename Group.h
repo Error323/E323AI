@@ -6,9 +6,12 @@
 class CMyGroup {
 	public:
 
-		CMyGroup(AIClasses *ai, int id, groupType type);
+		CMyGroup(AIClasses *ai, groupType type);
 		CMyGroup(){};
 		~CMyGroup(){};
+
+		/* Group counter */
+		static int counter;
 
 		/* The group id */
 		int id;
@@ -42,6 +45,9 @@ class CMyGroup {
 
 	private:
 		AIClasses *ai;
+		
+		char buf[1024];
+
 
 };
 

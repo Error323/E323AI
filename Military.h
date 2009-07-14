@@ -15,30 +15,39 @@ class CMilitary {
 		void update(int frame);
 
 		/* add a unit to a certain group */
-		void addToGroup(int unit, groupType type);
+		void addToGroup(int factory, int unit, groupType type);
 
 		/* remove a unit from its group, erase group when empty and not 
 		 * current
 		 */
-		void removeFromGroup(int unit);
+		void removeFromGroup(int factory, int unit);
 
-		std::map<int, CMyGroup> groups; /* <group id, CMyGroup> */
-		std::map<int, int>      units;  /* <unit id, group id> */
+		/* initializes groups[factory] subgroups */
+		void initSubGroups(int factory);
+
+		/* factory->group->unit <factory, <group, CMyGroup> > */
+		std::map<int, std::map<int, CMyGroup> > groups;
+
+		/* factory->unit->group <factory, <unit, group> > */
+		std::map<int, std::map<int, int> >      units;
 
 	private:
 		AIClasses *ai;
 
-		int scoutGroup;
-		int attackerGroup;
+		/* the current group per factory */
+		std::map<int, int> attackGroup;
+
+		/* the current scout per factory */
+		std::map<int, int> scoutGroup;
 
 		/* Instantiates a new group */
-		void createNewGroup(groupType type);
+		void createNewGroup(groupType type, int factory);
 
 		/* Scout and annoy >:) */
-		int selectHarrasTarget(int group);
+		int selectHarrasTarget(CMyGroup &G);
 
 		/* All targets in a certain order */
-		int selectAttackTarget(int group);
+		int selectAttackTarget(CMyGroup &G);
 
 		/* Subfunction for select*Target */
 		int selectTarget(float3 &ourPos, std::vector<int> &targets,

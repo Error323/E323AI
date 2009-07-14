@@ -20,13 +20,11 @@ bool AAStar::findPath(std::list<ANode*>& path) {
 	start->open = true;
 	visited.push_back(start);
 
-	printf("pathfinding...");
 	while (!open.empty()) {
 		x = open.top(); open.pop();
 		x->open = false;
 
 		if (x == goal) {
-			printf("[done]\n");
 			tracePath(path);
 			return true;
 		}
@@ -58,7 +56,6 @@ bool AAStar::findPath(std::list<ANode*>& path) {
 			}
 		}
 	}
-	printf("[failed]\n");
 	return false;
 }
 

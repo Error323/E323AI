@@ -6,17 +6,15 @@ CMetaCommands::CMetaCommands(AIClasses *ai) {
 
 CMetaCommands::~CMetaCommands() {}
 
-void CMetaCommands::moveGroup(int group, float3 &pos, bool enqueue) {
+void CMetaCommands::moveGroup(CMyGroup &G, float3 &pos, bool enqueue) {
 	std::map<int, bool>::iterator i;
-	std::map<int, bool> *G = &(ai->military->groups[group].units);
-	for (i = G->begin(); i != G->end(); i++)
+	for (i = G.units.begin(); i != G.units.end(); i++)
 		move(i->first, pos, enqueue);
 }
 
-void CMetaCommands::attackGroup(int group, int target) {
+void CMetaCommands::attackGroup(CMyGroup &G, int target) {
 	std::map<int, bool>::iterator i;
-	std::map<int, bool> *G = &(ai->military->groups[group].units);
-	for (i = G->begin(); i != G->end(); i++)
+	for (i = G.units.begin(); i != G.units.end(); i++)
 		attack(i->first, target);
 }
 

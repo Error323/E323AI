@@ -12,8 +12,8 @@ CTaskPlan::CTaskPlan(AIClasses *ai) {
 	taskStr[ATTACK]         = std::string("attack");
 }
 
-void CTaskPlan::addMilitaryPlan(task t, int unitOrGroup, int target) {
-	militaryplans[unitOrGroup] = new MilitaryPlan(t, target);
+void CTaskPlan::addMilitaryPlan(task t, CMyGroup &G, int target) {
+	militaryplans[G.id] = new MilitaryPlan(t, target, G);
 	const UnitDef *ud = ai->cheat->GetUnitDef(target);
 	assert(ud != NULL);
 	
@@ -64,8 +64,7 @@ void CTaskPlan::updateMilitaryPlans() {
 	/* Update military plans */
 	for (i = militaryplans.begin(); i != militaryplans.end(); i++) {
 		MilitaryPlan *mp = i->second;
-		float3 target = ai->cheat->GetUnitPos(mp->target);
-		CMyGroup *G = &(ai->military->groups[i->first]);
+		float3 target    = ai->cheat->GetUnitPos(mp->target);
 
 		/* Target is destroyed */
 		if (target == NULLVECTOR) {
@@ -73,22 +72,21 @@ void CTaskPlan::updateMilitaryPlans() {
 			continue;
 		}
 
-		float range = G->range*0.8;
-		float3 pos  = G->pos();
+		float range = mp->G->range*0.8;
+		float3 pos  = mp->G->pos();
 
 		/* If we are in attack range, start attacking */
 		if ((pos - target).Length2D() <= range) {
-			ai->metaCmds->attackGroup(i->first, mp->target);
-			ai->pf->removePath(i->first);
+			ai->metaCmds->attackGroup(*(mp->G), mp->target);
+			ai->pf->removeGroup(*(mp->G));
 		}
 	}
 
 	/* Erase successfully executed plans */
 	for (unsigned int i = 0; i < erase.size(); i++) {
-		ai->pf->removePath(erase[i]);
+		ai->pf->removeGroup(*militaryplans[erase[i]]->G);
+		militaryplans[erase[i]]->G->busy = false;
 		militaryplans.erase(erase[i]);
-		CMyGroup *G = &(ai->military->groups[erase[i]]);
-		G->busy     = false;
 	}
 }
 

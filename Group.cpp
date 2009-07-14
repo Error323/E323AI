@@ -1,13 +1,22 @@
 #include "Group.h"
 
-CMyGroup::CMyGroup(AIClasses *ai, int id, groupType type) {
+int CMyGroup::counter = 0;
+
+CMyGroup::CMyGroup(AIClasses *ai, groupType type) {
 	this->ai   = ai;
-	this->id   = id;
 	this->type = type;
+	this->id   = counter;
 
 	strength   = 0.0f;
 	range      = 0.0f;
 	busy       = false;
+	sprintf(buf, "[CMyGroup::CMyGroup]\ttype(%s) id(%d)", 
+		type == G_SCOUT ? "SCOUT" : "ATTACK",
+		id
+	); 
+	LOGN(buf);
+
+	counter++;
 }
 
 void CMyGroup::add(int unit) {
