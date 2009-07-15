@@ -49,6 +49,9 @@ class CPathfinder: public AAStar {
 
 		char buf[1024];
 
+		/* controls which path may be updated, (round robin-ish) */
+		unsigned update;
+
 		/* The paths <group, path> */
 		std::map<int, std::vector<float3> > paths;
 

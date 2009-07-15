@@ -6,6 +6,7 @@ CPathfinder::CPathfinder(AIClasses *ai) {
 	this->Z    = int(ai->call->GetMapHeight() / THREATRES);
 	this->REAL = THREATRES*8.0f;
 	int SLOPE  = THREATRES/2.0f;
+	update     = 0;
 
 	/* initialize nodes */
 	for (int x = 0; x < X; x++)
@@ -44,9 +45,9 @@ void CPathfinder::updateMap(float *weights) {
 
 void CPathfinder::updatePaths() {
 	std::map<int, std::vector<float3> >::iterator path;
-	
 	std::map<int, bool>::iterator u;
 
+	int groupnr = 1;
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		unsigned segment     = 1;
@@ -76,7 +77,7 @@ void CPathfinder::updatePaths() {
 				float l1 = d1.Length2D();
 				float l2 = d2.Length2D();
 				/* When the dist between the unit and the segment is
-                 * increasing: break 
+				 * increasing: break 
 				 */
 				length  += (path->second[s1] - path->second[s2]).Length2D();
 				if (l1 > sl1 || l2 > sl2) break;
@@ -104,7 +105,7 @@ void CPathfinder::updatePaths() {
 
 		/* Set a wait cmd on units that are going to fast, (They can still
 		 * attack during a wait) 
-         */
+		 */
 		if (M.size() > 1) {
 			float rearval = M.begin()->first;
 			for (std::map<float,int>::iterator i = --M.end(); i != M.begin(); i--) {
@@ -118,14 +119,18 @@ void CPathfinder::updatePaths() {
 			}
 		}
 
-		/* Recalculate the path every now and then */
-		if (segment % 4 == 0) {
+		/* Round robin through the groups updating their paths */
+		if (update % paths.size() == groupnr) {
 			int target   = ai->tasks->getTarget(path->first);
 			float3 goal  = ai->cheat->GetUnitPos(target);
 			float3 start = group->pos();
 			addPath(path->first, start, goal);
+			sprintf(buf, "[CPathfinder::updatePaths]\tgroup(%d)", group->id);
+			LOGN(buf);
 		}
+		groupnr++;
 	}
+	update++;
 }
 
 void CPathfinder::addGroup(CMyGroup &G, float3 &start, float3 &goal) {
