@@ -29,7 +29,12 @@ class CPathfinder: public AAStar {
 		/* Update the map weights */
 		void updateMap(float* weights);
 
-		/* Update group paths */
+		/* Update groups following paths */
+		void updateFollowers();
+
+		/* update the path itself NOTE: should always be called after
+		 * updateFollowers() 
+		 */
 		void updatePaths();
 
 		/* Register subgroups */
@@ -48,6 +53,9 @@ class CPathfinder: public AAStar {
 		AIClasses *ai;
 
 		char buf[1024];
+
+		/* group to receive repathing event next updatePaths() call */
+		int repathGroup;
 
 		/* Active map (maps[activeMap]), CRUCIAL to A* */
 		int activeMap;

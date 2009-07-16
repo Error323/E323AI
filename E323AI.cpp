@@ -290,33 +290,34 @@ void CE323AI::Update() {
 			ai->pf->updateMap(ai->threatMap->map);
 		break;
 
-		case 5:  /* update the unit or group paths */
+		case 5:  /* update the groups following a path */
+			ai->pf->updateFollowers();
+		break;
+
+		case 7:  /* update the path itself of a group */
 			ai->pf->updatePaths();
 		break;
 
-		case 7:  /* update enemy intel */
+		case 9:  /* update enemy intel */
 			ai->intel->update(frame);
 		break;
 
-		case 9:  /* update military */
+		case 11: /* update military */
 			ai->military->update(frame);
 		break;
 
-		case 11: /* update incomes */
+		case 13: /* update incomes */
 			ai->eco->updateIncomes(frame);
 		break;
 
-		case 13: /* update economy */
+		case 15: /* update economy */
 			ai->eco->update(frame);
 		break;
 
-		case 15: /* update military plans */
+		case 17: /* update military plans */
 			ai->tasks->updateMilitaryPlans();
 		break;
 
-		case 17: /* update merge plans */
-			ai->tasks->updateMergePlans();
-		break;
 		default: return;
 	}
 }

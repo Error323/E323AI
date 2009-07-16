@@ -7,6 +7,7 @@ CPathfinder::CPathfinder(AIClasses *ai) {
 	this->REAL = THREATRES*8.0f;
 	int SLOPE  = THREATRES/2.0f;
 	update     = 0;
+	repathGroup= -1;
 
 	heightMap.resize(X*Z, 0.0f);
 	slopeMap.resize(X*Z, 0.0f);
@@ -87,11 +88,11 @@ void CPathfinder::updateMap(float *weights) {
 	}
 }
 
-void CPathfinder::updatePaths() {
+void CPathfinder::updateFollowers() {
 	std::map<int, std::vector<float3> >::iterator path;
 	std::map<int, bool>::iterator u;
 
-	int groupnr = 1;
+	int groupnr = 0;
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		unsigned segment     = 1;
@@ -163,16 +164,27 @@ void CPathfinder::updatePaths() {
 			}
 		}
 
-		/* Round robin through the groups updating their paths */
-		if (update % paths.size() == groupnr) {
-			int target   = ai->tasks->getTarget(path->first);
-			float3 goal  = ai->cheat->GetUnitPos(target);
-			float3 start = group->pos();
-			addPath(path->first, start, goal);
-		}
+		/* See who will get their path updated by updatePaths() */
+		if (update % paths.size() == groupnr)
+			repathGroup = path->first;
 		groupnr++;
 	}
+}
+
+void CPathfinder::updatePaths() {
 	update++;
+
+	/* nothing to update */
+	if (paths.find(repathGroup) == paths.end()) 
+		return;
+
+	sprintf(buf, "CPathfinder::updatePaths]\tRepathing group(%d)", repathGroup);
+	LOGN(buf);
+
+	int target   = ai->tasks->getTarget(repathGroup);
+	float3 start = groups[repathGroup]->pos();
+	float3 goal  = ai->cheat->GetUnitPos(target);
+	addPath(repathGroup, start, goal);
 }
 
 void CPathfinder::addGroup(CMyGroup &G, float3 &start, float3 &goal) {
