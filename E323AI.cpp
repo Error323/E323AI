@@ -281,24 +281,24 @@ void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
 
 	/* Rotate through the different update events to distribute computations */
-	switch(frame % 16) {
-		case 1: /* update threatmap */
+	switch(frame % 18) {
+		case 1:  /* update threatmap */
 			ai->threatMap->update(frame);
 		break;
 
-		case 3: /* update pathfinder with threatmap */
+		case 3:  /* update pathfinder with threatmap */
 			ai->pf->updateMap(ai->threatMap->map);
 		break;
 
-		case 5: /* update the unit or group paths */
+		case 5:  /* update the unit or group paths */
 			ai->pf->updatePaths();
 		break;
 
-		case 7: /* update enemy intel */
+		case 7:  /* update enemy intel */
 			ai->intel->update(frame);
 		break;
 
-		case 9: /* update military */
+		case 9:  /* update military */
 			ai->military->update(frame);
 		break;
 
@@ -310,10 +310,13 @@ void CE323AI::Update() {
 			ai->eco->update(frame);
 		break;
 
-		case 15: /* update military tasks */
+		case 15: /* update military plans */
 			ai->tasks->updateMilitaryPlans();
 		break;
 
+		case 17: /* update merge plans */
+			ai->tasks->updateMergePlans();
+		break;
 		default: return;
 	}
 }

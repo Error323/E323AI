@@ -38,6 +38,46 @@ void CTaskPlan::addBuildPlan(int unit, UnitType *toBuild) {
 	LOGN(buf);
 }
 
+void CTaskPlan::addMergePlan(CMyGroup &a, CMyGroup &b) {
+	a.busy = true; b.busy = true;
+	float3 apos = a.pos();
+	float3 bpos = b.pos();
+	ai->pf->addGroup(a, apos, bpos);
+	ai->pf->addGroup(b, bpos, apos);
+}
+
+void CTaskPlan::updateMergePlans() {
+	std::map<int, MergePlan*>::iterator i;
+	std::vector<int> erase;
+	
+	/* Update merge plans */
+	for (i = mergeplans.begin(); i != mergeplans.end(); i++) {
+		MergePlan *mp = i->second;
+		float3 apos   = mp->a->pos();
+		float3 bpos   = mp->b->pos();
+		float  dist   = (apos - bpos).Length2D();
+		float  range  = std::min<int>(mp->a->maxLength(),mp->b->maxLength());
+
+		/* If groups are close enough begin merging */
+		if (dist <= range) {
+			if (mp->a->units.size() < mp->b->units.size())
+				mp->a->merge(*(mp->b));
+			else
+				mp->b->merge(*(mp->a));
+			erase.push_back(i->first);
+		}
+	}
+
+	/* Erase successfully executed plans */
+	for (unsigned int i = 0; i < erase.size(); i++) {
+		ai->pf->removeGroup(*mergeplans[erase[i]]->a);
+		ai->pf->removeGroup(*mergeplans[erase[i]]->b);
+		mergeplans[erase[i]]->a->busy = false;
+		mergeplans[erase[i]]->b->busy = false;
+		militaryplans.erase(erase[i]);
+	}
+}
+
 void CTaskPlan::updateBuildPlans(int unit) {
 	std::map<int, BuildPlan*>::iterator i;
 	std::vector<int> erase;

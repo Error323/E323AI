@@ -211,6 +211,12 @@ void CMilitary::removeFromGroup(int factory, int unit) {
 	}
 }
 
+/*
+void CMilitary::mergeGroups(CMyGroup &a, CMyGroup &b) {
+	ai->tasks->addMergePlan(a, b);
+}
+*/
+
 unsigned CMilitary::randomUnit() {
 	float r = rng.RandFloat();
 	if (r > 0.1 && r < 0.6)

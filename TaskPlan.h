@@ -28,15 +28,29 @@ class CTaskPlan {
 				this->G      = &G;
 			}
 		};
+
+		struct MergePlan {
+			task t;
+			CMyGroup *a, *b;
+			MergePlan(task t, CMyGroup &a, CMyGroup &b) {
+				this->t    = t;
+				this->a    = &a;
+				this->b    = &b;
+			}
+		};
 			
 
 		void addMilitaryPlan(task t, CMyGroup &G, int target);
 
 		void addBuildPlan(int unit, UnitType* toBuild);
 
+		void addMergePlan(CMyGroup &a, CMyGroup &b);
+
 		void updateBuildPlans(int unit);
 
 		void updateMilitaryPlans();
+
+		void updateMergePlans();
 
 		void getBuildTasks(task t, std::vector<int> &units);
 
@@ -44,8 +58,9 @@ class CTaskPlan {
 
 		int getTarget(int unitOrGroup);
 
-		std::map<int, BuildPlan*> buildplans;
+		std::map<int, BuildPlan*>    buildplans;
 		std::map<int, MilitaryPlan*> militaryplans;
+		std::map<int, MergePlan*>    mergeplans;
 
 	private:
 		std::map<task, std::string> taskStr;

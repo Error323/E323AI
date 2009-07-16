@@ -51,6 +51,9 @@ class CMyGroup {
 		/* Get the position of the group */
 		float3 pos();
 
+		/* Get the maximal lateral dispersion */
+		float maxLength();
+
 	private:
 		AIClasses *ai;
 		

@@ -97,7 +97,7 @@ void CPathfinder::updatePaths() {
 		unsigned segment     = 1;
 		int     waypoint     = 0;
 		CMyGroup *group      = groups[path->first];
-		float maxGroupLength = std::max<float>(group->units.size()*50.0f, 200.0f);
+		float maxGroupLength = group->maxLength();
 		std::map<float, int> M;
 
 		/* Go through all the units in a group */

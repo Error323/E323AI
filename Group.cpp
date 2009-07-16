@@ -57,10 +57,16 @@ void CMyGroup::remove(int unit) {
 
 void CMyGroup::merge(CMyGroup &group) {
 	std::map<int, bool>::iterator i;
-	for (i = group.units.begin(); i != group.units.end(); i++)
+	std::vector<int> erase;
+	for (i = group.units.begin(); i != group.units.end(); i++) {
 		units[i->first] = i->second;
+		erase.push_back(i->first);
+	}
 
 	strength += group.strength;
+	moveType  = (group.maxSlope < maxSlope) ? group.moveType : moveType;
+	for (unsigned i = 0; i < erase.size(); i++)
+		ai->military->removeFromGroup(ai->eco->gameBuilding[erase[i]],erase[i]);
 }
 
 float3 CMyGroup::pos() {
@@ -73,4 +79,8 @@ float3 CMyGroup::pos() {
 	pos /= units.size();
 
 	return pos;
+}
+
+float CMyGroup::maxLength() {
+	return std::max<int>(units.size()*50, 200);
 }
