@@ -84,7 +84,7 @@ void CE323AI::UnitCreated(int unit, int builder) {
 	UnitType *ut = UT(ud->id);
 	unsigned int c = ut->cats;
 
-	if (unitCreated == 1 && ud->isCommander) {
+	if (ud->isCommander) {
 		ai->eco->init(unit);
 		ai->military->init(unit);
 	}
