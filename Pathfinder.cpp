@@ -129,7 +129,7 @@ void CPathfinder::updatePaths() {
 				s2       = segment;
 				sl1      = l1; 
 				sl2      = l2; 
-				waypoint = s1 > waypoint ? s1 : waypoint;
+				waypoint = s2 > waypoint ? s2 : waypoint;
 			}
 
 			/* Now calculate the projection of upos onto the line spanned by
@@ -174,13 +174,18 @@ void CPathfinder::updatePaths() {
 			addPath(path->first, start, goal);
 		}
 
-		/* Enqueue the path if we can */
-		if (path->second.size()-1 >= waypoints[group->id]+4) {
-			ai->metaCmds->moveGroup(*group, path->second[waypoints[group->id]+2]);
-			ai->metaCmds->moveGroup(*group, path->second[waypoints[group->id]+4], true);
+		if (waypoints[group->id] < path->second.size()-1) {
+			/* Enqueue the path if we can */
+			if (path->second.size()-1 >= waypoints[group->id]+4) {
+				ai->metaCmds->moveGroup(*group, path->second[waypoints[group->id]+2]);
+				ai->metaCmds->moveGroup(*group, path->second[waypoints[group->id]+4], true);
+			}
+			/* Else just move to the goal */
+			else {
+				ai->metaCmds->moveGroup(*group, path->second[path->second.size()-1]);
+				waypoints[group->id] = path->second.size()-1;
+			}
 		}
-		/* Else just move to the goal */
-		else ai->metaCmds->moveGroup(*group, path->second[path->second.size()-1]);
 
 		groupnr++;
 	}
