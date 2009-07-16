@@ -95,7 +95,7 @@ void CPathfinder::updatePaths() {
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		unsigned segment     = 1;
-		int     waypoint     = 1;
+		int     waypoint     = 0;
 		CMyGroup *group      = groups[path->first];
 		float maxGroupLength = std::max<float>(group->units.size()*50.0f, 200.0f);
 		std::map<float, int> M;
@@ -115,7 +115,7 @@ void CPathfinder::updatePaths() {
 
 			/* Go through the path to determine the unit's segment on the path
 			 */
-			for (segment = 1; segment < path->second.size()-waypoint; segment++) {
+			for (segment = 1; segment < path->second.size()-1; segment++) {
 				float3 d1  = upos - path->second[segment-1];
 				float3 d2  = upos - path->second[segment];
 				float l1 = d1.Length2D();
@@ -129,6 +129,7 @@ void CPathfinder::updatePaths() {
 				s2       = segment;
 				sl1      = l1; 
 				sl2      = l2; 
+				waypoint = s1 > waypoint ? s1 : waypoint;
 			}
 
 			/* Now calculate the projection of upos onto the line spanned by
@@ -145,10 +146,9 @@ void CPathfinder::updatePaths() {
 			/* A map sorts on key (low to high) by default */
 			M[uposonpath] = u->first;
 		}
-		ai->metaCmds->moveGroup(*group, path->second[segment+waypoint]);
 
 		/* Set a wait cmd on units that are going to fast, (They can still
-		 * attack during a wait) 
+		 * attack during a wait). Only if the groupsize is > 1 ofcourse.
 		 */
 		if (M.size() > 1) {
 			float rearval = M.begin()->first;
@@ -163,6 +163,9 @@ void CPathfinder::updatePaths() {
 			}
 		}
 
+		/* store the group waypoint */
+		waypoints[group->id] = waypoint;
+
 		/* Round robin through the groups updating their paths */
 		if (update % paths.size() == groupnr) {
 			int target   = ai->tasks->getTarget(path->first);
@@ -170,6 +173,15 @@ void CPathfinder::updatePaths() {
 			float3 start = group->pos();
 			addPath(path->first, start, goal);
 		}
+
+		/* Enqueue the path if we can */
+		if (path->second.size()-1 >= waypoints[group->id]+4) {
+			ai->metaCmds->moveGroup(*group, path->second[waypoints[group->id]+2]);
+			ai->metaCmds->moveGroup(*group, path->second[waypoints[group->id]+4], true);
+		}
+		/* Else just move to the goal */
+		else ai->metaCmds->moveGroup(*group, path->second[path->second.size()-1]);
+
 		groupnr++;
 	}
 	update++;
@@ -183,16 +195,19 @@ void CPathfinder::addGroup(CMyGroup &G, float3 &start, float3 &goal) {
 void CPathfinder::removeGroup(CMyGroup &G) {
 	paths.erase(G.id);
 	groups.erase(G.id);
+	waypoints.erase(G.id);
 }
 
 void CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 	activeMap = groups[group]->moveType;
 	std::vector<float3> path;
-	if (getPath(start, goal, path, group))
-		paths[group] = path;
-	else {
-		//TODO: remove group stuff
+
+	/* Try to find a path */
+	if (getPath(start, goal, path, group)) {
+		paths[group]     = path;
+		waypoints[group] = 1;
 	}
+	else ai->tasks->militaryplans.erase(group);
 }
 
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {

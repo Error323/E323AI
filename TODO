@@ -1,5 +1,9 @@
-- Create groups per factory
-- Include movetypes in pathfinder
-- Add defense matrix
-- Act upon defense matrix
-- Static unit table functionality
+TODO (in random order):
+
+* Create groups per factory            ✔
+* Include movetypes in pathfinder      ✔
+* Add defense matrix
+* Tech 2 support                       ✔
+* Static unit table functionality
+* Dynamic group merging
+* Terrain analysis
