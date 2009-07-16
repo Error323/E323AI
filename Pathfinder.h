@@ -32,8 +32,8 @@ class CPathfinder: public AAStar {
 		/* Update group paths */
 		void updatePaths();
 
-		/* Register groups */
-		void addGroup(CMyGroup &G, float3 &start, float3 &goal);
+		/* Register subgroups */
+		void addGroup(CMyGroup &G, float3 &start, float3 & goal);
 
 		/* Remove a path from a unit or group */
 		void removeGroup(CMyGroup &G);
@@ -60,9 +60,6 @@ class CPathfinder: public AAStar {
 
 		/* The group pointers */
 		std::map<int, CMyGroup*> groups;
-
-		/* The current waypoint of a group */
-		std::map<int, int> waypoints;
 
 		/* spring maps */
 		std::vector<float> heightMap, slopeMap;
