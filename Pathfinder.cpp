@@ -47,7 +47,6 @@ CPathfinder::CPathfinder(AIClasses *ai) {
 		std::vector<Node> map;
 		maps[i->first] = map;
 		MoveData *md   = i->second;
-		printf("MoveData(%d) = %0.2f\n", md->pathType, md->maxSlope);
 
 		for (int x = 0; x < X; x++) {
 			for (int z = 0; z < Z; z++) {
@@ -170,8 +169,6 @@ void CPathfinder::updatePaths() {
 			float3 goal  = ai->cheat->GetUnitPos(target);
 			float3 start = group->pos();
 			addPath(path->first, start, goal);
-			sprintf(buf, "[CPathfinder::updatePaths]\tgroup(%d)", group->id);
-			LOGN(buf);
 		}
 		groupnr++;
 	}

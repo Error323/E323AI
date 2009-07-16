@@ -36,8 +36,9 @@ void CMyGroup::add(int unit) {
 
 void CMyGroup::remove(int unit) {
 	units.erase(unit);
+
 	strength = 0.0f;
-	MoveData* md = ai->call->GetUnitDef(unit)->movedata;
+	MoveData* md;
 
 	/* Recalculate range, strength and maxSlope of the group */
 	range = 0.0f;
@@ -46,6 +47,7 @@ void CMyGroup::remove(int unit) {
 	for (i = units.begin(); i != units.end(); i++) {
 		range     = std::max<float>(ai->call->GetUnitMaxRange(i->first), range);
 		strength += ai->call->GetUnitPower(i->first);
+		md        = ai->call->GetUnitDef(i->first)->movedata;
 		if (md->maxSlope <= maxSlope) {
 			moveType = md->pathType;
 			maxSlope = md->maxSlope;
