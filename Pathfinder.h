@@ -42,12 +42,15 @@ class CPathfinder: public AAStar {
 		int X,Z,dx2,dz2;
 		float REAL;
 
-		std::vector<Node> map;
+		std::map<int, std::vector<Node> > maps;
 
 	private:
 		AIClasses *ai;
 
 		char buf[1024];
+
+		/* Active map (maps[activeMap]), CRUCIAL to A* */
+		int activeMap;
 
 		/* controls which path may be updated, (round robin-ish) */
 		unsigned update;
@@ -60,6 +63,9 @@ class CPathfinder: public AAStar {
 
 		/* spring maps */
 		std::vector<float> heightMap, slopeMap;
+
+		/* surrounding squares (x,y) */
+		std::vector<int> surrounding;
 	
 		/* draw the path ? */
 		bool draw;
@@ -77,7 +83,9 @@ class CPathfinder: public AAStar {
 		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius = EPSILON);
 
 		/* Draw the map */
-		void drawMap();
+		void drawMap(int map);
+
+		inline int idx(int x, int z);
 
 };
 

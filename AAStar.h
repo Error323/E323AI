@@ -62,10 +62,10 @@ class AAStar {
 		virtual void successors(ANode *n, std::queue<ANode*> &succ) = 0;
 		virtual float heuristic(ANode *n1, ANode *n2) = 0;
 
-	private:
 		/* nodes visited during pathfinding */
 		std::vector<ANode*> visited;
 
+	private:
 		/* priority queue of the open list */
 		std::priority_queue<ANode*, std::vector<ANode*, std::allocator<ANode*> >, ANode> open;
 

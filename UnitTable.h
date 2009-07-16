@@ -17,14 +17,17 @@ class CUnitTable {
 		/* All units flattened in a map */
 		std::map<int, UnitType> units;
 
+		/* Unit categories in vector */
+		std::vector<unitCategory> cats;
+
+		/* movetypes, used by pathfinder */
+		std::map<int, MoveData*> moveTypes;
+
 		/* Special commander hook, since it's the first to spawn */
 		UnitType *comm;
 
 		/* Returns a unittype with categories that ut can build */
 		UnitType* canBuild(UnitType *ut, unsigned int categories);
-
-		/* Unit categories in vector */
-		std::vector<unitCategory> cats;
 
 		/* Debugging functions */
 		void debugCategories(UnitType *ut);

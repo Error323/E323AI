@@ -40,7 +40,7 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 	std::string def, error;
 	numUnits = ai->call->GetNumUnitDefs();
 
-	buildTechTree();
+	buildTechTree(); /* this is actually a graph in XTA */
 	
 	std::map<int, UnitType>::iterator j;
 	UnitType *utParent;
@@ -50,6 +50,11 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 
 	for (j = units.begin(); j != units.end(); j++) {
 		utParent = &(j->second);
+		MoveData* movedata = utParent->def->movedata;
+
+		if (movedata != NULL)
+			moveTypes[movedata->pathType] = movedata;
+
 		LOG("Cost " << utParent->def->name << " = " << utParent->cost << "\n");
 		debugCategories(utParent);
 		debugUnitDefs(utParent);
