@@ -1,39 +1,9 @@
-### E323AI Skirmish AI
-#
-# BUILD_C_AIINTERFACE is set in ../../Interfaces/C/CMakeLists.txt
+### Generic native Skirmish AI config
 #
 
-#set(E323AI_SRC "${SKIRMISH_SRC}/E323AI")
-set(E323AI_SRC "${CMAKE_CURRENT_SOURCE_DIR}")
+set(mySourceDirRel         "") # Common values are "" or "src"
+set(additionalSources      ${CUtils_SRC})
+set(additionalCompileFlags "")
+set(additionalLibraries    legacycpp)
 
-if (BUILD_C_AIINTERFACE)
-	set(BUILD_E323AI TRUE)
-else (BUILD_C_AIINTERFACE)
-	set(BUILD_E323AI FALSE)
-	message ("warning: E323AI Skirmish AI will not be built!")
-endif (BUILD_C_AIINTERFACE)
-
-if (BUILD_E323AI)
-	set(E323AI_VERS "UNKNOWN_VERSION")
-	if (EXISTS ${E323AI_SRC}/VERSION)
-		file(STRINGS "${E323AI_SRC}/VERSION" E323AI_VERS LIMIT_COUNT 1)
-	endif (EXISTS ${E323AI_SRC}/VERSION)
-	set(E323AI_TARGET "E323AI")
-	set(E323AI_DATA_DIR ${SKIRMISH_DATA}/E323AI/${E323AI_VERS})
-	if (NOT SKIRMISHAI_FIND_QUIETLY)
-		message(STATUS "Found Skirmish AI: E323AI ${E323AI_VERS}")
-	endif (NOT SKIRMISHAI_FIND_QUIETLY)
-
-	# install data files
-	install(DIRECTORY "${E323AI_SRC}/data/"
-			DESTINATION "${E323AI_DATA_DIR}")
-
-	aux_source_directory(${E323AI_SRC} e323ai)
-	add_library(${E323AI_TARGET} MODULE ${e323ai} ${cutilsenv})
-	target_link_libraries(${E323AI_TARGET} legacycpp-creg)
-	set_target_properties(${E323AI_TARGET} PROPERTIES COMPILE_FLAGS "-DUSING_CREG")
-	set_target_properties(${E323AI_TARGET} PROPERTIES OUTPUT_NAME "SkirmishAI")
-	#set_target_properties(${E323AI_TARGET} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "E323AI")
-	install (TARGETS ${E323AI_TARGET} DESTINATION ${E323AI_DATA_DIR})
-endif (BUILD_E323AI)
-
+ConfigureNativeSkirmishAI(mySourceDirRel additionalSources additionalCompileFlags additionalLibraries)
