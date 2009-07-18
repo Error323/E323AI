@@ -81,6 +81,6 @@ float3 CMyGroup::pos() {
 	return pos;
 }
 
-float CMyGroup::maxLength() {
+int CMyGroup::maxLength() {
 	return std::max<int>(units.size()*50, 200);
 }

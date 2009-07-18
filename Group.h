@@ -52,7 +52,7 @@ class CMyGroup {
 		float3 pos();
 
 		/* Get the maximal lateral dispersion */
-		float maxLength();
+		int maxLength();
 
 	private:
 		AIClasses *ai;
