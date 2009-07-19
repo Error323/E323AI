@@ -5,7 +5,7 @@
 
 #define MAX_FLOAT 1000000000.0f
 #define MAX_INT   1000000000
-#define EPSILON   1.0f/MAX_FLOAT
+#define EPSILON   .00000000001f
 
 #define ERRORVECTOR float3(-1,0,0)
 #define NULLVECTOR  float3(0,0,0)
@@ -19,7 +19,9 @@
 
 /* Folders */
 #define LOG_FOLDER  "logs/"
+#define CFG_FOLDER  "configs/"
 #define LOG_PATH    std::string(aiexport_getDataDir(true)) + LOG_FOLDER
+#define CFG_PATH    std::string(aiexport_getDataDir(true)) + CFG_FOLDER
 
 /* Logger */
 #define LOG(x)		(*ai->logger << x)
@@ -59,35 +61,39 @@ enum facing {
 
 /* Unit categories */
 enum unitCategory {
-	COMMANDER    = (1<<0),
-	STATIC       = (1<<1),
-	MOBILE       = (1<<2),
+	TECH1        = (1<<0),
+	TECH2        = (1<<1),
+	TECH3        = (1<<2),
+
 	AIR          = (1<<3),
 	SEA          = (1<<4),
 	LAND         = (1<<5),
-	BUILDER      = (1<<6),
-	ATTACKER     = (1<<7),
-	ASSIST       = (1<<8),
-	RESURRECTOR  = (1<<9),
-	FACTORY      = (1<<10),
-	ANTIAIR      = (1<<11),
-	RADAR        = (1<<12),
-	JAMMER       = (1<<13),
-	SONAR        = (1<<14),
-	MMAKER       = (1<<15),
-	EMAKER       = (1<<16),
-	MSTORAGE     = (1<<17),
-	ESTORAGE     = (1<<18),
+	STATIC       = (1<<6),
+	MOBILE       = (1<<7),
+
+	FACTORY      = (1<<8),
+	BUILDER      = (1<<9),
+	ASSIST       = (1<<10),
+	RESURRECTOR  = (1<<11),
+
+	COMMANDER    = (1<<12),
+	ATTACKER     = (1<<13),
+	ANTIAIR      = (1<<14),
+	SCOUT        = (1<<15),
+	ARTILLERY    = (1<<16),
+	SNIPER       = (1<<17),
+	ASSAULT      = (1<<18),
+
 	MEXTRACTOR   = (1<<19),
-	TRANSPORT    = (1<<20),
-	SCOUT        = (1<<21),
-	ARTILLERY    = (1<<22),
-	VEHICLE      = (1<<24),
-	KBOT         = (1<<25),
-	TECH1        = (1<<26),
-	TECH2        = (1<<27),
-	TIDAL        = (1<<28),
-	WIND         = (1<<29)
+	MMAKER       = (1<<20),
+	EMAKER       = (1<<21),
+	MSTORAGE     = (1<<22),
+	ESTORAGE     = (1<<23),
+	WIND         = (1<<24),
+	TIDAL        = (1<<25),
+
+	KBOT         = (1<<26),
+	VEHICLE      = (1<<27)
 };
 
 /* Tasks */

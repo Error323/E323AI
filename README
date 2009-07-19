@@ -5,4 +5,6 @@ E323AI - Mutalisk v1.34
 	- cd spring
 	- git submodule update --init
 
-  Ofcourse, if you already have a clone of spring, just update.
+  Ofcourse, if you already have a clone of spring, just update.  To keep up to
+  date go into the submodule directory and fetch,merge (like any normal git
+  repo).

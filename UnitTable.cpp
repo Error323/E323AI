@@ -1,47 +1,67 @@
 #include "UnitTable.h"
 
 CUnitTable::CUnitTable(AIClasses *ai) {
-	categories[COMMANDER]   = "COMMANDER";  
-	categories[STATIC]      = "STATIC";     
-	categories[MOBILE]      = "MOBILE";     
+	this->ai = ai;
+	/* techlevels */
+	categories[TECH1]       = "TECH1";  
+	categories[TECH2]       = "TECH2";  
+	categories[TECH3]       = "TECH3";  
+
+	/* main categories */
 	categories[AIR]         = "AIR";        
 	categories[SEA]         = "SEA";        
 	categories[LAND]        = "LAND";       
+	categories[STATIC]      = "STATIC";     
+	categories[MOBILE]      = "MOBILE";     
+
+	/* builders */
+	categories[FACTORY]     = "FACTORY";    
 	categories[BUILDER]     = "BUILDER";    
-	categories[ATTACKER]    = "ATTACKER";   
 	categories[ASSIST]      = "ASSIST";      
 	categories[RESURRECTOR] = "RESURRECTOR";
-	categories[FACTORY]     = "FACTORY";    
+
+	/* offensives */
+	categories[COMMANDER]   = "COMMANDER";  
+	categories[ATTACKER]    = "ATTACKER";   
 	categories[ANTIAIR]     = "ANTIAIR";    
-	categories[RADAR]       = "RADAR";      
-	categories[JAMMER]      = "JAMMER";     
-	categories[SONAR]       = "SONAR";      
+	categories[SCOUT]       = "SCOUT";  
+	categories[ARTILLERY]   = "ARTILLERY";  
+	categories[SNIPER]      = "SNIPER";  
+	categories[ASSAULT]     = "ASSAULT";  
+
+	/* economic */
+	categories[MEXTRACTOR]  = "MEXTRACTOR";  
 	categories[MMAKER]      = "MMAKER";      
 	categories[EMAKER]      = "EMAKER";      
 	categories[MSTORAGE]    = "MSTORAGE";    
 	categories[ESTORAGE]    = "ESTORAGE";    
-	categories[MEXTRACTOR]  = "MEXTRACTOR";  
-	categories[TRANSPORT]   = "TRANSPORT";  
-	categories[SCOUT]       = "SCOUT";  
-	categories[ARTILLERY]   = "ARTILLERY";  
-	categories[KBOT]        = "KBOT";  
-	categories[VEHICLE]     = "VEHICLE";  
-	categories[TECH1]       = "TECH1";  
-	categories[TECH2]       = "TECH2";  
 	categories[WIND]        = "WIND";  
 	categories[TIDAL]       = "TIDAL";  
 
+	/* ground types */
+	categories[KBOT]        = "KBOT";  
+	categories[VEHICLE]     = "VEHICLE";  
+
+	sprintf(buf, "%s", CFG_FOLDER);
+	ai->call->GetValue(AIVAL_LOCATE_FILE_W, buf);
+	sprintf(
+		buf, "%s%s-categorization.cfg", 
+		std::string(CFG_PATH).c_str(),
+		ai->call->GetModName()
+	);
+	std::ofstream UC(buf, std::ios::app);
+
+	UC << "# Unit Categorization for E323AI\n\n# Categories to choose from:\n";
 	std::map<unitCategory,std::string>::iterator i;
-	for (i = categories.begin(); i != categories.end(); i++)
+	for (i = categories.begin(); i != categories.end(); i++) {
+		UC << "# " << i->second << "\n";
 		cats.push_back(i->first);
-
-	this->ai = ai;
-
-	std::string def, error;
+	}
 	numUnits = ai->call->GetNumUnitDefs();
+	UC << "\n\n# " << numUnits << " units in total\n\n";
 
 	buildTechTree(); /* this is actually a graph in XTA */
-	
+
 	std::map<int, UnitType>::iterator j;
 	UnitType *utParent;
 
@@ -51,6 +71,13 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 	for (j = units.begin(); j != units.end(); j++) {
 		utParent = &(j->second);
 		MoveData* movedata = utParent->def->movedata;
+		UC << "# " << utParent->def->humanName << " - " << utParent->def->name << "\n";
+		UC << utParent->id;
+		for (unsigned i = 0; i < cats.size(); i++)
+			if (cats[i] & utParent->cats)
+				UC << "," << categories[cats[i]];
+		UC << "\n\n";
+
 
 		if (movedata != NULL)
 			moveTypes[movedata->pathType] = movedata;
@@ -75,6 +102,7 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 		LOG(utParent->def->name << "\nbuild by : {" << buildBy << "}\ncan build: {" << canBuild << "}\n\n");
 		LOG("\n-------------\n");
 	}
+	UC.close();
 }
 
 void CUnitTable::buildTechTree() {
@@ -170,6 +198,7 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (hasAntiAir(ud->weapons))
 		cats |= ANTIAIR;
 
+/*
 	if (ud->radarRadius > 0)
 		cats |= RADAR;
 
@@ -178,6 +207,7 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	
 	if (ud->jammerRadius > 0)
 		cats |= JAMMER;
+*/
 
 	if (ud->canResurrect)
 		cats |= RESURRECTOR;
@@ -235,11 +265,13 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->extractsMetal)
 		cats |= MEXTRACTOR;
 	
+/*
 	if (ud->loadingRadius > 0.0f && ud->transportCapacity > 0)
 		cats |= TRANSPORT;
+*/
 
 	/* 0 = only low, 1 = only high, 2 both */
-	if (ud->highTrajectoryType == 2)
+	if (ud->highTrajectoryType >= 1)
 		cats |= ARTILLERY;
 
 	if (cats&ATTACKER && cats&MOBILE && !(cats&BUILDER) && ud->speed >= 50.0f) {

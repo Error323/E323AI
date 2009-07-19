@@ -37,8 +37,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	sprintf(buf, "%s", LOG_FOLDER);
 	ai->call->GetValue(AIVAL_LOCATE_FILE_W, buf);
 	std::sprintf(
-		buf, 
-		"%s%2.2d%2.2d%2.2d%2.2d%2.2d-%s-team(%d).log", 
+		buf, "%s%2.2d%2.2d%2.2d%2.2d%2.2d-%s-team-%d.log", 
 		std::string(LOG_PATH).c_str(), 
 		now2->tm_year + 1900, 
 		now2->tm_mon + 1, 
