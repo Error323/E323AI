@@ -4,7 +4,9 @@ TODO (in random order):
 * Include movetypes in pathfinder      ✔
 * Add defense matrix
 * Tech 2 support                       ✔
-* Static unit table functionality
 * Dynamic group merging
 * Terrain analysis
 * Map resource reclaiming
+* Unit categorization through configs
+* Unit relations through configs
+* Create a profiler class

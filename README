@@ -1,10 +1,9 @@
 E323AI - Mutalisk v1.34
 
 * If you want to make use of this AI do the following:
-	- git clone git://github.com/spring/spring.git
-	- cd spring
-	- git submodule update --init
+	1 git clone git://github.com/spring/spring.git
+	2 cd spring
+	3 git submodule update --init
 
   Ofcourse, if you already have a clone of spring, just update.  To keep up to
-  date go into the submodule directory and fetch,merge (like any normal git
-  repo).
+  date, cd into the submodule and fetch,merge (like any normal git repo).

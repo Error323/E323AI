@@ -4,7 +4,7 @@
 #include "E323AI.h"
 
 /* NOTE: CMyGroup silently assumes that waterunits will not be merged with
- * non-water units as a group 
+ * non-water units as a group
  */
 class CMyGroup {
 	public:
@@ -57,7 +57,7 @@ class CMyGroup {
 	private:
 		AIClasses *ai;
 		
-		char buf[1024];
+		char buf[256];
 
 
 };
