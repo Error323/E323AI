@@ -114,6 +114,7 @@ void CUnitTable::buildTechTree() {
 
 	for (int i = 0; i < numUnits; i++) {
 		const UnitDef *ud = unitdefs[i];
+		if (ud == NULL) continue;
 		std::map<int, UnitType>::iterator u = units.find(ud->id);
 
 		UnitType *utParent, *utChild;
@@ -139,6 +140,7 @@ void CUnitTable::buildTechTree() {
 	}
 	for (int i = 0; i < numUnits; i++) {
 		const UnitDef *ud = unitdefs[i];
+		if (ud == NULL) continue;
 		units[ud->id].cats = categorizeUnit(&units[ud->id]);
 	}
 }
