@@ -9,7 +9,7 @@
 class CUnit: public ARegistrar {
 	public:
 		CUnit(): ARegistrar() {}
-		CUnit(int uid): ARegistrar(uid) {}
+		CUnit(AIClasses *ai, int uid): ARegistrar(uid) {this->ai = ai;}
 		~CUnit(){}
 
 		/* Remove the unit from everywhere registered */
@@ -63,6 +63,7 @@ class CUnit: public ARegistrar {
 		quadrant getQuadrant(float3 &pos);
 
 	private:
+		AIClasses *ai;
 		char buf[1024];
 
 		Command createPosCommand(int cmd, float3 pos, float radius = -1.0f, facing f = NONE);

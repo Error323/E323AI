@@ -1,4 +1,4 @@
-#include "UnitTable.h"
+#include "CUnitTable.h"
 
 CUnitTable::CUnitTable(AIClasses *ai) {
 	this->ai = ai;
@@ -103,6 +103,35 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 		LOG("\n-------------\n");
 	}
 	UC.close();
+}
+
+void CUnitTable::remove(ARegHandler &reg) {
+	free.push(lookup[reg.key]);
+	lookup.erase(reg.key);
+}
+
+CUnit* CUnitTable::unitRequest(int id) {
+	CUnit *unit = NULL;
+	int index   = 0;
+
+	/* Create a new slot */
+	if (free.empty()) {
+		CUnit u(id);
+		units.push_back(u);
+		unit  = &units.back();
+		index = units.size()-1;
+	}
+
+	/* Use top free slot from stack */
+	else {
+		index = free.top(); free.pop();
+		unit  = &units[index];
+		unit->reset(id);
+	}
+
+	lookup[id] = index;
+	unit->reg(*this);
+	return unit;
 }
 
 void CUnitTable::buildTechTree() {

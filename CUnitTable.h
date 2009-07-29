@@ -1,12 +1,24 @@
-#ifndef UNIT_TABLE_H
-#define UNIT_TABLE_H
+#ifndef CUNIT_TABLE_H
+#define CUNIT_TABLE_H
 
-#include "E323AI.h"
+#include <map>
+#include <vector>
+#include <stack>
 
-class CUnitTable {
+#include "ARegistrar.h"
+#include "CUnit.h"
+#include "CE323AI.h"
+
+class CUnitTable: public ARegistrar {
 	public:
-		CUnitTable(AIClasses *ai);
+		CUnitTable(AIClasses *ai): ARegistrar(100);
 		~CUnitTable() {};
+
+		/* Overload */
+		void remove(ARegistrar &obj);
+
+		/* Returns a fresh CUnit instance */
+		CUnit* unitRequest(int id);
 
 		/* Total nr of units */
 		int numUnits;
@@ -36,6 +48,15 @@ class CUnitTable {
 
 	private:
 		AIClasses *ai;
+
+		/* The unit container */
+		std::vector<CUnit> units;
+
+		/* The <unitid, vectoridx> table */
+		std::map<int, int> lookup;
+
+		/* The free slots (CUnit instances that are zombie-ish) */
+		std::stack<int>    free;
 
 		/* unitCategories in string format, see Defines.h */
 		std::map<unitCategory, std::string> categories;
