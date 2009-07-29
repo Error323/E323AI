@@ -18,7 +18,7 @@ class CUnitTable: public ARegistrar {
 		void remove(ARegistrar &obj);
 
 		/* Returns a fresh CUnit instance */
-		CUnit* unitRequest(int id);
+		CUnit* requestUnit(int uid, int bid);
 
 		/* Return unit by ingame id */
 		CUnit* getUnit(int id);

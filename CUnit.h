@@ -9,11 +9,12 @@
 class CUnit: public ARegistrar {
 	public:
 		CUnit(): ARegistrar() {}
-		CUnit(AIClasses *ai, int uid): ARegistrar(uid);
+		CUnit(AIClasses *ai, int uid, int builder): ARegistrar(uid);
 		~CUnit(){}
 
 		const UnitDef *def;
 		const UnitType *type;
+		int   builder;
 
 		/* Remove the unit from everywhere registered */
 		void remove();
@@ -22,7 +23,7 @@ class CUnit: public ARegistrar {
 		void remove(ARegistrar &reg);
 
 		/* Reset this object */
-		void reset(int uid);
+		void reset(int uid, int builder);
 
 		/* Attack a unit */
 		bool attack(int target);

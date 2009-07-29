@@ -114,13 +114,13 @@ CUnit* CUnitTable::getUnit(int uid) {
 	return &ingameUnits[lookup[uid]];
 }
 
-CUnit* CUnitTable::unitRequest(int uid) {
+CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	CUnit *unit = NULL;
 	int index   = 0;
 
 	/* Create a new slot */
 	if (free.empty()) {
-		CUnit u(ai,uid);
+		CUnit u(ai,uid, bid);
 		ingameUnits.push_back(u);
 		unit  = &ingameUnits.back();
 		index = ingameUnits.size()-1;
@@ -130,7 +130,7 @@ CUnit* CUnitTable::unitRequest(int uid) {
 	else {
 		index = free.top(); free.pop();
 		unit  = &ingameUnits[index];
-		unit->reset(uid);
+		unit->reset(uid, bid);
 	}
 
 	lookup[uid] = index;
