@@ -75,10 +75,9 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
  ************************/
 
 /* Called when units are spawned in a factory or when game starts */
-void CE323AI::UnitCreated(int uid, int builder) {
-	CUnit *unit = ai->unitTable->requestUnit(uid);
-	sprintf(buf, "[CE323AI::UnitCreated]\t %s(%d) created", unit->def->humanName.c_str(), uid);
-	LOGN(buf);
+void CE323AI::UnitCreated(int uid, int bid) {
+	CUnit *unit    = ai->unitTable->requestUnit(uid);
+	CUnit *builder = ai->unitTable->requestUnit(bid);
 	unsigned int c = unit->type->cats;
 
 	if (unit->def->isCommander) {
@@ -95,7 +94,10 @@ void CE323AI::UnitCreated(int uid, int builder) {
 		//ai->eco->gameMetalMakers[unit] = true;
 	}
 
-	ai->eco->gameBuilding[uid] = builder;
+	ai->eco->addBuilder(unit, builder);
+	//ai->eco->gameBuilding[uid] = builder;
+	sprintf(buf, "[CE323AI::UnitCreated]\t %s(%d) created", unit->def->humanName.c_str(), uid);
+	LOGN(buf);
 }
 
 /* Called when units are finished in a factory and able to move */
