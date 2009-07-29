@@ -1,5 +1,12 @@
 #include "CUnit.h"
 
+CUnit::CUnit(AIClasses *ai, int uid) {
+	this->ai  = ai;
+	this->key = uid;
+	def       = ai->call->GetUnitDef(uid);
+	type      = UT(def->id);
+}
+
 void CUnit::remove() {
 	remove(*this);
 }
@@ -11,9 +18,11 @@ void CUnit::remove(ARegistrar &reg) {
 	}
 }
 
-void CUnit::reset(int id) {
+void CUnit::reset(int uid) {
 	registers.clear();
-	key = id;
+	key  = uid;
+	def  = ai->call->GetUnitDef(uid);
+	type = UT(def->id);
 }
 
 bool CUnit::attack(int target) {

@@ -9,8 +9,11 @@
 class CUnit: public ARegistrar {
 	public:
 		CUnit(): ARegistrar() {}
-		CUnit(AIClasses *ai, int uid): ARegistrar(uid) {this->ai = ai;}
+		CUnit(AIClasses *ai, int uid): ARegistrar(uid);
 		~CUnit(){}
+
+		const UnitDef *def;
+		const UnitType *type;
 
 		/* Remove the unit from everywhere registered */
 		void remove();

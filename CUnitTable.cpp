@@ -110,22 +110,26 @@ void CUnitTable::remove(ARegHandler &reg) {
 	lookup.erase(reg.key);
 }
 
+CUnit* CUnitTable::getUnit(int id) {
+	return &ingameUnits[lookup[id]];
+}
+
 CUnit* CUnitTable::unitRequest(int id) {
 	CUnit *unit = NULL;
 	int index   = 0;
 
 	/* Create a new slot */
 	if (free.empty()) {
-		CUnit u(id);
-		units.push_back(u);
-		unit  = &units.back();
-		index = units.size()-1;
+		CUnit u(ai,id);
+		ingameUnits.push_back(u);
+		unit  = &ingameUnits.back();
+		index = ingameUnits.size()-1;
 	}
 
 	/* Use top free slot from stack */
 	else {
 		index = free.top(); free.pop();
-		unit  = &units[index];
+		unit  = &ingameUnits[index];
 		unit->reset(id);
 	}
 

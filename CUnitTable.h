@@ -20,6 +20,9 @@ class CUnitTable: public ARegistrar {
 		/* Returns a fresh CUnit instance */
 		CUnit* unitRequest(int id);
 
+		/* Return unit by ingame id */
+		CUnit* getUnit(int id);
+
 		/* Total nr of units */
 		int numUnits;
 
@@ -50,7 +53,7 @@ class CUnitTable: public ARegistrar {
 		AIClasses *ai;
 
 		/* The unit container */
-		std::vector<CUnit> units;
+		std::vector<CUnit> ingameUnits;
 
 		/* The <unitid, vectoridx> table */
 		std::map<int, int> lookup;
