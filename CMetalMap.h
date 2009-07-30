@@ -1,14 +1,21 @@
 #ifndef METALMAP_H
 #define METALMAP_H
 
-#include "E323AI.h"
+#include "CE323AI.h"
+#include "ARegistrar.h"
 
 #define SCALAR 16.0f
 
 class CMetalMap {
 	public:
-		CMetalMap(AIClasses *ai);
+		CMetalMap(AIClasses *ai): ARegistrar(300);
 		~CMetalMap();
+
+		/* Overload */
+		void remove(ARegistrar &unit);
+
+		/* add a mex/moho */
+		void addUnit(CUnit &unit);
 
 		struct MSpot {
 			int id;
@@ -24,7 +31,7 @@ class CMetalMap {
 			}
 		};
 
-		bool buildMex(int builder, UnitType *mex);
+		bool buildMex(CUnit *builder, UnitType *mex);
 		void removeFromTaken(int mex);
 		std::map<int,float3> taken;
 
