@@ -2,9 +2,9 @@
 
 int CGroup::counter = 0;
 
-CGroup::CGroup(AIClasses *ai, groupType type) {
+CGroup::CGroup(AIClasses *ai) {
 	this->ai = ai;
-	reset(type);
+	reset();
 	counter++;
 }
 
@@ -64,16 +64,11 @@ void CGroup::remove(ARegistrar &unit) {
 	}
 }
 
-void CGroup::reset(groupType type) {
-	this->type = type;
+void CGroup::reset() {
 	strength   = 0.0f;
 	range      = 0.0f;
 	busy       = false;
 	maxSlope   = 1.0f;
-	sprintf(buf, "[CGroup::CGroup]\ttype(%s) id(%d)", 
-		type == G_SCOUT ? "SCOUT" : "ATTACK",
-		key
-	); 
 	units.clear();
 	waiters.clear();
 	LOGN(buf);

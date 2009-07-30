@@ -5,7 +5,7 @@
 #include "ARegistrar.h"
 
 /* NOTE: CGroup silently assumes that waterunits will not be merged with
- * non-water units as a group
+ * non-water units as a group, aswell as builders with attackers
  */
 class CGroup: public ARegistrar {
 	public:
@@ -23,9 +23,6 @@ class CGroup: public ARegistrar {
 		/* corresponding maxSlope */
 		float maxSlope;
 
-		/* The group type */
-		groupType type;
-
 		/* The group strength */
 		float strength;
 
@@ -42,7 +39,7 @@ class CGroup: public ARegistrar {
 		void remove(ARegistrar &unit);
 
 		/* Reset for object re-usage */
-		void reset(groupType type);
+		void reset();
 
 		/* The waiters <id,iswaiting> */
 		std::map<int, bool> waiters;

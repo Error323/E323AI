@@ -42,17 +42,17 @@
 #include "Container.h"                         /* Class wrapper */
 #include "RNG.h"                               /* Random number generator */
 
-#include "Group.h"
-#include "MetalMap.h"
-#include "UnitTable.h"
-#include "MetaCommands.h"
-#include "Economy.h"
-#include "WishList.h"
-#include "TaskPlan.h"
-#include "ThreatMap.h"
+#include "CUnit.h"
+#include "CGroup.h"
+#include "CMetalMap.h"
+#include "CUnitTable.h"
+#include "CEconomy.h"
+#include "CWishList.h"
+#include "CTaskPlan.h"
+#include "CThreatMap.h"
 #include "AAStar.h"
-#include "Pathfinder.h"
-#include "Intel.h"
-#include "Military.h"
+#include "CPathfinder.h"
+#include "CIntel.h"
+#include "CMilitary.h"
 
 #endif
