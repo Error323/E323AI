@@ -25,6 +25,9 @@ class ATask: public ARegistrar {
 		/* The group(s) involved */
 		std::map<int, CGroup*> groups;
 
+		/* Determine if the group is moving or in the final stage */
+		std::map<int, bool> moving;
+
 		/* The position to navigate too */
 		float3 pos;
 
@@ -46,6 +49,7 @@ class ATask: public ARegistrar {
 		/* Overload */
 		void remove(ARegistrar &group) {
 			groups.erase(group.key);
+			moving.erase(group.key);
 			
 			if (groups.empty()) {
 				std::list<ARegistrar*>::iterator i;
@@ -59,6 +63,7 @@ class ATask: public ARegistrar {
 			groups[group.key] = &group;
 			group.reg(*this);
 			group.busy = true;
+			moving[group.reg] = true;
 			ai->pf->addGroup(group, group.pos(), pos);
 		}
 
@@ -76,11 +81,7 @@ class CTaskHandler: public ARegistrar {
 
 		struct BuildTask: public ATask {
 			BuildTask(float3 &pos, UnitType *_toBuild): 
-				ATask(BUILD, pos), toBuild(_toBuild) {
-				std::map<int, CGroup*>::iterator i;
-				for (i = groups.begin(); i != groups.end(); i++)
-					building[i->second->key] = false;
-			}
+				ATask(BUILD, pos), toBuild(_toBuild) {}
 
 			/* The UnitType to build */
 			UnitType *toBuild;
@@ -94,9 +95,9 @@ class CTaskHandler: public ARegistrar {
 				for (i = groups.begin(); i != groups.end(); i++) {
 					CGroup *group = i->second;
 					float3 dist = group->pos() - pos;
-					if (!building[group->key] && dist.Length2D() <= group->range) {
+					if (moving[group->key] && dist.Length2D() <= group->range) {
 						group->build(pos, toBuild);
-						building[group->key] = true;
+						moving[group->key] = false;
 					}
 				}
 				/* If the buildorder is given, remove the task, unreg groups */
@@ -109,17 +110,13 @@ class CTaskHandler: public ARegistrar {
 				records.clear();
 				groups.clear();
 				building.clear();
+				moving.clear();
 			}
 		};
 
 		struct AssistTask: public ATask {
 			AssistTask(BuildTask &bt): 
-				ATask(ASSIST, bt.pos()), assist(&bt) { 
-				reg(bt); 
-				std::map<int, CGroup*>::iterator i;
-				for (i = groups.begin(); i != groups.end(); i++)
-					assisting[i->second->key] = false;
-			}
+				ATask(ASSIST, bt.pos()), assist(&bt) { reg(bt); }
 
 			/* The buildtask to assist */
 			BuildTask *assist;
@@ -133,9 +130,9 @@ class CTaskHandler: public ARegistrar {
 				for (i = groups.begin(); i != groups.end(); i++) {
 					CGroup *group = i->second;
 					float3 dist = group->pos() - pos;
-					if (!assisting[group->key] && dist.Length2D() <= group->range) {
+					if (moving[group->key] && dist.Length2D() <= group->range) {
 						group->assist(*assist);
-						assisting[group->key] = true;
+						moving[group->key] = false;
 					}
 				}
 			}
@@ -145,6 +142,7 @@ class CTaskHandler: public ARegistrar {
 				records.clear();
 				groups.clear();
 				assisting.clear();
+				moving.clear();
 			}
 		};
 
@@ -170,9 +168,9 @@ class CTaskHandler: public ARegistrar {
 				for (i = groups.begin(); i != groups.end(); i++) {
 					CGroup *group = i->second;
 					float3 dist = group->pos() - pos;
-					if (!attacking[group->key] && dist.Length2D() <= group->range) {
+					if (moving[group->key] && dist.Length2D() <= group->range) {
 						group->attack(target);
-						attacking[group->key] = true;
+						moving[group->key] = false;
 					}
 					else pos = ai->cheat->GetUnitPos(target);
 				}
@@ -187,6 +185,7 @@ class CTaskHandler: public ARegistrar {
 				records.clear();
 				groups.clear();
 				attacking.clear();
+				moving.clear();
 			}
 		};
 
@@ -225,6 +224,7 @@ class CTaskHandler: public ARegistrar {
 			void reset() {
 				records.clear();
 				groups.clear();
+				moving.clear();
 			}
 		};
 
