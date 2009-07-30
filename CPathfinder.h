@@ -1,14 +1,16 @@
-#ifndef E323PATHFINDER_H
-#define E323PATHFINDER_H
+#ifndef CPATHFINDER_H
+#define CPATHFINDER_H
 
-#include "E323AI.h"
+#include "CGroup.h"
+#include "ARegistrar.h"
+#include "CE323AI.h"
 
 
-class CPathfinder: public AAStar {
+class CPathfinder: public AAStar, public ARegistrar {
 	public:
 		enum nodeType{BLOCKED, START, GOAL, NORMAL};
 
-		CPathfinder(AIClasses *ai);
+		CPathfinder(AIClasses *ai): ARegistrar(600);
 		~CPathfinder(){};
 
 
@@ -37,12 +39,11 @@ class CPathfinder: public AAStar {
 		 */
 		void updatePaths();
 
-		/* Register subgroups */
-		void addGroup(CMyGroup &G, float3 &start, float3 & goal);
+		/* Add a task */
+		void addTask(ATask &task);
 
-		/* Remove a path from a unit or group */
-		void removeGroup(CMyGroup &G);
-
+		/* Overload */
+		void remove(ARegistrar &task);
 
 		int X,Z,dx2,dz2;
 		float REAL;
@@ -67,7 +68,7 @@ class CPathfinder: public AAStar {
 		std::map<int, std::vector<float3> > paths;
 
 		/* The group pointers */
-		std::map<int, CMyGroup*> groups;
+		std::map<int, CGroup*> groups;
 
 		/* spring maps */
 		std::vector<float> heightMap, slopeMap;
@@ -89,6 +90,8 @@ class CPathfinder: public AAStar {
 
 		/* Start pathfinding */
 		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius = EPSILON);
+		/* Register subgroups */
+		void addGroup(CGroup &G, float3 &start, float3 &goal);
 
 		/* Draw the map */
 		void drawMap(int map);

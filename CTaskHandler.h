@@ -64,7 +64,6 @@ class ATask: public ARegistrar {
 			group.reg(*this);
 			group.busy = true;
 			moving[group.reg] = true;
-			ai->pf->addGroup(group, group.pos(), pos);
 		}
 
 		/* Update this task */

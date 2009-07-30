@@ -98,5 +98,6 @@ ATask* addTask(ATask &at) {
 	lookup[at.type][task->key] = index;
 	task->reg(*this);
 	activeTasks[task->key] = task;
+	ai->pf->addTask(*task);
 	return task;
 }

@@ -78,6 +78,25 @@ CPathfinder::CPathfinder(AIClasses *ai) {
 	draw = false;
 }
 
+void CPathfinder::addTask(ATask &task) {
+	std::map<int, CGroup*>::iterator i;
+	task.reg(*this);
+	for (i = task.groups.begin(); i != task.groups.end(); i++) {
+		CGroup *group = i->second;
+		addGroup(*group, group->pos(), task.pos);
+	}
+}
+
+void CPathfinder::remove(ARegistrar &obj) {
+	ATask *task = &(dynamic_cast<ATask>(obj));
+	std::map<int, CGroup*>::iterator i;
+	for (i = task->groups.begin(); i != task->groups.end(); i++) {
+		CGroup *group = i->second;
+		paths.erase(group->key);
+		groups.erase(group->key);
+	}
+}
+
 void CPathfinder::updateMap(float *weights) {
 	std::map<int, std::vector<Node> >::iterator i;
 	for (i = maps.begin(); i != maps.end(); i++) {
@@ -97,7 +116,7 @@ void CPathfinder::updateFollowers() {
 	for (path = paths.begin(); path != paths.end(); path++) {
 		unsigned segment     = 1;
 		int     waypoint     = 1;
-		CMyGroup *group      = groups[path->first];
+		CGroup *group      = groups[path->first];
 		float maxGroupLength = group->maxLength();
 		std::map<float, int> M;
 
@@ -187,14 +206,9 @@ void CPathfinder::updatePaths() {
 	addPath(repathGroup, start, goal);
 }
 
-void CPathfinder::addGroup(CMyGroup &G, float3 &start, float3 &goal) {
-	groups[G.id] = &G;
-	addPath(G.id, start, goal);
-}
-
-void CPathfinder::removeGroup(CMyGroup &G) {
-	paths.erase(G.id);
-	groups.erase(G.id);
+void CPathfinder::addGroup(CGroup &G, float3 &start, float3 &goal) {
+	groups[G.key] = &G;
+	addPath(G.key, start, goal);
 }
 
 void CPathfinder::addPath(int group, float3 &start, float3 &goal) {
