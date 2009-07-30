@@ -270,8 +270,8 @@ void CE323AI::Update() {
 			ai->eco->update(frame);
 		break;
 
-		case 8: /* update military plans */
-			ai->tasks->updateMilitaryPlans();
+		case 8: /* update taskhandler */
+			ai->tasks->update();
 		break;
 
 		default: return;

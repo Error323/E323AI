@@ -12,7 +12,7 @@ enum task{BUILD, ASSIST, ATTACK, MERGE};
 
 class ATask: public ARegistrar {
 	public:
-		ATask(task _t, float3 &pos): ARegistrar(counter), t(_t), pos(&_pos) {
+		ATask(task _t, float3 &pos): ARegistrar(counter), t(_t), pos(_pos) {
 			counter++;
 		}
 		~ATask(){}
@@ -26,7 +26,7 @@ class ATask: public ARegistrar {
 		std::map<int, CGroup*> groups;
 
 		/* The position to navigate too */
-		float3 *pos;
+		float3 pos;
 
 		/* Remove this task, unreg groups involved, and make them available
 		 * again 
@@ -76,7 +76,11 @@ class CTaskHandler: public ARegistrar {
 
 		struct BuildTask: public ATask {
 			BuildTask(float3 &pos, UnitType *_toBuild): 
-				ATask(BUILD, pos), toBuild(_toBuild) {}
+				ATask(BUILD, pos), toBuild(_toBuild) {
+				std::map<int, CGroup*>::iterator i;
+				for (i = groups.begin(); i != groups.end(); i++)
+					building[i->second->key] = false;
+			}
 
 			/* The UnitType to build */
 			UnitType *toBuild;
@@ -110,7 +114,12 @@ class CTaskHandler: public ARegistrar {
 
 		struct AssistTask: public ATask {
 			AssistTask(BuildTask &bt): 
-				ATask(ASSIST, bt.pos()), assist(&bt) { reg(bt); }
+				ATask(ASSIST, bt.pos()), assist(&bt) { 
+				reg(bt); 
+				std::map<int, CGroup*>::iterator i;
+				for (i = groups.begin(); i != groups.end(); i++)
+					assisting[i->second->key] = false;
+			}
 
 			/* The buildtask to assist */
 			BuildTask *assist;
@@ -141,7 +150,11 @@ class CTaskHandler: public ARegistrar {
 
 		struct AttackTask: public ATask {
 			AttackTask(int _target): 
-				ATask(ATTACK, &(ai->cheat->GetUnitPos(_target))), target(_target) {}
+				ATask(ATTACK, &(ai->cheat->GetUnitPos(_target))), target(_target) {
+				std::map<int, CGroup*>::iterator i;
+				for (i = groups.begin(); i != groups.end(); i++)
+					attacking[i->second->key] = false;
+			}
 
 			/* The target to attack */
 			int target;
@@ -161,6 +174,7 @@ class CTaskHandler: public ARegistrar {
 						group->attack(target);
 						attacking[group->key] = true;
 					}
+					else pos = ai->cheat->GetUnitPos(target);
 				}
 
 				/* If the target is destroyed, remove the task, unreg groups */
