@@ -6,6 +6,12 @@
 #include "CE323AI.h"
 #include "ARegistrar.h"
 
+/* Building facings */
+enum facing{NONE, SOUTH, EAST, NORTH, WEST};
+
+/* Map quadrants */
+enum quadrant {NORTH_WEST, NORTH_EAST, SOUTH_WEST, SOUTH_EAST};
+
 class CUnit: public ARegistrar {
 	public:
 		CUnit(): ARegistrar() {}

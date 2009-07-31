@@ -94,6 +94,7 @@ class CTaskHandler: public ARegistrar {
 			/* Update the build task, assumes 1 group on a task! */
 			void update() {
 				std::map<int, CGroup*>::iterator i;
+				bool hasFinished = false;
 				for (i = groups.begin(); i != groups.end(); i++) {
 					CGroup *group = i->second;
 					float3 dist = group->pos() - pos;
@@ -103,18 +104,13 @@ class CTaskHandler: public ARegistrar {
 					}
 
 					/* We are building, lets see if it finished already */
-					if (!moving[group->key]) {
-						std::map<int, CUnit*>::iterator j;
-						for (j = group->units.begin(); j != group->units.end(); j++) {
-							std::map<int, bool> *builders = &(ai->unitTable->builders);
-							std::map<int, bool>::iterator builder = builders->find(j->first);
-							if (builder != builders->end && builder->second) {
-								builder->second = false;
-								remove();
-							}
-						}
-					}
+					if (!moving[group->key])
+						if (ai->eco->hasFinishedBuilding(*group))
+							hasFinished = true;
 				}
+
+				if (hasFinished)
+					remove();
 			}
 		};
 
@@ -123,7 +119,7 @@ class CTaskHandler: public ARegistrar {
 				ATask(ASSIST, task.pos()), assist(&task) {
 
 				/* This will ensure that when the original task finishes (is
-				 * removed) it also calls this removal 
+				 * removed) it also calls this removal, lovely isn't it :)
 				 */
 				task.reg(*this);
 			}

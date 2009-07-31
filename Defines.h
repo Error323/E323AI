@@ -49,16 +49,6 @@
 /* Compute the sign of an int */
 #define SIGN(x) (+1 | (x >> (sizeof(int) * 8 - 1)))
 
-
-/* Facings */
-enum facing {
-	NONE  =-1, 
-	SOUTH = 0, 
-	EAST  = 1, 
-	NORTH = 2, 
-	WEST  = 3
-};
-
 /* Unit categories */
 enum unitCategory {
 	TECH1        = (1<<0),
@@ -96,17 +86,6 @@ enum unitCategory {
 	VEHICLE      = (1<<27)
 };
 
-/* Tasks */
-enum task {
-	BUILD_MMAKER   = (1<<0),
-	BUILD_EMAKER   = (1<<1),
-	BUILD_FACTORY  = (1<<2),
-	ASSIST_FACTORY = (1<<3),
-	HARRAS         = (1<<4),
-	ATTACK         = (1<<5),
-	UNKNOWN        = (1<<6)
-};
-
 /* Build priorities */
 enum buildPriority {
 	LOW    = 0,
@@ -114,18 +93,4 @@ enum buildPriority {
 	HIGH   = 2
 };
 
-/* Quadrants */
-enum quadrant {
-	NORTH_WEST,
-	NORTH_EAST,
-	SOUTH_WEST,
-	SOUTH_EAST
-};
-
-/* Group types */
-enum groupType {
-	G_WORKER, 
-	G_SCOUT, 
-	G_ATTACKER
-};
 #endif
