@@ -1,5 +1,5 @@
-#ifndef CTASKPLAN_H
-#define CTASKPLAN_H
+#ifndef CTASKHANDLER_H
+#define CTASKHANDLER_H
 
 #include <vector>
 #include <map>
@@ -12,7 +12,8 @@ enum task{BUILD, ASSIST, ATTACK, MERGE};
 
 class ATask: public ARegistrar {
 	public:
-		ATask(task _t, float3 &pos): ARegistrar(counter), t(_t), pos(_pos) {
+		ATask(task _t, float3 &pos): 
+			ARegistrar(counter), t(_t), pos(_pos) {
 			counter++;
 		}
 		~ATask(){}
@@ -63,14 +64,19 @@ class ATask: public ARegistrar {
 			groups[group.key] = &group;
 			group.reg(*this);
 			group.busy = true;
-			moving[group.reg] = true;
+			moving[group.key] = true;
+		}
+
+		/* Reset this task for reuse */
+		void reset(float3 &p) {
+			records.clear();
+			groups.clear();
+			moving.clear();
+			pos(p);
 		}
 
 		/* Update this task */
 		virtual void update() = 0;
-
-		/* Reset this task for reuse */
-		virtual void reset() = 0;
 };
 
 class CTaskHandler: public ARegistrar {
@@ -85,9 +91,6 @@ class CTaskHandler: public ARegistrar {
 			/* The UnitType to build */
 			UnitType *toBuild;
 
-			/* Is building */
-			std::map<int, bool> building;
-
 			/* Update the build task, assumes 1 group on a task! */
 			void update() {
 				std::map<int, CGroup*>::iterator i;
@@ -98,27 +101,35 @@ class CTaskHandler: public ARegistrar {
 						group->build(pos, toBuild);
 						moving[group->key] = false;
 					}
-				}
-				/* If the buildorder is given, remove the task, unreg groups */
-				if (ai->eco->hasFinishedBuilding(groups))
-					remove();
-			}
 
-			/* Reset for reusal */
-			void reset() {
-				records.clear();
-				groups.clear();
-				building.clear();
-				moving.clear();
+					/* We are building, lets see if it finished already */
+					if (!moving[group->key]) {
+						std::map<int, CUnit*>::iterator j;
+						for (j = group->units.begin(); j != group->units.end(); j++) {
+							std::map<int, bool> *builders = &(ai->unitTable->builders);
+							std::map<int, bool>::iterator builder = builders->find(j->first);
+							if (builder != builders->end && builder->second) {
+								builder->second = false;
+								remove();
+							}
+						}
+					}
+				}
 			}
 		};
 
 		struct AssistTask: public ATask {
-			AssistTask(BuildTask &bt): 
-				ATask(ASSIST, bt.pos()), assist(&bt) { reg(bt); }
+			AssistTask(ATask &task): 
+				ATask(ASSIST, task.pos()), assist(&task) {
 
-			/* The buildtask to assist */
-			BuildTask *assist;
+				/* This will ensure that when the original task finishes (is
+				 * removed) it also calls this removal 
+				 */
+				task.reg(*this);
+			}
+
+			/* The (build)task to assist */
+			ATask *assist;
 
 			/* Update the assist task */
 			void update() {
@@ -131,14 +142,6 @@ class CTaskHandler: public ARegistrar {
 						moving[group->key] = false;
 					}
 				}
-			}
-
-			/* Reset for reusal */
-			void reset() {
-				records.clear();
-				groups.clear();
-				assisting.clear();
-				moving.clear();
 			}
 		};
 
@@ -167,14 +170,6 @@ class CTaskHandler: public ARegistrar {
 				/* If the target is destroyed, remove the task, unreg groups */
 				if (ai->cheat->GetUnitPos(target) == NULLVECTOR) 
 					remove();
-			}
-
-			/* Reset for reusal */
-			void reset() {
-				records.clear();
-				groups.clear();
-				attacking.clear();
-				moving.clear();
 			}
 		};
 
@@ -208,13 +203,6 @@ class CTaskHandler: public ARegistrar {
 				if (groups.size() <= 1) 
 					remove();
 			}
-
-			/* Reset for reusal */
-			void reset() {
-				records.clear();
-				groups.clear();
-				moving.clear();
-			}
 		};
 
 		/* Controls which task may be updated (round robin-ish) */
@@ -236,7 +224,7 @@ class CTaskHandler: public ARegistrar {
 		void addBuildTask(float3 &pos, UnitType *toBuild, std::vector<CGroup*> &groups);
 
 		/* Add a fresh assist task */
-		void addAssistTask(float3 &pos, ATask &buildTask, std::vector<CGroup*> &groups);
+		void addAssistTask(float3 &pos, ATask &task, std::vector<CGroup*> &groups);
 
 		/* Add a fresh attack task */
 		void addAttackTask(int target, std::vector<CGroup*> &groups);
@@ -252,7 +240,7 @@ class CTaskHandler: public ARegistrar {
 		char buf[1024];
 		std::map<task, std::string> taskStr;
 
-		void addTask(ATask &t);
+		void addTask(ATask &t, std::vector<CGroup*> &groups);
 };
 
 #endif

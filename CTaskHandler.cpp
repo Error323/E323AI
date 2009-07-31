@@ -33,23 +33,17 @@ void CTaskHandler::remove(ARegistrar &task) {
 
 void CTaskHandler::addBuildTask(float3 &pos, UnitType *toBuild, std::vector<CGroup*> &groups) {
 	BuildTask bt(pos, toBuild);
-	ATask *task = addTask(bt);
-	for (unsigned i = 0; i < groups.size(); i++)
-		task.addGroup(*groups[i]);
+	ATask *task = addTask(bt, groups);
 }
 
-void CTaskHandler::addAssistTask(float3 &pos, ATask &buildTask, std::vector<CGroup*> &groups) {
-	AssistTask at(pos, buildTask);
-	ATask *task = addTask(at);
-	for (unsigned i = 0; i < groups.size(); i++)
-		task.addGroup(*groups[i]);
+void CTaskHandler::addAssistTask(float3 &pos, ATask &task, std::vector<CGroup*> &groups) {
+	AssistTask at(pos, task);
+	ATask *assistTask = addTask(at, groups);
 }
 
 void CTaskHandler::addAttackTask(int target, std::vector<CGroup*> &groups) {
 	AttackTask at(target);
-	ATask *task = addTask(at);
-	for (unsigned i = 0; i < groups.size(); i++)
-		task.addGroup(*groups[i]);
+	ATask *task = addTask(at, groups);
 }
 
 void CTaskHandler::addMergeTask(std::vector<CGroup*> &groups) {
@@ -63,9 +57,7 @@ void CTaskHandler::addMergeTask(std::vector<CGroup*> &groups) {
 	range /= groups.size();
 	
 	MergeTask mt(pos, range);
-	ATask *task = addTask(mt);
-	for (unsigned i = 0; i < groups.size(); i++)
-		task.addGroup(*groups[i]);
+	ATask *task = addTask(mt, groups);
 }
 
 void update() {
@@ -79,7 +71,7 @@ void update() {
 	update++;
 }
 
-ATask* addTask(ATask &at) {
+ATask* addTask(ATask &at, std::vector<CGroup*> &groups) {
 	int index   = 0;
 	ATask *task = NULL;
 
@@ -93,11 +85,20 @@ ATask* addTask(ATask &at) {
 	else {
 		index = free[at.type].top(); free[at.type].pop();
 		task  = &taskContainer[at.type][index];
-		task->reset();
+		task->reset(at.pos);
 	}
 	lookup[at.type][task->key] = index;
 	task->reg(*this);
 	activeTasks[task->key] = task;
+	for (unsigned i = 0; i < groups.size(); i++)
+		task->addGroup(*groups[i]);
 	ai->pf->addTask(*task);
+	sprintf(buf, 
+		"[CTaskHandler::addTask]\tTask %s(%d) created with %d groups",
+		taskStr[task->t], 
+		task->key, 
+		groups.size()
+	);
+	LOGN(buf);
 	return task;
 }

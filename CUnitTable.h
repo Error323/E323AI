@@ -26,17 +26,17 @@ class CUnitTable: public ARegistrar {
 		/* Total nr of units */
 		int numUnits;
 
-		/* Current units ingame, unit-ingame-id as key (See Global AI) */
-		std::map<int, UnitType*> gameAllUnits;
-
 		/* All units flattened in a map */
-		std::map<int, UnitType> units;
+		std::map<int, UnitType>   units;
 
 		/* Unit categories in vector */
 		std::vector<unitCategory> cats;
 
 		/* movetypes, used by pathfinder */
-		std::map<int, MoveData*> moveTypes;
+		std::map<int, MoveData*>  moveTypes;
+
+		/* The ingame-builderid of a unit and if what its building is finished */
+		std::map<int, bool>     builders;
 
 		/* Special commander hook, since it's the first to spawn */
 		UnitType *comm;

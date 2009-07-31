@@ -101,6 +101,7 @@ void CE323AI::UnitCreated(int uid, int bid) {
 void CE323AI::UnitFinished(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
 	unsigned int c = unit->type->cats;
+	ai->unitTable->builders[unit->builder] = true;
 
 	/* Eco unit */
 	if (!(c&ATTACKER) || c&COMMANDER) {

@@ -105,9 +105,10 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 	UC.close();
 }
 
-void CUnitTable::remove(ARegHandler &reg) {
-	free.push(lookup[reg.key]);
-	lookup.erase(reg.key);
+void CUnitTable::remove(ARegHandler &unit) {
+	free.push(lookup[unit.key]);
+	lookup.erase(unit.key);
+	builders.erase(unit.key);
 }
 
 CUnit* CUnitTable::getUnit(int uid) {
@@ -120,7 +121,7 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 
 	/* Create a new slot */
 	if (free.empty()) {
-		CUnit u(ai,uid, bid);
+		CUnit u(ai,uid,bid);
 		ingameUnits.push_back(u);
 		unit  = &ingameUnits.back();
 		index = ingameUnits.size()-1;
@@ -135,6 +136,7 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 
 	lookup[uid] = index;
 	unit->reg(*this);
+	builders[bid] = false;
 	return unit;
 }
 
