@@ -1,5 +1,5 @@
-#ifndef TASKPLAN_H
-#define TASKPLAN_H
+#ifndef CTASKPLAN_H
+#define CTASKPLAN_H
 
 #include <vector>
 #include <map>
@@ -120,9 +120,6 @@ class CTaskHandler: public ARegistrar {
 			/* The buildtask to assist */
 			BuildTask *assist;
 
-			/* Is assisting */
-			std::map<int, bool> assisting;
-
 			/* Update the assist task */
 			void update() {
 				std::map<int, CGroup*>::iterator i;
@@ -147,17 +144,10 @@ class CTaskHandler: public ARegistrar {
 
 		struct AttackTask: public ATask {
 			AttackTask(int _target): 
-				ATask(ATTACK, &(ai->cheat->GetUnitPos(_target))), target(_target) {
-				std::map<int, CGroup*>::iterator i;
-				for (i = groups.begin(); i != groups.end(); i++)
-					attacking[i->second->key] = false;
-			}
+				ATask(ATTACK, &(ai->cheat->GetUnitPos(_target))), target(_target) {}
 
 			/* The target to attack */
 			int target;
-
-			/* Is attacking */
-			std::map<int, bool> attacking;
 
 			/* Update the attack task */
 			void update() {
@@ -206,14 +196,14 @@ class CTaskHandler: public ARegistrar {
 				}
 
 				/* We have atleast two groups, now we can merge */
-				if (merge.size() >= 2) {
+				if (mergable.size() >= 2) {
 					CGroup *alpha = mergable[0];
 					for (unsigned j = 1; j < mergable.size(); j++)
 						alpha->merge(*mergable[j]);
 				}
 
 				/* If only one group remains, merging is no longer possible,
-				 * unreg groups 
+				 * remove the task, unreg groups 
 				 */
 				if (groups.size() <= 1) 
 					remove();
@@ -243,16 +233,16 @@ class CTaskHandler: public ARegistrar {
 		std::map<int, ATask*>               activeTasks;
 
 		/* Add a fresh build task */
-		void addBuildTask(float3 &pos, UnitType *toBuild);
+		void addBuildTask(float3 &pos, UnitType *toBuild, std::vector<CGroup*> &groups);
 
 		/* Add a fresh assist task */
-		void addAssistTask(float3 &pos, UnitType *toBuild);
+		void addAssistTask(float3 &pos, ATask &buildTask, std::vector<CGroup*> &groups);
 
 		/* Add a fresh attack task */
-		void addAttackTask(int target);
+		void addAttackTask(int target, std::vector<CGroup*> &groups);
 
 		/* Add a fresh merge task */
-		void addMergeTask(float3 &pos, float range);
+		void addMergeTask(std::vector<CGroup*> &groups);
 
 		/* Update call */
 		void update();
@@ -262,7 +252,7 @@ class CTaskHandler: public ARegistrar {
 		char buf[1024];
 		std::map<task, std::string> taskStr;
 
-		void addTask(task t, ATask &at);
+		void addTask(ATask &t);
 };
 
 #endif
