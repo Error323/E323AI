@@ -90,11 +90,13 @@ void CPathfinder::addTask(ATask &task) {
 void CPathfinder::remove(ARegistrar &obj) {
 	ATask *task = &(dynamic_cast<ATask>(obj));
 	std::map<int, CGroup*>::iterator i;
-	for (i = task->groups.begin(); i != task->groups.end(); i++) {
-		CGroup *group = i->second;
-		paths.erase(group->key);
-		groups.erase(group->key);
-	}
+	for (i = task->groups.begin(); i != task->groups.end(); i++)
+		remove(*(i->second));
+}
+
+void CPathfinder::remove(CGroup &group) {
+	paths.erase(group.key);
+	groups.erase(group.key);
 }
 
 void CPathfinder::updateMap(float *weights) {
@@ -112,7 +114,6 @@ void CPathfinder::updateFollowers() {
 	std::map<int, bool>::iterator u;
 
 	int groupnr = 0;
-	std::vector<int> groupsFinished;
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		unsigned segment     = 1;
@@ -169,10 +170,6 @@ void CPathfinder::updateFollowers() {
 		}
 		group->move(path->second[segment+waypoint]);
 
-		/* Delete groups that have reached their goal */
-		if (segment+waypoint == path->second.size())
-			groupsFinished.push_back(group->key);
-
 		/* Set a wait cmd on units that are going to fast, (They can still
 		 * attack during a wait) 
 		 */
@@ -194,12 +191,6 @@ void CPathfinder::updateFollowers() {
 		if (update % paths.size() == groupnr)
 			repathGroup = path->first;
 		groupnr++;
-	}
-
-	/* Delete groups that have reached their goal */
-	for (unsigned i = 0; i < groupsFinished.size(); i++) {
-		groups.erase(groupsFinished[i]);
-		paths.erase(groupsFinished[i]);
 	}
 }
 

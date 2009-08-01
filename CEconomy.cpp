@@ -1,4 +1,4 @@
-#include "Economy.h"
+#include "CEconomy.h"
 
 CEconomy::CEconomy(AIClasses *ai) {
 	this->ai = ai;

@@ -1,7 +1,7 @@
-#ifndef ECONOMY_H
-#define ECONOMY_H
+#ifndef CECONOMY_H
+#define CECONOMY_H
 
-#include "E323AI.h"
+#include "CE323AI.h"
 
 #define alpha 0.001f
 

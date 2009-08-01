@@ -45,6 +45,9 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* Overload */
 		void remove(ARegistrar &task);
 
+		/* Remove a specific group */
+		void remove(CGroup &group);
+
 		int X,Z,dx2,dz2;
 		float REAL;
 

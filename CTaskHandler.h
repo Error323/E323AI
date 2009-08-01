@@ -101,6 +101,7 @@ class CTaskHandler: public ARegistrar {
 					if (moving[group->key] && dist.Length2D() <= group->range) {
 						group->build(pos, toBuild);
 						moving[group->key] = false;
+						ai->pf->remove(*group);
 					}
 
 					/* We are building, lets see if it finished already */
@@ -136,6 +137,7 @@ class CTaskHandler: public ARegistrar {
 					if (moving[group->key] && dist.Length2D() <= group->range) {
 						group->assist(*assist);
 						moving[group->key] = false;
+						ai->pf->remove(*group);
 					}
 				}
 			}
@@ -159,6 +161,7 @@ class CTaskHandler: public ARegistrar {
 					if (moving[group->key] && dist.Length2D() <= group->range) {
 						group->attack(target);
 						moving[group->key] = false;
+						ai->pf->remove(*group);
 					}
 					else pos = ai->cheat->GetUnitPos(target);
 				}
