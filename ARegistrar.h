@@ -25,4 +25,5 @@ class ARegistrar {
 
 		/* The other objects where this registrar is registered */
 		std::list<ARegistrar*> records;
+};
 #endif
