@@ -58,7 +58,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->unitTable	= new CUnitTable(ai);
 	ai->eco     	= new CEconomy(ai);
 	ai->wl          = new CWishList(ai);
-	ai->tasks     	= new CTaskPlan(ai);
+	ai->tasks     	= new CTaskHandler(ai);
 	ai->threatMap   = new CThreatMap(ai);
 	ai->pf          = new CPathfinder(ai);
 	ai->intel       = new CIntel(ai);

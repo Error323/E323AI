@@ -7,7 +7,7 @@ class CMetalMap;
 class CUnitTable;
 class CEconomy;
 class CWishList;
-class CTaskPlan;
+class CTaskHandler;
 class CThreatMap;
 class CPathfinder;
 class CIntel;
@@ -22,7 +22,7 @@ struct AIClasses {
 	CUnitTable    *unitTable;
 	CEconomy      *eco;
 	CWishList     *wl;
-	CTaskPlan     *tasks;
+	CTaskHandler  *tasks;
 	CThreatMap    *threatMap;
 	CPathfinder   *pf;
 	CIntel        *intel;

@@ -48,7 +48,7 @@
 #include "CUnitTable.h"
 #include "CEconomy.h"
 #include "CWishList.h"
-#include "CTaskPlan.h"
+#include "CTaskHandler.h"
 #include "CThreatMap.h"
 #include "AAStar.h"
 #include "CPathfinder.h"
