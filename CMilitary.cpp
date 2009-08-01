@@ -23,12 +23,16 @@ void CMilitary::addUnit(CUnit &unit) {
 	if (c&MOBILE) {
 		if (c&SCOUT) {
 			/* A scout is initially alone */
-			CGroup *group = requestGroup();
+			CGroup *group = requestGroup(SCOUT);
 			group->addUnit(unit);
 		}
 		else {
-			if (currentGroups.find(unit.builder) == currentGroups.end()) {
-				CGroup *group = requestGroup();
+			/* If there is a new factory, or the current group is busy, request
+			 * a new group 
+			 */
+			if (currentGroups.find(unit.builder) == currentGroups.end() ||
+				currentGroups[unit.builder]->busy) {
+				CGroup *group = requestGroup(ATTACK);
 				currentGroups[unit.builder] = group
 			}
 			currentGroups[unit.builder]->addUnit(unit);
@@ -42,7 +46,7 @@ CGroup* CMilitary::requestGroup(groupType type) {
 
 	/* Create a new slot */
 	if (free.empty()) {
-		CGroup g(ai, type);
+		CGroup g(ai);
 		groups.push_back(g);
 		group = &groups.back();
 		index = groups.size()-1;
@@ -52,7 +56,7 @@ CGroup* CMilitary::requestGroup(groupType type) {
 	else {
 		index = free.top(); free.pop();
 		group = &groups[index];
-		group->reset(type);
+		group->reset();
 	}
 
 	lookup[group.key] = index;
