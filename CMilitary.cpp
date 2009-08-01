@@ -1,7 +1,7 @@
 #include "Military.h"
 
 CMilitary::CMilitary(AIClasses *ai) {
-	this->ai      = ai;
+	this->ai = ai;
 }
 
 void CMilitary::remove(ARegHandler &group) {
@@ -21,7 +21,7 @@ void CMilitary::addUnit(CUnit &unit) {
 	if (c&MOBILE) {
 		if (c&SCOUT) {
 			/* A scout is initially alone */
-			CGroup *group = requestGroup(SCOUT);
+			CGroup *group = requestGroup(HARRAS);
 			group->addUnit(unit);
 		}
 		else {
@@ -61,7 +61,7 @@ CGroup* CMilitary::requestGroup(groupType type) {
 	group->reg(*this);
 
 	switch(type) {
-		case SCOUT:
+		case HARRAS:
 			activeScoutGroups[group->key] = group;
 		break;
 		case ATTACK:
@@ -103,21 +103,17 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vect
 	return isOccupied ? -1 : target;
 }
 
-int CMilitary::selectHarrasTarget(CGroup &G) {
-	std::vector<int> occupiedTargets;
-	ai->tasks->getMilitaryTasks(HARRAS, occupiedTargets);
-	float3 pos = G.pos();
+int CMilitary::selectHarrasTarget(CGroup &group) {
+	float3 pos = group.pos();
 	std::vector<int> targets;
 	targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
 	targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
 	return selectTarget(pos, targets, occupiedTargets);
 }
 
-int CMilitary::selectAttackTarget(CGroup &G) {
-	std::vector<int> occupiedTargets;
-	ai->tasks->getMilitaryTasks(ATTACK, occupiedTargets);
+int CMilitary::selectAttackTarget(CGroup &group) {
 	int target = -1;
-	float3 pos = G.pos();
+	float3 pos = group.pos();
 
 	/* Select an energyMaking target */
 	target = selectTarget(pos, ai->intel->energyMakers, occupiedTargets);
@@ -139,10 +135,14 @@ int CMilitary::selectAttackTarget(CGroup &G) {
 }
 
 void CMilitary::update(int frame) {
-	int busyScouts = 0;
+	occupiedTargets.clear();
+	std::map<int, AttackTask*>::iterator i;
+	for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++)
+		occupiedTargets.push_back(i->second->target);
 
+	std::map<int, CGroup*>::iterator i,j;
+	int busyScouts = 0;
 	/* Give idle scouting groups a new attack plan */
-	std::map<int, CGroup*>::iterator i;
 	for (i = activeScoutGroups.begin(); i != activeScoutGroups.end(); i++) {
 		CGroup *group = i->second;
 
@@ -163,6 +163,7 @@ void CMilitary::update(int frame) {
 	}
 
 	std::vector<CGroup*> mergable;
+	/* Give idle, strong enough groups a new attack plan */
 	for (i = activeAttackGroups.begin(); i != activeAttackGroups.end(); i++) {
 		CGroup *group = i->second;
 
@@ -181,7 +182,14 @@ void CMilitary::update(int frame) {
 
 		/* Not strong enough */
 		if (enemyStrength > group->strength) {
-			mergable.push_back(group);
+			bool isCurrent = false;
+			for (j = currentGroups.begin(); j != currentGroups.end(); j++)
+				if (j->first == group->key)
+					isCurrent = true;
+
+			if (!isCurrent)
+				mergable.push_back(group);
+
 			continue;
 		}
 

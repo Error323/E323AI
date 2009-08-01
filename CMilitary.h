@@ -16,9 +16,8 @@ class CMilitary: public ARegistrar {
 		CMilitary(AIClasses *ai): ARegistrar(200);
 		~CMilitary(){};
 
-
 		/* Overload */
-		void remove(ARegistrar &obj);
+		void remove(ARegistrar &group);
 
 		/* Add a unit, place it in the correct group */
 		void addUnit(CUnit &unit);
@@ -35,10 +34,6 @@ class CMilitary: public ARegistrar {
 		/* Current group per factory <factory, CGroup*> */
 		std::map<int, CGroup*> currentGroups;
 
-		/* Active groups */
-		std::map<int, CGroup*> activeScoutGroups;
-		std::map<int, CGroup*> activeAttackGroups;
-
 		/* The group container */
 		std::vector<CGroup> groups;
 
@@ -48,11 +43,14 @@ class CMilitary: public ARegistrar {
 		/* The free slots (CUnit instances that are zombie-ish) */
 		std::stack<int>     free;
 
+		/* Occupied targets */
+		std::vector<int> occupiedTargets;
+
 		/* Scout and annoy >:) */
-		int selectHarrasTarget(CGroup &G);
+		int selectHarrasTarget(CGroup &group);
 
 		/* All targets in a certain order */
-		int selectAttackTarget(CGroup &G);
+		int selectAttackTarget(CGroup &group);
 
 		/* Subfunction for select*Target */
 		int selectTarget(float3 &ourPos, std::vector<int> &targets,

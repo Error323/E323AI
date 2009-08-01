@@ -213,8 +213,11 @@ class CTaskHandler: public ARegistrar {
 		/* The free slots per task type */
 		std::map<task, std::stack<int> >    free;
 
-		/* The active tasks to update */
-		std::map<int, ATask*>               activeTasks;
+		/* The active tasks per type */
+		std::map<int, BuildTask*> activeBuildTasks;
+		std::map<int, AssistTask*> activeAssistTasks;
+		std::map<int, AttackTask*> activeAttackTasks;
+		std::map<int, MergeTask*> activeMergeTasks;
 
 		/* Add a fresh build task */
 		void addBuildTask(float3 &pos, UnitType *toBuild, std::vector<CGroup*> &groups);
@@ -234,8 +237,14 @@ class CTaskHandler: public ARegistrar {
 	private:
 		AIClasses *ai;
 		char buf[1024];
+
+		/* Tasks to string */
 		std::map<task, std::string> taskStr;
 
+		/* The active tasks to update */
+		std::map<int, ATask*>               activeTasks;
+
+		/* Add a task */
 		void addTask(ATask &t, std::vector<CGroup*> &groups);
 };
 
