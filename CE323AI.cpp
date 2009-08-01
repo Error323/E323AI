@@ -9,7 +9,6 @@ CE323AI::~CE323AI() {
 
 	delete ai->metalMap;
 	delete ai->unitTable;
-	delete ai->metaCmds;
 	delete ai->eco;
 	delete ai->logger;
 	delete ai->tasks;
@@ -57,7 +56,6 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 
 	ai->metalMap	= new CMetalMap(ai);
 	ai->unitTable	= new CUnitTable(ai);
-	ai->metaCmds	= new CMetaCommands(ai);
 	ai->eco     	= new CEconomy(ai);
 	ai->wl          = new CWishList(ai);
 	ai->tasks     	= new CTaskPlan(ai);

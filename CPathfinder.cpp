@@ -122,10 +122,11 @@ void CPathfinder::updateFollowers() {
 
 		/* Go through all the units in a group */
 		for (u = group->units.begin(); u != group->units.end(); u++) {
+			CUnit *unit = u->second;
 			/* unwait all waiters */
-			if (u->second) {
-				ai->metaCmds->wait(u->first);
-				u->second = false;
+			if (group->waiters[u->first]) {
+				unit->wait();
+				group->waiters[u->first] = false;
 			}
 
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
@@ -163,20 +164,21 @@ void CPathfinder::updateFollowers() {
 			/* calc pos on total path */
 			float uposonpath = length - uproj.Length2D();
 			/* A map sorts on key (low to high) by default */
-			M[uposonpath] = u->first;
+			M[uposonpath] = unit;
 		}
-		ai->metaCmds->moveGroup(*group, path->second[segment+waypoint]);
+		group->move(path->second[segment+waypoint]);
 
 		/* Set a wait cmd on units that are going to fast, (They can still
 		 * attack during a wait) 
 		 */
 		if (M.size() > 1) {
 			float rearval = M.begin()->first;
-			for (std::map<float,int>::iterator i = --M.end(); i != M.begin(); i--) {
+			for (std::map<float,CUnit*>::iterator i = --M.end(); i != M.begin(); i--) {
+				CUnit *unit = i->second;
 				if (i->first - rearval > maxGroupLength) {
-					if (!group->units[i->second]) {
-						ai->metaCmds->wait(i->second);
-						group->units[i->second] = true;
+					if (!group->waiters[unit->key]) {
+						unit->wait();
+						group->waiters[unit->key] = true;
 					}
 				}
 				else break;

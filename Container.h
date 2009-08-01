@@ -5,7 +5,6 @@ class IAICallback;
 class IAICheats;
 class CMetalMap;
 class CUnitTable;
-class CMetaCommands;
 class CEconomy;
 class CWishList;
 class CTaskPlan;
@@ -21,7 +20,6 @@ struct AIClasses {
 	IAICheats     *cheat;
 	CMetalMap     *metalMap;
 	CUnitTable    *unitTable;
-	CMetaCommands *metaCmds;
 	CEconomy      *eco;
 	CWishList     *wl;
 	CTaskPlan     *tasks;
