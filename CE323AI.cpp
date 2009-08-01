@@ -104,8 +104,15 @@ void CE323AI::UnitFinished(int uid) {
 	ai->unitTable->builders[unit->builder] = true;
 
 	/* Eco unit */
-	if (!(c&ATTACKER) || c&COMMANDER) {
+	if (!(c&ATTACKER) || c&COMMANDER)
 		ai->eco->addUnit(*unit);
+	/* Military unit */
+	else
+		ai->military->addUnit(*unit);
+
+	sprintf(buf, "[CE323AI::UnitFinished]\t %s(%d) finished", unit->def->humanName.c_str(), uid);
+	LOGN(buf);
+
 		/*
 		if (c&FACTORY) {
 			ai->eco->gameFactories[unit] = true;
@@ -132,22 +139,6 @@ void CE323AI::UnitFinished(int uid) {
 			ai->tasks->updateBuildPlans(unit);
 		}
 		*/
-	}
-	/* Military unit */
-	else {
-		ai->military->addUnit(*unit);
-		/*
-		if (c&MOBILE) {
-			ai->metaCmds->moveForward(unit, 100.0f);
-			if (c&SCOUT)
-				ai->military->addToGroup(ai->eco->gameBuilding[unit], unit, G_SCOUT);
-			else
-				ai->military->addToGroup(ai->eco->gameBuilding[unit], unit, G_ATTACKER);
-		}
-		*/
-	}
-	sprintf(buf, "[CE323AI::UnitFinished]\t %s(%d) finished", unit->def->humanName.c_str(), uid);
-	LOGN(buf);
 }
 
 /* Called on a destroyed unit */

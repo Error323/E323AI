@@ -9,19 +9,19 @@
 #include "CGroup.h"
 #include "CE323AI.h"
 
+enum groupType{SCOUT, ATTACK};
+
 class CMilitary: public ARegistrar {
 	public:
 		CMilitary(AIClasses *ai): ARegistrar(200);
 		~CMilitary(){};
 
-		/* factory->group->unit <factory, <group, CGroup> > */
-		std::map<int, std::map<int, CGroup*> > groups;
-
-		/* factory->unit->group <factory, <unit, group> > */
-		std::map<int, std::map<int, int> > units;
 
 		/* Overload */
 		void remove(ARegistrar &obj);
+
+		/* Add a unit, place it in the correct group */
+		void addUnit(CUnit &unit);
 
 		/* Returns a fresh CGroup instance */
 		CUnit* requestGroup(groupType type);
@@ -29,37 +29,24 @@ class CMilitary: public ARegistrar {
 		/* update callin */
 		void update(int frame);
 
-		/* add a unit to a certain group */
-		void addToGroup(int factory, int unit, groupType type);
-
-		/* remove a unit from its group, erase group when empty and not 
-		 * current
-		 */
-		void removeFromGroup(int factory, int unit);
-
-		/* initializes groups[factory] subgroups */
-		void initSubGroups(int factory);
-
 	private:
 		AIClasses *ai;
 
-		/* The unit container */
-		std::vector<CGroup> ingameGroups;
+		/* Current group per factory <factory, CGroup*> */
+		std::map<int, CGroup*> currentGroups;
+
+		/* Active groups */
+		std::map<int, CGroup*> activeScoutGroups;
+		std::map<int, CGroup*> activeAttackGroups;
+
+		/* The group container */
+		std::vector<CGroup> groups;
 
 		/* The <unitid, vectoridx> table */
 		std::map<int, int>  lookup;
 
 		/* The free slots (CUnit instances that are zombie-ish) */
 		std::stack<int>     free;
-
-		/* the current group per factory */
-		std::map<int, int> attackGroup;
-
-		/* the current scout per factory */
-		std::map<int, int> scoutGroup;
-
-		/* Instantiates a new group */
-		void createNewGroup(groupType type, int factory);
 
 		/* Scout and annoy >:) */
 		int selectHarrasTarget(CGroup &G);

@@ -9,10 +9,31 @@ CMilitary::CMilitary(AIClasses *ai) {
 void CMilitary::remove(ARegHandler &group) {
 	free.push(lookup[group.key]);
 	lookup.erase(group.key);
+	activeScoutGroups.remove(group.key);
+	activeAttackGroups.remove(group.key);
 
 	std::list<ARegistrar*>::iterator i;
 	for (i = records.begin(); i != records.end(); i++)
 		(*i)->remove(group);
+}
+
+void CMilitary::addUnit(CUnit &unit) {
+	unsigned c = unit.type->cats;
+
+	if (c&MOBILE) {
+		if (c&SCOUT) {
+			/* A scout is initially alone */
+			CGroup *group = requestGroup();
+			group->addUnit(unit);
+		}
+		else {
+			if (currentGroups.find(unit.builder) == currentGroups.end()) {
+				CGroup *group = requestGroup();
+				currentGroups[unit.builder] = group
+			}
+			currentGroups[unit.builder]->addUnit(unit);
+		}
+	}
 }
 
 CGroup* CMilitary::requestGroup(groupType type) {
@@ -22,21 +43,32 @@ CGroup* CMilitary::requestGroup(groupType type) {
 	/* Create a new slot */
 	if (free.empty()) {
 		CGroup g(ai, type);
-		ingameGroups.push_back(g);
-		group = &ingameGroups.back();
-		index = ingameGroups.size()-1;
+		groups.push_back(g);
+		group = &groups.back();
+		index = groups.size()-1;
 	}
 
 	/* Use top free slot from stack */
 	else {
 		index = free.top(); free.pop();
-		group = &ingameGroups[index];
+		group = &groups[index];
 		group->reset(type);
 	}
 
 	lookup[group.key] = index;
 	group->reg(*this);
-	return unit;
+
+	switch(type) {
+		case SCOUT:
+			activeScoutGroups[group->key] = group;
+		break;
+		case ATTACK:
+			activeAttackGroups[group->key] = group;
+		break;
+		default: return group;
+	}
+
+	return group;
 }
 
 int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vector<int> &occupied) {
@@ -105,147 +137,69 @@ int CMilitary::selectAttackTarget(CGroup &G) {
 }
 
 void CMilitary::update(int frame) {
-	int busyScouts = 0, newScouts = 0;
+	int busyScouts = 0;
 
-	/* Give idle groups a new attack plan */
-	std::map<int, std::map<int, CGroup*> >::iterator j;
+	/* Give idle scouting groups a new attack plan */
 	std::map<int, CGroup*>::iterator i;
-	for (j = groups.begin(); j != groups.end(); j++) {
-		int factory = j->first;
-		for (i = groups[factory].begin(); i != groups[factory].end(); i++) {
-			bool isNew = (i->first == attackGroup[factory] || 
-						  i->first == scoutGroup[factory]);
-			CGroup *G = i->second;
+	for (i = activeScoutGroups.begin(); i != activeScoutGroups.end(); i++) {
+		CGroup *group = i->second;
 
-			/* Don't assign a plan if we are busy already */
-			if (G->busy) {
-				if (G->type == G_SCOUT)
-					busyScouts++;
-				continue;
-			}
-			/* Don't assign a plan to an empty group */
-			if (G->units.empty())
-				continue;
-
-			int target     = -1;
-			float strength = MAX_FLOAT;
-			task plan      = UNKNOWN;
-
-			switch(G->type) {
-				case G_ATTACKER:
-					target   = selectAttackTarget(*G);
-					strength = G->strength;
-					plan     = ATTACK;
-					/* Group isn't ``mature'' enough */
- 					if (isNew && i->second.units.size() < groupSize)
-						continue;
-				break;
-				case G_SCOUT:
-					target   = selectHarrasTarget(*G);
-					strength = MAX_FLOAT; /* Make sure to always harras */
-					plan     = HARRAS;
-					newScouts++;
-				break;
-				default: continue;
-			}
-
-			if (target != -1) {
-				float3 goal = ai->cheat->GetUnitPos(target);
-				float enemyStrength = ai->threatMap->getThreat(goal, G->range);
-
-				/* If we can confront the enemy, do so */
-				if (strength >= enemyStrength) {
-
-					/* Add the taskplan */
-					ai->tasks->addMilitaryPlan(plan, *G, target);
-
-					/* We are now busy */
-					G->busy = true;
-
-					/* Bootstrap the path */
-					float3 start = G->pos();
-					ai->pf->addGroup(*G, start, goal); 
-
-					/* If this was the new group, get another one */
-					if (isNew) createNewGroup(G->type, factory);
-				}
-			}
+		/* This group is busy, don't bother */
+		if (group->busy) {
+			busyScouts++;
+			continue;
 		}
+
+		int target = selectHarrasTarget(*group);
+
+		/* There are no targets available */
+		if (target == -1) 
+			break;
+
+		std::vector<CGroup*> V; V.push_back(group);
+		ai->tasks->addAttackTask(target, V);
 	}
+
+	std::vector<CGroup*> mergable;
+	for (i = activeAttackGroups.begin(); i != activeAttackGroups.end(); i++) {
+		CGroup *group = i->second;
+
+		/* This group is busy, don't bother */
+		if (group->busy)
+			continue;
+
+		int target = selectAttackTarget(*group);
+
+		/* There are no targets available */
+		if (target == -1) 
+			break;
+		
+		float3 goal = ai->cheat->GetUnitPos(target);
+		float enemyStrength = ai->threatMap->getThreat(goal, group->range);
+
+		/* Not strong enough */
+		if (enemyStrength > group->strength) {
+			mergable.push_back(group);
+			continue;
+		}
+
+		std::vector<CGroup*> V; V.push_back(group);
+		ai->tasks->addAttackTask(target, V);
+	}
+
+	/* Join forces */
+	if (mergable.size() >= 2)
+		ai->tasks->addMergeTask(mergable);
+
 	/* Always have enough scouts */
-	if (busyScouts+newScouts == 0)
+	if (activeScoutGroups.size() == 0)
 		ai->wl->push(SCOUT, HIGH);
-	else if (newScouts == 0)
+	else if ((activeScoutGroups.size()-busyScouts) == 0)
 		ai->wl->push(SCOUT, NORMAL);
 
 	/* Always build some unit */
 	ai->wl->push(randomUnit(), NORMAL);
 }
-
-void CMilitary::initSubGroups(int factory) {
-	std::map<int, CGroup*> subgroups;
-	groups[factory]      = subgroups;
-	attackGroup[factory] = 0;
-	scoutGroup[factory]  = 0;
-	createNewGroup(G_SCOUT, factory);
-	createNewGroup(G_ATTACKER, factory);
-}
-
-void CMilitary::createNewGroup(groupType type, int factory) {
-	int group;
-	switch (type) {
-		case G_ATTACKER:
-			attackGroup[factory]++;
-			group     = attackGroup[factory];
-			groupSize = rng.RandInt(maxGroupSize-minGroupSize) + minGroupSize;
-		break;
-		case G_SCOUT:
-			scoutGroup[factory]--;
-			group     = scoutGroup[factory];
-		break;
-		default: return;
-	}
-
-	CGroup *G = requestGroup(type);
-	groups[factory][group] = G;
-	sprintf(buf, "[CMilitary::createNewGroup]\tfactory(%d) group(%d)", factory, group);
-	LOGN(buf);
-}
-
-void CMilitary::addToGroup(int factory, int unit, groupType type) {
-	int group;
-	switch (type) {
-		case G_ATTACKER:
-			group = attackGroup[factory];
-		break;
-		case G_SCOUT:
-			group = scoutGroup[factory];
-		break;
-		default: return;
-	}
-	groups[factory][group].add(unit);
-	units[factory][unit] = group;
-}
-
-void CMilitary::removeFromGroup(int factory, int unit) {
-	int group = units[factory][unit];
-	groups[factory][group].remove(unit);
-	units[factory].erase(unit);
-	bool isNew = (group == attackGroup[factory] || 
-				  group == scoutGroup[factory]);
-				  
-	if (groups[factory][group].units.empty() && group != isNew) {
-		groups.erase(group);
-		ai->tasks->militaryplans.erase(group);
-		ai->pf->removeGroup(groups[factory][group]);
-	}
-}
-
-/*
-void CMilitary::mergeGroups(CMyGroup &a, CMyGroup &b) {
-	ai->tasks->addMergePlan(a, b);
-}
-*/
 
 unsigned CMilitary::randomUnit() {
 	float r = rng.RandFloat();
