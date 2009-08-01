@@ -2,8 +2,6 @@
 
 CMilitary::CMilitary(AIClasses *ai) {
 	this->ai      = ai;
-	minGroupSize  = 3;
-	maxGroupSize  = 7;
 }
 
 void CMilitary::remove(ARegHandler &group) {

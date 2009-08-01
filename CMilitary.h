@@ -58,13 +58,6 @@ class CMilitary: public ARegistrar {
 		int selectTarget(float3 &ourPos, std::vector<int> &targets,
 						 std::vector<int> &occupied);
 
-		/* Group size (while respecting the enemy strength) */
-		int groupSize;
-		/* Minimal group size */
-		int minGroupSize;
-		/* Maximal group size */
-		int maxGroupSize;
-
 		/* Request a random unit for building */
 		unsigned randomUnit();
 
