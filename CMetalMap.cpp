@@ -32,15 +32,13 @@ CMetalMap::~CMetalMap() {
 	delete[] bestCoverage;
 }
 
-CMetalMap::remove(ARegistrar &unit) {
-	if (unit.type->cats&BUILDER)
-		taken.erase(unit.key);
-	else if (unit.type->cats&MEXTRACTOR)
-		removeFromTaken(unit.key);
+CMetalMap::remove(ARegistrar &mex) {
+	removeFromTaken(mex.key);
 }
 
-CMetalMap::addUnit(ARegistrar &unit) {
-	unit.reg(*this);
+CMetalMap::addUnit(ARegistrar &mex) {
+	mex.reg(*this);
+	taken[mex.key] = ai->call->GetUnitPos(mex.key);
 }
 
 void CMetalMap::findBestSpots() {

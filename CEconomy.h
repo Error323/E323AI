@@ -1,13 +1,19 @@
 #ifndef CECONOMY_H
 #define CECONOMY_H
 
+#include <map>
+#include <vector>
+#include <stack>
+
+#include "ARegistrar.h"
+#include "CGroup.h"
 #include "CE323AI.h"
 
-#define alpha 0.001f
+const float alpha = 0.001f;
 
-class CEconomy {
+class CEconomy: public ARegistrar {
 	public:
-		CEconomy(AIClasses *ai);
+		CEconomy(AIClasses *ai): ARegistrar(700);
 		~CEconomy(){};
 
 		/* overal mNow averaged over 5 logical frames */
@@ -34,8 +40,14 @@ class CEconomy {
 		/* stalling vars, updated in preventStalling() */
 		bool mstall, estall, stalling, exceeding;
 
+		/* Overload */
+		void remove(ARegistrar &group);
+
+		/* Add a new unit */
+		void addUnit(CUnit &unit);
+
 		/* Initialize economy module */
-		void init(int unit);
+		void init(CUnit &unit);
 
 		/* Update the eco system */
 		void update(int frame);
@@ -54,8 +66,6 @@ class CEconomy {
 		std::map<int, bool>      gameFactories;         /* <unit id factory, isproducing> */
 		std::map<int, UnitType*> gameFactoriesBuilding; /* <unit id builder, building> */
 		std::map<int, UnitType*> gameBuilders;
-		std::map<int, UnitType*> gameMetal;
-		std::map<int, UnitType*> gameEnergy;
 		std::map<int, UnitType*> gameIdle;
 		std::map<int, UnitType*> gameWaiting;
 		std::map<int, int>       gameGuarding;          /* <unit id guarder, unit id guarding> */

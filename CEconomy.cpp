@@ -2,18 +2,18 @@
 
 CEconomy::CEconomy(AIClasses *ai) {
 	this->ai = ai;
-	incomes = 0;
-	mNow = mNowSummed = eNow = eNowSummed = 0.0f;
-	mIncome = mIncomeSummed = eIncome = eIncomeSummed = 0.0f;
+	incomes  = 0;
+	mNow     = mNowSummed     = eNow     = eNowSummed     = 0.0f;
+	mIncome  = mIncomeSummed  = eIncome  = eIncomeSummed  = 0.0f;
 	uMIncome = uMIncomeSummed = uEIncome = uEIncomeSummed = 0.0f;
-	mUsage = mUsageSummed = eUsage = eUsageSummed = 0.0f;
-	mStorage = eStorage = 0.0f;
+	mUsage   = mUsageSummed   = eUsage   = eUsageSummed   = 0.0f;
+	mStorage = eStorage                                   = 0.0f;
 }
 
-void CEconomy::init(int unit) {
-	const UnitDef *ud = ai->call->GetUnitDef(unit);
+void CEconomy::init(CUnit &unit) {
+	const UnitDef *ud = ai->call->GetUnitDef(unit.key);
 	UnitType *utCommander = UT(ud->id);
-	gameIdle[unit] = utCommander;
+	gameIdle[unit.key] = utCommander;
 	mRequest = eRequest = false;
 
 	factory = ai->unitTable->canBuild(utCommander, KBOT|TECH1);
@@ -30,6 +30,18 @@ void CEconomy::init(int unit) {
 	energyProvider = windProf > solarProf ? utWind : utSolar;
 	sprintf(buf, "Energy provider: %s", energyProvider->def->humanName.c_str());
 	LOGN(buf);
+}
+
+void CEconomy::addUnit(CUnit &unit) {
+	unsigned c = unit.type->cats;
+	if (c&FACTORY)
+		gameFactories[unit.key] = false;
+
+	else if (c&BUILDER && c&MOBILE)
+		unit.moveForward(-70.0f);
+
+	else if (c&MMAKER)
+		gameMetalMakers[unit.key] = true;
 }
 
 void CEconomy::update(int frame) {

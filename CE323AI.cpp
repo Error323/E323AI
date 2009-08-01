@@ -77,20 +77,12 @@ void CE323AI::UnitCreated(int uid, int bid) {
 	CUnit *unit    = ai->unitTable->requestUnit(uid, bid);
 	unsigned int c = unit->type->cats;
 
-	if (unit->def->isCommander) {
+	if (unit->def->isCommander)
 		ai->eco->init(unit);
-	}
 
-	if (c&MEXTRACTOR) {
+	if (c&MEXTRACTOR)
 		ai->metalMap->addUnit(*unit);
-		//ai->metalMap->taken[unit] = ai->call->GetUnitPos(unit);
-	}
-	else if (c&MMAKER) {
-		ai->eco->addUnit(*unit);
-		//ai->eco->gameMetalMakers[unit] = true;
-	}
 
-	//ai->eco->gameBuilding[uid] = builder;
 	sprintf(buf, "[CE323AI::UnitCreated]\t %s(%d) created", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
 }
