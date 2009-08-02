@@ -43,6 +43,12 @@ class CMilitary: public ARegistrar {
 		/* The free slots (CUnit instances that are zombie-ish) */
 		std::stack<int>     free;
 
+		/* The ingame scout groups */
+		std::map<int, CGroup*> activeScoutGroups;
+
+		/* The ingame attack groups */
+		std::map<int, CGroup*> activeAttackGroups;
+
 		/* Occupied targets */
 		std::vector<int> occupiedTargets;
 

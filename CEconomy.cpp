@@ -32,13 +32,51 @@ void CEconomy::init(CUnit &unit) {
 	LOGN(buf);
 }
 
+CGroup* CEconomy::requestGroup() {
+	CGroup *group = NULL;
+	int index     = 0;
+
+	/* Create a new slot */
+	if (free.empty()) {
+		CGroup g(ai);
+		groups.push_back(g);
+		group = &groups.back();
+		index = groups.size()-1;
+	}
+
+	/* Use top free slot from stack */
+	else {
+		index = free.top(); free.pop();
+		group = &groups[index];
+		group->reset();
+	}
+
+	lookup[group.key] = index;
+	group->reg(*this);
+	activeGroups[group->key] = group;
+	return group;
+}
+
+void CEconomy::remove(ARegHandler &group) {
+	free.push(lookup[group.key]);
+	lookup.erase(group.key);
+	activeGroups.remove(group.key);
+
+	std::list<ARegistrar*>::iterator i;
+	for (i = records.begin(); i != records.end(); i++)
+		(*i)->remove(group);
+}
+
 void CEconomy::addUnit(CUnit &unit) {
 	unsigned c = unit.type->cats;
 	if (c&FACTORY)
 		gameFactories[unit.key] = false;
 
-	else if (c&BUILDER && c&MOBILE)
+	else if (c&BUILDER && c&MOBILE) {
 		unit.moveForward(-70.0f);
+		CGroup *group = requestGroup();
+		group->addUnit(unit);
+	}
 
 	else if (c&MMAKER)
 		gameMetalMakers[unit.key] = true;

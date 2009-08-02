@@ -109,6 +109,9 @@ void CUnitTable::remove(ARegHandler &unit) {
 	free.push(lookup[unit.key]);
 	lookup.erase(unit.key);
 	builders.erase(unit.key);
+	factories.erase(unit.key);
+	metalMakers.erase(unit.key);
+	factoriesBuilding.erase(unit.key);
 }
 
 CUnit* CUnitTable::getUnit(int uid) {

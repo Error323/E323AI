@@ -40,6 +40,9 @@ class CEconomy: public ARegistrar {
 		/* stalling vars, updated in preventStalling() */
 		bool mstall, estall, stalling, exceeding;
 
+		/* Returns a fresh CGroup instance */
+		CGroup* requestGroup();
+
 		/* Overload */
 		void remove(ARegistrar &group);
 
@@ -61,22 +64,20 @@ class CEconomy: public ARegistrar {
 		/* Remove guards of a unit */
 		void removeMyGuards(int unit);
 
-		/* Eco related units */
-		std::map<int, bool>      gameMetalMakers;       /* <unit id metalmaker, isproducing> */
-		std::map<int, bool>      gameFactories;         /* <unit id factory, isproducing> */
-		std::map<int, UnitType*> gameFactoriesBuilding; /* <unit id builder, building> */
-		std::map<int, UnitType*> gameBuilders;
-		std::map<int, UnitType*> gameIdle;
-		std::map<int, UnitType*> gameWaiting;
-		std::map<int, int>       gameGuarding;          /* <unit id guarder, unit id guarding> */
-		std::map<int, int>       gameBuilding;          /* <unit id building, unit id builder> */
-
-		/* To remove */
-		std::vector<int> removeFromIdle;
-		std::vector<int> removeFromGuarding;
-
 	private:
 		AIClasses *ai;
+
+		/* The group container */
+		std::vector<CGroup> groups;
+
+		/* The <unitid, vectoridx> table */
+		std::map<int, int>  lookup;
+
+		/* The free slots (CUnit instances that are zombie-ish) */
+		std::stack<int>     free;
+
+		/* Active groups ingame */
+		std::map<int, CGroup*> activeGroups;
 
 		/* Can we afford to build this ? */
 		bool canAffordToBuild(int builder, UnitType *utToBuild);

@@ -35,8 +35,11 @@ class CUnitTable: public ARegistrar {
 		/* movetypes, used by pathfinder */
 		std::map<int, MoveData*>  moveTypes;
 
-		/* The ingame-builderid of a unit and if what its building is finished */
-		std::map<int, bool>     builders;
+		/* Ingame units, set in eco module */
+		std::map<int, bool>       builders;
+		std::map<int, bool>       factories;
+		std::map<int, bool>       metalMakers;
+		std::map<int, UnitType*>  factoriesBuilding;
 
 		/* Special commander hook, since it's the first to spawn */
 		UnitType *comm;
