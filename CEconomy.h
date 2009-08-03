@@ -38,7 +38,7 @@ class CEconomy: public ARegistrar {
 		float eStorage;
 
 		/* stalling vars, updated in preventStalling() */
-		bool mstall, estall, stalling, exceeding;
+		bool mstall, estall, stalling, mexceeding, eexceeding, exceeding;
 
 		/* Returns a fresh CGroup instance */
 		CGroup* requestGroup();
@@ -58,12 +58,6 @@ class CEconomy: public ARegistrar {
 		/* Update averaged incomes */
 		void updateIncomes(int frame);
 
-		/* Put unit in a remove vector */
-		void removeIdleUnit(int unit);
-
-		/* Remove guards of a unit */
-		void removeMyGuards(int unit);
-
 	private:
 		AIClasses *ai;
 
@@ -79,24 +73,6 @@ class CEconomy: public ARegistrar {
 		/* Active groups ingame */
 		std::map<int, CGroup*> activeGroups;
 
-		/* Can we afford to build this ? */
-		bool canAffordToBuild(int builder, UnitType *utToBuild);
-
-		/* Can we afford to assist a factory ? */
-		bool canAffordToAssistFactory(int unit, int &fac);
-
-		/* Get the amount of guarding units guarding this unit */
-		int getGuardings(int unit);
-
-		/* See if we can help (guard) a unit with a certain task */
-		bool canHelp(task t, int helper, int &unit, UnitType *utToBuild);
-
-		/* Update ingame-unit tables */
-		void updateTables();
-
-		/* Prevent stalling */
-		void preventStalling();
-
 		/* buffer */
 		char buf[1024];
 
@@ -108,6 +84,19 @@ class CEconomy: public ARegistrar {
 
 		/* updateIncomes counter */
 		unsigned int incomes;
+
+		/* Can we afford to build this ? */
+		bool canAffordToBuild(CGroup &group, UnitType *utToBuild);
+
+		/* Can we afford to assist a factory ? */
+		ATask* canAssistFactory(buildType t, CGroup &group);
+
+		/* See if we can help with a certain task */
+		ATask* CEconomy::canAssist(buildType t, CGroup &group);
+
+		/* Prevent stalling */
+		void preventStalling();
+
 };
 
 #endif

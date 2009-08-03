@@ -93,4 +93,13 @@ enum buildPriority {
 	HIGH   = 2
 };
 
+/* Build tasks */
+enum buildTask {
+	BUILD_MMAKER,
+	BUILD_EMAKER,
+	BUILD_AA_DEFENSE,
+	BUILD_AG_DEFENSE,
+	BUILD_FACTORY
+};
+
 #endif

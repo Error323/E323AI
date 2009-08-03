@@ -8,19 +8,20 @@
 #include "CE323AI.h"
 #include "ARegistrar.h"
 
-enum task{BUILD, ASSIST, ATTACK, MERGE};
+enum task{BUILD, ASSIST, ATTACK, MERGE, FACTORY};
 
 class ATask: public ARegistrar {
 	public:
 		ATask(task _t, float3 &pos): 
 			ARegistrar(counter), t(_t), pos(_pos) {
 			counter++;
+			isMoving = true;
 		}
 		~ATask(){}
 
 		static int counter;
 
-		/* The task in {BUILD, ASSIST, ATTACK, MERGE} */
+		/* The task in {BUILD, ASSIST, ATTACK, MERGE, FACTORY} */
 		task t;
 
 		/* The group(s) involved */
@@ -28,6 +29,9 @@ class ATask: public ARegistrar {
 
 		/* Determine if the group is moving or in the final stage */
 		std::map<int, bool> moving;
+
+		/* Determine if all groups in this task are moving or not */
+		bool isMoving;
 
 		/* The position to navigate too */
 		float3 pos;
@@ -40,6 +44,7 @@ class ATask: public ARegistrar {
 			for (i = groups.begin(); i != groups.end(); i++) {
 				i->second->unreg(*this);
 				i->second->busy = false;
+				i->second->stop();
 			}
 			
 			std::list<ARegistrar*>::iterator j;
@@ -85,8 +90,11 @@ class CTaskHandler: public ARegistrar {
 		~CTaskHandler(){};
 
 		struct BuildTask: public ATask {
-			BuildTask(float3 &pos, UnitType *_toBuild): 
-				ATask(BUILD, pos), toBuild(_toBuild) {}
+			BuildTask(float3 &pos, buildType _bt, UnitType *_toBuild): 
+				ATask(BUILD, pos), bt(_bt), toBuild(_toBuild) {}
+
+			/* The build task */
+			buildTask bt;
 
 			/* The UnitType to build */
 			UnitType *toBuild;
@@ -102,6 +110,7 @@ class CTaskHandler: public ARegistrar {
 						group->build(pos, toBuild);
 						moving[group->key] = false;
 						ai->pf->remove(*group);
+						isMoving = false;
 					}
 
 					/* We are building, lets see if it finished already */
@@ -112,6 +121,23 @@ class CTaskHandler: public ARegistrar {
 
 				if (hasFinished)
 					remove();
+			}
+		};
+
+		struct FactoryTask: public ATask {
+			FactoryTask(CUnit &unit): 
+				ATask(FACTORY, ai->call->GetUnitPos(unit.key)), factory(&unit) {}
+
+			CUnit *factory;
+
+			/* If a factory is idle, make sure it gets something to build */
+			void update() {
+				if (!ai->unitTable->factories[factory->key] && !ai->wl->empty(factory)) {
+					UnitType *ut = ai->wl->top(factory);
+					factory->factoryBuild(ut);
+					ai->unitTable->factoriesBuilding[factory->key] = ut;
+					ai->unitTable->factories[factory->key] = true;
+				}
 			}
 		};
 
@@ -138,6 +164,7 @@ class CTaskHandler: public ARegistrar {
 						group->assist(*assist);
 						moving[group->key] = false;
 						ai->pf->remove(*group);
+						isMoving = false;
 					}
 				}
 			}
@@ -221,18 +248,22 @@ class CTaskHandler: public ARegistrar {
 		std::map<int, AssistTask*> activeAssistTasks;
 		std::map<int, AttackTask*> activeAttackTasks;
 		std::map<int, MergeTask*> activeMergeTasks;
+		std::map<int, FactoryTask*> activeFactoryTasks;
 
 		/* Add a fresh build task */
-		void addBuildTask(float3 &pos, UnitType *toBuild, std::vector<CGroup*> &groups);
+		void addBuildTask(UnitType *toBuild, std::vector<CGroup*> &groups);
 
 		/* Add a fresh assist task */
-		void addAssistTask(float3 &pos, ATask &task, std::vector<CGroup*> &groups);
+		void addAssistTask(ATask &task, std::vector<CGroup*> &groups);
 
 		/* Add a fresh attack task */
 		void addAttackTask(int target, std::vector<CGroup*> &groups);
 
 		/* Add a fresh merge task */
 		void addMergeTask(std::vector<CGroup*> &groups);
+
+		/* Add a fresh factory task */
+		void addFactoryTask(CUnit &factory);
 
 		/* Update call */
 		void update();
@@ -249,6 +280,9 @@ class CTaskHandler: public ARegistrar {
 
 		/* Add a task */
 		void addTask(ATask &t, std::vector<CGroup*> &groups);
+
+		/* Calculate avg range and pos of groups */
+		void getGroupsRangeAndPos(std::vector<CGroup*> &groups, float &range, float3 &pos);
 };
 
 #endif
