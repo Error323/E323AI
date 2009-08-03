@@ -26,6 +26,12 @@ class CGroup: public ARegistrar {
 		/* The group strength */
 		float strength;
 
+		/* The group's moveSpeed */
+		float speed;
+
+		/* The group's buildSpeed */
+		float buildSpeed;
+
 		/* The group maxrange */
 		float range;
 
@@ -55,6 +61,13 @@ class CGroup: public ARegistrar {
 
 		/* Get the position of the group */
 		float3 pos();
+
+		void assist(ATask &task);
+		void attack(int target);
+		void build(float3 &pos, UnitType *ut);
+		void stop();
+		void move(float3 &pos, bool enqueue = false);
+		void guard(int target, bool enqueue = false);
 
 		/* Get the maximal lateral dispersion */
 		int maxLength();

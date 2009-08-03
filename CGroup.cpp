@@ -17,8 +17,10 @@ void CGroup::addUnit(CUnit &unit) {
 		maxSlope = md->maxSlope;
 	}
 		
-	strength += ai->call->GetUnitPower(unit.key);
+	strength   += ai->call->GetUnitPower(unit.key);
+	buildSpeed += unit.def->buildSpeed;
 	range = std::max<float>(ai->call->GetUnitMaxRange(unit.key), range);
+	speed = std::min<float>(ai->call->GetUnitSpeed(unit.key), speed);
 
 	waiters[unit.key] = false;
 	units[unit.key]   = &unit;
@@ -39,7 +41,8 @@ void CGroup::remove(ARegistrar &unit) {
 	waiters.erase(unit.key);
 	units.erase(unit.key);
 
-	strength = 0.0f;
+	strength = buildSpeed = 0.0f;
+	speed = MAX_FLOAT;
 	MoveData* md;
 
 	/* Recalculate range, strength and maxSlope of the group */
@@ -47,9 +50,11 @@ void CGroup::remove(ARegistrar &unit) {
 	maxSlope = 1.0f;
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++) {
-		range     = std::max<float>(ai->call->GetUnitMaxRange(i->first), range);
-		strength += ai->call->GetUnitPower(i->first);
-		md        = ai->call->GetUnitDef(i->first)->movedata;
+		range       = std::max<float>(ai->call->GetUnitMaxRange(i->first), range);
+		speed       = std::min<float>(ai->call->GetUnitSpeed(i->first), speed);
+		strength   += ai->call->GetUnitPower(i->first);
+		buildSpeed += i->second->def->buildSpeed;
+		md          = ai->call->GetUnitDef(i->first)->movedata;
 		if (md->maxSlope <= maxSlope) {
 			moveType = md->pathType;
 			maxSlope = md->maxSlope;
@@ -66,6 +71,8 @@ void CGroup::remove(ARegistrar &unit) {
 
 void CGroup::reset() {
 	strength   = 0.0f;
+	speed      = MAX_FLOAT;
+	buildSpeed = 0.0f;
 	range      = 0.0f;
 	busy       = false;
 	maxSlope   = 1.0f;
@@ -98,4 +105,60 @@ float3 CGroup::pos() {
 
 int CGroup::maxLength() {
 	return units.size()*50;
+}
+
+void CGroup::assist(ATask &task) {
+	switch(task.t) {
+		case BUILD:
+			BuildTask *task = dynamic_cast<BuildTask*>(&task);
+			CGroup *group = task->groups.begin()->second;
+			CUnit  *unit  = group->units.begin()->second;
+			guard(unit->key);
+		break;
+
+		case ATTACK:
+			//TODO: Calculate the flanking pos and attack from there
+			AttackTask *task = dynamic_cast<AttackTask*>(&task);
+			attack(task->target);
+		break;
+
+		case FACTORY:
+			FactoryTask *task = dynamic_cast<FactoryTask*>(&task);
+			guard(task->factory->key);
+		break;
+
+		default: return;
+	}
+}
+
+void CGroup::move(float3 &pos, bool enqueue) {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++)
+		i->second->move(pos, enqueue);
+}
+
+void CGroup::attack(int target) {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++) {
+		i->second->attack(target);
+}
+
+void CGroup::build(float3 &pos, UnitType *ut) {
+	std::map<int, CUnit*>::iterator alpha, i;
+	alpha = units.begin();
+	alpha->second->build(ut, pos);
+	for (i = ++alpha; i != units.end(); i++)
+		i->second->guard(alpha->first);
+}
+
+void CGroup::stop() {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++)
+		i->second->stop();
+}
+
+void CGroup::guard(int target, bool enqueue) {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++)
+		i->second->guard(target, enqueue);
 }

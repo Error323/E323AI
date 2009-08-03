@@ -123,7 +123,7 @@ void CEconomy::update(int frame) {
 			if (task != NULL)
 				ai->tasks->addAssistTask(*task, V);
 
-			else if (exceeding){
+			else if (eexceeding && mexceeding){
 				ATask *task = canAssist(BUILD_FACTORY, *group);
 				if (task != NULL)
 					ai->tasks->addAssistTask(*task, V);
@@ -145,41 +145,6 @@ void CEconomy::update(int frame) {
 	if (stalling || exceeding)
 		ai->wl->push(BUILDER, NORMAL);
 }
-
-
-//		else if (c&COMMANDER) {
-//			int fac;
-//			/* If we don't have enough metal income, build a mex */
-//			if ((mIncome - uMIncome) < 2.0f) {
-//				bool canBuildMex = ai->metalMap->buildMex(i->first, mex);
-//				if (!canBuildMex) {
-//					UnitType *mmaker = ai->unitTable->canBuild(ut, MMAKER);
-//					ai->metaCmds->build(i->first, mmaker, pos);
-//				}
-//			}
-//			/* If we don't have a factory, build one */
-//			else if (gameFactories.empty()) {
-//				if (canAffordToBuild(i->first, factory))
-//					ai->metaCmds->build(i->first, factory, pos);
-//			}
-//			/* If we don't have enough energy income, build a energy provider */
-//			else if (estall || eRequest) {
-//				if (canAffordToBuild(i->first, energyProvider)) {
-//					ai->metaCmds->build(i->first, energyProvider, pos);
-//					eRequest = false;
-//				}
-//				else if (energyProvider->id != utSolar->id) {
-//					if (canAffordToBuild(i->first, utSolar)) {
-//						ai->metaCmds->build(i->first, utSolar, pos);
-//						eRequest = false;
-//					}
-//				}
-//			}
-//			/* If we can afford to assist a factory, do so */
-//			else if (canAffordToAssistFactory(i->first,fac)) {
-//				ai->metaCmds->guard(i->first, fac);
-//			}
-//		}
 
 void CEconomy::preventStalling() {
 	std::map<int, bool>::iterator j;
@@ -295,7 +260,7 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 	best = suited.begin();
 	float buildTime  = best->second->toBuild->def->buildTime / (group.buildSpeed/32.0f);
 	float travelTime = best->first / (group.speed/30.0f);
-	if (travelTime <= buildTime)
+	if (travelTime < buildTime)
 		return best->second;
 	else
 		return NULL;
@@ -307,6 +272,7 @@ ATask* CEconomy::canAssistFactory(CGroup &group) {
 	float3 pos = group.pos();
 	for (i = ai->tasks->activeFactoryTasks.begin(); i != ai->tasks->activeFactoryTasks.end(); i++) {
 		current = i->second;
+		/* TODO: instead of euclid distance, use pathfinder distance */
 		float dist = (pos - task->pos).Length2D();
 
 		if (dist < bestDist) {
@@ -316,8 +282,11 @@ ATask* CEconomy::canAssistFactory(CGroup &group) {
 	}
 	if (best == NULL)
 		return NULL;
+	UnitType *ut = ai->unitTable->factoriesBuilding[best->factory->key];
+	if (ut == NULL)
+		return NULL;
 
-	if (canAffordToBuild(group, ai->unitTable->factoriesBuilding[best->factory->key]));
+	if (canAffordToBuild(group, ut));
 		return best;
 	else
 		return NULL;

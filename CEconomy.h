@@ -37,7 +37,7 @@ class CEconomy: public ARegistrar {
 		/* energy storage */
 		float eStorage;
 
-		/* stalling vars, updated in preventStalling() */
+		/* stalling vars, updated in updateIncomes() */
 		bool mstall, estall, stalling, mexceeding, eexceeding, exceeding;
 
 		/* Returns a fresh CGroup instance */
