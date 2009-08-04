@@ -28,6 +28,17 @@ void CEconomy::init(CUnit &unit) {
 
 	energyProvider  = windProf > solarProf ? utWind : utSolar;
 }
+		
+bool CEconomy::hasFinishedBuilding(CGroup &group) {
+	std::map<int, CUnit*>::iterator i;
+	for (i = group.units.begin(); i != group.units.end(); i++) {
+		CUnit *unit = i->second;
+		if (ai->unitTable->builders.find(unit->key) != ai->unitTable->builders.end() &&
+			ai->unitTable->builders[unit->key])
+			return true;
+	}
+	return false;
+}
 
 CGroup* CEconomy::requestGroup() {
 	CGroup *group = NULL;

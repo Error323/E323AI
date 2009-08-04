@@ -54,7 +54,7 @@ class ATask: public ARegistrar {
 		void addGroup(CGroup &group);
 
 		/* Reset this task for reuse */
-		void reset(float3 &p);
+		void reset();
 
 		/* Update this task */
 		virtual void update() = 0;
@@ -124,7 +124,7 @@ class CTaskHandler: public ARegistrar {
 		unsigned updateCount;
 
 		/* The ATask container per task type */
-		std::map<task, std::vector<ATask> > taskContainer;
+		std::map<task, std::vector<ATask*> > tasks;
 
 		/* The <task, taskid, vectorid> table */
 		std::map<task, std::map<int, int> > lookup;
@@ -170,8 +170,8 @@ class CTaskHandler: public ARegistrar {
 		/* The active tasks to update */
 		std::map<int, ATask*>       activeTasks;
 
-		/* Add a task */
-		ATask* addTask(ATask &t, std::vector<CGroup*> &groups);
+		/* Request an unoccupied task */
+		ATask* requestTask(task t, std::vector<CGroup*> &groups);
 
 		/* Calculate avg range and pos of groups */
 		void getGroupsRangeAndPos(std::vector<CGroup*> &groups, float &range, float3 &pos);

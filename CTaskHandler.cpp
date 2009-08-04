@@ -33,11 +33,11 @@ void ATask::addGroup(CGroup &group) {
 	moving[group.key] = true;
 }
 
-void ATask::reset(float3 &p) {
+void ATask::reset() {
 	records.clear();
 	groups.clear();
 	moving.clear();
-	pos = p;
+	isMoving = true;
 }
 
 CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500) {
@@ -52,8 +52,8 @@ CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500) {
 
 	std::map<task, std::string>::iterator i;
 	for (i = taskStr.begin(); i != taskStr.end(); i++) {
-		std::vector<ATask> V;
-		taskContainer[i->first] = V;
+		std::vector<ATask*> V;
+		tasks[i->first] = V;
 
 		std::map<int, int> M;
 		lookup[i->first] = M;
@@ -69,11 +69,11 @@ void CTaskHandler::remove(ARegistrar &task) {
 	lookup[t->t].erase(t->key);
 	activeTasks.erase(t->key);
 	switch(t->t) {
-		case BUILD:  activeBuildTasks.erase(t->key);  break;
-		case ASSIST: activeAssistTasks.erase(t->key); break;
-		case ATTACK: activeAttackTasks.erase(t->key); break;
-		case MERGE:  activeMergeTasks.erase(t->key);  break;
-		case FACTORY: activeFactoryTasks.erase(t->key); break;
+		case BUILD:         activeBuildTasks.erase(t->key);  break;
+		case ASSIST:        activeAssistTasks.erase(t->key); break;
+		case ATTACK:        activeAttackTasks.erase(t->key); break;
+		case MERGE:         activeMergeTasks.erase(t->key);  break;
+		case FACTORY_BUILD: activeFactoryTasks.erase(t->key); break;
 
 		default: return;
 	}
@@ -81,42 +81,41 @@ void CTaskHandler::remove(ARegistrar &task) {
 
 void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, std::vector<CGroup*> &groups, float3 pos) {
 	float range;
-	if (pos == NULLVECTOR) getGroupsRangeAndPos(groups, range, pos);
+	if (pos == NULLVECTOR) 
+		getGroupsRangeAndPos(groups, range, pos);
 
-	BuildTask bt(ai, pos, build, toBuild);
-	ATask *task = addTask(bt, groups);
-	activeBuildTasks[task->key] = dynamic_cast<BuildTask*>(task);
+	ATask *task = requestTask(BUILD, groups);
+
+	if (task == NULL) {
+		task = new BuildTask(ai, pos, build, toBuild);
+		BuildTask *buildTask = dynamic_cast<BuildTask*>(task);
+		activeBuildTasks[task->key] = buildTask;
+		activeTasks[task->key]      = task;
+	}
+	else {
+		BuildTask *buildTask        = dynamic_cast<BuildTask*>(task);
+		buildTask->pos              = pos;
+		buildTask->bt               = build;
+		buildTask->toBuild          = toBuild;
+		activeBuildTasks[task->key] = buildTask;
+	}
+
+	for (unsigned i = 0; i < groups.size(); i++)
+		task->addGroup(*groups[i]);
+
 	ai->pf->addTask(*task);
 }
 
 void CTaskHandler::addFactoryTask(CUnit &factory) {
-	std::vector<CGroup*> groups;
-	FactoryTask ft(ai, factory);
-	ATask *task = addTask(ft, groups);
-	activeFactoryTasks[task->key] = dynamic_cast<FactoryTask*>(task);
 }
 
 void CTaskHandler::addAssistTask(ATask &task, std::vector<CGroup*> &groups) {
-	AssistTask at(ai, task);
-	ATask *assistTask = addTask(at, groups);
-	activeAssistTasks[task.key] = dynamic_cast<AssistTask*>(assistTask);
-	ai->pf->addTask(*assistTask);
 }
 
 void CTaskHandler::addAttackTask(int target, std::vector<CGroup*> &groups) {
-	AttackTask at(ai, target);
-	ATask *task = addTask(at, groups);
-	activeAttackTasks[task->key] = dynamic_cast<AttackTask*>(task);
-	ai->pf->addTask(*task);
 }
 
 void CTaskHandler::addMergeTask(std::vector<CGroup*> &groups) {
-	float3 pos; float range;
-	getGroupsRangeAndPos(groups, range, pos);
-	MergeTask mt(ai, pos, range);
-	ATask *task = addTask(mt, groups);
-	activeMergeTasks[task->key] = dynamic_cast<MergeTask*>(task);
-	ai->pf->addTask(*task);
 }
 		
 void CTaskHandler::getGroupsRangeAndPos(std::vector<CGroup*> &groups, float &range, float3 &pos) {
@@ -140,27 +139,21 @@ void CTaskHandler::update() {
 	updateCount++;
 }
 
-ATask* CTaskHandler::addTask(ATask &at, std::vector<CGroup*> &groups) {
-	int index   = 0;
-	ATask *task = NULL;
+ATask* CTaskHandler::requestTask(task t, std::vector<CGroup*> &groups) {
+	/* If there are no free tasks of this type, return NULL */
+	if (free[t].empty()) 
+		return NULL;
 
-	/* Create a new slot */
-	if (free[at.t].empty()) {
-		taskContainer[at.t].push_back(at);
-		index = taskContainer[at.t].size() - 1;
-		task  = &taskContainer[at.t][index];
-	}
-	/* Use top free slot */
-	else {
-		index = free[at.t].top(); free[at.t].pop();
-		task  = &taskContainer[at.t][index];
-		task->reset(at.pos);
-	}
-	lookup[at.t][task->key] = index;
+	int index   = free[t].top(); free[t].pop();
+	ATask *task = tasks[t][index];
+	task->reset();
+	lookup[t][task->key] = index;
 	task->reg(*this);
 	activeTasks[task->key] = task;
+
 	for (unsigned i = 0; i < groups.size(); i++)
 		task->addGroup(*groups[i]);
+
 	sprintf(buf, 
 		"[CTaskHandler::addTask]\tTask %s(%d) created with %d groups",
 		taskStr[task->t].c_str(), 
@@ -168,6 +161,7 @@ ATask* CTaskHandler::addTask(ATask &at, std::vector<CGroup*> &groups) {
 		groups.size()
 	);
 	LOGN(buf);
+
 	return task;
 }
 

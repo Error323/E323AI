@@ -61,6 +61,8 @@ class CEconomy: public ARegistrar {
 		/* Update averaged incomes */
 		void updateIncomes(int frame);
 
+		bool hasFinishedBuilding(CGroup &group);
+
 	private:
 		AIClasses *ai;
 
