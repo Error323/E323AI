@@ -11,11 +11,8 @@
 
 class CUnitTable: public ARegistrar {
 	public:
-		CUnitTable(AIClasses *ai): ARegistrar(100);
+		CUnitTable(AIClasses *ai);
 		~CUnitTable() {};
-
-		/* Overload */
-		void remove(ARegistrar &obj);
 
 		/* Returns a fresh CUnit instance */
 		CUnit* requestUnit(int uid, int bid);
@@ -40,9 +37,13 @@ class CUnitTable: public ARegistrar {
 		std::map<int, bool>       factories;
 		std::map<int, bool>       metalMakers;
 		std::map<int, UnitType*>  factoriesBuilding;
+		std::map<int, CUnit*>     activeUnits;
 
 		/* Special commander hook, since it's the first to spawn */
 		UnitType *comm;
+
+		/* Overload */
+		void remove(ARegistrar &unit);
 
 		/* Returns a unittype with categories that ut can build */
 		UnitType* canBuild(UnitType *ut, unsigned int categories);

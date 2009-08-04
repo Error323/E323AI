@@ -9,11 +9,11 @@
 #include "CGroup.h"
 #include "CE323AI.h"
 
-enum groupType{SCOUT, ATTACK};
+enum groupType{SCOUT, ENGAGE};
 
 class CMilitary: public ARegistrar {
 	public:
-		CMilitary(AIClasses *ai): ARegistrar(200);
+		CMilitary(AIClasses *ai);
 		~CMilitary(){};
 
 		/* Overload */

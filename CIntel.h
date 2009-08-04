@@ -1,7 +1,9 @@
 #ifndef INTEL_H
 #define INTEL_H
 
-#include "E323AI.h"
+#include <vector>
+
+#include "CE323AI.h"
 
 class CIntel {
 	public:

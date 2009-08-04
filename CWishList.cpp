@@ -1,14 +1,14 @@
-#include "WishList.h"
+#include "CWishList.h"
 
 CWishList::CWishList(AIClasses *ai) {
 	this->ai = ai;
 }
 
 void CWishList::push(unsigned categories, buildPriority p) {
-	std::map<int, bool>::iterator itFac = ai->eco->gameFactories.begin();
+	std::map<int, bool>::iterator itFac = ai->unitTable->factories.begin();
 	UnitType *ut = NULL;
 	UnitType *fac;
-	for (;itFac != ai->eco->gameFactories.end(); itFac++) {
+	for (;itFac != ai->unitTable->factories.end(); itFac++) {
 		fac = UT(ai->call->GetUnitDef(itFac->first)->id);
 		ut = ai->unitTable->canBuild(fac, categories);
 		if (ut != NULL) { 

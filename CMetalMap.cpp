@@ -1,8 +1,8 @@
-#include "MetalMap.h"
+#include "CMetalMap.h"
 
 bool sortme(const CMetalMap::MSpot &a, const CMetalMap::MSpot &b) {return a.dist < b.dist;}
 
-CMetalMap::CMetalMap(AIClasses *ai) {
+CMetalMap::CMetalMap(AIClasses *ai): ARegistrar(300) {
 	this->ai = ai;
 	threshold = 64;
 
@@ -32,11 +32,11 @@ CMetalMap::~CMetalMap() {
 	delete[] bestCoverage;
 }
 
-CMetalMap::remove(ARegistrar &mex) {
+void CMetalMap::remove(ARegistrar &mex) {
 	removeFromTaken(mex.key);
 }
 
-CMetalMap::addUnit(ARegistrar &mex) {
+void CMetalMap::addUnit(CUnit &mex) {
 	mex.reg(*this);
 	taken[mex.key] = ai->call->GetUnitPos(mex.key);
 }
@@ -112,10 +112,10 @@ int CMetalMap::squareDist(int x, int z, int j, int i) {
 	return x*x + z*z;
 }
 
-bool CMetalMap::buildMex(CUnit *builder, UnitType *mex) {
+bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 	if (taken.size() == spots.size()) return false;
 	std::vector<MSpot> sorted;
-	float3 pos = ai->call->GetUnitPos(builder.key);
+	float3 pos = group.pos();
 	float pathLength;
 	MSpot *ms, *bestMs;
 	
@@ -130,7 +130,6 @@ bool CMetalMap::buildMex(CUnit *builder, UnitType *mex) {
 				skip = true;
 		}
 		if (skip) continue;
-		const UnitDef *ud = builder->def;
 		pathLength = (pos - ms->f).Length2D() - ms->c*EPSILON;
 		ms->dist = pathLength;
 		sorted.push_back(*ms);
@@ -150,8 +149,8 @@ bool CMetalMap::buildMex(CUnit *builder, UnitType *mex) {
 		
 	if (lowestThreat > 1.0f) return false;
 
-	ai->metalMap->taken[builder.key] = bestMs->f;
-	builder->build(mex, bestMs->f);
+	ai->metalMap->taken[group.key] = bestMs->f;
+	spot = bestMs->f;
 	return true;
 }
 

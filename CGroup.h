@@ -4,13 +4,20 @@
 #include "CE323AI.h"
 #include "ARegistrar.h"
 
+class ATask;
+class CUnit;
+
 /* NOTE: CGroup silently assumes that waterunits will not be merged with
  * non-water units as a group, aswell as builders with attackers
  */
 class CGroup: public ARegistrar {
 	public:
 
-		CGroup(AIClasses *ai, groupType type): ARegistrar(counter);
+		CGroup(AIClasses *ai): ARegistrar(counter) {
+			this->ai = ai;
+			reset();
+			counter++;
+		}
 		CGroup(){};
 		~CGroup(){};
 

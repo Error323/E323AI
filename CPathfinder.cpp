@@ -1,6 +1,6 @@
-#include "Pathfinder.h"
+#include "CPathfinder.h"
 
-CPathfinder::CPathfinder(AIClasses *ai) {
+CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	this->ai   = ai;
 	this->X    = int(ai->call->GetMapWidth() / THREATRES);
 	this->Z    = int(ai->call->GetMapHeight() / THREATRES);
@@ -83,12 +83,13 @@ void CPathfinder::addTask(ATask &task) {
 	task.reg(*this);
 	for (i = task.groups.begin(); i != task.groups.end(); i++) {
 		CGroup *group = i->second;
-		addGroup(*group, group->pos(), task.pos);
+		float3 pos = group->pos();
+		addGroup(*group, pos, task.pos);
 	}
 }
 
 void CPathfinder::remove(ARegistrar &obj) {
-	ATask *task = &(dynamic_cast<ATask>(obj));
+	ATask *task = dynamic_cast<ATask*>(&obj);
 	std::map<int, CGroup*>::iterator i;
 	for (i = task->groups.begin(); i != task->groups.end(); i++)
 		remove(*(i->second));
@@ -111,16 +112,16 @@ void CPathfinder::updateMap(float *weights) {
 
 void CPathfinder::updateFollowers() {
 	std::map<int, std::vector<float3> >::iterator path;
-	std::map<int, bool>::iterator u;
+	std::map<int, CUnit*>::iterator u;
 
-	int groupnr = 0;
+	unsigned groupnr = 0;
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		unsigned segment     = 1;
 		int     waypoint     = 1;
 		CGroup *group        = groups[path->first];
 		float maxGroupLength = group->maxLength();
-		std::map<float, int> M;
+		std::map<float, CUnit*> M;
 
 		/* Go through all the units in a group */
 		for (u = group->units.begin(); u != group->units.end(); u++) {
@@ -204,10 +205,11 @@ void CPathfinder::updatePaths() {
 	sprintf(buf, "CPathfinder::updatePaths]\tRepathing group(%d)", repathGroup);
 	LOGN(buf);
 
-	int target   = ai->tasks->getTarget(repathGroup);
-	float3 start = groups[repathGroup]->pos();
-	float3 goal  = ai->cheat->GetUnitPos(target);
-	addPath(repathGroup, start, goal);
+	// FIXME: this is wrong
+	// int target   = ai->tasks->getTarget(repathGroup);
+	// float3 start = groups[repathGroup]->pos();
+	// float3 goal  = ai->cheat->GetUnitPos(target);
+	// addPath(repathGroup, start, goal);
 }
 
 void CPathfinder::addGroup(CGroup &G, float3 &start, float3 &goal) {

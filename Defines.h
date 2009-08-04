@@ -63,13 +63,13 @@ enum unitCategory {
 
 	FACTORY      = (1<<8),
 	BUILDER      = (1<<9),
-	ASSIST       = (1<<10),
+	ASSISTER     = (1<<10),
 	RESURRECTOR  = (1<<11),
 
 	COMMANDER    = (1<<12),
 	ATTACKER     = (1<<13),
 	ANTIAIR      = (1<<14),
-	SCOUT        = (1<<15),
+	SCOUTER      = (1<<15),
 	ARTILLERY    = (1<<16),
 	SNIPER       = (1<<17),
 	ASSAULT      = (1<<18),
@@ -94,9 +94,9 @@ enum buildPriority {
 };
 
 /* Build tasks */
-enum buildTask {
-	BUILD_MMAKER,
-	BUILD_EMAKER,
+enum buildType {
+	BUILD_MPROVIDER,
+	BUILD_EPROVIDER,
 	BUILD_AA_DEFENSE,
 	BUILD_AG_DEFENSE,
 	BUILD_FACTORY

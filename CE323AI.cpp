@@ -78,7 +78,7 @@ void CE323AI::UnitCreated(int uid, int bid) {
 	unsigned int c = unit->type->cats;
 
 	if (unit->def->isCommander)
-		ai->eco->init(unit);
+		ai->eco->init(*unit);
 
 	if (c&MEXTRACTOR)
 		ai->metalMap->addUnit(*unit);
@@ -142,11 +142,6 @@ void CE323AI::UnitDestroyed(int uid, int attacker) {
 /* Called when unit is idle */
 void CE323AI::UnitIdle(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
-	unsigned int c = unit->type->cats;
-
-	if (!(c&ATTACKER) || c&COMMANDER) {
-		ai->eco->addUnit(*unit, true);
-	}
 	sprintf(buf, "[CE323AI::UnitIdle]\t %s(%d) idling", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
 }

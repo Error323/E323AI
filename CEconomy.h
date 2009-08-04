@@ -5,15 +5,18 @@
 #include <vector>
 #include <stack>
 
-#include "ARegistrar.h"
-#include "CGroup.h"
 #include "CE323AI.h"
+#include "ARegistrar.h"
+#include "Defines.h"
+
+class ATask;
+class CGroup;
 
 const float alpha = 0.001f;
 
 class CEconomy: public ARegistrar {
 	public:
-		CEconomy(AIClasses *ai): ARegistrar(700);
+		CEconomy(AIClasses *ai);
 		~CEconomy(){};
 
 		/* overal mNow averaged over 5 logical frames */
@@ -89,10 +92,10 @@ class CEconomy: public ARegistrar {
 		bool canAffordToBuild(CGroup &group, UnitType *utToBuild);
 
 		/* Can we afford to assist a factory ? */
-		ATask* canAssistFactory(buildType t, CGroup &group);
+		ATask* canAssistFactory(CGroup &group);
 
 		/* See if we can help with a certain task */
-		ATask* CEconomy::canAssist(buildType t, CGroup &group);
+		ATask* canAssist(buildType t, CGroup &group);
 
 		/* Prevent stalling */
 		void preventStalling();

@@ -2,12 +2,6 @@
 
 int CGroup::counter = 0;
 
-CGroup::CGroup(AIClasses *ai) {
-	this->ai = ai;
-	reset();
-	counter++;
-}
-
 void CGroup::addUnit(CUnit &unit) {
 	MoveData* md = ai->call->GetUnitDef(unit.key)->movedata;
 	assert(md != NULL); /* this would be bad */
@@ -82,9 +76,9 @@ void CGroup::reset() {
 }
 
 void CGroup::merge(CGroup &group) {
-	std::map<int, bool>::iterator i;
+	std::map<int, CUnit*>::iterator i;
 	for (i = group.units.begin(); i != group.units.end(); i++) {
-		CUnit *unit = ai->unitTable->getUnit(i->first);
+		CUnit *unit = i->second;
 		unit->stop();
 		addUnit(*unit);
 	}
@@ -92,7 +86,7 @@ void CGroup::merge(CGroup &group) {
 }
 
 float3 CGroup::pos() {
-	std::map<int, bool>::iterator i;
+	std::map<int, CUnit*>::iterator i;
 	float3 pos(0.0f, 0.0f, 0.0f);
 
 	for (i = units.begin(); i != units.end(); i++)
@@ -107,25 +101,28 @@ int CGroup::maxLength() {
 	return units.size()*50;
 }
 
-void CGroup::assist(ATask &task) {
-	switch(task.t) {
-		case BUILD:
-			BuildTask *task = dynamic_cast<BuildTask*>(&task);
+void CGroup::assist(ATask &t) {
+	switch(t.t) {
+		case BUILD: {
+			CTaskHandler::BuildTask *task = dynamic_cast<CTaskHandler::BuildTask*>(&t);
 			CGroup *group = task->groups.begin()->second;
 			CUnit  *unit  = group->units.begin()->second;
 			guard(unit->key);
-		break;
+			break;
+		}
 
-		case ATTACK:
+		case ATTACK: {
 			//TODO: Calculate the flanking pos and attack from there
-			AttackTask *task = dynamic_cast<AttackTask*>(&task);
+			CTaskHandler::AttackTask *task = dynamic_cast<CTaskHandler::AttackTask*>(&t);
 			attack(task->target);
-		break;
+			break;
+		}
 
-		case FACTORY:
-			FactoryTask *task = dynamic_cast<FactoryTask*>(&task);
+		case FACTORY_BUILD: {
+			CTaskHandler::FactoryTask *task = dynamic_cast<CTaskHandler::FactoryTask*>(&t);
 			guard(task->factory->key);
-		break;
+			break;
+		}
 
 		default: return;
 	}
@@ -139,7 +136,7 @@ void CGroup::move(float3 &pos, bool enqueue) {
 
 void CGroup::attack(int target) {
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++) {
+	for (i = units.begin(); i != units.end(); i++)
 		i->second->attack(target);
 }
 

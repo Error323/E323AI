@@ -1,7 +1,7 @@
 #ifndef WISHLIST_H
 #define WISHLIST_H
 
-#include "E323AI.h"
+#include "CE323AI.h"
 
 class CWishList {
 	friend class CEconomy;

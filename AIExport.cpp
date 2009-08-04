@@ -29,7 +29,7 @@
 
 // E323AI stuff
 #include "AIExport.h"
-#include "E323AI.h"
+#include "CE323AI.h"
 
 // teamId -> AI map
 static std::map<int, CAIGlobalAI*> myAIs;

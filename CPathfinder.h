@@ -10,7 +10,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 	public:
 		enum nodeType{BLOCKED, START, GOAL, NORMAL};
 
-		CPathfinder(AIClasses *ai): ARegistrar(600);
+		CPathfinder(AIClasses *ai);
 		~CPathfinder(){};
 
 

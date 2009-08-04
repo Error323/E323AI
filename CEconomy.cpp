@@ -1,6 +1,6 @@
 #include "CEconomy.h"
 
-CEconomy::CEconomy(AIClasses *ai) {
+CEconomy::CEconomy(AIClasses *ai): ARegistrar(700) {
 	this->ai = ai;
 	incomes  = 0;
 	mNow     = mNowSummed     = eNow     = eNowSummed     = 0.0f;
@@ -48,15 +48,15 @@ CGroup* CEconomy::requestGroup() {
 		group->reset();
 	}
 
-	lookup[group.key] = index;
+	lookup[group->key] = index;
 	group->reg(*this);
 	return group;
 }
 
-void CEconomy::remove(ARegHandler &group) {
+void CEconomy::remove(ARegistrar &group) {
 	free.push(lookup[group.key]);
 	lookup.erase(group.key);
-	activeGroups.remove(group.key);
+	activeGroups.erase(group.key);
 
 	std::list<ARegistrar*>::iterator i;
 	for (i = records.begin(); i != records.end(); i++)
@@ -94,15 +94,21 @@ void CEconomy::update(int frame) {
 		std::vector<CGroup*> V; V.push_back(group);
 
 		/* Increase eco income */
+		UnitType *ut = group->units.begin()->second->type;
 		if (stalling || mRequest || eRequest) {
 			if (mRequest || mstall) {
 				ATask *task = canAssist(BUILD_MPROVIDER, *group);
 				if (task != NULL)
 					ai->tasks->addAssistTask(*task, V);
 				else  {
-					bool canBuildMex = ai->metalMap->buildMex(*group, mex);
-					if (!canBuildMex) {
-						UnitType *mmaker = ai->unitTable->canBuild(*group, MMAKER);
+					float3 pos;
+					bool canBuildMex = ai->metalMap->getMexSpot(*group, pos);;
+					if (canBuildMex) {
+						UnitType *mex = ai->unitTable->canBuild(ut, MEXTRACTOR);
+						ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, V, pos);
+					}
+					else {
+						UnitType *mmaker = ai->unitTable->canBuild(ut, MMAKER);
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, V);
 					}
 				}
@@ -180,7 +186,7 @@ void CEconomy::preventStalling() {
 	}
 
 	/* Stop all guarding workers */
-	std::map<int,AssistTask*>::iterator i;
+	std::map<int,CTaskHandler::AssistTask*>::iterator i;
 	for (i = ai->tasks->activeAssistTasks.begin(); i != ai->tasks->activeAssistTasks.end(); i++) {
 		/* If the assisting group isn't moving, but actually assisting make them stop */
 		if (i->second->isMoving) 
@@ -212,13 +218,13 @@ void CEconomy::updateIncomes(int frame) {
 	mUsage   = alpha*(mUsageSummed / incomes)  + (1.0f-alpha)*(ai->call->GetMetalUsage());
 	eUsage   = alpha*(eUsageSummed / incomes)  + (1.0f-alpha)*(ai->call->GetEnergyUsage());
 
-	std::map<int, UnitType*>::iterator i;
+	std::map<int, CUnit*>::iterator i;
 	float mU = 0.0f, eU = 0.0f;
-	for (i = ai->unitTable->gameAllUnits.begin(); i != ai->unitTable->gameAllUnits.end(); i++) {
-		unsigned int c = i->second->cats;
+	for (i = ai->unitTable->activeUnits.begin(); i != ai->unitTable->activeUnits.end(); i++) {
+		unsigned int c = i->second->type->cats;
 		if (!(c&MMAKER) || !(c&EMAKER) || !(c&MEXTRACTOR)) {
-			mU += i->second->metalMake;
-			eU += i->second->energyMake;
+			mU += i->second->type->metalMake;
+			eU += i->second->type->energyMake;
 		}
 	}
 	uMIncomeSummed += mU;
@@ -237,12 +243,12 @@ void CEconomy::updateIncomes(int frame) {
 }
 
 ATask* CEconomy::canAssist(buildType t, CGroup &group) {
-	std::map<int, BuildTask*>::iterator i;
-	std::map<float, BuildTask*> suited;
-	std::map<float, BuildTask*>::iterator best;
+	std::map<int, CTaskHandler::BuildTask*>::iterator i;
+	std::map<float, CTaskHandler::BuildTask*> suited;
+	std::map<float, CTaskHandler::BuildTask*>::iterator best;
 	float3 pos = group.pos();
 	for (i = ai->tasks->activeBuildTasks.begin(); i != ai->tasks->activeBuildTasks.end(); i++) {
-		BuildTask *buildtask = i->second;
+		CTaskHandler::BuildTask *buildtask = i->second;
 
 		/* Only build tasks we are interested in */
 		if (buildtask->bt != t) continue;
@@ -267,13 +273,13 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 }
 
 ATask* CEconomy::canAssistFactory(CGroup &group) {
-	std::map<int, FactoryTask*>::iterator i;
-	FactoryTask *best = NULL;
+	std::map<int, CTaskHandler::FactoryTask*>::iterator i;
+	CTaskHandler::FactoryTask *best = NULL;
 	float3 pos = group.pos();
+	float bestDist = MAX_FLOAT;
 	for (i = ai->tasks->activeFactoryTasks.begin(); i != ai->tasks->activeFactoryTasks.end(); i++) {
-		current = i->second;
 		/* TODO: instead of euclid distance, use pathfinder distance */
-		float dist = (pos - task->pos).Length2D();
+		float dist = (pos - i->second->pos).Length2D();
 
 		if (dist < bestDist) {
 			bestDist = dist;
@@ -286,7 +292,7 @@ ATask* CEconomy::canAssistFactory(CGroup &group) {
 	if (ut == NULL)
 		return NULL;
 
-	if (canAffordToBuild(group, ut));
+	if (canAffordToBuild(group, ut))
 		return best;
 	else
 		return NULL;

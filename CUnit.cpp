@@ -1,23 +1,22 @@
 #include "CUnit.h"
 
-CUnit::CUnit(AIClasses *ai, int uid, int builder) {
-	this->ai  = ai;
-	reset(uid, builder);
-}
-
 void CUnit::remove() {
 	remove(*this);
 }
 
+float3 CUnit::pos() {
+	return ai->call->GetUnitPos(key);
+}
+
 void CUnit::remove(ARegistrar &reg) {
 	std::list<ARegistrar*>::iterator i;
-	for (i = registers.begin(); i != registers.end(); i++) {
+	for (i = records.begin(); i != records.end(); i++) {
 		(*i)->remove(reg);
 	}
 }
 
 void CUnit::reset(int uid, int builder) {
-	registers.clear();
+	records.clear();
 	this->key     = uid;
 	this->def     = ai->call->GetUnitDef(uid);
 	this->type    = UT(def->id);
@@ -51,7 +50,7 @@ bool CUnit::moveForward(float dist) {
 			pos.x -= dist;
 		break;
 	}
-	return move(key, pos);
+	return move(pos);
 }
 
 
@@ -74,7 +73,7 @@ bool CUnit::moveRandom(float radius, bool enqueue) {
 	newpos.x += pos.x;
 	newpos.y  = pos.y;
 	newpos.z += pos.z;
-	return move(key, newpos, enqueue);
+	return move(newpos, enqueue);
 }
 
 bool CUnit::move(float3 &pos, bool enqueue) {
@@ -84,7 +83,6 @@ bool CUnit::move(float3 &pos, bool enqueue) {
 		if (enqueue)
 			c.options |= SHIFT_KEY;
 		ai->call->GiveOrder(key, &c);
-		ai->eco->removeIdleUnit(key);
 		return true;
 	}
 	sprintf(buf, "[CUnit::move]\t %s(%d) moves", ai->call->GetUnitDef(key)->humanName.c_str(), key);
@@ -100,8 +98,6 @@ bool CUnit::guard(int target, bool enqueue) {
 		if (enqueue)
 			c.options |= SHIFT_KEY;
 		ai->call->GiveOrder(key, &c);
-		ai->eco->gameGuarding[key] = target;
-		ai->eco->removeIdleUnit(key);
 		const UnitDef *u = ai->call->GetUnitDef(key);
 		const UnitDef *t = ai->call->GetUnitDef(target);
 		sprintf(buf, "[CUnit::guard]\t %s(%d) guards %s(%d)", u->humanName.c_str(), key, t->humanName.c_str(), target);
@@ -116,7 +112,6 @@ bool CUnit::repair(int builder, int target) {
 
 	if (c.id != 0) {
 		ai->call->GiveOrder(builder, &c);
-		ai->eco->removeIdleUnit(builder);
 		const UnitDef *u = ai->call->GetUnitDef(builder);
 		const UnitDef *t = ai->call->GetUnitDef(target);
 		sprintf(buf, "[CUnit::repair]\t %s repairs %s", u->name.c_str(), t->name.c_str());
@@ -174,7 +169,6 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 				arrow.x -= dist;
 			break;
 		}
-		ai->eco->removeIdleUnit(builder);
 		sprintf(buf, "[CUnit::build]\t %s(%d) builds %s", ud->humanName.c_str(), builder, toBuild->def->humanName.c_str());
 		LOGN(buf);
 		return true;
@@ -205,7 +199,6 @@ bool CUnit::factoryBuild(UnitType *ut) {
 	Command c;
 	c.id = -(ut->def->id);
 	ai->call->GiveOrder(key, &c);
-	ai->eco->removeIdleUnit(key);
 	const UnitDef *u = ai->call->GetUnitDef(key);
 	sprintf(buf, "[CUnit::factoryBuild]\t %s(%d) builds %s", u->humanName.c_str(), key, ut->def->humanName.c_str());
 	LOGN(buf);

@@ -1,10 +1,10 @@
-#include "Military.h"
+#include "CMilitary.h"
 
-CMilitary::CMilitary(AIClasses *ai) {
+CMilitary::CMilitary(AIClasses *ai): ARegistrar(200) {
 	this->ai = ai;
 }
 
-void CMilitary::remove(ARegHandler &group) {
+void CMilitary::remove(ARegistrar &group) {
 	free.push(lookup[group.key]);
 	lookup.erase(group.key);
 	activeScoutGroups.remove(group.key);
@@ -19,9 +19,9 @@ void CMilitary::addUnit(CUnit &unit) {
 	unsigned c = unit.type->cats;
 
 	if (c&MOBILE) {
-		if (c&SCOUT) {
+		if (c&SCOUTER) {
 			/* A scout is initially alone */
-			CGroup *group = requestGroup(HARRAS);
+			CGroup *group = requestGroup(SCOUT);
 			group->addUnit(unit);
 		}
 		else {
@@ -30,7 +30,7 @@ void CMilitary::addUnit(CUnit &unit) {
 			 */
 			if (currentGroups.find(unit.builder) == currentGroups.end() ||
 				currentGroups[unit.builder]->busy) {
-				CGroup *group = requestGroup(ATTACK);
+				CGroup *group = requestGroup(ENGAGE);
 				currentGroups[unit.builder] = group
 			}
 			currentGroups[unit.builder]->addUnit(unit);
@@ -61,10 +61,10 @@ CGroup* CMilitary::requestGroup(groupType type) {
 	group->reg(*this);
 
 	switch(type) {
-		case HARRAS:
+		case SCOUT:
 			activeScoutGroups[group->key] = group;
 		break;
-		case ATTACK:
+		case ENGAGE:
 			activeAttackGroups[group->key] = group;
 		break;
 		default: return group;
@@ -203,9 +203,9 @@ void CMilitary::update(int frame) {
 
 	/* Always have enough scouts */
 	if (activeScoutGroups.size() == 0)
-		ai->wl->push(SCOUT, HIGH);
+		ai->wl->push(SCOUTER, HIGH);
 	else if ((activeScoutGroups.size()-busyScouts) == 0)
-		ai->wl->push(SCOUT, NORMAL);
+		ai->wl->push(SCOUTER, NORMAL);
 
 	/* Always build some unit */
 	ai->wl->push(randomUnit(), NORMAL);
@@ -218,5 +218,5 @@ unsigned CMilitary::randomUnit() {
 	else if(r >= 0.6)
 		return MOBILE|ANTIAIR;
 	else 
-		return MOBILE|SCOUT;
+		return MOBILE|SCOUTER;
 }

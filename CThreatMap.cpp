@@ -1,4 +1,4 @@
-#include "ThreatMap.h"
+#include "CThreatMap.h"
 
 CThreatMap::CThreatMap(AIClasses *ai) {
 	REAL = THREATRES*8.0f;

@@ -1,6 +1,6 @@
 #include "CUnitTable.h"
 
-CUnitTable::CUnitTable(AIClasses *ai) {
+CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	this->ai = ai;
 	/* techlevels */
 	categories[TECH1]       = "TECH1";  
@@ -17,14 +17,14 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 	/* builders */
 	categories[FACTORY]     = "FACTORY";    
 	categories[BUILDER]     = "BUILDER";    
-	categories[ASSIST]      = "ASSIST";      
+	categories[ASSISTER]    = "ASSISTER";      
 	categories[RESURRECTOR] = "RESURRECTOR";
 
 	/* offensives */
 	categories[COMMANDER]   = "COMMANDER";  
 	categories[ATTACKER]    = "ATTACKER";   
 	categories[ANTIAIR]     = "ANTIAIR";    
-	categories[SCOUT]       = "SCOUT";  
+	categories[SCOUTER]     = "SCOUTER";  
 	categories[ARTILLERY]   = "ARTILLERY";  
 	categories[SNIPER]      = "SNIPER";  
 	categories[ASSAULT]     = "ASSAULT";  
@@ -105,13 +105,14 @@ CUnitTable::CUnitTable(AIClasses *ai) {
 	UC.close();
 }
 
-void CUnitTable::remove(ARegHandler &unit) {
+void CUnitTable::remove(ARegistrar &unit) {
 	free.push(lookup[unit.key]);
 	lookup.erase(unit.key);
 	builders.erase(unit.key);
 	factories.erase(unit.key);
 	metalMakers.erase(unit.key);
 	factoriesBuilding.erase(unit.key);
+	activeUnits.erase(unit.key);
 }
 
 CUnit* CUnitTable::getUnit(int uid) {
@@ -140,6 +141,7 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	lookup[uid] = index;
 	unit->reg(*this);
 	builders[bid] = false;
+	activeUnits[uid] = unit;
 	return unit;
 }
 
@@ -230,7 +232,7 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 		cats |= BUILDER;
 
 	if (ud->canAssist)
-		cats |= ASSIST;
+		cats |= ASSISTER;
 
 	if (!ud->weapons.empty())
 		cats |= ATTACKER;
@@ -326,7 +328,7 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 				}
 			}
 			if (isCheapest) {
-				cats |= SCOUT;
+				cats |= SCOUTER;
 				break;
 			}
 		}

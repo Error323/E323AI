@@ -6,9 +6,11 @@
 
 #define SCALAR 16.0f
 
-class CMetalMap {
+class CGroup;
+
+class CMetalMap: public ARegistrar {
 	public:
-		CMetalMap(AIClasses *ai): ARegistrar(300);
+		CMetalMap(AIClasses *ai);
 		~CMetalMap();
 
 		/* Overload */
@@ -31,7 +33,7 @@ class CMetalMap {
 			}
 		};
 
-		bool buildMex(CUnit *builder, UnitType *mex);
+		bool getMexSpot(CGroup &group, float3 &pos);
 		void removeFromTaken(int mex);
 		std::map<int,float3> taken;
 

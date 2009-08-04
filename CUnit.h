@@ -15,11 +15,14 @@ enum quadrant {NORTH_WEST, NORTH_EAST, SOUTH_WEST, SOUTH_EAST};
 class CUnit: public ARegistrar {
 	public:
 		CUnit(): ARegistrar() {}
-		CUnit(AIClasses *ai, int uid, int builder): ARegistrar(uid);
+		CUnit(AIClasses *ai, int uid, int builder): ARegistrar(uid) {
+			this->ai = ai;
+			reset(uid, builder);
+		}
 		~CUnit(){}
 
 		const UnitDef *def;
-		const UnitType *type;
+		UnitType *type;
 		int   builder;
 
 		/* Remove the unit from everywhere registered */
@@ -65,6 +68,8 @@ class CUnit: public ARegistrar {
 
 		/* Wait with what you are doing */
 		bool wait();
+
+		float3 pos();
 
 		/* Get best facing */
 		facing getBestFacing(float3 &pos);

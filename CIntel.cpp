@@ -1,4 +1,4 @@
-#include "Intel.h"
+#include "CIntel.h"
 
 CIntel::CIntel(AIClasses *ai) {
 	this->ai = ai;
