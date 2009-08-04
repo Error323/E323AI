@@ -7,8 +7,8 @@ CMilitary::CMilitary(AIClasses *ai): ARegistrar(200) {
 void CMilitary::remove(ARegistrar &group) {
 	free.push(lookup[group.key]);
 	lookup.erase(group.key);
-	activeScoutGroups.remove(group.key);
-	activeAttackGroups.remove(group.key);
+	activeScoutGroups.erase(group.key);
+	activeAttackGroups.erase(group.key);
 
 	std::list<ARegistrar*>::iterator i;
 	for (i = records.begin(); i != records.end(); i++)
@@ -31,7 +31,7 @@ void CMilitary::addUnit(CUnit &unit) {
 			if (currentGroups.find(unit.builder) == currentGroups.end() ||
 				currentGroups[unit.builder]->busy) {
 				CGroup *group = requestGroup(ENGAGE);
-				currentGroups[unit.builder] = group
+				currentGroups[unit.builder] = group;
 			}
 			currentGroups[unit.builder]->addUnit(unit);
 		}
@@ -57,7 +57,7 @@ CGroup* CMilitary::requestGroup(groupType type) {
 		group->reset();
 	}
 
-	lookup[group.key] = index;
+	lookup[group->key] = index;
 	group->reg(*this);
 
 	switch(type) {
@@ -136,11 +136,11 @@ int CMilitary::selectAttackTarget(CGroup &group) {
 
 void CMilitary::update(int frame) {
 	occupiedTargets.clear();
-	std::map<int, AttackTask*>::iterator i;
-	for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++)
-		occupiedTargets.push_back(i->second->target);
+	std::map<int, CTaskHandler::AttackTask*>::iterator j;
+	for (j = ai->tasks->activeAttackTasks.begin(); j != ai->tasks->activeAttackTasks.end(); j++)
+		occupiedTargets.push_back(j->second->target);
 
-	std::map<int, CGroup*>::iterator i,j;
+	std::map<int, CGroup*>::iterator i,k;
 	int busyScouts = 0;
 	/* Give idle scouting groups a new attack plan */
 	for (i = activeScoutGroups.begin(); i != activeScoutGroups.end(); i++) {
@@ -183,8 +183,8 @@ void CMilitary::update(int frame) {
 		/* Not strong enough */
 		if (enemyStrength > group->strength) {
 			bool isCurrent = false;
-			for (j = currentGroups.begin(); j != currentGroups.end(); j++)
-				if (j->first == group->key)
+			for (k = currentGroups.begin(); k != currentGroups.end(); k++)
+				if (k->first == group->key)
 					isCurrent = true;
 
 			if (!isCurrent)

@@ -12,13 +12,19 @@ enum task{BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD};
 
 class ATask: public ARegistrar {
 	public:
-		ATask(task _t, float3 &_pos): 
-			ARegistrar(counter), t(_t), pos(_pos) {
+		ATask(AIClasses *_ai, task _t, float3 &_pos): 
+			ARegistrar(counter), t(_t), pos(_pos), ai(_ai) {
+			counter++;
+			isMoving = true;
+		}
+		ATask(AIClasses *_ai, task _t): 
+			ARegistrar(counter), t(_t), ai(_ai) {
 			counter++;
 			isMoving = true;
 		}
 		~ATask(){}
 
+		/* Task counter */
 		static int counter;
 
 		/* The task in {BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD} */
@@ -52,6 +58,9 @@ class ATask: public ARegistrar {
 
 		/* Update this task */
 		virtual void update() = 0;
+
+	protected:
+		AIClasses *ai;
 };
 
 class CTaskHandler: public ARegistrar {
@@ -60,7 +69,7 @@ class CTaskHandler: public ARegistrar {
 		~CTaskHandler(){};
 
 		struct BuildTask: public ATask {
-			BuildTask(float3 &pos, buildType _bt, UnitType *_toBuild);
+			BuildTask(AIClasses *ai, float3 &pos, buildType _bt, UnitType *_toBuild);
 
 			/* The build task */
 			buildType bt;
@@ -73,7 +82,7 @@ class CTaskHandler: public ARegistrar {
 		};
 
 		struct FactoryTask: public ATask {
-			FactoryTask(CUnit &unit);
+			FactoryTask(AIClasses *ai, CUnit &unit);
 
 			CUnit *factory;
 
@@ -82,7 +91,7 @@ class CTaskHandler: public ARegistrar {
 		};
 
 		struct AssistTask: public ATask {
-			AssistTask(ATask &task);
+			AssistTask(AIClasses *ai, ATask &task);
 
 			/* The (build)task to assist */
 			ATask *assist;
@@ -92,7 +101,7 @@ class CTaskHandler: public ARegistrar {
 		};
 
 		struct AttackTask: public ATask {
-			AttackTask(int _target);
+			AttackTask(AIClasses *ai, int _target);
 
 			/* The target to attack */
 			int target;
@@ -102,8 +111,7 @@ class CTaskHandler: public ARegistrar {
 		};
 
 		struct MergeTask: public ATask {
-			MergeTask(float3 &pos, float _range): 
-				ATask(MERGE, pos), range(_range) {}
+			MergeTask(AIClasses *_ai, float3 &pos, float _range);
 
 			/* The maximal range from the target when attacking */
 			float range;
@@ -160,7 +168,7 @@ class CTaskHandler: public ARegistrar {
 		std::map<task, std::string> taskStr;
 
 		/* The active tasks to update */
-		std::map<int, ATask*>               activeTasks;
+		std::map<int, ATask*>       activeTasks;
 
 		/* Add a task */
 		ATask* addTask(ATask &t, std::vector<CGroup*> &groups);

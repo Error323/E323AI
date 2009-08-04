@@ -23,7 +23,7 @@ class CMilitary: public ARegistrar {
 		void addUnit(CUnit &unit);
 
 		/* Returns a fresh CGroup instance */
-		CUnit* requestGroup(groupType type);
+		CGroup* requestGroup(groupType type);
 
 		/* update callin */
 		void update(int frame);

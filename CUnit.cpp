@@ -49,6 +49,7 @@ bool CUnit::moveForward(float dist) {
 		case WEST:
 			pos.x -= dist;
 		break;
+		default: break;
 	}
 	return move(pos);
 }
@@ -92,7 +93,6 @@ bool CUnit::move(float3 &pos, bool enqueue) {
 
 bool CUnit::guard(int target, bool enqueue) {
 	Command c = createTargetCommand(CMD_GUARD, target);
-	ai->eco->removeMyGuards(key);
 
 	if (c.id != 0) {
 		if (enqueue)
@@ -107,12 +107,12 @@ bool CUnit::guard(int target, bool enqueue) {
 	return false;
 }
 
-bool CUnit::repair(int builder, int target) {
+bool CUnit::repair(int target) {
 	Command c = createTargetCommand(CMD_REPAIR, target);
 
 	if (c.id != 0) {
-		ai->call->GiveOrder(builder, &c);
-		const UnitDef *u = ai->call->GetUnitDef(builder);
+		ai->call->GiveOrder(key, &c);
+		const UnitDef *u = ai->call->GetUnitDef(key);
 		const UnitDef *t = ai->call->GetUnitDef(target);
 		sprintf(buf, "[CUnit::repair]\t %s repairs %s", u->name.c_str(), t->name.c_str());
 		LOGN(buf);
@@ -151,7 +151,6 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 	Command c = createPosCommand(-(toBuild->id), goal, -1.0f, f);
 	if (c.id != 0) {
 		ai->call->GiveOrder(builder, &c);
-		ai->tasks->addBuildPlan(builder, toBuild);
 		float dist = 100.0f;
 		goal.y += 20;
 		float3 arrow = goal;
@@ -168,6 +167,7 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 			case WEST:
 				arrow.x -= dist;
 			break;
+			default: break;
 		}
 		sprintf(buf, "[CUnit::build]\t %s(%d) builds %s", ud->humanName.c_str(), builder, toBuild->def->humanName.c_str());
 		LOGN(buf);

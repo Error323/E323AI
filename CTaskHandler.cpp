@@ -83,7 +83,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, std::vector<
 	float range;
 	if (pos == NULLVECTOR) getGroupsRangeAndPos(groups, range, pos);
 
-	BuildTask bt(pos, build, toBuild);
+	BuildTask bt(ai, pos, build, toBuild);
 	ATask *task = addTask(bt, groups);
 	activeBuildTasks[task->key] = dynamic_cast<BuildTask*>(task);
 	ai->pf->addTask(*task);
@@ -91,20 +91,20 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, std::vector<
 
 void CTaskHandler::addFactoryTask(CUnit &factory) {
 	std::vector<CGroup*> groups;
-	FactoryTask ft(factory);
+	FactoryTask ft(ai, factory);
 	ATask *task = addTask(ft, groups);
 	activeFactoryTasks[task->key] = dynamic_cast<FactoryTask*>(task);
 }
 
 void CTaskHandler::addAssistTask(ATask &task, std::vector<CGroup*> &groups) {
-	AssistTask at(task);
+	AssistTask at(ai, task);
 	ATask *assistTask = addTask(at, groups);
 	activeAssistTasks[task.key] = dynamic_cast<AssistTask*>(assistTask);
 	ai->pf->addTask(*assistTask);
 }
 
 void CTaskHandler::addAttackTask(int target, std::vector<CGroup*> &groups) {
-	AttackTask at(target);
+	AttackTask at(ai, target);
 	ATask *task = addTask(at, groups);
 	activeAttackTasks[task->key] = dynamic_cast<AttackTask*>(task);
 	ai->pf->addTask(*task);
@@ -113,7 +113,7 @@ void CTaskHandler::addAttackTask(int target, std::vector<CGroup*> &groups) {
 void CTaskHandler::addMergeTask(std::vector<CGroup*> &groups) {
 	float3 pos; float range;
 	getGroupsRangeAndPos(groups, range, pos);
-	MergeTask mt(pos, range);
+	MergeTask mt(ai, pos, range);
 	ATask *task = addTask(mt, groups);
 	activeMergeTasks[task->key] = dynamic_cast<MergeTask*>(task);
 	ai->pf->addTask(*task);
@@ -131,7 +131,7 @@ void CTaskHandler::getGroupsRangeAndPos(std::vector<CGroup*> &groups, float &ran
 
 void CTaskHandler::update() {
 	std::map<int, ATask*>::iterator i;
-	int tasknr = 0;
+	unsigned tasknr = 0;
 	for (i = activeTasks.begin(); i != activeTasks.end(); i++) {
 		if (updateCount % activeTasks.size() == tasknr)
 			i->second->update();
@@ -163,13 +163,16 @@ ATask* CTaskHandler::addTask(ATask &at, std::vector<CGroup*> &groups) {
 		task->addGroup(*groups[i]);
 	sprintf(buf, 
 		"[CTaskHandler::addTask]\tTask %s(%d) created with %d groups",
-		taskStr[task->t], 
+		taskStr[task->t].c_str(), 
 		task->key, 
 		groups.size()
 	);
 	LOGN(buf);
 	return task;
 }
+
+CTaskHandler::BuildTask::BuildTask(AIClasses *ai, float3 &pos, buildType _bt, UnitType *_toBuild):
+	ATask(ai, BUILD, pos), bt(_bt), toBuild(_toBuild) {}
 
 void CTaskHandler::BuildTask::update() {
 	std::map<int, CGroup*>::iterator i;
@@ -194,21 +197,23 @@ void CTaskHandler::BuildTask::update() {
 		remove();
 }
 
-void CTaskHandler::FactoryTask::FactoryTask(CUnit &unit):
-	ATask(FACTORY_BUILD, unit.pos()), factory(&unit) {}
+CTaskHandler::FactoryTask::FactoryTask(AIClasses *ai, CUnit &unit):
+	ATask(ai, FACTORY_BUILD), factory(&unit) {
+	this->pos = unit.pos();	
+}
 	
 
 void CTaskHandler::FactoryTask::update() {
-	if (!ai->unitTable->factories[factory->key] && !ai->wl->empty(factory)) {
-		UnitType *ut = ai->wl->top(factory);
+	if (!ai->unitTable->factories[factory->key] && !ai->wl->empty(factory->key)) {
+		UnitType *ut = ai->wl->top(factory->key);
 		factory->factoryBuild(ut);
 		ai->unitTable->factoriesBuilding[factory->key] = ut;
 		ai->unitTable->factories[factory->key] = true;
 	}
 }
 
-void CTaskHandler::AssistTask::AssistTask(ATask &task):
-	ATask(ASSIST, task.pos), assist(&task) {
+CTaskHandler::AssistTask::AssistTask(AIClasses *ai, ATask &task):
+	ATask(ai, ASSIST, task.pos), assist(&task) {
 
 	/* This will ensure that when the original task finishes (is
 	 * removed) it also calls this removal, lovely isn't it :)
@@ -231,8 +236,10 @@ void CTaskHandler::AssistTask::update() {
 	}
 }
 
-void CTaskHandler::AttackTask::AttackTask(int _target):
-	ATask(ATTACK, ai->cheat->GetUnitPos(_target), target(_target)) {}
+CTaskHandler::AttackTask::AttackTask(AIClasses *ai, int _target):
+	ATask(ai, ATTACK), target(_target) {
+	this->pos = ai->cheat->GetUnitPos(_target);
+}
 
 void CTaskHandler::AttackTask::update() {
 	std::map<int, CGroup*>::iterator i;
@@ -253,6 +260,9 @@ void CTaskHandler::AttackTask::update() {
 	if (ai->cheat->GetUnitPos(target) == NULLVECTOR) 
 		remove();
 }
+
+CTaskHandler::MergeTask::MergeTask(AIClasses *ai, float3 &pos, float _range):
+	ATask(ai, MERGE, pos), range(_range) {}
 
 void CTaskHandler::MergeTask::update() {
 	std::map<int, CGroup*>::iterator i;
