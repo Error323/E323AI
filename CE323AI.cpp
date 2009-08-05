@@ -1,4 +1,5 @@
 #include "CE323AI.h"
+#include "ScopedTimer.hpp"
 
 CE323AI::CE323AI() {
 }
@@ -190,42 +191,65 @@ void CE323AI::Update() {
 
 	/* Rotate through the different update events to distribute computations */
 	switch(frame % 9) {
-		case 0: /* update threatmap */
+		case 0: { /* update threatmap */
+			ScopedTimer t(std::string("threatmap"));
 			ai->threatMap->update(frame);
+		}
 		break;
 
-		case 1: /* update pathfinder with threatmap */
+		case 1: { /* update pathfinder with threatmap */
+			ScopedTimer t(std::string("pfmap"));
 			ai->pf->updateMap(ai->threatMap->map);
+		}
 		break;
 
-		case 2: /* update the groups following a path */
+		case 2: { /* update the groups following a path */
+			ScopedTimer t(std::string("pffollowers"));
 			ai->pf->updateFollowers();
+		}
 		break;
 
-		case 3: /* update the path itself of a group */
+		case 3: { /* update the path itself of a group */
+			ScopedTimer t(std::string("pfgrouppath"));
 			ai->pf->updatePaths();
+		}
 		break;
 
-		case 4: /* update enemy intel */
+		case 4: { /* update enemy intel */
+			ScopedTimer t(std::string("intel"));
 			ai->intel->update(frame);
+		}
 		break;
 
-		case 5: /* update military */
+		case 5: { /* update military */
+			ScopedTimer t(std::string("military"));
 			ai->military->update(frame);
+		}
 		break;
 
-		case 6: /* update incomes */
+		case 6: { /* update incomes */
+			ScopedTimer t(std::string("ecoincomes"));
 			ai->eco->updateIncomes(frame);
+		}
 		break;
 
-		case 7: /* update economy */
+		case 7: { /* update economy */
+			ScopedTimer t(std::string("economy"));
 			ai->eco->update(frame);
+		}
 		break;
 
-		case 8: /* update taskhandler */
+		case 8: { /* update taskhandler */
+			ScopedTimer t(std::string("tasks"));
 			ai->tasks->update();
+		}
 		break;
 
 		default: return;
+	}
+	if (frame % 5000 == 0) {
+		printf("SCOPED TIMER LOGGED\n");
+		std::string s = ScopedTimer::profile();
+		LOGN(s.c_str());
 	}
 }
