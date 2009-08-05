@@ -293,6 +293,8 @@ void CEconomy::updateIncomes(int frame) {
 	eexceeding = (eNow > eStorage*0.9f && eUsage < eIncome);
 	mexceeding = (mNow > mStorage*0.9f && mUsage < mIncome);
 	exceeding  = (mexceeding || eexceeding);
+	if (mIncome < mUsage) mRequest = true;
+	if (eIncome < eUsage) eRequest = true;
 }
 
 ATask* CEconomy::canAssist(buildType t, CGroup &group) {

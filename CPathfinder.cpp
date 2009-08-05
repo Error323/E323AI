@@ -214,7 +214,7 @@ void CPathfinder::updatePaths() {
 	update++;
 
 	/* nothing to update */
-	if (paths.find(repathGroup) == paths.end()) 
+	if (tasks.find(lookup[repathGroup]) == tasks.end())
 		return;
 
 	ATask *task  = tasks[lookup[repathGroup]];
