@@ -106,6 +106,8 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 }
 
 void CUnitTable::remove(ARegistrar &unit) {
+	sprintf(buf, "[CUnitTable::remove]\tremove unit(%d)", unit.key);
+	LOGN(buf);
 	free.push(lookup[unit.key]);
 	lookup.erase(unit.key);
 	builders.erase(unit.key);

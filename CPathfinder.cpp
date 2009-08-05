@@ -90,6 +90,9 @@ void CPathfinder::addTask(ATask &task) {
 
 void CPathfinder::remove(ARegistrar &obj) {
 	ATask *task = dynamic_cast<ATask*>(&obj);
+	sprintf(buf, "[ATask::remove]\tremove %s task(%d)", ai->tasks->taskStr[task->t].c_str(),task->key);
+	LOGN(buf);
+	
 	std::map<int, CGroup*>::iterator i;
 	for (i = task->groups.begin(); i != task->groups.end(); i++)
 		remove(*(i->second));

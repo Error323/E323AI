@@ -16,6 +16,8 @@ void ATask::remove() {
 }
 
 void ATask::remove(ARegistrar &group) {
+	sprintf(buf, "[ATask::remove]\tremove group(%d)", group.key);
+	LOGN(buf);
 	groups.erase(group.key);
 	moving.erase(group.key);
 	
@@ -65,6 +67,8 @@ CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500) {
 
 void CTaskHandler::remove(ARegistrar &task) {
 	ATask *t = dynamic_cast<ATask*>(&task);
+	sprintf(buf, "[ATask::remove]\tremove %s task(%d)", taskStr[t->t].c_str(),task.key);
+	LOGN(buf);
 	free[t->t].push(lookup[t->t][t->key]);
 	lookup[t->t].erase(t->key);
 	activeTasks.erase(t->key);
@@ -128,7 +132,6 @@ void CTaskHandler::addFactoryTask(CUnit &factory) {
 		activeFactoryTasks[task->key] = factoryTask;
 	}
 
-	ai->pf->addTask(*task);
 	task->reg(*this);
 	activeTasks[task->key] = task;
 }

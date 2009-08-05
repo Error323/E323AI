@@ -33,6 +33,8 @@ void CGroup::remove() {
 }
 
 void CGroup::remove(ARegistrar &unit) {
+	sprintf(buf, "[CGroup::remove]\tremove unit(%d)", unit.key);
+	LOGN(buf);
 	waiters.erase(unit.key);
 	units.erase(unit.key);
 

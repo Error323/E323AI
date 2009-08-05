@@ -142,6 +142,9 @@ class CTaskHandler: public ARegistrar {
 		std::map<int, MergeTask*> activeMergeTasks;
 		std::map<int, FactoryTask*> activeFactoryTasks;
 
+		/* Tasks to string */
+		std::map<task, std::string> taskStr;
+
 		/* Overload */
 		void remove(ARegistrar &task);
 
@@ -167,8 +170,6 @@ class CTaskHandler: public ARegistrar {
 		AIClasses *ai;
 		char buf[1024];
 
-		/* Tasks to string */
-		std::map<task, std::string> taskStr;
 
 		/* The active tasks to update */
 		std::map<int, ATask*>       activeTasks;

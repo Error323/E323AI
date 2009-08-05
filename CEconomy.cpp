@@ -68,6 +68,8 @@ CGroup* CEconomy::requestGroup() {
 }
 
 void CEconomy::remove(ARegistrar &group) {
+	sprintf(buf, "[CEconomy::remove]\tremove group(%d)", group.key);
+	LOGN(buf);
 	free.push(lookup[group.key]);
 	lookup.erase(group.key);
 	activeGroups.erase(group.key);
@@ -148,7 +150,6 @@ void CEconomy::update(int frame) {
 		/* Increase eco income */
 		else if (stalling || mRequest || eRequest) {
 			if (mRequest || mstall) {
-				LOGN("[CEconomy::update]\tmRequest or mStall");
 				ATask *task = canAssist(BUILD_MPROVIDER, *group);
 				if (task != NULL)
 					ai->tasks->addAssistTask(*task, V);
@@ -167,7 +168,6 @@ void CEconomy::update(int frame) {
 				mRequest = false;
 			}
 			else if (eRequest || estall) {
-				LOGN("[CEconomy::update]\teRequest or eStall");
 				ATask *task = canAssist(BUILD_EPROVIDER, *group);
 				if (task != NULL)
 					ai->tasks->addAssistTask(*task, V);
@@ -178,7 +178,6 @@ void CEconomy::update(int frame) {
 		}
 		/* If we can afford to assist a lab and it's close enough, do so */
 		else {
-			LOGN("[CEconomy::update]\tAssisting or build factory");
 			ATask *task = canAssistFactory(*group);
 			if (task != NULL)
 				ai->tasks->addAssistTask(*task, V);
