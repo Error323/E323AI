@@ -7,11 +7,14 @@
 
 #include <SDL/SDL_timer.h>
 
+#define MAX_STR_LENGTH 20
+
 class ScopedTimer {
 	public:
-		ScopedTimer(const std::string& s): task(s), t1(SDL_GetTicks()) {
+		ScopedTimer(const std::string& s): task(s) {
 			if (times.find(task) == times.end())
 				times[task] = 0;
+			t1 = SDL_GetTicks();
 		}
 
 		~ScopedTimer() {
@@ -23,19 +26,25 @@ class ScopedTimer {
 
 		static std::string profile() {
 			std::stringstream ss;
-			ss << "[ScopedTimer] milliseconds\n";
+			ss << "\n[ScopedTimer] milliseconds\n";
 
 			std::map<std::string, unsigned>::iterator i;
 			for (i = times.begin(); i != times.end(); i++) {
-				ss << "\t" << i->first << "\t" << i->second << "\n";
+				ss << "  " << i->first;
+				for (unsigned j = i->first.size()+2; j < MAX_STR_LENGTH; j++)
+				  ss << " ";
+				ss << i->second << "\n";
 			}
 
 			ss << "\n[ScopedTimer] percentage\n";
 			for (i = times.begin(); i != times.end(); i++) {
 				float pct = i->second / float(sum) * 100.0f;
-				ss << "\t" << i->first << "\t" << pct << "\n";
+				ss << "  " << i->first;
+				for (unsigned j = i->first.size()+2; j < MAX_STR_LENGTH; j++)
+				  ss << " ";
+				ss << pct << "\n";
 			}
-
+			ss << "\n";
 			return ss.str();
 		}
 

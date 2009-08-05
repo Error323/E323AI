@@ -248,8 +248,8 @@ void CE323AI::Update() {
 		default: return;
 	}
 	if (frame % 5000 == 0) {
-		printf("SCOPED TIMER LOGGED\n");
 		std::string s = ScopedTimer::profile();
 		LOGN(s.c_str());
+		printf("%s", s.c_str());
 	}
 }
