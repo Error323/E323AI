@@ -96,13 +96,6 @@ void CE323AI::UnitFinished(int uid) {
 	if (unit->builder > 0)
 		ai->unitTable->builders[unit->builder] = true;
 
-	std::map<int, bool>::iterator i;
-	for (i = ai->unitTable->builders.begin(); i != ai->unitTable->builders.end(); i++) {
-		CUnit *unit = ai->unitTable->getUnit(i->first);
-		sprintf(buf, "[CE323AI::UnitFinished]\t%s(%d) has finished building", unit->def->humanName.c_str(), i->first);
-		LOGN(buf);
-	}
-
 	/* Eco unit */
 	if (!(c&ATTACKER) || c&COMMANDER)
 		ai->eco->addUnit(*unit);

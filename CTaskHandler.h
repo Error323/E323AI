@@ -99,6 +99,8 @@ class CTaskHandler: public ARegistrar {
 
 			/* Update the assist task */
 			void update();
+			/* Overload, since removal also requires unreg @ assist task */
+			void remove();
 		};
 
 		struct AttackTask: public ATask {
@@ -144,7 +146,7 @@ class CTaskHandler: public ARegistrar {
 		void remove(ARegistrar &task);
 
 		/* Add a fresh build task */
-		void addBuildTask(buildType build, UnitType *toBuild, std::vector<CGroup*> &groups, float3 pos = float3(0.0f, 0.0f, 0.0f));
+		void addBuildTask(buildType build, UnitType *toBuild, std::vector<CGroup*> &groups, float3 &pos);
 
 		/* Add a fresh assist task */
 		void addAssistTask(ATask &task, std::vector<CGroup*> &groups);
@@ -172,7 +174,7 @@ class CTaskHandler: public ARegistrar {
 		std::map<int, ATask*>       activeTasks;
 
 		/* Request an unoccupied task */
-		ATask* requestTask(task t, std::vector<CGroup*> &groups);
+		ATask* requestTask(task t);
 
 		/* Calculate avg range and pos of groups */
 		void getGroupsRangeAndPos(std::vector<CGroup*> &groups, float &range, float3 &pos);

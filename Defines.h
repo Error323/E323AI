@@ -7,8 +7,8 @@
 #define MAX_INT   1000000000
 #define EPSILON   .00000000001f
 
-#define ERRORVECTOR float3(-1,0,0)
-#define NULLVECTOR  float3(0,0,0)
+#define ERRORVECTOR float3(-1.0f,0.0f,0.0f)
+#define NULLVECTOR  float3(0.0f,0.0f,0.0f)
 
 
 /* AI meta data */

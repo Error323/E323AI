@@ -106,74 +106,79 @@ void CEconomy::update(int frame) {
 	for (i = activeGroups.begin(); i != activeGroups.end(); i++) {
 		CGroup *group = i->second;
 		if (group->busy) continue;
-		sprintf(buf, "[CEconomy::update]\tgroup(%d) idle", group->key);
-		LOGN(buf);
 
 		std::vector<CGroup*> V; V.push_back(group);
 		CUnit *unit = group->units.begin()->second;
 
+		float3 pos = group->pos();
 		if (unit->def->isCommander) {
 			/* If we don't have enough metal income, build a mex */
 			if ((mIncome - uMIncome) < 2.0f) {
-				float3 pos;
-				bool canBuildMex = ai->metalMap->getMexSpot(*group, pos);;
+				float3 mexPos;
+				bool canBuildMex = ai->metalMap->getMexSpot(*group, mexPos);;
 				if (canBuildMex) {
 					UnitType *mex = ai->unitTable->canBuild(unit->type, MEXTRACTOR);
-					ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, V, pos);
+					ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, V, mexPos);
 				}
 			}
 			/* If we don't have a factory, build one */
 			else if (ai->unitTable->factories.empty()) {
 				if (canAffordToBuild(*group, factory))
-					ai->tasks->addBuildTask(BUILD_FACTORY, factory, V);
+					ai->tasks->addBuildTask(BUILD_FACTORY, factory, V, pos);
 			}
 			/* If we don't have enough energy income, build a energy provider */
 			else if (estall || eRequest) {
 				if (canAffordToBuild(*group, energyProvider)) {
-					ai->tasks->addBuildTask(BUILD_EPROVIDER, energyProvider, V);
+					ai->tasks->addBuildTask(BUILD_EPROVIDER, energyProvider, V, pos);
 					eRequest = false;
 				}
 				else if (energyProvider->id != utSolar->id) {
 					if (canAffordToBuild(*group, utSolar)) {
-						ai->tasks->addBuildTask(BUILD_EPROVIDER, utSolar, V);
+						ai->tasks->addBuildTask(BUILD_EPROVIDER, utSolar, V, pos);
 						eRequest = false;
 					}
 				}
+			}
+			else {
+				ATask *task = canAssistFactory(*group);
+				if (task != NULL)
+					ai->tasks->addAssistTask(*task, V);
 			}
 		}
 		/* Increase eco income */
 		else if (stalling || mRequest || eRequest) {
 			if (mRequest || mstall) {
+				LOGN("[CEconomy::update]\tmRequest or mStall");
 				ATask *task = canAssist(BUILD_MPROVIDER, *group);
 				if (task != NULL)
 					ai->tasks->addAssistTask(*task, V);
 				else  {
-					float3 pos;
-					bool canBuildMex = ai->metalMap->getMexSpot(*group, pos);;
+					float3 mexPos;
+					bool canBuildMex = ai->metalMap->getMexSpot(*group, mexPos);;
 					if (canBuildMex) {
 						UnitType *mex = ai->unitTable->canBuild(unit->type, MEXTRACTOR);
-						ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, V, pos);
+						ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, V, mexPos);
 					}
 					else {
 						UnitType *mmaker = ai->unitTable->canBuild(unit->type, MMAKER);
-						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, V);
+						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, V, pos);
 					}
 				}
 				mRequest = false;
 			}
 			else if (eRequest || estall) {
+				LOGN("[CEconomy::update]\teRequest or eStall");
 				ATask *task = canAssist(BUILD_EPROVIDER, *group);
 				if (task != NULL)
 					ai->tasks->addAssistTask(*task, V);
 				else
-					ai->tasks->addBuildTask(BUILD_EPROVIDER, energyProvider, V);
+					ai->tasks->addBuildTask(BUILD_EPROVIDER, energyProvider, V, pos);
 				eRequest = false;
 			}
 		}
 		/* If we can afford to assist a lab and it's close enough, do so */
 		else {
-			sprintf(buf, "[CEconomy::update]\tnot stalling");
-			LOGN(buf);
+			LOGN("[CEconomy::update]\tAssisting or build factory");
 			ATask *task = canAssistFactory(*group);
 			if (task != NULL)
 				ai->tasks->addAssistTask(*task, V);
@@ -184,19 +189,17 @@ void CEconomy::update(int frame) {
 					ai->tasks->addAssistTask(*task, V);
 
 				else {
-					sprintf(buf, "[CEconomy::update]\twill build factory");
-					LOGN(buf);
 					UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH1);
 					if (factory == NULL)
 						factory = ai->unitTable->canBuild(unit->type, VEHICLE|TECH1);
-					ai->tasks->addBuildTask(BUILD_FACTORY, factory, V);
+					ai->tasks->addBuildTask(BUILD_FACTORY, factory, V, pos);
 				}
 			}
 			else {} //TODO: build defense?
 		}
 	}
 
-	if (ai->unitTable->builders.size() <= 1)
+	if (activeGroups.size() <= 1)
 		ai->wl->push(BUILDER, HIGH);
 
 	if (stalling || exceeding)
@@ -281,8 +284,8 @@ void CEconomy::updateIncomes(int frame) {
 	uMIncomeSummed += mU;
 	uEIncomeSummed += eU;
 	
-	uMIncome = alpha*(uMIncomeSummed / incomes) + (1.0f-alpha)*mU;
-	uEIncome = alpha*(uEIncomeSummed / incomes) + (1.0f-alpha)*eU;
+	uMIncome   = alpha*(uMIncomeSummed / incomes) + (1.0f-alpha)*mU;
+	uEIncome   = alpha*(uEIncomeSummed / incomes) + (1.0f-alpha)*eU;
 
 	mstall     = (mNow < 30.0f && mUsage > mIncome);
 	estall     = (eNow/eStorage < 0.1f && eUsage > eIncome);

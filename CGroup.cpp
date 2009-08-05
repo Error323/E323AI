@@ -14,6 +14,7 @@ void CGroup::addUnit(CUnit &unit) {
 	strength   += ai->call->GetUnitPower(unit.key);
 	buildSpeed += unit.def->buildSpeed;
 	range = std::max<float>(ai->call->GetUnitMaxRange(unit.key), range);
+	buildRange = std::max<float>(unit.def->buildDistance, buildRange);
 	speed = std::min<float>(ai->call->GetUnitSpeed(unit.key), speed);
 
 	waiters[unit.key] = false;
@@ -68,11 +69,11 @@ void CGroup::reset() {
 	speed      = MAX_FLOAT;
 	buildSpeed = 0.0f;
 	range      = 0.0f;
+	buildRange = 0.0f;
 	busy       = false;
 	maxSlope   = 1.0f;
 	units.clear();
 	waiters.clear();
-	LOGN(buf);
 }
 
 void CGroup::merge(CGroup &group) {

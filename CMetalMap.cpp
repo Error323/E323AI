@@ -135,7 +135,7 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 		sorted.push_back(*ms);
 	}
 
-	std::partial_sort(sorted.begin(), sorted.begin()+5, sorted.end(), sortme);
+	std::sort(sorted.begin(), sorted.end(), sortme);
 
 	float lowestThreat = MAX_FLOAT;
 	for (unsigned i = 0; i < sorted.size(); i++) {
@@ -151,6 +151,8 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 
 	ai->metalMap->taken[group.key] = bestMs->f;
 	spot = bestMs->f;
+	sprintf(buf, "[CMetalMap::getMexSpot]\tspot(%0.2f, %0.2f, %0.2f)", spot.x, spot.y, spot.z);
+	LOGN(buf);
 	return true;
 }
 

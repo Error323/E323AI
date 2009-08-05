@@ -128,7 +128,6 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 		unit = new CUnit(ai, uid, bid);
 		ingameUnits.push_back(unit);
 		index = ingameUnits.size()-1;
-		unit  = ingameUnits[index];
 		sprintf(buf, "[CUnitTable::requestUnit]\tnew unit(%d), builder(%d)", unit->key, unit->builder);
 		LOGN(buf);
 	}

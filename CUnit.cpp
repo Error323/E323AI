@@ -86,7 +86,7 @@ bool CUnit::move(float3 &pos, bool enqueue) {
 		ai->call->GiveOrder(key, &c);
 		return true;
 	}
-	sprintf(buf, "[CUnit::move]\t %s(%d) moves", ai->call->GetUnitDef(key)->humanName.c_str(), key);
+	sprintf(buf, "[CUnit::move]\t%s(%d) moves", ai->call->GetUnitDef(key)->humanName.c_str(), key);
 	LOGN(buf);
 	return false;
 }
@@ -100,7 +100,7 @@ bool CUnit::guard(int target, bool enqueue) {
 		ai->call->GiveOrder(key, &c);
 		const UnitDef *u = ai->call->GetUnitDef(key);
 		const UnitDef *t = ai->call->GetUnitDef(target);
-		sprintf(buf, "[CUnit::guard]\t %s(%d) guards %s(%d)", u->humanName.c_str(), key, t->humanName.c_str(), target);
+		sprintf(buf, "[CUnit::guard]\t%s(%d) guards %s(%d)", u->humanName.c_str(), key, t->humanName.c_str(), target);
 		LOGN(buf);
 		return true;
 	}
@@ -114,7 +114,7 @@ bool CUnit::repair(int target) {
 		ai->call->GiveOrder(key, &c);
 		const UnitDef *u = ai->call->GetUnitDef(key);
 		const UnitDef *t = ai->call->GetUnitDef(target);
-		sprintf(buf, "[CUnit::repair]\t %s repairs %s", u->name.c_str(), t->name.c_str());
+		sprintf(buf, "[CUnit::repair]\t%s repairs %s", u->name.c_str(), t->name.c_str());
 		LOGN(buf);
 		return true;
 	}
@@ -148,7 +148,7 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 	Command c = createPosCommand(-(toBuild->id), goal, -1.0f, f);
 	if (c.id != 0) {
 		ai->call->GiveOrder(key, &c);
-		sprintf(buf, "[CUnit::build]\t %s(%d) builds %s", def->humanName.c_str(), key, toBuild->def->humanName.c_str());
+		sprintf(buf, "[CUnit::build]\t%s(%d) builds %s", def->humanName.c_str(), key, toBuild->def->humanName.c_str());
 		LOGN(buf);
 		return true;
 	}
@@ -159,7 +159,7 @@ bool CUnit::stop() {
 	Command c;
 	c.id = CMD_STOP;
 	ai->call->GiveOrder(key, &c);
-	sprintf(buf, "[CUnit::stop]\t %s(%d) stopped", ai->call->GetUnitDef(key)->humanName.c_str(), key);
+	sprintf(buf, "[CUnit::stop]\t%s(%d) stopped", ai->call->GetUnitDef(key)->humanName.c_str(), key);
 	LOGN(buf);
 	return true;
 }
@@ -168,7 +168,7 @@ bool CUnit::wait() {
 	Command c;
 	c.id = CMD_WAIT;
 	ai->call->GiveOrder(key, &c);
-	sprintf(buf, "[CUnit::wait]\t %s(%d) waited", ai->call->GetUnitDef(key)->humanName.c_str(), key);
+	sprintf(buf, "[CUnit::wait]\t%s(%d) waited", ai->call->GetUnitDef(key)->humanName.c_str(), key);
 	LOGN(buf);
 	return true;
 }
@@ -179,7 +179,7 @@ bool CUnit::factoryBuild(UnitType *ut) {
 	c.id = -(ut->def->id);
 	ai->call->GiveOrder(key, &c);
 	const UnitDef *u = ai->call->GetUnitDef(key);
-	sprintf(buf, "[CUnit::factoryBuild]\t %s(%d) builds %s", u->humanName.c_str(), key, ut->def->humanName.c_str());
+	sprintf(buf, "[CUnit::factoryBuild]\t%s(%d) builds %s", u->humanName.c_str(), key, ut->def->humanName.c_str());
 	LOGN(buf);
 	return true;
 }

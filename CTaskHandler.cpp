@@ -65,7 +65,7 @@ CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500) {
 
 void CTaskHandler::remove(ARegistrar &task) {
 	ATask *t = dynamic_cast<ATask*>(&task);
-	free[t->t].push(t->key);
+	free[t->t].push(lookup[t->t][t->key]);
 	lookup[t->t].erase(t->key);
 	activeTasks.erase(t->key);
 	switch(t->t) {
@@ -84,19 +84,14 @@ void CTaskHandler::remove(ARegistrar &task) {
 	LOGN(buf);
 }
 
-void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, std::vector<CGroup*> &groups, float3 pos) {
-	float range;
-	if (pos == NULLVECTOR) 
-		getGroupsRangeAndPos(groups, range, pos);
-
-	ATask *task = requestTask(BUILD, groups);
+void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, std::vector<CGroup*> &groups, float3 &pos) {
+	ATask *task = requestTask(BUILD);
 
 	if (task == NULL) {
 		task = new BuildTask(ai, pos, build, toBuild);
 		BuildTask *buildTask = dynamic_cast<BuildTask*>(task);
-		activeBuildTasks[task->key] = buildTask;
-		activeTasks[task->key]      = task;
 		tasks[BUILD].push_back(task);
+		activeBuildTasks[task->key] = buildTask;
 	}
 	else {
 		BuildTask *buildTask        = dynamic_cast<BuildTask*>(task);
@@ -111,12 +106,53 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, std::vector<
 
 	ai->pf->addTask(*task);
 	task->reg(*this);
+	activeTasks[task->key] = task;
 }
 
 void CTaskHandler::addFactoryTask(CUnit &factory) {
+	ATask *task = requestTask(FACTORY_BUILD);
+
+	if (task == NULL) {
+		task = new FactoryTask(ai, factory);
+		FactoryTask *factoryTask = dynamic_cast<FactoryTask*>(task);
+		tasks[BUILD].push_back(task);
+		activeFactoryTasks[task->key] = factoryTask;
+	}
+	else {
+		FactoryTask *factoryTask      = dynamic_cast<FactoryTask*>(task);
+		factoryTask->pos              = factory.pos();
+		factoryTask->factory          = &factory;
+		activeFactoryTasks[task->key] = factoryTask;
+	}
+
+	ai->pf->addTask(*task);
+	task->reg(*this);
+	activeTasks[task->key] = task;
 }
 
-void CTaskHandler::addAssistTask(ATask &task, std::vector<CGroup*> &groups) {
+void CTaskHandler::addAssistTask(ATask &toAssist, std::vector<CGroup*> &groups) {
+	ATask *task = requestTask(ASSIST);
+
+	if (task == NULL) {
+		task = new AssistTask(ai, toAssist);
+		AssistTask *assistTask = dynamic_cast<AssistTask*>(task);
+		tasks[ASSIST].push_back(task);
+		activeAssistTasks[task->key] = assistTask;
+	}
+	else {
+		AssistTask *assistTask        = dynamic_cast<AssistTask*>(task);
+		assistTask->pos               = toAssist.pos;
+		assistTask->assist            = &toAssist;
+		activeAssistTasks[task->key]  = assistTask;
+		toAssist.reg(*this);
+	}
+
+	for (unsigned i = 0; i < groups.size(); i++)
+		task->addGroup(*groups[i]);
+
+	ai->pf->addTask(*task);
+	task->reg(*this);
+	activeTasks[task->key] = task;
 }
 
 void CTaskHandler::addAttackTask(int target, std::vector<CGroup*> &groups) {
@@ -146,27 +182,21 @@ void CTaskHandler::update() {
 	updateCount++;
 }
 
-ATask* CTaskHandler::requestTask(task t, std::vector<CGroup*> &groups) {
-	sprintf(buf, 
-		"[CTaskHandler::requestTask]\tTask %s created with %d groups",
-		taskStr[t].c_str(), 
-		groups.size()
-	);
-	LOGN(buf);
+ATask* CTaskHandler::requestTask(task t) {
 
 	/* If there are no free tasks of this type, return NULL */
-	if (free[t].empty()) 
+	if (free[t].empty()) {
+		sprintf(buf, "[CTaskHandler::requestTask]\tNew task %s created", taskStr[t].c_str());
+		LOGN(buf);
 		return NULL;
+	}
+	sprintf(buf, "[CTaskHandler::requestTask]\tExisting task %s created", taskStr[t].c_str());
+	LOGN(buf);
 
 	int index   = free[t].top(); free[t].pop();
 	ATask *task = tasks[t][index];
 	task->reset();
 	lookup[t][task->key] = index;
-	task->reg(*this);
-	activeTasks[task->key] = task;
-
-	for (unsigned i = 0; i < groups.size(); i++)
-		task->addGroup(*groups[i]);
 
 	return task;
 }
@@ -180,7 +210,7 @@ void CTaskHandler::BuildTask::update() {
 	for (i = groups.begin(); i != groups.end(); i++) {
 		CGroup *group = i->second;
 		float3 dist = group->pos() - pos;
-		if (moving[group->key] && dist.Length2D() <= group->range) {
+		if (moving[group->key] && dist.Length2D() <= group->buildRange) {
 			group->build(pos, toBuild);
 			moving[group->key] = false;
 			ai->pf->remove(*group);
@@ -205,10 +235,15 @@ CTaskHandler::FactoryTask::FactoryTask(AIClasses *ai, CUnit &unit):
 
 void CTaskHandler::FactoryTask::update() {
 	if (!ai->unitTable->factories[factory->key] && !ai->wl->empty(factory->key)) {
-		UnitType *ut = ai->wl->top(factory->key);
+		UnitType *ut = ai->wl->top(factory->key); ai->wl->pop(factory->key);
 		factory->factoryBuild(ut);
 		ai->unitTable->factoriesBuilding[factory->key] = ut;
 		ai->unitTable->factories[factory->key] = true;
+	}
+	else if (ai->unitTable->builders.find(factory->key) != ai->unitTable->builders.end() &&
+		ai->unitTable->builders[factory->key]) {
+		ai->unitTable->factories[factory->key] = false;
+		ai->unitTable->builders[factory->key] = true;
 	}
 }
 
@@ -227,13 +262,28 @@ void CTaskHandler::AssistTask::update() {
 	for (i = groups.begin(); i != groups.end(); i++) {
 		CGroup *group = i->second;
 		float3 dist = group->pos() - pos;
-		if (moving[group->key] && dist.Length2D() <= group->range) {
+		if (moving[group->key] && dist.Length2D() <= group->buildRange) {
 			group->assist(*assist);
 			moving[group->key] = false;
 			ai->pf->remove(*group);
 			isMoving = false;
 		}
 	}
+}
+
+void CTaskHandler::AssistTask::remove() {
+	std::map<int, CGroup*>::iterator i;
+	for (i = groups.begin(); i != groups.end(); i++) {
+		i->second->unreg(*this);
+		i->second->busy = false;
+		i->second->stop();
+	}
+	
+	std::list<ARegistrar*>::iterator j;
+	for (j = records.begin(); j != records.end(); j++)
+		(*j)->remove(*this);
+
+	assist->unreg(*this);
 }
 
 CTaskHandler::AttackTask::AttackTask(AIClasses *ai, int _target):

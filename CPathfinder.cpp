@@ -202,9 +202,6 @@ void CPathfinder::updatePaths() {
 	if (paths.find(repathGroup) == paths.end()) 
 		return;
 
-	sprintf(buf, "CPathfinder::updatePaths]\tRepathing group(%d)", repathGroup);
-	LOGN(buf);
-
 	// FIXME: this is wrong
 	// int target   = ai->tasks->getTarget(repathGroup);
 	// float3 start = groups[repathGroup]->pos();
