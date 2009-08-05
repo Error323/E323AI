@@ -79,28 +79,33 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 }
 
 void CPathfinder::addTask(ATask &task) {
-	std::map<int, CGroup*>::iterator i;
 	task.reg(*this);
+	std::map<int, CGroup*>::iterator i;
+	tasks[task.key] = &task;
 	for (i = task.groups.begin(); i != task.groups.end(); i++) {
 		CGroup *group = i->second;
 		float3 pos = group->pos();
 		addGroup(*group, pos, task.pos);
+		lookup[group->key] = task.key;
 	}
 }
 
 void CPathfinder::remove(ARegistrar &obj) {
 	ATask *task = dynamic_cast<ATask*>(&obj);
-	sprintf(buf, "[ATask::remove]\tremove %s task(%d)", ai->tasks->taskStr[task->t].c_str(),task->key);
+	sprintf(buf, "[CPathfinder::remove]\tremove %s task(%d)", ai->tasks->taskStr[task->t].c_str(),task->key);
 	LOGN(buf);
-	
 	std::map<int, CGroup*>::iterator i;
-	for (i = task->groups.begin(); i != task->groups.end(); i++)
-		remove(*(i->second));
+	for (i = task->groups.begin(); i != task->groups.end(); i++) {
+		CGroup *group = i->second;
+		remove(*group);
+	}
+	tasks.erase(task->key);
 }
 
 void CPathfinder::remove(CGroup &group) {
 	paths.erase(group.key);
 	groups.erase(group.key);
+	lookup.erase(group.key);
 }
 
 void CPathfinder::updateMap(float *weights) {
@@ -129,11 +134,6 @@ void CPathfinder::updateFollowers() {
 		/* Go through all the units in a group */
 		for (u = group->units.begin(); u != group->units.end(); u++) {
 			CUnit *unit = u->second;
-			/* unwait all waiters */
-			if (group->waiters[u->first]) {
-				unit->wait();
-				group->waiters[u->first] = false;
-			}
 
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
 			float length = 0.0f;
@@ -187,7 +187,19 @@ void CPathfinder::updateFollowers() {
 						group->waiters[unit->key] = true;
 					}
 				}
-				else break;
+				else {
+					if (group->waiters[unit->key]) {
+						unit->wait();
+						group->waiters[unit->key] = false;
+					}
+				}
+			}
+		}
+		else {
+			CUnit *unit = group->units.begin()->second;
+			if (group->waiters[unit->key]) {
+				unit->wait();
+				group->waiters[unit->key] = false;
 			}
 		}
 
@@ -205,11 +217,10 @@ void CPathfinder::updatePaths() {
 	if (paths.find(repathGroup) == paths.end()) 
 		return;
 
-	// FIXME: this is wrong
-	// int target   = ai->tasks->getTarget(repathGroup);
-	// float3 start = groups[repathGroup]->pos();
-	// float3 goal  = ai->cheat->GetUnitPos(target);
-	// addPath(repathGroup, start, goal);
+	ATask *task  = tasks[lookup[repathGroup]];
+	float3 start = groups[repathGroup]->pos();
+	float3 goal  = task->pos;
+	addPath(repathGroup, start, goal);
 }
 
 void CPathfinder::addGroup(CGroup &G, float3 &start, float3 &goal) {

@@ -70,8 +70,14 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* The paths <group, path> */
 		std::map<int, std::vector<float3> > paths;
 
-		/* The group pointers */
+		/* The groups */
 		std::map<int, CGroup*> groups;
+
+		/* The tasks */
+		std::map<int, ATask*>  tasks;
+
+		/* <groupid, taskid> */
+		std::map<int, int>     lookup;
 
 		/* spring maps */
 		std::vector<float> heightMap, slopeMap;

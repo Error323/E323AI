@@ -32,8 +32,17 @@ CMetalMap::~CMetalMap() {
 	delete[] bestCoverage;
 }
 
-void CMetalMap::remove(ARegistrar &mex) {
-	removeFromTaken(mex.key);
+void CMetalMap::remove(ARegistrar &unit) {
+	CUnit *u = dynamic_cast<CUnit*>(&unit);
+	if (u->type->cats&MEXTRACTOR) {
+		sprintf(buf, "[CMetalMap::remove]\tremoving mex(%d)", unit.key);
+		removeFromTaken(unit.key);
+	}
+	else {
+		taken.erase(unit.key);
+		sprintf(buf, "[CMetalMap::remove]\tremoving unit(%d)", unit.key);
+	}
+	LOGN(buf);
 }
 
 void CMetalMap::addUnit(CUnit &mex) {
@@ -149,10 +158,10 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 		
 	if (lowestThreat > 1.0f) return false;
 
-	ai->metalMap->taken[group.key] = bestMs->f;
+	CUnit *unit = group.units.begin()->second;
+	ai->metalMap->taken[unit->key] = bestMs->f;
+	unit->reg(*this);
 	spot = bestMs->f;
-	sprintf(buf, "[CMetalMap::getMexSpot]\tspot(%0.2f, %0.2f, %0.2f)", spot.x, spot.y, spot.z);
-	LOGN(buf);
 	return true;
 }
 

@@ -307,8 +307,9 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 		if (buildtask->bt != t) continue;
 
 		/* TODO: instead of euclid distance, use pathfinder distance */
-		float dist   = (pos - buildtask->pos).Length2D();
-		suited[dist] = buildtask;
+		float builderdist = (buildtask->pos - buildtask->groups.begin()->second->pos()).Length2D();
+		float dist        = (pos - buildtask->pos).Length2D() - builderdist;
+		suited[dist]      = buildtask;
 	}
 
 	/* There are no suited tasks that require assistance */
