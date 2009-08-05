@@ -44,16 +44,15 @@ CGroup* CMilitary::requestGroup(groupType type) {
 
 	/* Create a new slot */
 	if (free.empty()) {
-		CGroup g(ai);
-		groups.push_back(g);
-		group = &groups.back();
+		group = new CGroup(ai);
+		groups.push_back(group);
 		index = groups.size()-1;
 	}
 
 	/* Use top free slot from stack */
 	else {
 		index = free.top(); free.pop();
-		group = &groups[index];
+		group = groups[index];
 		group->reset();
 	}
 

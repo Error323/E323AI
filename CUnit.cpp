@@ -15,12 +15,12 @@ void CUnit::remove(ARegistrar &reg) {
 	}
 }
 
-void CUnit::reset(int uid, int builder) {
+void CUnit::reset(int uid, int bid) {
 	records.clear();
 	this->key     = uid;
 	this->def     = ai->call->GetUnitDef(uid);
 	this->type    = UT(def->id);
-	this->builder = builder;
+	this->builder = bid;
 }
 
 bool CUnit::attack(int target) {
@@ -128,48 +128,27 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 	else if(toBuild->cats&MEXTRACTOR)
 		mindist = 0;
 
-	const UnitDef *ud  = ai->call->GetUnitDef(key);
-	float startRadius  = ud->buildDistance;
+	float startRadius  = def->buildDistance;
 	facing f           = getBestFacing(pos);
 	float3 start       = ai->call->GetUnitPos(key);
 	float3 goal        = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
 
 	int i = 0;
 	while (goal == ERRORVECTOR) {
-		startRadius += ud->buildDistance;
+		startRadius += def->buildDistance;
 		goal = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
-		sprintf(buf, "------%s(%d) trying to build %s iteration %d", ud->name.c_str(), key, toBuild->def->name.c_str(), i);
-		LOGN(buf);
 		i++;
 		if (i > 10) {
 			/* Building in this area seems impossible, relocate key */
-			moveRandom(key, startRadius);
+			moveRandom(startRadius);
 			return false;
 		}
 	}
 
 	Command c = createPosCommand(-(toBuild->id), goal, -1.0f, f);
 	if (c.id != 0) {
-		ai->call->GiveOrder(builder, &c);
-		float dist = 100.0f;
-		goal.y += 20;
-		float3 arrow = goal;
-		switch(f) {
-			case NORTH:
-				arrow.z -= dist;
-			break;
-			case SOUTH:
-				arrow.z += dist;
-			break;
-			case EAST:
-				arrow.x += dist;
-			break;
-			case WEST:
-				arrow.x -= dist;
-			break;
-			default: break;
-		}
-		sprintf(buf, "[CUnit::build]\t %s(%d) builds %s", ud->humanName.c_str(), builder, toBuild->def->humanName.c_str());
+		ai->call->GiveOrder(key, &c);
+		sprintf(buf, "[CUnit::build]\t %s(%d) builds %s", def->humanName.c_str(), key, toBuild->def->humanName.c_str());
 		LOGN(buf);
 		return true;
 	}

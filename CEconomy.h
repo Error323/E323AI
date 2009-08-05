@@ -67,7 +67,7 @@ class CEconomy: public ARegistrar {
 		AIClasses *ai;
 
 		/* The group container */
-		std::vector<CGroup> groups;
+		std::vector<CGroup*> groups;
 
 		/* The <unitid, vectoridx> table */
 		std::map<int, int>  lookup;

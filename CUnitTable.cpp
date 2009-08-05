@@ -116,7 +116,7 @@ void CUnitTable::remove(ARegistrar &unit) {
 }
 
 CUnit* CUnitTable::getUnit(int uid) {
-	return &ingameUnits[lookup[uid]];
+	return ingameUnits[lookup[uid]];
 }
 
 CUnit* CUnitTable::requestUnit(int uid, int bid) {
@@ -125,22 +125,26 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 
 	/* Create a new slot */
 	if (free.empty()) {
-		CUnit u(ai,uid,bid);
-		ingameUnits.push_back(u);
-		unit  = &ingameUnits.back();
+		unit = new CUnit(ai, uid, bid);
+		ingameUnits.push_back(unit);
 		index = ingameUnits.size()-1;
+		unit  = ingameUnits[index];
+		sprintf(buf, "[CUnitTable::requestUnit]\tnew unit(%d), builder(%d)", unit->key, unit->builder);
+		LOGN(buf);
 	}
 
 	/* Use top free slot from stack */
 	else {
 		index = free.top(); free.pop();
-		unit  = &ingameUnits[index];
+		unit  = ingameUnits[index];
 		unit->reset(uid, bid);
+		sprintf(buf, "[CUnitTable::requestUnit]\texisting unit(%d), builder(%d)", unit->key, unit->builder);
+		LOGN(buf);
 	}
 
 	lookup[uid] = index;
 	unit->reg(*this);
-	builders[bid] = false;
+	if (bid > 0) builders[bid] = false;
 	activeUnits[uid] = unit;
 	return unit;
 }

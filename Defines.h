@@ -13,9 +13,9 @@
 
 /* AI meta data */
 #define AI_VERSION_NR  aiexport_getVersion()
-#define AI_VERSION     std::string("E323AI ") + AI_VERSION_NR + " - Mutalisk"
+#define AI_VERSION     std::string("E323AI ") + AI_VERSION_NR + " - Ultralisk"
 #define AI_CREDITS     "Error323 - folkerthuizinga@gmail.com"
-#define AI_NOTES	   "This A.I. mainly focusses on the XTA mod"
+#define AI_NOTES	   "This A.I. mainly focusses on the XTA and BA mods"
 
 /* Folders */
 #define LOG_FOLDER  "logs/"

@@ -34,9 +34,12 @@ bool CEconomy::hasFinishedBuilding(CGroup &group) {
 	for (i = group.units.begin(); i != group.units.end(); i++) {
 		CUnit *unit = i->second;
 		if (ai->unitTable->builders.find(unit->key) != ai->unitTable->builders.end() &&
-			ai->unitTable->builders[unit->key])
+			ai->unitTable->builders[unit->key]) {
+			ai->unitTable->builders[unit->key] = false;
 			return true;
+		}
 	}
+	
 	return false;
 }
 
@@ -46,21 +49,21 @@ CGroup* CEconomy::requestGroup() {
 
 	/* Create a new slot */
 	if (free.empty()) {
-		CGroup g(ai);
-		groups.push_back(g);
-		group = &groups.back();
+		group = new CGroup(ai);
+		groups.push_back(group);
 		index = groups.size()-1;
 	}
 
 	/* Use top free slot from stack */
 	else {
 		index = free.top(); free.pop();
-		group = &groups[index];
+		group = groups[index];
 		group->reset();
 	}
 
 	lookup[group->key] = index;
 	group->reg(*this);
+	activeGroups[group->key] = group;
 	return group;
 }
 
@@ -75,6 +78,8 @@ void CEconomy::remove(ARegistrar &group) {
 }
 
 void CEconomy::addUnit(CUnit &unit) {
+	sprintf(buf, "[CEconomy::addUnit]\tadded unit(%d):%s", unit.key, unit.def->humanName.c_str());
+	LOGN(buf);
 	unsigned c = unit.type->cats;
 	if (c&FACTORY) {
 		ai->unitTable->factories[unit.key] = false;
@@ -101,12 +106,43 @@ void CEconomy::update(int frame) {
 	for (i = activeGroups.begin(); i != activeGroups.end(); i++) {
 		CGroup *group = i->second;
 		if (group->busy) continue;
+		sprintf(buf, "[CEconomy::update]\tgroup(%d) idle", group->key);
+		LOGN(buf);
 
 		std::vector<CGroup*> V; V.push_back(group);
+		CUnit *unit = group->units.begin()->second;
 
+		if (unit->def->isCommander) {
+			/* If we don't have enough metal income, build a mex */
+			if ((mIncome - uMIncome) < 2.0f) {
+				float3 pos;
+				bool canBuildMex = ai->metalMap->getMexSpot(*group, pos);;
+				if (canBuildMex) {
+					UnitType *mex = ai->unitTable->canBuild(unit->type, MEXTRACTOR);
+					ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, V, pos);
+				}
+			}
+			/* If we don't have a factory, build one */
+			else if (ai->unitTable->factories.empty()) {
+				if (canAffordToBuild(*group, factory))
+					ai->tasks->addBuildTask(BUILD_FACTORY, factory, V);
+			}
+			/* If we don't have enough energy income, build a energy provider */
+			else if (estall || eRequest) {
+				if (canAffordToBuild(*group, energyProvider)) {
+					ai->tasks->addBuildTask(BUILD_EPROVIDER, energyProvider, V);
+					eRequest = false;
+				}
+				else if (energyProvider->id != utSolar->id) {
+					if (canAffordToBuild(*group, utSolar)) {
+						ai->tasks->addBuildTask(BUILD_EPROVIDER, utSolar, V);
+						eRequest = false;
+					}
+				}
+			}
+		}
 		/* Increase eco income */
-		UnitType *ut = group->units.begin()->second->type;
-		if (stalling || mRequest || eRequest) {
+		else if (stalling || mRequest || eRequest) {
 			if (mRequest || mstall) {
 				ATask *task = canAssist(BUILD_MPROVIDER, *group);
 				if (task != NULL)
@@ -115,11 +151,11 @@ void CEconomy::update(int frame) {
 					float3 pos;
 					bool canBuildMex = ai->metalMap->getMexSpot(*group, pos);;
 					if (canBuildMex) {
-						UnitType *mex = ai->unitTable->canBuild(ut, MEXTRACTOR);
+						UnitType *mex = ai->unitTable->canBuild(unit->type, MEXTRACTOR);
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, V, pos);
 					}
 					else {
-						UnitType *mmaker = ai->unitTable->canBuild(ut, MMAKER);
+						UnitType *mmaker = ai->unitTable->canBuild(unit->type, MMAKER);
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, V);
 					}
 				}
@@ -136,6 +172,8 @@ void CEconomy::update(int frame) {
 		}
 		/* If we can afford to assist a lab and it's close enough, do so */
 		else {
+			sprintf(buf, "[CEconomy::update]\tnot stalling");
+			LOGN(buf);
 			ATask *task = canAssistFactory(*group);
 			if (task != NULL)
 				ai->tasks->addAssistTask(*task, V);
@@ -146,9 +184,11 @@ void CEconomy::update(int frame) {
 					ai->tasks->addAssistTask(*task, V);
 
 				else {
-					UnitType *factory = ai->unitTable->canBuild(ut, KBOT|TECH2);
+					sprintf(buf, "[CEconomy::update]\twill build factory");
+					LOGN(buf);
+					UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH1);
 					if (factory == NULL)
-						factory = ai->unitTable->canBuild(ut, VEHICLE|TECH1);
+						factory = ai->unitTable->canBuild(unit->type, VEHICLE|TECH1);
 					ai->tasks->addBuildTask(BUILD_FACTORY, factory, V);
 				}
 			}
@@ -240,7 +280,7 @@ void CEconomy::updateIncomes(int frame) {
 	}
 	uMIncomeSummed += mU;
 	uEIncomeSummed += eU;
-
+	
 	uMIncome = alpha*(uMIncomeSummed / incomes) + (1.0f-alpha)*mU;
 	uEIncome = alpha*(uEIncomeSummed / incomes) + (1.0f-alpha)*eU;
 

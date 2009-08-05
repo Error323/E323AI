@@ -75,6 +75,8 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 /* Called when units are spawned in a factory or when game starts */
 void CE323AI::UnitCreated(int uid, int bid) {
 	CUnit *unit    = ai->unitTable->requestUnit(uid, bid);
+	sprintf(buf, "[CE323AI::UnitCreated]\t %s(%d) created", unit->def->humanName.c_str(), uid);
+	LOGN(buf);
 	unsigned int c = unit->type->cats;
 
 	if (unit->def->isCommander)
@@ -82,16 +84,24 @@ void CE323AI::UnitCreated(int uid, int bid) {
 
 	if (c&MEXTRACTOR)
 		ai->metalMap->addUnit(*unit);
-
-	sprintf(buf, "[CE323AI::UnitCreated]\t %s(%d) created", unit->def->humanName.c_str(), uid);
-	LOGN(buf);
 }
 
 /* Called when units are finished in a factory and able to move */
 void CE323AI::UnitFinished(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
+	sprintf(buf, "[CE323AI::UnitFinished]\t %s(%d) finished", unit->def->humanName.c_str(), uid);
+	LOGN(buf);
 	unsigned int c = unit->type->cats;
-	ai->unitTable->builders[unit->builder] = true;
+
+	if (unit->builder > 0)
+		ai->unitTable->builders[unit->builder] = true;
+
+	std::map<int, bool>::iterator i;
+	for (i = ai->unitTable->builders.begin(); i != ai->unitTable->builders.end(); i++) {
+		CUnit *unit = ai->unitTable->getUnit(i->first);
+		sprintf(buf, "[CE323AI::UnitFinished]\t%s(%d) has finished building", unit->def->humanName.c_str(), i->first);
+		LOGN(buf);
+	}
 
 	/* Eco unit */
 	if (!(c&ATTACKER) || c&COMMANDER)
@@ -100,43 +110,14 @@ void CE323AI::UnitFinished(int uid) {
 	else
 		ai->military->addUnit(*unit);
 
-	sprintf(buf, "[CE323AI::UnitFinished]\t %s(%d) finished", unit->def->humanName.c_str(), uid);
-	LOGN(buf);
-
-		/*
-		if (c&FACTORY) {
-			ai->eco->gameFactories[unit] = true;
-			ai->eco->gameIdle[unit]      = ut;
-			ai->military->initSubGroups(unit);
-		}
-
-		if (c&BUILDER && c&MOBILE) {
-			ai->eco->gameBuilders[unit]  = ut;
-			if (!(c&COMMANDER))
-				ai->metaCmds->moveForward(unit, -70.0f);
-		}
-
-		if (c&MEXTRACTOR || c&MMAKER || c&MSTORAGE) {
-			ai->eco->gameMetal[unit]     = ut;
-			ai->tasks->updateBuildPlans(unit);
-			if (c&MEXTRACTOR) {
-				ai->metalMap->taken[unit] = ai->call->GetUnitPos(unit);
-			}
-		}
-
-		if (c&EMAKER || c&ESTORAGE) {
-			ai->eco->gameEnergy[unit]    = ut;
-			ai->tasks->updateBuildPlans(unit);
-		}
-		*/
 }
 
 /* Called on a destroyed unit */
 void CE323AI::UnitDestroyed(int uid, int attacker) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
-	unit->remove();
 	sprintf(buf, "[CE323AI::UnitDestroyed]\t %s(%d) destroyed", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
+	unit->remove();
 }
 
 /* Called when unit is idle */

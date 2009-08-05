@@ -21,12 +21,12 @@ local infos = {
 	},
 	{
 		key    = 'version',
-		value  = '1.34', -- AI version - !This comment is used for parsing!
+		value  = '2.00', -- AI version - !This comment is used for parsing!
 	},
 	{
 		key    = 'name',
 		value  = 'Error323\'s AI (E323AI)',
-		desc   = 'Optimized for XTA.',
+		desc   = 'Optimized for XTA and BA.',
 	},
 	{
 		key    = 'description',

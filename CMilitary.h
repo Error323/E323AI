@@ -35,7 +35,7 @@ class CMilitary: public ARegistrar {
 		std::map<int, CGroup*> currentGroups;
 
 		/* The group container */
-		std::vector<CGroup> groups;
+		std::vector<CGroup*> groups;
 
 		/* The <unitid, vectoridx> table */
 		std::map<int, int>  lookup;

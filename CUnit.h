@@ -15,9 +15,9 @@ enum quadrant {NORTH_WEST, NORTH_EAST, SOUTH_WEST, SOUTH_EAST};
 class CUnit: public ARegistrar {
 	public:
 		CUnit(): ARegistrar() {}
-		CUnit(AIClasses *ai, int uid, int builder): ARegistrar(uid) {
+		CUnit(AIClasses *ai, int uid, int bid): ARegistrar(uid) {
 			this->ai = ai;
-			reset(uid, builder);
+			reset(uid, bid);
 		}
 		~CUnit(){}
 
@@ -32,7 +32,7 @@ class CUnit: public ARegistrar {
 		void remove(ARegistrar &reg);
 
 		/* Reset this object */
-		void reset(int uid, int builder);
+		void reset(int uid, int bid);
 
 		/* Attack a unit */
 		bool attack(int target);

@@ -61,6 +61,7 @@ class ATask: public ARegistrar {
 
 	protected:
 		AIClasses *ai;
+		char buf[1024];
 };
 
 class CTaskHandler: public ARegistrar {

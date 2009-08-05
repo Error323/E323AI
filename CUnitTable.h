@@ -57,7 +57,7 @@ class CUnitTable: public ARegistrar {
 		AIClasses *ai;
 
 		/* The unit container */
-		std::vector<CUnit> ingameUnits;
+		std::vector<CUnit*> ingameUnits;
 
 		/* The <unitid, vectoridx> table */
 		std::map<int, int> lookup;

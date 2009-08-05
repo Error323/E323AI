@@ -77,6 +77,11 @@ void CTaskHandler::remove(ARegistrar &task) {
 
 		default: return;
 	}
+	sprintf(buf, 
+		"[CTaskHandler::remove]\tTask %s",
+		taskStr[t->t].c_str()
+	);
+	LOGN(buf);
 }
 
 void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, std::vector<CGroup*> &groups, float3 pos) {
@@ -91,6 +96,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, std::vector<
 		BuildTask *buildTask = dynamic_cast<BuildTask*>(task);
 		activeBuildTasks[task->key] = buildTask;
 		activeTasks[task->key]      = task;
+		tasks[BUILD].push_back(task);
 	}
 	else {
 		BuildTask *buildTask        = dynamic_cast<BuildTask*>(task);
@@ -104,6 +110,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, std::vector<
 		task->addGroup(*groups[i]);
 
 	ai->pf->addTask(*task);
+	task->reg(*this);
 }
 
 void CTaskHandler::addFactoryTask(CUnit &factory) {
@@ -140,6 +147,13 @@ void CTaskHandler::update() {
 }
 
 ATask* CTaskHandler::requestTask(task t, std::vector<CGroup*> &groups) {
+	sprintf(buf, 
+		"[CTaskHandler::requestTask]\tTask %s created with %d groups",
+		taskStr[t].c_str(), 
+		groups.size()
+	);
+	LOGN(buf);
+
 	/* If there are no free tasks of this type, return NULL */
 	if (free[t].empty()) 
 		return NULL;
@@ -153,14 +167,6 @@ ATask* CTaskHandler::requestTask(task t, std::vector<CGroup*> &groups) {
 
 	for (unsigned i = 0; i < groups.size(); i++)
 		task->addGroup(*groups[i]);
-
-	sprintf(buf, 
-		"[CTaskHandler::addTask]\tTask %s(%d) created with %d groups",
-		taskStr[task->t].c_str(), 
-		task->key, 
-		groups.size()
-	);
-	LOGN(buf);
 
 	return task;
 }
@@ -182,7 +188,7 @@ void CTaskHandler::BuildTask::update() {
 		}
 
 		/* We are building, lets see if it finished already */
-		if (!moving[group->key])
+		if (!isMoving)
 			if (ai->eco->hasFinishedBuilding(*group))
 				hasFinished = true;
 	}
