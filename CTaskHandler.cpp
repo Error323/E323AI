@@ -78,8 +78,9 @@ void CTaskHandler::remove(ARegistrar &task) {
 		default: return;
 	}
 	sprintf(buf, 
-		"[CTaskHandler::remove]\tTask %s",
-		taskStr[t->t].c_str()
+		"[CTaskHandler::remove]\tTask %s(%d)",
+		taskStr[t->t].c_str(),
+		t->key
 	);
 	LOGN(buf);
 }
@@ -92,6 +93,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, std::vector<
 		BuildTask *buildTask = dynamic_cast<BuildTask*>(task);
 		tasks[BUILD].push_back(task);
 		activeBuildTasks[task->key] = buildTask;
+		lookup[BUILD][task->key] = tasks[BUILD].size()-1;
 	}
 	else {
 		BuildTask *buildTask        = dynamic_cast<BuildTask*>(task);
@@ -117,6 +119,7 @@ void CTaskHandler::addFactoryTask(CUnit &factory) {
 		FactoryTask *factoryTask = dynamic_cast<FactoryTask*>(task);
 		tasks[BUILD].push_back(task);
 		activeFactoryTasks[task->key] = factoryTask;
+		lookup[FACTORY_BUILD][task->key] = tasks[FACTORY_BUILD].size()-1;
 	}
 	else {
 		FactoryTask *factoryTask      = dynamic_cast<FactoryTask*>(task);
@@ -138,6 +141,7 @@ void CTaskHandler::addAssistTask(ATask &toAssist, std::vector<CGroup*> &groups) 
 		AssistTask *assistTask = dynamic_cast<AssistTask*>(task);
 		tasks[ASSIST].push_back(task);
 		activeAssistTasks[task->key] = assistTask;
+		lookup[ASSIST][task->key] = tasks[ASSIST].size()-1;
 	}
 	else {
 		AssistTask *assistTask        = dynamic_cast<AssistTask*>(task);
@@ -156,6 +160,28 @@ void CTaskHandler::addAssistTask(ATask &toAssist, std::vector<CGroup*> &groups) 
 }
 
 void CTaskHandler::addAttackTask(int target, std::vector<CGroup*> &groups) {
+	ATask *task = requestTask(ATTACK);
+
+	if (task == NULL) {
+		task = new AttackTask(ai, target);
+		AttackTask *attackTask = dynamic_cast<AttackTask*>(task);
+		tasks[ATTACK].push_back(task);
+		activeAttackTasks[task->key] = attackTask;
+		lookup[ATTACK][task->key] = tasks[ATTACK].size()-1;
+	}
+	else {
+		AttackTask *attackTask       = dynamic_cast<AttackTask*>(task);
+		attackTask->pos              = ai->cheat->GetUnitPos(target);
+		attackTask->target           = target;
+		activeAttackTasks[task->key] = attackTask;
+	}
+
+	for (unsigned i = 0; i < groups.size(); i++)
+		task->addGroup(*groups[i]);
+
+	ai->pf->addTask(*task);
+	task->reg(*this);
+	activeTasks[task->key] = task;
 }
 
 void CTaskHandler::addMergeTask(std::vector<CGroup*> &groups) {
@@ -190,13 +216,13 @@ ATask* CTaskHandler::requestTask(task t) {
 		LOGN(buf);
 		return NULL;
 	}
-	sprintf(buf, "[CTaskHandler::requestTask]\tExisting task %s created", taskStr[t].c_str());
-	LOGN(buf);
 
 	int index   = free[t].top(); free[t].pop();
 	ATask *task = tasks[t][index];
 	task->reset();
 	lookup[t][task->key] = index;
+	sprintf(buf, "[CTaskHandler::requestTask]\tExisting task %s(%d) created", taskStr[t].c_str(), task->key);
+	LOGN(buf);
 
 	return task;
 }

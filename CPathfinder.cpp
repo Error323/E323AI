@@ -275,6 +275,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 			f.y = ai->call->GetElevation(f.x, f.z)+20;
 			path.push_back(f);
 		}
+		path.push_back(g);
 
 		if (draw) {
 			for (unsigned i = 2; i < path.size(); i++) 
