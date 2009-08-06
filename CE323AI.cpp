@@ -1,5 +1,4 @@
 #include "CE323AI.h"
-#include "ScopedTimer.hpp"
 
 CE323AI::CE323AI() {
 }
@@ -198,19 +197,19 @@ void CE323AI::Update() {
 		break;
 
 		case 1: { /* update pathfinder with threatmap */
-			ScopedTimer t(std::string("pfmap"));
+			ScopedTimer t(std::string("pf-map"));
 			ai->pf->updateMap(ai->threatMap->map);
 		}
 		break;
 
 		case 2: { /* update the groups following a path */
-			ScopedTimer t(std::string("pffollowers"));
+			ScopedTimer t(std::string("pf-followers"));
 			ai->pf->updateFollowers();
 		}
 		break;
 
 		case 3: { /* update the path itself of a group */
-			ScopedTimer t(std::string("pfgrouppath"));
+			ScopedTimer t(std::string("pf-grouppath"));
 			ai->pf->updatePaths();
 		}
 		break;
@@ -228,13 +227,13 @@ void CE323AI::Update() {
 		break;
 
 		case 6: { /* update incomes */
-			ScopedTimer t(std::string("ecoincomes"));
+			ScopedTimer t(std::string("eco-incomes"));
 			ai->eco->updateIncomes(frame);
 		}
 		break;
 
 		case 7: { /* update economy */
-			ScopedTimer t(std::string("economy"));
+			ScopedTimer t(std::string("eco-update"));
 			ai->eco->update(frame);
 		}
 		break;
@@ -247,7 +246,7 @@ void CE323AI::Update() {
 
 		default: return;
 	}
-	if (frame % 5000 == 0) {
+	if (frame % 1000 == 0) {
 		std::string s = ScopedTimer::profile();
 		LOGN(s.c_str());
 		printf("%s", s.c_str());
