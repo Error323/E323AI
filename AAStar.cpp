@@ -51,12 +51,12 @@ bool AAStar::findPath(std::list<ANode*>& path) {
 				y->parent = x;
 				y->g = g;
 				y->f = y->g + y->h;
+				if (!y->open) { 
+					y->open = true;
+					open.push(y);
+				}
 			}
 
-			if (!y->open) { 
-				y->open = true;
-				open.push(y);
-			}
 		}
 	}
 	return false;
