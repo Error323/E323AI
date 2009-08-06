@@ -75,10 +75,11 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 /* Called when units are spawned in a factory or when game starts */
 void CE323AI::UnitCreated(int uid, int bid) {
 	CUnit *unit    = ai->unitTable->requestUnit(uid, bid);
+
 	sprintf(buf, "[CE323AI::UnitCreated]\t %s(%d) created", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
-	unsigned int c = unit->type->cats;
 
+	unsigned int c = unit->type->cats;
 	if (unit->def->isCommander)
 		ai->eco->init(*unit);
 
@@ -89,10 +90,11 @@ void CE323AI::UnitCreated(int uid, int bid) {
 /* Called when units are finished in a factory and able to move */
 void CE323AI::UnitFinished(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
+
 	sprintf(buf, "[CE323AI::UnitFinished]\t %s(%d) finished", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
-	unsigned int c = unit->type->cats;
 
+	unsigned int c = unit->type->cats;
 	if (unit->builder > 0)
 		ai->unitTable->builders[unit->builder] = true;
 
@@ -246,9 +248,8 @@ void CE323AI::Update() {
 
 		default: return;
 	}
-	if (frame % 1000 == 0) {
+	if (frame % 2000 == 0) {
 		std::string s = ScopedTimer::profile();
-		LOGN(s.c_str());
 		printf("%s", s.c_str());
 	}
 }
