@@ -2,24 +2,21 @@
 #include "ScopedTimer.h"
 
 void AAStar::init() {
-	/* Reset the open and closed "lists" */
-	for (unsigned int i = 0; i < visited.size(); i++)
-		visited[i]->closed = visited[i]-> open = false;
-
-	visited.clear();
-	history.clear();
 	while(!open.empty()) open.pop();
 }
 
 bool AAStar::findPath(std::list<ANode*>& path) {
-	float c;
+	float g;
+	bool better;
 	ANode *x, *y;
 
 	init();
 
-	open.push(start);
 	start->open = true;
-	visited.push_back(start);
+	start->g = 0.0f;
+	start->h = heuristic(start,goal);
+	start->f = start->h;
+	open.push(start);
 
 	while (!open.empty()) {
 		x = open.top(); open.pop();
@@ -30,32 +27,35 @@ bool AAStar::findPath(std::list<ANode*>& path) {
 			return true;
 		}
 
+		x->open   = false;
 		x->closed = true;
 
 		successors(x, succs);
 		while (!succs.empty()) {
 			y = succs.front(); succs.pop();
-			c = x->g + y->w*heuristic(x, y);
 
-			if (y->open && c < y->g)
-				y->open = false;
+			if (y->closed) continue;
 
-			/* Only happens with an admissable heuristic */
-			/*
-			if (y->closed && c < y->g)
-				y->closed = false;
-			*/
+			g = x->g + y->w*heuristic(x, y);
+			better = false;
+
+			if (!y->open) {
+				better  = true;
+				y->h    = heuristic(y, goal);
+			}
+			else if (g < y->g) {
+				better = true;
+			}
 			
-			if (!y->open && !y->closed) {
-				y->g = c;
+			if (better) {
 				y->parent = x;
-				y->h = heuristic(y, goal);
-				open.push(y);
-				y->open = true;
+				y->g = g;
+				y->f = y->g + y->h;
+			}
 
-				visited.push_back(y);
-				history.push_back(y);
-				history.push_back(x);
+			if (!y->open) { 
+				y->open = true;
+				open.push(y);
 			}
 		}
 	}
@@ -66,7 +66,6 @@ void AAStar::tracePath(std::list<ANode*>& path) {
 	ANode* n = goal;
 	while (n != start) {
 		path.push_front(n);
-		history.push_back(n);
 		n = n->parent;
 	}
 }

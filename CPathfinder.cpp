@@ -113,6 +113,7 @@ void CPathfinder::updateMap(float *weights) {
 	for (i = maps.begin(); i != maps.end(); i++) {
 		for (unsigned j = 0; j < i->second.size(); j++) {
 			/* Give a slight preference to non-steep slopes */
+			i->second[j].reset();
 			i->second[j].w = weights[j] + slopeMap[j]*5.0f;
 		}
 	}
@@ -291,18 +292,16 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 	Node *n2 = dynamic_cast<Node*>(an2);
 	int dx = n1->x - n2->x;
 	int dz = n1->z - n2->z;
-	return sqrt(dx*dx + dz*dz);
+	return sqrt(dx*dx + dz*dz)*1.0001f;
 }
 
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	Node *s, *n = dynamic_cast<Node*>(an);
-	//Node *g     = dynamic_cast<Node*>(goal);
 	int x,z;
 
 	for (unsigned u = 0; u < surrounding.size(); u+=2) {
 		x = n->x+surrounding[u]; z = n->z+surrounding[u+1];
 		s = &maps[activeMap][idx(x, z)];
-		//if (!s->blocked() || s == g) succ.push(s);
 		if (!s->blocked()) succ.push(s);
 	}
 }
