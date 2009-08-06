@@ -265,6 +265,23 @@ CTaskHandler::FactoryTask::FactoryTask(AIClasses *ai, CUnit &unit):
 	
 
 void CTaskHandler::FactoryTask::update() {
+	if (!ai->unitTable->factories[factory->key]) {
+		UnitType *building;
+		for (int i = 0; i < 2; i++) {
+			if (!ai->wl->empty(factory->key)) {
+				UnitType *ut = ai->wl->top(factory->key);
+				factory->factoryBuild(ut,true);
+ 				ai->wl->pop(factory->key);
+				if (i == 0) building = ut;
+			}
+		}
+		ai->unitTable->factories[factory->key]         = true;
+		ai->unitTable->factoriesBuilding[factory->key] = building;
+	}
+	else if (ai->unitTable->builders[factory->key]) {
+		ai->unitTable->factories[factory->key] = false;
+	}
+	/*
 	if (!ai->unitTable->factories[factory->key] && !ai->wl->empty(factory->key)) {
 		UnitType *ut = ai->wl->top(factory->key); ai->wl->pop(factory->key);
 		factory->factoryBuild(ut);
@@ -276,6 +293,7 @@ void CTaskHandler::FactoryTask::update() {
 		ai->unitTable->factories[factory->key] = false;
 		ai->unitTable->builders[factory->key] = true;
 	}
+	*/
 }
 
 CTaskHandler::AssistTask::AssistTask(AIClasses *ai, ATask &task):

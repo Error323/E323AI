@@ -238,21 +238,6 @@ void CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 	}
 }
 
-void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
-	Node *s, *n = dynamic_cast<Node*>(an);
-	Node *g     = dynamic_cast<Node*>(goal);
-	int x,z;
-
-	for (unsigned u = 0; u < surrounding.size(); u+=2) {
-		x = n->x+surrounding[u]; z = n->z+surrounding[u+1];
-		/* Check we are within boundaries */
-		if (x < X-1 && x >= 1 && z < Z-1 && z >= 1) { 
-			s = &maps[activeMap][idx(x, z)];
-			if (!s->blocked() || s == g) succ.push(s);
-		}
-	}
-}
-
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius) {
 	/* If exceeding, snap to boundaries */
 	int sx  = int(round(s.x/REAL)); sx = std::max<int>(sx, 1); sx = std::min<int>(sx, X-2);
@@ -265,7 +250,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 	dz2     = sz - gz;
 
 	std::list<ANode*> nodepath;
-	bool success = (findPath(nodepath) && !nodepath.empty());
+	bool success = findPath(nodepath) && !nodepath.empty();
 	if (success) {
 		/* Insert a pre-waypoint at the beginning of the path */
 		float3 s0, s1;
@@ -306,8 +291,20 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 	Node *n2 = dynamic_cast<Node*>(an2);
 	int dx = n1->x - n2->x;
 	int dz = n1->z - n2->z;
-	float h = sqrt(dx*dx + dz*dz);
-	return h + abs(dx*dz2 - dx2*dz)*EPSILON;
+	return sqrt(dx*dx + dz*dz);
+}
+
+void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
+	Node *s, *n = dynamic_cast<Node*>(an);
+	//Node *g     = dynamic_cast<Node*>(goal);
+	int x,z;
+
+	for (unsigned u = 0; u < surrounding.size(); u+=2) {
+		x = n->x+surrounding[u]; z = n->z+surrounding[u+1];
+		s = &maps[activeMap][idx(x, z)];
+		//if (!s->blocked() || s == g) succ.push(s);
+		if (!s->blocked()) succ.push(s);
+	}
 }
 
 void CPathfinder::drawMap(int map) {

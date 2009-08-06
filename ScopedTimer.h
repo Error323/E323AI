@@ -3,6 +3,7 @@
 
 #include <string>
 #include <sstream>
+#include <iomanip>
 #include <map>
 
 #include <SDL/SDL_timer.h>
@@ -38,7 +39,8 @@ class ScopedTimer {
 
 			ss << "\n[ScopedTimer] percentage\n";
 			for (i = times.begin(); i != times.end(); i++) {
-				float pct = i->second / float(sum) * 100.0f;
+				int x = i->second / float(sum) * 10000;
+				float pct = x / 100.0f;
 				ss << "  " << i->first;
 				for (unsigned j = i->first.size()+2; j < MAX_STR_LENGTH; j++)
 				  ss << " ";
@@ -59,8 +61,5 @@ class ScopedTimer {
 		static unsigned sum;
 		static std::map<std::string, unsigned> times;
 };
-
-std::map<std::string, unsigned> ScopedTimer::times;
-unsigned ScopedTimer::sum = 0;
 
 #endif

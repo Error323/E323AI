@@ -38,6 +38,7 @@
 #include "ExternalAI/Interface/aidefines.h"    /* SNPRINTF, STRCPY, ... */
 
 /* E323AI Headers */
+#include "ScopedTimer.h"
 #include "Defines.h"                           /* Definition declarations */
 #include "Container.h"                         /* Class wrapper */
 #include "RNG.h"                               /* Random number generator */

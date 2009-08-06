@@ -1,4 +1,5 @@
 #include "AAStar.h"
+#include "ScopedTimer.h"
 
 void AAStar::init() {
 	/* Reset the open and closed "lists" */
@@ -40,8 +41,10 @@ bool AAStar::findPath(std::list<ANode*>& path) {
 				y->open = false;
 
 			/* Only happens with an admissable heuristic */
+			/*
 			if (y->closed && c < y->g)
 				y->closed = false;
+			*/
 			
 			if (!y->open && !y->closed) {
 				y->g = c;
