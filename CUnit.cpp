@@ -23,6 +23,10 @@ void CUnit::reset(int uid, int bid) {
 	this->builder = bid;
 }
 
+int CUnit::queueSize() {
+	return ai->call->GetCurrentUnitCommands(key)->size();
+}
+
 bool CUnit::attack(int target) {
 	Command c = createTargetCommand(CMD_ATTACK, target);
 	if (c.id != 0) {
@@ -174,8 +178,10 @@ bool CUnit::wait() {
 }
 
 /* From KAIK */
-bool CUnit::factoryBuild(UnitType *ut) {
+bool CUnit::factoryBuild(UnitType *ut, bool enqueue) {
 	Command c;
+	if (enqueue)
+		c.options |= SHIFT_KEY;
 	c.id = -(ut->def->id);
 	ai->call->GiveOrder(key, &c);
 	const UnitDef *u = ai->call->GetUnitDef(key);

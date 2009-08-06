@@ -6,8 +6,8 @@
 #include "CE323AI.h"
 #include "ARegistrar.h"
 
-/* Building facings */
-enum facing{NONE, SOUTH, EAST, NORTH, WEST};
+/* Building facings, NOTE: this order is important! */
+enum facing{SOUTH, EAST, NORTH, WEST, NONE};
 
 /* Map quadrants */
 enum quadrant {NORTH_WEST, NORTH_EAST, SOUTH_WEST, SOUTH_EAST};
@@ -34,6 +34,8 @@ class CUnit: public ARegistrar {
 		/* Reset this object */
 		void reset(int uid, int bid);
 
+		int queueSize();
+
 		/* Attack a unit */
 		bool attack(int target);
 
@@ -55,7 +57,7 @@ class CUnit: public ARegistrar {
 		bool build(UnitType *toBuild, float3 &pos);
 
 		/* Build a unit in a certain factory */
-		bool factoryBuild(UnitType *toBuild);
+		bool factoryBuild(UnitType *toBuild, bool enqueue = false);
 
 		/* Repair (or assist) a certain unit */
 		bool repair(int target);
