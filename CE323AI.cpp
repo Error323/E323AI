@@ -20,6 +20,7 @@ CE323AI::~CE323AI() {
 	delete ai->pf;
 	delete ai->intel;
 	delete ai->military;
+	delete ai->wl;
 	delete ai;
 }
 
@@ -144,8 +145,7 @@ void CE323AI::UnitMoveFailed(int uid) {
  * Enemy related callins *
  ***********************/
 
-void CE323AI::EnemyEnterLOS(int enemy) {
-}
+void CE323AI::EnemyEnterLOS(int enemy) { }
 
 void CE323AI::EnemyLeaveLOS(int enemy) {
 }
@@ -176,14 +176,20 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 	switch(msg) {
 		case AI_EVENT_UNITGIVEN:
 			/* Unit gained */
-			if ((cte->newteam) == (ai->call->GetMyTeam()))
+			if ((cte->newteam) == (ai->call->GetMyTeam())) {
 				UnitFinished(cte->unit);
+				sprintf(buf, "[CE323AI::HandleEvent]\tGiven/Gained unit(%d)", cte->unit);
+				LOGN(buf);
+			}
 		break;
 
 		case AI_EVENT_UNITCAPTURED:
 			/* Unit lost */
-			if ((cte->oldteam) == (ai->call->GetMyTeam()))
+			if ((cte->oldteam) == (ai->call->GetMyTeam())) {
 				UnitDestroyed(cte->unit, 0);
+				sprintf(buf, "[CE323AI::HandleEvent]\tCaptured/Lost unit(%d)", cte->unit);
+				LOGN(buf);
+			}
 		break;
 	}
 	return 0;

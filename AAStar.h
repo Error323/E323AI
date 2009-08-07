@@ -3,8 +3,6 @@
 
 #include <queue>
 #include <vector>
-#include <set>
-#include <iterator>
 #include <list>
 
 class AAStar {
@@ -32,7 +30,7 @@ class AAStar {
 				ANode* parent;
 
 				bool operator < (const ANode* n) const {
-					return g+h > (n->g+n->h);
+					return (g+h) > (n->g+n->h);
 				}
 
 				bool operator () (const ANode* a, const ANode* b) const {

@@ -1,5 +1,4 @@
 #include "AAStar.h"
-#include "ScopedTimer.h"
 
 void AAStar::init() {
 	while(!open.empty()) open.pop();
@@ -31,7 +30,8 @@ bool AAStar::findPath(std::list<ANode*>& path) {
 		while (!succs.empty()) {
 			y = succs.front(); succs.pop();
 
-			if (y->closed) continue;
+			if (y->closed)
+				continue;
 
 			g = x->g + y->w*heuristic(x,y);
 			if (y->open && g < y->g)

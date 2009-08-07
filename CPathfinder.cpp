@@ -121,7 +121,6 @@ void CPathfinder::updateMap(float *weights) {
 void CPathfinder::updateFollowers() {
 	std::map<int, std::vector<float3> >::iterator path;
 	std::map<int, CUnit*>::iterator u;
-
 	unsigned groupnr = 0;
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
@@ -130,16 +129,13 @@ void CPathfinder::updateFollowers() {
 		CGroup *group        = groups[path->first];
 		float maxGroupLength = group->maxLength();
 		std::map<float, CUnit*> M;
-
 		/* Go through all the units in a group */
 		for (u = group->units.begin(); u != group->units.end(); u++) {
 			CUnit *unit = u->second;
-
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
 			float length = 0.0f;
 			int s1 = 0, s2 = 1;
 			float3 upos = unit->pos();
-
 			/* Go through the path to determine the unit's segment on the path
 			 */
 			for (segment = 1; segment < path->second.size()-waypoint; segment++) {
@@ -157,7 +153,6 @@ void CPathfinder::updateFollowers() {
 				sl1      = l1; 
 				sl2      = l2; 
 			}
-
 			/* Now calculate the projection of upos onto the line spanned by
 			 * s2-s1 
 			 */
@@ -173,7 +168,6 @@ void CPathfinder::updateFollowers() {
 			M[uposonpath] = unit;
 		}
 		group->move(path->second[segment+waypoint]);
-
 		/* Set a wait cmd on units that are going to fast, (They can still
 		 * attack during a wait) 
 		 */
@@ -202,7 +196,6 @@ void CPathfinder::updateFollowers() {
 				group->waiters[unit->key] = false;
 			}
 		}
-
 		/* See who will get their path updated by updatePaths() */
 		if (update % paths.size() == groupnr)
 			repathGroup = path->first;
@@ -243,9 +236,7 @@ void CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 			paths[group] = path;
 	}
 	/* Otherwise, remove this task we can't perform it */
-	else {
-		tasks[lookup[group]]->remove();
-	}
+	else tasks[lookup[group]]->remove();
 }
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius) {
