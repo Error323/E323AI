@@ -92,7 +92,7 @@ void CPathfinder::addTask(ATask &task) {
 
 void CPathfinder::remove(ARegistrar &obj) {
 	ATask *task = dynamic_cast<ATask*>(&obj);
-	sprintf(buf, "[CPathfinder::remove]\tremove %s task(%d)", ai->tasks->taskStr[task->t].c_str(),task->key);
+	sprintf(buf, "[CPathfinder::remove]\tremove task %s(%d)", ai->tasks->taskStr[task->t].c_str(),task->key);
 	LOGN(buf);
 	std::map<int, CGroup*>::iterator i;
 	for (i = task->groups.begin(); i != task->groups.end(); i++) {
@@ -113,7 +113,6 @@ void CPathfinder::updateMap(float *weights) {
 	for (i = maps.begin(); i != maps.end(); i++) {
 		for (unsigned j = 0; j < i->second.size(); j++) {
 			/* Give a slight preference to non-steep slopes */
-			i->second[j].reset();
 			i->second[j].w = weights[j] + slopeMap[j]*5.0f;
 		}
 	}
@@ -139,7 +138,7 @@ void CPathfinder::updateFollowers() {
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
 			float length = 0.0f;
 			int s1 = 0, s2 = 1;
-			float3 upos = ai->call->GetUnitPos(u->first);
+			float3 upos = unit->pos();
 
 			/* Go through the path to determine the unit's segment on the path
 			 */
@@ -215,7 +214,7 @@ void CPathfinder::updatePaths() {
 	update++;
 
 	/* nothing to update */
-	if (tasks.find(lookup[repathGroup]) == tasks.end())
+	if (groups.find(repathGroup) == groups.end())
 		return;
 
 	ATask *task  = tasks[lookup[repathGroup]];
@@ -232,10 +231,20 @@ void CPathfinder::addGroup(CGroup &G, float3 &start, float3 &goal) {
 void CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 	activeMap = groups[group]->moveType;
 	std::vector<float3> path;
-	if (getPath(start, goal, path, group))
-		paths[group] = path;
+
+	/* Reset the nodes of this map, TODO: make threaded */
+	for (unsigned i = 0; i < maps[activeMap].size(); i++)
+		maps[activeMap][i].reset();
+
+	/* If we found a path, add it */
+	if (getPath(start, goal, path, group)) {
+		/* Add it when not empty */
+		if (!path.empty())
+			paths[group] = path;
+	}
+	/* Otherwise, remove this task we can't perform it */
 	else {
-		//TODO: remove group stuff
+		tasks[lookup[group]]->remove();
 	}
 }
 
@@ -251,8 +260,8 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 	dz2     = sz - gz;
 
 	std::list<ANode*> nodepath;
-	bool success = findPath(nodepath) && !nodepath.empty();
-	if (success) {
+	bool success = findPath(nodepath);
+	if (success && !nodepath.empty()) {
 		/* Insert a pre-waypoint at the beginning of the path */
 		float3 s0, s1;
 		s0 = dynamic_cast<Node*>(*(nodepath.begin()))->toFloat3();
@@ -280,8 +289,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 		if (draw) {
 			for (unsigned i = 2; i < path.size(); i++) 
 				ai->call->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, group);
-			float3 c((group%1)/1.0f, (group%2)/2.0f, (group%3)/3.0f);
-			ai->call->SetFigureColor(group, c[0], c[1], c[2], 1.0f);
+			ai->call->SetFigureColor(group, rng.RandFloat(), rng.RandFloat(), rng.RandFloat(), 1.0f);
 		}
 	}
 	return success;

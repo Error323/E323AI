@@ -3,6 +3,7 @@
 
 #include <queue>
 #include <vector>
+#include <set>
 #include <iterator>
 #include <list>
 
@@ -10,7 +11,7 @@ class AAStar {
 	public:
 		class ANode {
 			public:
-				ANode() {id = 0; g = 0; h = w = f = 0.0f; open = closed = false; }
+				ANode() {id = 0; g = 0; h = w = 0.0f; open = closed = false; }
 				ANode(unsigned int id, float w) {
 					this->id = id;
 					this->w  = w;
@@ -27,16 +28,15 @@ class AAStar {
 				float g;
 				float h;
 				float w;
-				float f;
 
 				ANode* parent;
 
 				bool operator < (const ANode* n) const {
-					return f > (n->f);
+					return g+h > (n->g+n->h);
 				}
 
 				bool operator () (const ANode* a, const ANode* b) const {
-					return (a->f > b->f);
+					return (a->g+a->h) > (b->g+b->h);
 				}
 
 				bool operator == (const ANode* n) const {
@@ -50,7 +50,6 @@ class AAStar {
 				void reset() {
 					this->g      = 0.0f;
 					this->h      = 0.0f;
-					this->f      = 0.0f;
 					this->open   = false;
 					this->closed = false;
 				}

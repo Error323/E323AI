@@ -4,6 +4,10 @@ CE323AI::CE323AI() {
 }
 
 CE323AI::~CE323AI() {
+	/* Print ScopedTimer times */
+	std::string s = ScopedTimer::profile();
+	printf("%s", s.c_str());
+
 	/* close the logfile */
 	ai->logger->close();
 
@@ -204,15 +208,15 @@ void CE323AI::Update() {
 		}
 		break;
 
-		case 2: { /* update the groups following a path */
-			ScopedTimer t(std::string("pf-followers"));
-			ai->pf->updateFollowers();
+		case 2: { /* update the path itself of a group */
+			ScopedTimer t(std::string("pf-grouppath"));
+			ai->pf->updatePaths();
 		}
 		break;
 
-		case 3: { /* update the path itself of a group */
-			ScopedTimer t(std::string("pf-grouppath"));
-			ai->pf->updatePaths();
+		case 3: { /* update the groups following a path */
+			ScopedTimer t(std::string("pf-followers"));
+			ai->pf->updateFollowers();
 		}
 		break;
 
@@ -247,9 +251,5 @@ void CE323AI::Update() {
 		break;
 
 		default: return;
-	}
-	if (frame % 2000 == 0) {
-		std::string s = ScopedTimer::profile();
-		printf("%s", s.c_str());
 	}
 }

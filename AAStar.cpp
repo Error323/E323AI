@@ -7,7 +7,6 @@ void AAStar::init() {
 
 bool AAStar::findPath(std::list<ANode*>& path) {
 	float g;
-	bool better;
 	ANode *x, *y;
 
 	init();
@@ -15,12 +14,10 @@ bool AAStar::findPath(std::list<ANode*>& path) {
 	start->open = true;
 	start->g = 0.0f;
 	start->h = heuristic(start,goal);
-	start->f = start->h;
 	open.push(start);
 
 	while (!open.empty()) {
 		x = open.top(); open.pop();
-		x->open = false;
 
 		if (x == goal) {
 			tracePath(path);
@@ -36,27 +33,17 @@ bool AAStar::findPath(std::list<ANode*>& path) {
 
 			if (y->closed) continue;
 
-			g = x->g + y->w*heuristic(x, y);
-			better = false;
+			g = x->g + y->w*heuristic(x,y);
+			if (y->open && g < y->g)
+				y->open = false;
 
 			if (!y->open) {
-				better  = true;
-				y->h    = heuristic(y, goal);
-			}
-			else if (g < y->g) {
-				better = true;
-			}
-			
-			if (better) {
-				y->parent = x;
 				y->g = g;
-				y->f = y->g + y->h;
-				if (!y->open) { 
-					y->open = true;
-					open.push(y);
-				}
+				y->parent = x;
+				y->h = heuristic(y, goal);
+				open.push(y);
+				y->open = true;
 			}
-
 		}
 	}
 	return false;

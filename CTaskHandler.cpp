@@ -69,7 +69,7 @@ CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500) {
 
 void CTaskHandler::remove(ARegistrar &task) {
 	ATask *t = dynamic_cast<ATask*>(&task);
-	sprintf(buf, "[ATask::remove]\tremove %s task(%d)", taskStr[t->t].c_str(),task.key);
+	sprintf(buf, "[ATask::remove]\tremove task %s(%d)", taskStr[t->t].c_str(),task.key);
 	LOGN(buf);
 	free[t->t].push(lookup[t->t][t->key]);
 	lookup[t->t].erase(t->key);
@@ -84,7 +84,7 @@ void CTaskHandler::remove(ARegistrar &task) {
 		default: return;
 	}
 	sprintf(buf, 
-		"[CTaskHandler::remove]\tTask %s(%d)",
+		"[CTaskHandler::remove]\tremove task %s(%d)",
 		taskStr[t->t].c_str(),
 		t->key
 	);
