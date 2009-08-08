@@ -182,19 +182,17 @@ void CEconomy::update(int frame) {
 			if (task != NULL)
 				ai->tasks->addAssistTask(*task, V);
 
-			else if (eexceeding && mexceeding){
+			else if (!exceeding){
 				ATask *task = canAssist(BUILD_FACTORY, *group);
 				if (task != NULL)
 					ai->tasks->addAssistTask(*task, V);
-
-				else {
-					UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH1);
-					if (factory == NULL)
-						factory = ai->unitTable->canBuild(unit->type, VEHICLE|TECH1);
-					ai->tasks->addBuildTask(BUILD_FACTORY, factory, V, pos);
-				}
 			}
-			else {} //TODO: build defense?
+			else {
+				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH2);
+				if (factory == NULL)
+					factory = ai->unitTable->canBuild(unit->type, VEHICLE|TECH1);
+				ai->tasks->addBuildTask(BUILD_FACTORY, factory, V, pos);
+			} //TODO: build defense?
 		}
 	}
 

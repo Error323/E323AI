@@ -19,7 +19,7 @@ bool AAStar::findPath(std::list<ANode*>& path) {
 	while (!open.empty()) {
 		x = open.top(); open.pop();
 
-		if (x == goal || counter >= MAX_CYCLES) {
+		if (x == goal) {
 			tracePath(x, path);
 			return true;
 		}

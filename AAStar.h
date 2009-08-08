@@ -5,8 +5,6 @@
 #include <vector>
 #include <list>
 
-#define MAX_CYCLES 5000
-
 class AAStar {
 	public:
 		class ANode {

@@ -1,4 +1,5 @@
 #include "CThreatMap.h"
+#include "ScopedTimer.h"
 
 CThreatMap::CThreatMap(AIClasses *ai) {
 	REAL = THREATRES*8.0f;
@@ -31,8 +32,8 @@ float CThreatMap::getThreat(float3 &center, float radius) {
 	float3 pos(0.0f, 0.0f, 0.0f);
 	float summedPower = 0.0f;
 	int count = 0;
-	for (int x = -R; x <= R; x++) {
-		for (int z = -R; z <= R; z++) {
+	for (int x = -R; x <= R; x+=2) {
+		for (int z = -R; z <= R; z+=2) {
 			pos.x = x;
 			pos.z = z;
 			if (pos.Length2D() <= radius) {
@@ -61,8 +62,8 @@ void CThreatMap::update(int frame) {
 		if (ut->cats&ATTACKER && !ai->cheat->UnitBeingBuilt(units[i])) {
 			float range = (ud->maxWeaponRange*1.2f)/REAL;
 			float power = ai->cheat->GetUnitPower(units[i]);
-//			if (ut->cats&COMMANDER)
-//				power /= 100.0f; /* dgun gives overpowered dps */
+			if (ut->cats&COMMANDER)
+				power /= 100.0f; /* dgun gives overpowered dps */
 
 			int   R = (int) ceil(range);
 			for (int x = -R; x <= R; x++) {

@@ -99,8 +99,8 @@ void CPathfinder::addTask(ATask &task) {
 	for (i = task.groups.begin(); i != task.groups.end(); i++) {
 		CGroup *group = i->second;
 		float3 pos = group->pos();
-		addGroup(*group, pos, task.pos);
 		lookup[group->key] = task.key;
+		addGroup(*group, pos, task.pos);
 	}
 }
 

@@ -190,6 +190,30 @@ void CTaskHandler::addAttackTask(int target, std::vector<CGroup*> &groups) {
 }
 
 void CTaskHandler::addMergeTask(std::vector<CGroup*> &groups) {
+	ATask *task = requestTask(MERGE);
+	float3 pos; float range;
+	getGroupsRangeAndPos(groups, range, pos);
+
+	if (task == NULL) {
+		task = new MergeTask(ai, pos, range);
+		MergeTask *mergeTask = dynamic_cast<MergeTask*>(task);
+		tasks[MERGE].push_back(task);
+		activeMergeTasks[task->key] = mergeTask;
+		lookup[MERGE][task->key] = tasks[MERGE].size()-1;
+	}
+	else {
+		MergeTask *mergeTask        = dynamic_cast<MergeTask*>(task);
+		mergeTask->pos              = pos;
+		mergeTask->range            = range;
+		activeMergeTasks[task->key] = mergeTask;
+	}
+
+	for (unsigned i = 0; i < groups.size(); i++)
+		task->addGroup(*groups[i]);
+
+	task->reg(*this);
+	activeTasks[task->key] = task;
+	ai->pf->addTask(*task);
 }
 		
 void CTaskHandler::getGroupsRangeAndPos(std::vector<CGroup*> &groups, float &range, float3 &pos) {
@@ -206,7 +230,7 @@ void CTaskHandler::update() {
 	std::map<int, ATask*>::iterator i;
 	unsigned tasknr = 0;
 	for (i = activeTasks.begin(); i != activeTasks.end(); i++) {
-		if (updateCount % activeTasks.size() == tasknr)
+		//if (updateCount % activeTasks.size() == tasknr)
 			i->second->update();
 		tasknr++;
 	}
@@ -265,24 +289,6 @@ CTaskHandler::FactoryTask::FactoryTask(AIClasses *ai, CUnit &unit):
 	
 
 void CTaskHandler::FactoryTask::update() {
-/*
-	if (!ai->unitTable->factories[factory->key]) {
-		UnitType *building;
-		for (int i = 0; i < 2; i++) {
-			if (!ai->wl->empty(factory->key)) {
-				UnitType *ut = ai->wl->top(factory->key);
-				factory->factoryBuild(ut,true);
- 				ai->wl->pop(factory->key);
-				if (i == 0) building = ut;
-			}
-		}
-		ai->unitTable->factories[factory->key]         = true;
-		ai->unitTable->factoriesBuilding[factory->key] = building;
-	}
-	else if (ai->unitTable->builders[factory->key]) {
-		ai->unitTable->factories[factory->key] = false;
-	}
-*/
 	if (!ai->unitTable->factories[factory->key] && !ai->wl->empty(factory->key)) {
 		UnitType *ut = ai->wl->top(factory->key); ai->wl->pop(factory->key);
 		factory->factoryBuild(ut);

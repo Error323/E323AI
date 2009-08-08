@@ -181,7 +181,9 @@ void CMilitary::update(int frame) {
 		float3 goal = ai->cheat->GetUnitPos(target);
 
 		/* Not strong enough */
-		if (ai->threatMap->getThreat(goal, group->range) > group->strength || group->units.size() < 3) {
+		if (group->units.size() < 4 || 
+			ai->threatMap->getThreat(goal, group->range) > group->strength) 
+		{
 			bool isCurrent = false;
 			for (k = currentGroups.begin(); k != currentGroups.end(); k++)
 				if (k->first == group->key)
