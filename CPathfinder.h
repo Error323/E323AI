@@ -5,7 +5,6 @@
 #include "ARegistrar.h"
 #include "CE323AI.h"
 
-
 class CPathfinder: public AAStar, public ARegistrar {
 	public:
 		enum nodeType{BLOCKED, START, GOAL, NORMAL};
@@ -58,6 +57,12 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 		char buf[1024];
 
+		/* The threads */
+		std::vector<boost::thread*> threads;
+
+		/* Number of threads */
+		size_t nrThreads;
+
 		/* group to receive repathing event next updatePaths() call */
 		int repathGroup;
 
@@ -97,6 +102,9 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* Add a path to a unit or group */
 		void addPath(int group, float3 &start, float3 &goal);
 
+		/* Reset the map nodes */
+		void resetMap(int thread);
+
 		/* Start pathfinding */
 		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius = EPSILON);
 		/* Register subgroups */
@@ -106,7 +114,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 		void drawMap(int map);
 
 		inline int idx(int x, int z);
-
 };
 
 #endif

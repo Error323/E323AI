@@ -18,6 +18,8 @@
 #include <list>
 #include <algorithm>
 
+#include <boost/thread.hpp>
+
 /* Spring Standard Header */
 #include "System/StdAfx.h"
 

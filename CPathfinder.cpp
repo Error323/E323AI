@@ -1,5 +1,6 @@
 #include "CPathfinder.h"
 
+
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	this->ai   = ai;
 	this->X    = int(ai->call->GetMapWidth() / THREATRES);
@@ -75,7 +76,19 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 			}
 		}
 	}
+
+	nrThreads = boost::thread::hardware_concurrency()-1;
+	threads.resize(nrThreads);
+
 	draw = false;
+}
+
+void CPathfinder::resetMap(int thread) {
+	int size = (X*Z) / nrThreads;
+	int offset = size*thread;
+	for (unsigned i = 0; i < size; i++)
+		maps[activeMap][i+offset].reset();
+	//printf("Reset using thread %d, range[%d, %d] total: %d\n", thread, offset, offset+size, X*Z);
 }
 
 void CPathfinder::addTask(ATask &task) {
@@ -224,10 +237,21 @@ void CPathfinder::addGroup(CGroup &G, float3 &start, float3 &goal) {
 void CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 	activeMap = groups[group]->moveType;
 	std::vector<float3> path;
+	/* Initialize threads */
+	for (size_t i = 0; i < nrThreads; i++)
+		threads[i] = new boost::thread(boost::bind(&CPathfinder::resetMap, this, i));
 
-	/* Reset the nodes of this map, TODO: make threaded */
-	for (unsigned i = 0; i < maps[activeMap].size(); i++)
-		maps[activeMap][i].reset();
+	/* Reset the nodes of this map using threads */
+	for (size_t i = 0; i < nrThreads; i++) {
+		threads[i]->join();
+		delete threads[i];
+	}
+
+	/* Reset leftovers */
+	int rest   = (X*Z)%nrThreads;
+	int offset = (X*Z)-rest;
+	for (unsigned i = 0; i < rest; i++)
+		maps[activeMap][i+offset].reset();
 
 	/* If we found a path, add it */
 	if (getPath(start, goal, path, group)) {
@@ -291,7 +315,7 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 	Node *n2 = dynamic_cast<Node*>(an2);
 	int dx = n1->x - n2->x;
 	int dz = n1->z - n2->z;
-	return sqrt(dx*dx + dz*dz)*1.0001f;
+	return sqrt(dx*dx + dz*dz)*EPSILON;
 }
 
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
