@@ -5,6 +5,8 @@
 #include <vector>
 #include <list>
 
+#define MAX_CYCLES 5000
+
 class AAStar {
 	public:
 		class ANode {
@@ -72,7 +74,9 @@ class AAStar {
 		std::queue<ANode*> succs;
 
 		/* traces the path from the goal node through its parents */
-		void tracePath(std::list<ANode*> &path);
+		void tracePath(ANode *x, std::list<ANode*> &path);
+
+		unsigned counter;
 };
 
 #endif

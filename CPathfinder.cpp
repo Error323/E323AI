@@ -6,7 +6,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	this->X    = int(ai->call->GetMapWidth() / THREATRES);
 	this->Z    = int(ai->call->GetMapHeight() / THREATRES);
 	this->REAL = THREATRES*8.0f;
-	int SLOPE  = THREATRES/2.0f;
+	int SLOPE  = THREATRES/2;
 	update     = 0;
 	repathGroup= -1;
 
@@ -19,6 +19,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 		for (int j = -1; j <= 1; j++) {
 			if (i == 0 && j == 0)
 				continue;
+
 			surrounding.push_back(i);
 			surrounding.push_back(j);
 		}
@@ -77,8 +78,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 		}
 	}
 
-	nrThreads = boost::thread::hardware_concurrency()-1;
-	threads.resize(nrThreads);
+	nrThreads = boost::thread::hardware_concurrency();
+	threads.resize(nrThreads-1);
 
 	draw = false;
 }
@@ -135,6 +136,7 @@ void CPathfinder::updateFollowers() {
 	std::map<int, std::vector<float3> >::iterator path;
 	std::map<int, CUnit*>::iterator u;
 	unsigned groupnr = 0;
+	repathGroup = -1;
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		unsigned segment     = 1;
@@ -224,6 +226,10 @@ void CPathfinder::updatePaths() {
 		return;
 
 	ATask *task  = tasks[lookup[repathGroup]];
+	if (task == NULL) {
+		remove(*groups[repathGroup]);
+		return;
+	}
 	float3 start = groups[repathGroup]->pos();
 	float3 goal  = task->pos;
 	addPath(repathGroup, start, goal);
@@ -238,13 +244,14 @@ void CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 	activeMap = groups[group]->moveType;
 	std::vector<float3> path;
 	/* Initialize threads */
-	for (size_t i = 0; i < nrThreads; i++)
-		threads[i] = new boost::thread(boost::bind(&CPathfinder::resetMap, this, i));
+	for (size_t i = 1; i < nrThreads; i++)
+		threads[i-1] = new boost::thread(boost::bind(&CPathfinder::resetMap, this, i));
 
 	/* Reset the nodes of this map using threads */
-	for (size_t i = 0; i < nrThreads; i++) {
-		threads[i]->join();
-		delete threads[i];
+	resetMap(0);
+	for (size_t i = 1; i < nrThreads; i++) {
+		threads[i-1]->join();
+		delete threads[i-1];
 	}
 
 	/* Reset leftovers */
@@ -275,7 +282,9 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 	dz2     = sz - gz;
 
 	std::list<ANode*> nodepath;
-	bool success = findPath(nodepath);
+	bool success;
+	success = findPath(nodepath);
+	
 	if (success && !nodepath.empty()) {
 		/* Insert a pre-waypoint at the beginning of the path */
 		float3 s0, s1;
@@ -313,9 +322,9 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 	Node *n1 = dynamic_cast<Node*>(an1);
 	Node *n2 = dynamic_cast<Node*>(an2);
-	int dx = n1->x - n2->x;
-	int dz = n1->z - n2->z;
-	return sqrt(dx*dx + dz*dz)*EPSILON;
+	int dx1 = n1->x - n2->x;
+	int dz1 = n1->z - n2->z;
+	return sqrt(dx1*dx1 + dz1*dz1)*1.000001f;
 }
 
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
@@ -336,8 +345,8 @@ void CPathfinder::drawMap(int map) {
 			float3 p1(p0);
 			p1.y += 100.0f;
 			if (maps[map][idx(x,z)].blocked())
-				ai->call->CreateLineFigure(p0, p1, 4, 1, 10000, 4);
-			ai->call->SetFigureColor(4, 1.0f, 0.0f, 0.0f, 1.0f);
+				ai->call->CreateLineFigure(p0, p1, map, 1, 10000, 4);
+			ai->call->SetFigureColor(map, 1.0f, 0.0f, 0.0f, 1.0f);
 		}
 	}
 }

@@ -2,6 +2,7 @@
 
 void AAStar::init() {
 	while(!open.empty()) open.pop();
+	counter = 0;
 }
 
 bool AAStar::findPath(std::list<ANode*>& path) {
@@ -18,8 +19,8 @@ bool AAStar::findPath(std::list<ANode*>& path) {
 	while (!open.empty()) {
 		x = open.top(); open.pop();
 
-		if (x == goal) {
-			tracePath(path);
+		if (x == goal || counter >= MAX_CYCLES) {
+			tracePath(x, path);
 			return true;
 		}
 
@@ -38,21 +39,21 @@ bool AAStar::findPath(std::list<ANode*>& path) {
 				y->open = false;
 
 			if (!y->open) {
-				y->g = g;
+				y->g      = g;
 				y->parent = x;
-				y->h = heuristic(y, goal);
+				y->h      = heuristic(y, goal);
+				y->open   = true;
 				open.push(y);
-				y->open = true;
 			}
+			counter++;
 		}
 	}
 	return false;
 }
 
-void AAStar::tracePath(std::list<ANode*>& path) {
-	ANode* n = goal;
-	while (n != start) {
-		path.push_front(n);
-		n = n->parent;
+void AAStar::tracePath(ANode* x, std::list<ANode*>& path) {
+	while (x != start) {
+		path.push_front(x);
+		x = x->parent;
 	}
 }
