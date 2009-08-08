@@ -55,6 +55,8 @@ class CPathfinder: public AAStar, public ARegistrar {
 	private:
 		AIClasses *ai;
 
+		bool removeTask;
+
 		char buf[1024];
 
 		/* The threads */

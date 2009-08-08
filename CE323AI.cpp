@@ -81,7 +81,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 void CE323AI::UnitCreated(int uid, int bid) {
 	CUnit *unit    = ai->unitTable->requestUnit(uid, bid);
 
-	sprintf(buf, "[CE323AI::UnitCreated]\t %s(%d) created", unit->def->humanName.c_str(), uid);
+	sprintf(buf, "[CE323AI::UnitCreated]\t%s(%d) created", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
 
 	unsigned int c = unit->type->cats;
@@ -96,7 +96,7 @@ void CE323AI::UnitCreated(int uid, int bid) {
 void CE323AI::UnitFinished(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
 
-	sprintf(buf, "[CE323AI::UnitFinished]\t %s(%d) finished", unit->def->humanName.c_str(), uid);
+	sprintf(buf, "[CE323AI::UnitFinished]\t%s(%d) finished", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
 
 	unsigned int c = unit->type->cats;
@@ -115,7 +115,7 @@ void CE323AI::UnitFinished(int uid) {
 /* Called on a destroyed unit */
 void CE323AI::UnitDestroyed(int uid, int attacker) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
-	sprintf(buf, "[CE323AI::UnitDestroyed]\t %s(%d) destroyed", unit->def->humanName.c_str(), uid);
+	sprintf(buf, "[CE323AI::UnitDestroyed]\t%s(%d) destroyed", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
 	unit->remove();
 }
@@ -123,7 +123,7 @@ void CE323AI::UnitDestroyed(int uid, int attacker) {
 /* Called when unit is idle */
 void CE323AI::UnitIdle(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
-	sprintf(buf, "[CE323AI::UnitIdle]\t %s(%d) idling", unit->def->humanName.c_str(), uid);
+	sprintf(buf, "[CE323AI::UnitIdle]\t%s(%d) idling", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
 }
 
@@ -135,7 +135,7 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 void CE323AI::UnitMoveFailed(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
 	unit->moveRandom(100.0f);
-	sprintf(buf, "[CE323AI::UnitMoveFailed]\t %s(%d) failed moving", unit->def->humanName.c_str(), uid);
+	sprintf(buf, "[CE323AI::UnitMoveFailed]\t%s(%d) failed moving", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
 }
 

@@ -96,12 +96,14 @@ void CPathfinder::addTask(ATask &task) {
 	task.reg(*this);
 	std::map<int, CGroup*>::iterator i;
 	tasks[task.key] = &task;
+	removeTask = false;
 	for (i = task.groups.begin(); i != task.groups.end(); i++) {
 		CGroup *group = i->second;
 		float3 pos = group->pos();
 		lookup[group->key] = task.key;
 		addGroup(*group, pos, task.pos);
 	}
+	if (removeTask) task.remove();
 }
 
 void CPathfinder::remove(ARegistrar &obj) {
@@ -267,7 +269,7 @@ void CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 			paths[group] = path;
 	}
 	/* Otherwise, remove this task we can't perform it */
-	else tasks[lookup[group]]->remove();
+	else removeTask = true;
 }
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius) {

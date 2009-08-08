@@ -30,6 +30,7 @@ void CMilitary::addUnit(CUnit &unit) {
 			/* If there is a new factory, or the current group is busy, request
 			 * a new group 
 			 */
+			unit.moveForward(100.0f);
 			if (currentGroups.find(unit.builder) == currentGroups.end() ||
 				currentGroups[unit.builder]->busy) {
 				CGroup *group = requestGroup(ENGAGE);
