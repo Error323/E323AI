@@ -61,8 +61,8 @@ void CThreatMap::update(int frame) {
 		if (ut->cats&ATTACKER && !ai->cheat->UnitBeingBuilt(units[i])) {
 			float range = (ud->maxWeaponRange*1.2f)/REAL;
 			float power = ai->cheat->GetUnitPower(units[i]);
-			if (ut->cats&COMMANDER)
-				power /= 100.0f; /* dgun gives overpowered dps */
+//			if (ut->cats&COMMANDER)
+//				power /= 100.0f; /* dgun gives overpowered dps */
 
 			int   R = (int) ceil(range);
 			for (int x = -R; x <= R; x++) {

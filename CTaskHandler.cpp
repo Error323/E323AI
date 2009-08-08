@@ -112,9 +112,9 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, std::vector<
 	for (unsigned i = 0; i < groups.size(); i++)
 		task->addGroup(*groups[i]);
 
-	ai->pf->addTask(*task);
 	task->reg(*this);
 	activeTasks[task->key] = task;
+	ai->pf->addTask(*task);
 }
 
 void CTaskHandler::addFactoryTask(CUnit &factory) {
@@ -159,9 +159,9 @@ void CTaskHandler::addAssistTask(ATask &toAssist, std::vector<CGroup*> &groups) 
 	for (unsigned i = 0; i < groups.size(); i++)
 		task->addGroup(*groups[i]);
 
-	ai->pf->addTask(*task);
 	task->reg(*this);
 	activeTasks[task->key] = task;
+	ai->pf->addTask(*task);
 }
 
 void CTaskHandler::addAttackTask(int target, std::vector<CGroup*> &groups) {
@@ -184,9 +184,9 @@ void CTaskHandler::addAttackTask(int target, std::vector<CGroup*> &groups) {
 	for (unsigned i = 0; i < groups.size(); i++)
 		task->addGroup(*groups[i]);
 
-	ai->pf->addTask(*task);
 	task->reg(*this);
 	activeTasks[task->key] = task;
+	ai->pf->addTask(*task);
 }
 
 void CTaskHandler::addMergeTask(std::vector<CGroup*> &groups) {

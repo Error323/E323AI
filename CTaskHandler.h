@@ -21,6 +21,7 @@ class ATask: public ARegistrar {
 			ARegistrar(counter), t(_t), ai(_ai) {
 			counter++;
 			isMoving = true;
+			pos = NULLVECTOR;
 		}
 		~ATask(){}
 
