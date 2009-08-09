@@ -176,23 +176,24 @@ void CEconomy::update(int frame) {
 				eRequest = false;
 			}
 		}
-		/* If we can afford to assist a lab and it's close enough, do so */
 		else {
+			/* If we can afford to assist a lab and it's close enough, do so */
 			ATask *task = canAssistFactory(*group);
 			if (task != NULL)
 				ai->tasks->addAssistTask(*task, V);
-
-			else if (!exceeding){
+			/* See if we can build a new factory */
+			else if (mexceeding) {
 				ATask *task = canAssist(BUILD_FACTORY, *group);
+				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH2);
 				if (task != NULL)
 					ai->tasks->addAssistTask(*task, V);
-			}
-			else {
-				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH2);
-				if (factory == NULL)
+				else if (factory == NULL)
 					factory = ai->unitTable->canBuild(unit->type, VEHICLE|TECH1);
 				ai->tasks->addBuildTask(BUILD_FACTORY, factory, V, pos);
-			} //TODO: build defense?
+			}
+			/* Build defense? */
+			else {
+			}
 		}
 	}
 
@@ -288,8 +289,8 @@ void CEconomy::updateIncomes(int frame) {
 	estall     = (eNow/eStorage < 0.1f && eUsage > eIncome);
 	stalling   = (mstall || estall);
 
-	eexceeding = (eNow > eStorage*0.9f && eUsage < eIncome);
-	mexceeding = (mNow > mStorage*0.9f && mUsage < mIncome);
+	eexceeding = (eNow > eStorage*0.9f);
+	mexceeding = (mNow > mStorage*0.9f);
 	exceeding  = (mexceeding || eexceeding);
 	if (mIncome < mUsage) mRequest = true;
 	if (eIncome < eUsage) eRequest = true;
@@ -304,7 +305,11 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 		CTaskHandler::BuildTask *buildtask = i->second;
 
 		/* Only build tasks we are interested in */
-		if (buildtask->bt != t) continue;
+		if (buildtask->bt != t)
+			continue;
+
+		if (buildtask->bt != BUILD_FACTORY && buildtask->assisters >=1)
+			continue;
 
 		/* TODO: instead of euclid distance, use pathfinder distance */
 		float builderdist = (buildtask->pos - buildtask->groups.begin()->second->pos()).Length2D();

@@ -11,7 +11,7 @@ class ARegistrar {
 		int key;
 
 		/* Register an object */
-		void reg(ARegistrar &obj) { records.push_back(&obj); }
+		void reg(ARegistrar &obj) { records.push_front(&obj); }
 
 		/* Unregister an object */
 		void unreg(ARegistrar &obj) { records.remove(&obj); }

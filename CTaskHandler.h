@@ -16,17 +16,21 @@ class ATask: public ARegistrar {
 			ARegistrar(counter), t(_t), pos(_pos), ai(_ai) {
 			counter++;
 			isMoving = true;
+			assisters = 0;
 		}
 		ATask(AIClasses *_ai, task _t): 
 			ARegistrar(counter), t(_t), ai(_ai) {
 			counter++;
 			isMoving = true;
 			pos = NULLVECTOR;
+			assisters = 0;
 		}
 		~ATask(){}
 
 		/* Task counter */
 		static int counter;
+
+		int assisters;
 
 		/* The task in {BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD} */
 		task t;
@@ -123,9 +127,6 @@ class CTaskHandler: public ARegistrar {
 			/* Update the merge task */
 			void update();
 		};
-
-		/* Controls which task may be updated (round robin-ish) */
-		unsigned updateCount;
 
 		/* The ATask container per task type */
 		std::map<task, std::vector<ATask*> > tasks;

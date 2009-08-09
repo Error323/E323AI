@@ -149,6 +149,10 @@ void CPathfinder::updateFollowers() {
 		/* Go through all the units in a group */
 		for (u = group->units.begin(); u != group->units.end(); u++) {
 			CUnit *unit = u->second;
+			if (group->waiters[unit->key]) {
+				unit->wait();
+				group->waiters[unit->key] = false;
+			}
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
 			float length = 0.0f;
 			int s1 = 0, s2 = 1;
@@ -198,19 +202,6 @@ void CPathfinder::updateFollowers() {
 						group->waiters[unit->key] = true;
 					}
 				}
-				else {
-					if (group->waiters[unit->key]) {
-						unit->wait();
-						group->waiters[unit->key] = false;
-					}
-				}
-			}
-		}
-		else {
-			CUnit *unit = group->units.begin()->second;
-			if (group->waiters[unit->key]) {
-				unit->wait();
-				group->waiters[unit->key] = false;
 			}
 		}
 		/* See who will get their path updated by updatePaths() */
@@ -297,7 +288,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 			s1 = g;
 
 		float3 seg= s0 - s1;
-		seg *= 100.0f; /* Blow up the pre-waypoint */
+		seg *= 10000.0f; /* Blow up the pre-waypoint */
 		seg += s0;
 		seg *= REAL;
 		seg.y = ai->call->GetElevation(seg.x, seg.z)+10;

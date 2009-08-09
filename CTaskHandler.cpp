@@ -13,6 +13,7 @@ void ATask::remove() {
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
 		(*j)->remove(*this);
+	assisters = 0;
 }
 
 void ATask::remove(ARegistrar &group) {
@@ -41,12 +42,12 @@ void ATask::reset() {
 	records.clear();
 	groups.clear();
 	moving.clear();
-	isMoving = true;
+	isMoving  = true;
+	assisters = 0;
 }
 
 CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500) {
-	this->ai    = ai;
-	updateCount = 0;
+	this->ai = ai;
 
 	taskStr[ASSIST]       = std::string("ASSIST");
 	taskStr[BUILD]        = std::string("BUILD");
@@ -75,11 +76,21 @@ void CTaskHandler::remove(ARegistrar &task) {
 	lookup[t->t].erase(t->key);
 	activeTasks.erase(t->key);
 	switch(t->t) {
-		case BUILD:         activeBuildTasks.erase(t->key);  break;
-		case ASSIST:        activeAssistTasks.erase(t->key); break;
-		case ATTACK:        activeAttackTasks.erase(t->key); break;
-		case MERGE:         activeMergeTasks.erase(t->key);  break;
-		case FACTORY_BUILD: activeFactoryTasks.erase(t->key); break;
+		case BUILD:
+			activeBuildTasks.erase(t->key);
+		break;
+		case ASSIST:
+			activeAssistTasks.erase(t->key); 
+		break;
+		case ATTACK:
+			activeAttackTasks.erase(t->key); 
+		break;
+		case MERGE:
+			activeMergeTasks.erase(t->key);
+		break;
+		case FACTORY_BUILD:
+			activeFactoryTasks.erase(t->key);
+		break;
 
 		default: return;
 	}
@@ -162,6 +173,7 @@ void CTaskHandler::addAssistTask(ATask &toAssist, std::vector<CGroup*> &groups) 
 	task->reg(*this);
 	activeTasks[task->key] = task;
 	ai->pf->addTask(*task);
+	toAssist.assisters++;
 }
 
 void CTaskHandler::addAttackTask(int target, std::vector<CGroup*> &groups) {
@@ -195,7 +207,7 @@ void CTaskHandler::addMergeTask(std::vector<CGroup*> &groups) {
 	getGroupsRangeAndPos(groups, range, pos);
 
 	if (task == NULL) {
-		task = new MergeTask(ai, pos, range);
+		task = new MergeTask(ai, pos, 100.0f);
 		MergeTask *mergeTask = dynamic_cast<MergeTask*>(task);
 		tasks[MERGE].push_back(task);
 		activeMergeTasks[task->key] = mergeTask;
@@ -228,13 +240,8 @@ void CTaskHandler::getGroupsRangeAndPos(std::vector<CGroup*> &groups, float &ran
 
 void CTaskHandler::update() {
 	std::map<int, ATask*>::iterator i;
-	unsigned tasknr = 0;
-	for (i = activeTasks.begin(); i != activeTasks.end(); i++) {
-		//if (updateCount % activeTasks.size() == tasknr)
-			i->second->update();
-		tasknr++;
-	}
-	updateCount++;
+	for (i = activeTasks.begin(); i != activeTasks.end(); i++)
+		if (i->second != NULL) i->second->update();
 }
 
 ATask* CTaskHandler::requestTask(task t) {

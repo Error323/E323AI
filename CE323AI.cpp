@@ -168,7 +168,7 @@ void CE323AI::EnemyDamaged(int damaged, int attacker, float damage, float3 dir) 
  ****************/
 
 void CE323AI::GotChatMsg(const char* msg, int player) {
-	LOGS("I don't like smalltalk, just lose plz xD");
+	LOGS("Just lose plz, k thx bye!");
 }
 
 int CE323AI::HandleEvent(int msg, const void* data) {
