@@ -1,9 +1,9 @@
 E323AI - Ultralisk v2.11
 
 * If you want to make use of this AI do the following:
-	1 git clone git://github.com/spring/spring.git
-	2 cd spring
-	3 git submodule update --init
+   1 git clone git://github.com/spring/spring.git
+   2 cd spring
+   3 git submodule update --init
 
   Ofcourse, if you already have a clone of spring, just update.  To keep up to
   date, cd into the submodule and fetch,merge (like any normal git repo).

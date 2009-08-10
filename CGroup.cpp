@@ -108,8 +108,7 @@ void CGroup::assist(ATask &t) {
 	switch(t.t) {
 		case BUILD: {
 			CTaskHandler::BuildTask *task = dynamic_cast<CTaskHandler::BuildTask*>(&t);
-			CGroup *group = task->groups.begin()->second;
-			CUnit  *unit  = group->units.begin()->second;
+			CUnit  *unit  = task->group->units.begin()->second;
 			guard(unit->key);
 			break;
 		}

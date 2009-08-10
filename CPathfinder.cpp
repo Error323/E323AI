@@ -89,39 +89,11 @@ void CPathfinder::resetMap(int thread) {
 	int offset = size*thread;
 	for (unsigned i = 0; i < size; i++)
 		maps[activeMap][i+offset].reset();
-	//printf("Reset using thread %d, range[%d, %d] total: %d\n", thread, offset, offset+size, X*Z);
 }
 
-void CPathfinder::addTask(ATask &task) {
-	task.reg(*this);
-	std::map<int, CGroup*>::iterator i;
-	tasks[task.key] = &task;
-	removeTask = false;
-	for (i = task.groups.begin(); i != task.groups.end(); i++) {
-		CGroup *group = i->second;
-		float3 pos = group->pos();
-		lookup[group->key] = task.key;
-		addGroup(*group, pos, task.pos);
-	}
-	if (removeTask) task.remove();
-}
-
-void CPathfinder::remove(ARegistrar &obj) {
-	ATask *task = dynamic_cast<ATask*>(&obj);
-	sprintf(buf, "[CPathfinder::remove]\tremove task %s(%d)", ai->tasks->taskStr[task->t].c_str(),task->key);
-	LOGN(buf);
-	std::map<int, CGroup*>::iterator i;
-	for (i = task->groups.begin(); i != task->groups.end(); i++) {
-		CGroup *group = i->second;
-		remove(*group);
-	}
-	tasks.erase(task->key);
-}
-
-void CPathfinder::remove(CGroup &group) {
+void CPathfinder::remove(ARegistrar &group) {
 	paths.erase(group.key);
 	groups.erase(group.key);
-	lookup.erase(group.key);
 }
 
 void CPathfinder::updateMap(float *weights) {
@@ -218,22 +190,18 @@ void CPathfinder::updatePaths() {
 	if (groups.find(repathGroup) == groups.end())
 		return;
 
-	ATask *task  = tasks[lookup[repathGroup]];
-	if (task == NULL) {
-		remove(*groups[repathGroup]);
-		return;
-	}
 	float3 start = groups[repathGroup]->pos();
-	float3 goal  = task->pos;
+	float3 goal  = ai->tasks->getPos(*groups[repathGroup]);
 	addPath(repathGroup, start, goal);
 }
 
-void CPathfinder::addGroup(CGroup &G, float3 &start, float3 &goal) {
-	groups[G.key] = &G;
-	addPath(G.key, start, goal);
+bool CPathfinder::addGroup(CGroup &group, float3 &start, float3 &goal) {
+	groups[group.key] = &group;
+	group.reg(*this);
+	return addPath(group.key, start, goal);
 }
 
-void CPathfinder::addPath(int group, float3 &start, float3 &goal) {
+bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 	activeMap = groups[group]->moveType;
 	std::vector<float3> path;
 	/* Initialize threads */
@@ -254,13 +222,13 @@ void CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 		maps[activeMap][i+offset].reset();
 
 	/* If we found a path, add it */
-	if (getPath(start, goal, path, group)) {
-		/* Add it when not empty */
-		if (!path.empty())
-			paths[group] = path;
-	}
-	/* Otherwise, remove this task we can't perform it */
-	else removeTask = true;
+	bool success = getPath(start, goal, path, group);
+
+	/* Add it when not empty */
+	if (success && !path.empty())
+		paths[group] = path;
+
+	return success;
 }
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius) {
@@ -275,9 +243,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 	dz2     = sz - gz;
 
 	std::list<ANode*> nodepath;
-	bool success;
-	success = findPath(nodepath);
-	
+	bool success = findPath(nodepath);
 	if (success && !nodepath.empty()) {
 		/* Insert a pre-waypoint at the beginning of the path */
 		float3 s0, s1;

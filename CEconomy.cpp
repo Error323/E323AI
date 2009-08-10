@@ -109,7 +109,6 @@ void CEconomy::update(int frame) {
 		CGroup *group = i->second;
 		if (group->busy) continue;
 
-		std::vector<CGroup*> V; V.push_back(group);
 		CUnit *unit = group->units.begin()->second;
 
 		float3 pos = group->pos();
@@ -120,23 +119,23 @@ void CEconomy::update(int frame) {
 				bool canBuildMex = ai->metalMap->getMexSpot(*group, mexPos);;
 				if (canBuildMex) {
 					UnitType *mex = ai->unitTable->canBuild(unit->type, MEXTRACTOR);
-					ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, V, mexPos);
+					ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, *group, mexPos);
 				}
 			}
 			/* If we don't have a factory, build one */
 			else if (ai->unitTable->factories.empty()) {
 				if (canAffordToBuild(*group, factory))
-					ai->tasks->addBuildTask(BUILD_FACTORY, factory, V, pos);
+					ai->tasks->addBuildTask(BUILD_FACTORY, factory, *group, pos);
 			}
 			/* If we don't have enough energy income, build a energy provider */
 			else if (estall || eRequest) {
 				if (canAffordToBuild(*group, energyProvider)) {
-					ai->tasks->addBuildTask(BUILD_EPROVIDER, energyProvider, V, pos);
+					ai->tasks->addBuildTask(BUILD_EPROVIDER, energyProvider, *group, pos);
 					eRequest = false;
 				}
 				else if (energyProvider->id != utSolar->id) {
 					if (canAffordToBuild(*group, utSolar)) {
-						ai->tasks->addBuildTask(BUILD_EPROVIDER, utSolar, V, pos);
+						ai->tasks->addBuildTask(BUILD_EPROVIDER, utSolar, *group, pos);
 						eRequest = false;
 					}
 				}
@@ -144,7 +143,7 @@ void CEconomy::update(int frame) {
 			else {
 				ATask *task = canAssistFactory(*group);
 				if (task != NULL)
-					ai->tasks->addAssistTask(*task, V);
+					ai->tasks->addAssistTask(*task, *group);
 			}
 		}
 		/* Increase eco income */
@@ -152,17 +151,17 @@ void CEconomy::update(int frame) {
 			if (mRequest || mstall) {
 				ATask *task = canAssist(BUILD_MPROVIDER, *group);
 				if (task != NULL)
-					ai->tasks->addAssistTask(*task, V);
+					ai->tasks->addAssistTask(*task, *group);
 				else  {
 					float3 mexPos;
 					bool canBuildMex = ai->metalMap->getMexSpot(*group, mexPos);;
 					if (canBuildMex) {
 						UnitType *mex = ai->unitTable->canBuild(unit->type, MEXTRACTOR);
-						ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, V, mexPos);
+						ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, *group, mexPos);
 					}
 					else {
 						UnitType *mmaker = ai->unitTable->canBuild(unit->type, MMAKER);
-						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, V, pos);
+						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, *group, pos);
 					}
 				}
 				mRequest = false;
@@ -170,9 +169,9 @@ void CEconomy::update(int frame) {
 			else if (eRequest || estall) {
 				ATask *task = canAssist(BUILD_EPROVIDER, *group);
 				if (task != NULL)
-					ai->tasks->addAssistTask(*task, V);
+					ai->tasks->addAssistTask(*task, *group);
 				else
-					ai->tasks->addBuildTask(BUILD_EPROVIDER, energyProvider, V, pos);
+					ai->tasks->addBuildTask(BUILD_EPROVIDER, energyProvider, *group, pos);
 				eRequest = false;
 			}
 		}
@@ -180,16 +179,16 @@ void CEconomy::update(int frame) {
 			/* If we can afford to assist a lab and it's close enough, do so */
 			ATask *task = canAssistFactory(*group);
 			if (task != NULL)
-				ai->tasks->addAssistTask(*task, V);
+				ai->tasks->addAssistTask(*task, *group);
 			/* See if we can build a new factory */
 			else if (mexceeding) {
 				ATask *task = canAssist(BUILD_FACTORY, *group);
 				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH2);
 				if (task != NULL)
-					ai->tasks->addAssistTask(*task, V);
+					ai->tasks->addAssistTask(*task, *group);
 				else if (factory == NULL)
 					factory = ai->unitTable->canBuild(unit->type, VEHICLE|TECH1);
-				ai->tasks->addBuildTask(BUILD_FACTORY, factory, V, pos);
+				ai->tasks->addBuildTask(BUILD_FACTORY, factory, *group, pos);
 			}
 			/* Build defense? */
 			else {
@@ -308,11 +307,11 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 		if (buildtask->bt != t)
 			continue;
 
-		if (buildtask->bt != BUILD_FACTORY && buildtask->assisters >=1)
+		if (buildtask->bt != BUILD_FACTORY && !buildtask->assistable())
 			continue;
 
 		/* TODO: instead of euclid distance, use pathfinder distance */
-		float builderdist = (buildtask->pos - buildtask->groups.begin()->second->pos()).Length2D();
+		float builderdist = (buildtask->pos - buildtask->group->pos()).Length2D();
 		float dist        = (pos - buildtask->pos).Length2D() - builderdist;
 		suited[dist]      = buildtask;
 	}

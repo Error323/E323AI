@@ -12,34 +12,25 @@ enum task{BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD};
 
 class ATask: public ARegistrar {
 	public:
-		ATask(AIClasses *_ai, task _t, float3 &_pos): 
-			ARegistrar(counter), t(_t), pos(_pos), ai(_ai) {
-			counter++;
-			isMoving = true;
-			assisters = 0;
-		}
-		ATask(AIClasses *_ai, task _t): 
-			ARegistrar(counter), t(_t), ai(_ai) {
+		ATask(): 
+			ARegistrar(counter) {
 			counter++;
 			isMoving = true;
 			pos = NULLVECTOR;
-			assisters = 0;
 		}
 		~ATask(){}
-
-		/* Task counter */
-		static int counter;
-
-		int assisters;
 
 		/* The task in {BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD} */
 		task t;
 
-		/* The group(s) involved */
-		std::map<int, CGroup*> groups;
+		/* Task counter */
+		static int counter;
 
-		/* Determine if the group is moving or in the final stage */
-		std::map<int, bool> moving;
+		/* The assisters assisting this task */
+		std::list<ATask*> assisters;
+
+		/* The group(s) involved */
+		CGroup *group;
 
 		/* Determine if all groups in this task are moving or not */
 		bool isMoving;
@@ -61,12 +52,14 @@ class ATask: public ARegistrar {
 		/* Reset this task for reuse */
 		void reset();
 
+		/* Is this task assistable */
+		bool assistable();
+
 		/* Update this task */
 		virtual void update() = 0;
 
-	protected:
 		AIClasses *ai;
-		char buf[1024];
+		char buf[512];
 };
 
 class CTaskHandler: public ARegistrar {
@@ -75,7 +68,7 @@ class CTaskHandler: public ARegistrar {
 		~CTaskHandler(){};
 
 		struct BuildTask: public ATask {
-			BuildTask(AIClasses *ai, float3 &pos, buildType _bt, UnitType *_toBuild);
+			BuildTask(){}
 
 			/* The build task */
 			buildType bt;
@@ -85,19 +78,23 @@ class CTaskHandler: public ARegistrar {
 
 			/* Update the build task, assumes 1 group on a task! */
 			void update();
+
+			void reset(float3 &pos, buildType bt, UnitType *ut);
 		};
 
 		struct FactoryTask: public ATask {
-			FactoryTask(AIClasses *ai, CUnit &unit);
+			FactoryTask(){}
 
 			CUnit *factory;
 
 			/* If a factory is idle, make sure it gets something to build */
 			void update();
+
+			void reset(CUnit &factory);
 		};
 
 		struct AssistTask: public ATask {
-			AssistTask(AIClasses *ai, ATask &task);
+			AssistTask(){}
 
 			/* The (build)task to assist */
 			ATask *assist;
@@ -106,26 +103,34 @@ class CTaskHandler: public ARegistrar {
 			void update();
 			/* Overload, since removal also requires unreg @ assist task */
 			void remove();
+			
+			void reset(ATask &task);
 		};
 
 		struct AttackTask: public ATask {
-			AttackTask(AIClasses *ai, int _target);
+			AttackTask(){}
 
 			/* The target to attack */
 			int target;
 
 			/* Update the attack task */
 			void update();
+
+			void reset(int target);
 		};
 
 		struct MergeTask: public ATask {
-			MergeTask(AIClasses *_ai, float3 &pos, float _range);
+			MergeTask(){}
 
 			/* The maximal range from the target when attacking */
 			float range;
 
+			std::vector<CGroup*> groups;
+
 			/* Update the merge task */
 			void update();
+
+			void reset(std::vector<CGroup*> &groups);
 		};
 
 		/* The ATask container per task type */
@@ -138,10 +143,10 @@ class CTaskHandler: public ARegistrar {
 		std::map<task, std::stack<int> >    free;
 
 		/* The active tasks per type */
-		std::map<int, BuildTask*> activeBuildTasks;
-		std::map<int, AssistTask*> activeAssistTasks;
-		std::map<int, AttackTask*> activeAttackTasks;
-		std::map<int, MergeTask*> activeMergeTasks;
+		std::map<int, BuildTask*>   activeBuildTasks;
+		std::map<int, AssistTask*>  activeAssistTasks;
+		std::map<int, AttackTask*>  activeAttackTasks;
+		std::map<int, MergeTask*>   activeMergeTasks;
 		std::map<int, FactoryTask*> activeFactoryTasks;
 
 		/* Tasks to string */
@@ -151,19 +156,22 @@ class CTaskHandler: public ARegistrar {
 		void remove(ARegistrar &task);
 
 		/* Add a fresh build task */
-		void addBuildTask(buildType build, UnitType *toBuild, std::vector<CGroup*> &groups, float3 &pos);
+		void addBuildTask(buildType build, UnitType *toBuild, CGroup &group, float3 &pos);
 
 		/* Add a fresh assist task */
-		void addAssistTask(ATask &task, std::vector<CGroup*> &groups);
+		void addAssistTask(ATask &task, CGroup &group);
 
 		/* Add a fresh attack task */
-		void addAttackTask(int target, std::vector<CGroup*> &groups);
+		void addAttackTask(int target, CGroup &group);
 
 		/* Add a fresh merge task */
 		void addMergeTask(std::vector<CGroup*> &groups);
 
 		/* Add a fresh factory task */
 		void addFactoryTask(CUnit &factory);
+
+		/* Get the group destination */
+		float3 getPos(CGroup &group);
 
 		/* Update call */
 		void update();
@@ -174,13 +182,16 @@ class CTaskHandler: public ARegistrar {
 
 
 		/* The active tasks to update */
-		std::map<int, ATask*>       activeTasks;
+		std::map<int, ATask*> activeTasks;
+
+		/* The group to task table */
+		std::map<int, ATask*> groupToTask;
 
 		/* Request an unoccupied task */
 		ATask* requestTask(task t);
 
 		/* Calculate avg range and pos of groups */
-		void getGroupsRangeAndPos(std::vector<CGroup*> &groups, float &range, float3 &pos);
+		static void getGroupsPos(std::vector<CGroup*> &groups, float3 &pos);
 };
 
 #endif

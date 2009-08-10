@@ -160,8 +160,7 @@ void CMilitary::update(int frame) {
 		if (target == -1) 
 			break;
 
-		std::vector<CGroup*> V; V.push_back(group);
-		ai->tasks->addAttackTask(target, V);
+		ai->tasks->addAttackTask(target, *group);
 	}
 
 	std::vector<CGroup*> mergable;
@@ -196,13 +195,13 @@ void CMilitary::update(int frame) {
 			continue;
 		}
 
-		std::vector<CGroup*> V; V.push_back(group);
-		ai->tasks->addAttackTask(target, V);
+		ai->tasks->addAttackTask(target, *group);
 	}
 
 	/* Join forces */
-	if (mergable.size() >= 2)
-		ai->tasks->addMergeTask(mergable);
+	if (mergable.size() >= 2) {
+		//ai->tasks->addMergeTask(mergable);
+	}
 
 	/* Always have enough scouts */
 	if (activeScoutGroups.size() == 0)

@@ -38,14 +38,11 @@ class CPathfinder: public AAStar, public ARegistrar {
 		 */
 		void updatePaths();
 
-		/* Add a task */
-		void addTask(ATask &task);
+		/* Register a new group */
+		bool addGroup(CGroup &G, float3 &start, float3 &goal);
 
 		/* Overload */
-		void remove(ARegistrar &task);
-
-		/* Remove a specific group */
-		void remove(CGroup &group);
+		void remove(ARegistrar &group);
 
 		int X,Z,dx2,dz2;
 		float REAL;
@@ -54,8 +51,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 	private:
 		AIClasses *ai;
-
-		bool removeTask;
 
 		char buf[1024];
 
@@ -80,12 +75,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* The groups */
 		std::map<int, CGroup*> groups;
 
-		/* The tasks */
-		std::map<int, ATask*>  tasks;
-
-		/* <groupid, taskid> */
-		std::map<int, int>     lookup;
-
 		/* spring maps */
 		std::vector<float> heightMap, slopeMap;
 
@@ -102,16 +91,13 @@ class CPathfinder: public AAStar, public ARegistrar {
 		float heuristic(ANode *an1, ANode *an2);
 
 		/* Add a path to a unit or group */
-		void addPath(int group, float3 &start, float3 &goal);
+		bool addPath(int group, float3 &start, float3 &goal);
 
 		/* Reset the map nodes */
 		void resetMap(int thread);
 
 		/* Start pathfinding */
 		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius = EPSILON);
-		/* Register subgroups */
-		void addGroup(CGroup &G, float3 &start, float3 &goal);
-
 		/* Draw the map */
 		void drawMap(int map);
 
