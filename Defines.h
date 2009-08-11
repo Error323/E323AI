@@ -3,9 +3,9 @@
 
 #include "AIExport.h"
 
-#define MAX_FLOAT 1000000000.0f
 #define MAX_INT   1000000000
-#define EPSILON   .00000000001f
+#define MAX_FLOAT float(MAX_INT)
+#define EPSILON   1/MAX_FLOAT
 
 #define ERRORVECTOR float3(-1.0f,0.0f,0.0f)
 #define NULLVECTOR  float3(0.0f,0.0f,0.0f)
@@ -31,7 +31,6 @@
 /* Misc macro's */
 #define UD(u) (ai->call->GetUnitDef(u))
 #define UT(u) (&(ai->unitTable->units[u]))
-#define COMM ai->unitTable->comm
 #define id(x,z) (x*Z+z)
 
 /* Metal to Energy ratio */
@@ -42,12 +41,6 @@
 
 /* Threatmap resolution */
 #define THREATRES 8
-
-/* Minimal group size */
-#define MINGROUPSIZE 3
-
-/* Compute the sign of an int */
-#define SIGN(x) (+1 | (x >> (sizeof(int) * 8 - 1)))
 
 /* Unit categories */
 enum unitCategory {

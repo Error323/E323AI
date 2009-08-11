@@ -223,6 +223,7 @@ void CTaskHandler::BuildTask::update() {
 void CTaskHandler::FactoryTask::reset(CUnit &unit) {
 	pos = unit.pos();
 	factory = &unit;
+	unit.reg(*this);
 }
 
 void CTaskHandler::addFactoryTask(CUnit &factory) {

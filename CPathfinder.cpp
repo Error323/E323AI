@@ -78,7 +78,11 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 		}
 	}
 
+	#if (BOOST_VERSION >= 103500)
 	nrThreads = boost::thread::hardware_concurrency();
+	#elif
+	nrThreads = 2;
+	#endif
 	threads.resize(nrThreads-1);
 
 	draw = false;

@@ -84,7 +84,6 @@ void CEconomy::addUnit(CUnit &unit) {
 	LOGN(buf);
 	unsigned c = unit.type->cats;
 	if (c&FACTORY) {
-		ai->unitTable->factories[unit.key] = false;
 		ai->tasks->addFactoryTask(unit);
 	}
 

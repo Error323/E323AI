@@ -23,7 +23,7 @@ struct RNG {
 	}
 };
 
-/* static, so srand() only instantiated once */
+/* static const, so srand() only instantiated once */
 const static RNG rng;
 
 #endif

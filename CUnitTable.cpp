@@ -49,7 +49,7 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		std::string(CFG_PATH).c_str(),
 		ai->call->GetModName()
 	);
-	std::ofstream UC(buf, std::ios::app);
+	std::ofstream UC(buf, std::ios::trunc);
 
 	UC << "# Unit Categorization for E323AI\n\n# Categories to choose from:\n";
 	std::map<unitCategory,std::string>::iterator i;
@@ -147,6 +147,8 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	unit->reg(*this);
 	if (bid > 0) builders[bid] = false;
 	activeUnits[uid] = unit;
+	if (unit->type->cats&FACTORY)
+		ai->unitTable->factories[uid] = false;
 	return unit;
 }
 

@@ -18,7 +18,9 @@
 #include <list>
 #include <algorithm>
 
+#include <boost/bind.hpp>
 #include <boost/thread.hpp>
+#include <boost/version.hpp>
 
 /* Spring Standard Header */
 #include "System/StdAfx.h"
