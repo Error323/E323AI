@@ -105,6 +105,9 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	UC.close();
 }
 
+void CUnitTable::parseCategorizations() {
+}
+
 void CUnitTable::remove(ARegistrar &unit) {
 	sprintf(buf, "[CUnitTable::remove]\tremove unit(%d)", unit.key);
 	LOGN(buf);

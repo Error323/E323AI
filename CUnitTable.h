@@ -71,6 +71,8 @@ class CUnitTable: public ARegistrar {
 		/* Build the lists buildby and canbuild per unit */
 		void buildTechTree();
 
+		void parseCategorizations();
+
 		/* Categorize the units, see defines.h for categories */
 		unsigned int categorizeUnit(UnitType *ut);
 
