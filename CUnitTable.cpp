@@ -143,18 +143,20 @@ void CUnitTable::generateCategorizationFile(const char *fileName) {
 void CUnitTable::parseCategorizations(const char *fileName) {
 	LOGN("Parsing categorization file");
 	std::ifstream file(fileName);
-	std::vector<std::string> splitted;
 	unsigned linenr = 0;
 
 	if (file.good() && file.is_open()) {
 		while(!file.eof()) {
 			linenr++;
 			std::string line;
+			std::vector<std::string> splitted;
+
 			std::getline(file, line);
 
 			if (line.empty() || line[0] == '#')
 				continue;
 
+			line = line.substr(0, line.find('#')-1);
 			split(line, ',', splitted);
 			int id = atoi(splitted[0].c_str());
 			UnitType *ut = &units[id];
@@ -162,7 +164,7 @@ void CUnitTable::parseCategorizations(const char *fileName) {
 			unsigned categories = 0;
 			for (unsigned i = 1; i < splitted.size(); i++) {
 				if (str2cat.find(splitted[i]) == str2cat.end()) {
-					std::cerr << "line: " << linenr << "\tcategory '" << splitted[i] << "' is invalid.\n";
+					std::cerr << "line: " << linenr << "\tcategory `" << splitted[i] << "' is invalid.\n";
 					continue;
 				}
 				categories |= str2cat[splitted[i]];
@@ -174,7 +176,6 @@ void CUnitTable::parseCategorizations(const char *fileName) {
 			}
 
 			ut->cats = categories;
-			splitted.clear();
 		}
 		file.close();
 	}
