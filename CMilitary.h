@@ -62,8 +62,8 @@ class CMilitary: public ARegistrar {
 		int selectTarget(float3 &ourPos, std::vector<int> &targets,
 						 std::vector<int> &occupied);
 
-		/* Request a random unit for building */
-		unsigned randomUnit();
+		/* Request a unit for building using a roulette wheel system */
+		unsigned requestUnit();
 
 		char buf[1024];
 };

@@ -209,15 +209,18 @@ void CMilitary::update(int frame) {
 		ai->wl->push(SCOUTER, NORMAL);
 
 	/* Always build some unit */
-	ai->wl->push(randomUnit(), NORMAL);
+	ai->wl->push(requestUnit(), NORMAL);
 }
 
-unsigned CMilitary::randomUnit() {
+unsigned CMilitary::requestUnit() {
 	float r = rng.RandFloat();
-	if (r > 0.1 && r < 0.6)
-		return MOBILE|ARTILLERY;
-	else if(r >= 0.6)
-		return MOBILE|ASSAULT;
-	else 
-		return MOBILE|SCOUTER;
+	std::multimap<float, unitCategory>::iterator i;
+	float sum = 0.0f;
+	for (i = ai->intel->roulette.begin(); i != ai->intel->roulette.end(); i++) {
+		sum += i->first;
+		if (r <= sum) {
+			return MOBILE | i->second;
+		}
+	}
+	return MOBILE | ASSAULT;
 }
