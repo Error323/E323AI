@@ -333,7 +333,7 @@ void CTaskHandler::AttackTask::update() {
 /**************************************************************/
 void CTaskHandler::MergeTask::reset(std::vector<CGroup*> &groups) {
 	CTaskHandler::getGroupsPos(groups, pos);
-	range = 100.0f;
+	range = 10.0f;
 	this->groups = groups;
 }
 

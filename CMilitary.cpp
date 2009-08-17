@@ -174,9 +174,17 @@ void CMilitary::update(int frame) {
 
 		int target = selectAttackTarget(*group);
 
-		/* There are no targets available */
-		if (target == -1) 
+		/* There are no targets available, assist an attack */
+		if (target == -1) {
+			std::map<int,CTaskHandler::AttackTask*>::iterator i;
+			for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
+				if (i->second->assisters.size() <= 1) {
+					group->assist(*(i->second));
+					break;
+				}
+			}
 			break;
+		}
 		
 		float3 goal = ai->cheat->GetUnitPos(target);
 
