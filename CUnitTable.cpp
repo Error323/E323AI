@@ -74,7 +74,7 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		modfile.close();
 	}
 	else {
-		sprintf(buf, "%s", std::string(CFG_PATH).c_str());
+		sprintf(buf, "%s", CFG_FOLDER);
 		ai->call->GetValue(AIVAL_LOCATE_FILE_W, buf);
 		generateCategorizationFile(fileName.c_str());
 	}
