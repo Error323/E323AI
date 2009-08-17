@@ -1,67 +1,84 @@
 #include "CUnitTable.h"
 
+#include <iostream>
+#include <fstream>
+
 CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	this->ai = ai;
 	/* techlevels */
-	categories[TECH1]       = "TECH1";  
-	categories[TECH2]       = "TECH2";  
-	categories[TECH3]       = "TECH3";  
+	cat2str[TECH1]       = "TECH1";  
+	cat2str[TECH2]       = "TECH2";  
+	cat2str[TECH3]       = "TECH3";  
 
 	/* main categories */
-	categories[AIR]         = "AIR";        
-	categories[SEA]         = "SEA";        
-	categories[LAND]        = "LAND";       
-	categories[STATIC]      = "STATIC";     
-	categories[MOBILE]      = "MOBILE";     
+	cat2str[AIR]         = "AIR";        
+	cat2str[SEA]         = "SEA";        
+	cat2str[LAND]        = "LAND";       
+	cat2str[STATIC]      = "STATIC";     
+	cat2str[MOBILE]      = "MOBILE";     
 
 	/* builders */
-	categories[FACTORY]     = "FACTORY";    
-	categories[BUILDER]     = "BUILDER";    
-	categories[ASSISTER]    = "ASSISTER";      
-	categories[RESURRECTOR] = "RESURRECTOR";
+	cat2str[FACTORY]     = "FACTORY";    
+	cat2str[BUILDER]     = "BUILDER";    
+	cat2str[ASSISTER]    = "ASSISTER";      
+	cat2str[RESURRECTOR] = "RESURRECTOR";
 
 	/* offensives */
-	categories[COMMANDER]   = "COMMANDER";  
-	categories[ATTACKER]    = "ATTACKER";   
-	categories[ANTIAIR]     = "ANTIAIR";    
-	categories[SCOUTER]     = "SCOUTER";  
-	categories[ARTILLERY]   = "ARTILLERY";  
-	categories[SNIPER]      = "SNIPER";  
-	categories[ASSAULT]     = "ASSAULT";  
+	cat2str[COMMANDER]   = "COMMANDER";  
+	cat2str[ATTACKER]    = "ATTACKER";   
+	cat2str[ANTIAIR]     = "ANTIAIR";    
+	cat2str[SCOUTER]     = "SCOUTER";  
+	cat2str[ARTILLERY]   = "ARTILLERY";  
+	cat2str[SNIPER]      = "SNIPER";  
+	cat2str[ASSAULT]     = "ASSAULT";  
 
 	/* economic */
-	categories[MEXTRACTOR]  = "MEXTRACTOR";  
-	categories[MMAKER]      = "MMAKER";      
-	categories[EMAKER]      = "EMAKER";      
-	categories[MSTORAGE]    = "MSTORAGE";    
-	categories[ESTORAGE]    = "ESTORAGE";    
-	categories[WIND]        = "WIND";  
-	categories[TIDAL]       = "TIDAL";  
+	cat2str[MEXTRACTOR]  = "MEXTRACTOR";  
+	cat2str[MMAKER]      = "MMAKER";      
+	cat2str[EMAKER]      = "EMAKER";      
+	cat2str[MSTORAGE]    = "MSTORAGE";    
+	cat2str[ESTORAGE]    = "ESTORAGE";    
+	cat2str[WIND]        = "WIND";  
+	cat2str[TIDAL]       = "TIDAL";  
 
 	/* ground types */
-	categories[KBOT]        = "KBOT";  
-	categories[VEHICLE]     = "VEHICLE";  
+	cat2str[KBOT]        = "KBOT";  
+	cat2str[VEHICLE]     = "VEHICLE";  
 
-	sprintf(buf, "%s", CFG_FOLDER);
-	ai->call->GetValue(AIVAL_LOCATE_FILE_W, buf);
+	/* Create the str2cat table and cats vector */
+	std::map<unitCategory,std::string>::iterator i;
+	for (i = cat2str.begin(); i != cat2str.end(); i++) {
+		cats.push_back(i->first);
+		str2cat[i->second] = i->first;
+	}
+	numUnits = ai->call->GetNumUnitDefs();
+
+ 	/* Build the techtree, note that this is actually a graph in XTA */
+	buildTechTree();
+
+	/* Determine the modname (exists of 2 characters) */
+	std::string modName(ai->call->GetModName());
+	modName = modName.substr(0, 2);
+
 	sprintf(
 		buf, "%s%s-categorization.cfg", 
 		std::string(CFG_PATH).c_str(),
-		ai->call->GetModName()
+		modName.c_str()
 	);
-	std::ofstream UC(buf, std::ios::trunc);
+	std::string fileName(buf);
 
-	UC << "# Unit Categorization for E323AI\n\n# Categories to choose from:\n";
-	std::map<unitCategory,std::string>::iterator i;
-	for (i = categories.begin(); i != categories.end(); i++) {
-		UC << "# " << i->second << "\n";
-		cats.push_back(i->first);
+	/* Determine if we should generate the config or parse the config */
+	std::ifstream modfile(fileName.c_str());
+	if (modfile.good()) {
+		parseCategorizations(fileName.c_str());
+		modfile.close();
 	}
-	numUnits = ai->call->GetNumUnitDefs();
-	UC << "\n\n# " << numUnits << " units in total\n\n";
+	else {
+		ai->call->GetValue(AIVAL_LOCATE_FILE_W, buf);
+		generateCategorizationFile(fileName.c_str());
+	}
 
-	buildTechTree(); /* this is actually a graph in XTA */
-
+	/* Generate the buildBy and canBuild lists per UnitType */
 	std::map<int, UnitType>::iterator j;
 	UnitType *utParent;
 
@@ -71,13 +88,6 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	for (j = units.begin(); j != units.end(); j++) {
 		utParent = &(j->second);
 		MoveData* movedata = utParent->def->movedata;
-		UC << "# " << utParent->def->humanName << " - " << utParent->def->name << "\n";
-		UC << utParent->id;
-		for (unsigned i = 0; i < cats.size(); i++)
-			if (cats[i] & utParent->cats)
-				UC << "," << categories[cats[i]];
-		UC << "\n\n";
-
 
 		if (movedata != NULL)
 			moveTypes[movedata->pathType] = movedata;
@@ -102,10 +112,93 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		LOG(utParent->def->name << "\nbuild by : {" << buildBy << "}\ncan build: {" << canBuild << "}\n\n");
 		LOG("\n-------------\n");
 	}
-	UC.close();
 }
 
-void CUnitTable::parseCategorizations() {
+void CUnitTable::generateCategorizationFile(const char *fileName) {
+	LOGN("Generating categorization file");
+	std::ofstream file(fileName, std::ios::trunc);
+	file << "# Unit Categorization for E323AI\n\n# Categories to choose from:\n";
+	std::map<unitCategory,std::string>::iterator i;
+	std::map<int, UnitType>::iterator j;
+	UnitType *utParent;
+	for (i = cat2str.begin(); i != cat2str.end(); i++) {
+		file << "# " << i->second << "\n";
+		str2cat[i->second] = i->first;
+	}
+	numUnits = ai->call->GetNumUnitDefs();
+	file << "\n\n# " << numUnits << " units in total\n\n";
+	for (j = units.begin(); j != units.end(); j++) {
+		utParent = &(j->second);
+		file << "# " << utParent->def->humanName << " - " << utParent->def->name << "\n";
+		file << utParent->id;
+		for (unsigned i = 0; i < cats.size(); i++)
+			if (cats[i] & utParent->cats)
+				file << "," << cat2str[cats[i]];
+		file << "\n\n";
+	}
+	file.close();
+}
+
+void CUnitTable::parseCategorizations(const char *fileName) {
+	LOGN("Parsing categorization file");
+	std::ifstream file(fileName);
+	std::vector<std::string> splitted;
+	unsigned linenr = 0;
+
+	if (file.good() && file.is_open()) {
+		while(!file.eof()) {
+			linenr++;
+			std::string line;
+			std::getline(file, line);
+
+			if (line.empty() || line[0] == '#')
+				continue;
+
+			split(line, ',', splitted);
+			int id = atoi(splitted[0].c_str());
+			UnitType *ut = &units[id];
+
+			unsigned categories = 0;
+			for (unsigned i = 1; i < splitted.size(); i++) {
+				if (str2cat.find(splitted[i]) == str2cat.end()) {
+					std::cerr << "line: " << linenr << "\tcategory '" << splitted[i] << "' is invalid.\n";
+					continue;
+				}
+				categories |= str2cat[splitted[i]];
+			}
+
+			if (categories == 0) {
+				std::cerr << "line: " << linenr << "\t" << ut->def->humanName << " is uncategorized, falling back to standard.\n";
+				continue;
+			}
+
+			ut->cats = categories;
+			splitted.clear();
+		}
+		file.close();
+	}
+	else {
+		std::cerr << "31m could not open " << fileName << " for parsing.\n";
+	}
+	std::cerr << "parsed " << linenr << " lines from " << fileName << ".\n";
+}
+
+void CUnitTable::split(std::string &line, char c, std::vector<std::string> &splitted) {
+	size_t begin = 0, end = 0;
+	std::string substr;
+
+	while (true) {
+		end = line.find(c, begin);
+		if (end == std::string::npos)
+			break;
+
+		substr = line.substr(begin, end-begin);
+		splitted.push_back(substr);
+		begin  = end + 1;
+	}
+	/* Manually push the last */
+	substr = line.substr(begin, line.size()-1);
+	splitted.push_back(substr);
 }
 
 void CUnitTable::remove(ARegistrar &unit) {
@@ -373,7 +466,7 @@ UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
 void CUnitTable::debugCategories(UnitType *ut) {
 	std::string cats("");
 	std::map<unitCategory, std::string>::iterator i;
-	for (i = categories.begin(); i != categories.end(); i++) {
+	for (i = cat2str.begin(); i != cat2str.end(); i++) {
 		int v = ut->cats & i->first;
 		if (v == i->first)
 			cats += i->second + " | ";
