@@ -74,6 +74,7 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		modfile.close();
 	}
 	else {
+		sprintf(buf, "%s", std::string(CFG_PATH).c_str());
 		ai->call->GetValue(AIVAL_LOCATE_FILE_W, buf);
 		generateCategorizationFile(fileName.c_str());
 	}
@@ -178,9 +179,9 @@ void CUnitTable::parseCategorizations(const char *fileName) {
 		file.close();
 	}
 	else {
-		std::cerr << "31m could not open " << fileName << " for parsing.\n";
+		std::cerr << "could not open " << fileName << " for parsing.\n";
 	}
-	std::cerr << "parsed " << linenr << " lines from " << fileName << ".\n";
+	std::cout << "parsed " << linenr << " lines from " << fileName << ".\n";
 }
 
 void CUnitTable::split(std::string &line, char c, std::vector<std::string> &splitted) {

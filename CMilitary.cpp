@@ -199,9 +199,8 @@ void CMilitary::update(int frame) {
 	}
 
 	/* Join forces */
-	if (mergable.size() >= 2) {
-		//ai->tasks->addMergeTask(mergable);
-	}
+	if (mergable.size() >= 2)
+		ai->tasks->addMergeTask(mergable);
 
 	/* Always have enough scouts */
 	if (activeScoutGroups.size() == 0)
@@ -218,7 +217,7 @@ unsigned CMilitary::randomUnit() {
 	if (r > 0.1 && r < 0.6)
 		return MOBILE|ARTILLERY;
 	else if(r >= 0.6)
-		return MOBILE|ANTIAIR;
+		return MOBILE|ASSAULT;
 	else 
 		return MOBILE|SCOUTER;
 }

@@ -165,6 +165,10 @@ void CPathfinder::updateFollowers() {
 			M[uposonpath] = unit;
 		}
 		group->move(path->second[segment+waypoint]);
+
+		for (int i = 1; i < MOVE_BUFFER && path->second.size() > MOVE_BUFFER; i++)
+			group->move(path->second[segment+waypoint+i], true);
+
 		/* Set a wait cmd on units that are going to fast, (They can still
 		 * attack during a wait) 
 		 */

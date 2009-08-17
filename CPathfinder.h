@@ -5,6 +5,8 @@
 #include "ARegistrar.h"
 #include "CE323AI.h"
 
+#define MOVE_BUFFER 3
+
 class CPathfinder: public AAStar, public ARegistrar {
 	public:
 		enum nodeType{BLOCKED, START, GOAL, NORMAL};
