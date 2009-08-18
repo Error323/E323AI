@@ -126,7 +126,7 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 	std::vector<MSpot> sorted;
 	float3 pos = group.pos();
 	float pathLength;
-	MSpot *ms, *bestMs;
+	MSpot *ms, *bestMs = NULL;
 	
 	for (unsigned i = 0; i < spots.size(); i++) {
 		ms = &(spots[i]);

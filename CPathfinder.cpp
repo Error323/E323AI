@@ -118,7 +118,7 @@ void CPathfinder::updateFollowers() {
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		unsigned segment     = 1;
-		int     waypoint     = 1;
+		int     waypoint     = 3;
 		CGroup *group        = groups[path->first];
 		float maxGroupLength = group->maxLength();
 		std::map<float, CUnit*> M;
@@ -166,14 +166,25 @@ void CPathfinder::updateFollowers() {
 		}
 		group->move(path->second[segment+waypoint]);
 
-		for (int i = 1; i < MOVE_BUFFER && path->second.size() > MOVE_BUFFER; i++)
-			group->move(path->second[segment+waypoint+i], true);
-
 		/* Set a wait cmd on units that are going to fast, (They can still
 		 * attack during a wait) 
 		 */
 		if (M.size() > 1) {
 			float rearval = M.begin()->first;
+			/*
+			// REAR/FRONT unit debug
+			float3 rupos = M.begin()->second->pos();
+			float3 rhigh(rupos); rhigh.y += 100.0f;
+			ai->call->CreateLineFigure(rupos, rhigh, 8.0f, 0, 500, 2);
+			ai->call->SetFigureColor(2, 1.0f, 0.0f, 0.0f, 1.0f);
+
+			float3 fupos = (--M.end())->second->pos();
+			float3 fhigh(fupos); fhigh.y += 100.0f;
+			ai->call->CreateLineFigure(fupos, fhigh, 8.0f, 0, 500, 3);
+			ai->call->SetFigureColor(3, 0.0f, 1.0f, 0.0f, 1.0f);
+			*/
+
+
 			for (std::map<float,CUnit*>::iterator i = --M.end(); i != M.begin(); i--) {
 				CUnit *unit = i->second;
 				if (i->first - rearval > maxGroupLength) {
@@ -275,13 +286,14 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 			f.y = ai->call->GetElevation(f.x, f.z)+20;
 			path.push_back(f);
 		}
-		path.push_back(g);
 
-		if (draw) {
-			for (unsigned i = 2; i < path.size(); i++) 
-				ai->call->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, group);
-			ai->call->SetFigureColor(group, rng.RandFloat(), rng.RandFloat(), rng.RandFloat(), 1.0f);
-		}
+	}
+	if (success) path.push_back(g);
+
+	if (success && draw) {
+		for (unsigned i = 2; i < path.size(); i++) 
+			ai->call->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, group);
+		ai->call->SetFigureColor(group, group/float(CGroup::counter), group/float(CGroup::counter), 1.0f, 1.0f);
 	}
 	return success;
 }
