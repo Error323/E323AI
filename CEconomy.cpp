@@ -147,7 +147,7 @@ void CEconomy::buildOrAssist(buildType bt, UnitType *ut,  CGroup &group) {
 
 void CEconomy::update(int frame) {
 	/* If we are stalling, do something about it */
-	preventStalling();
+	if (frame % 30 == 0) preventStalling();
 
 	/* Update idle worker groups */
 	std::map<int, CGroup*>::iterator i;
@@ -312,8 +312,8 @@ void CEconomy::updateIncomes(int frame) {
 	eexceeding = (eNow > eStorage*0.9f);
 	mexceeding = (mNow > mStorage*0.9f);
 	exceeding  = (mexceeding || eexceeding);
-	if (mUsage > mIncome && mNow < mStorage/4) mRequest = true;
-	if (eUsage > eIncome && eNow < eStorage/4) eRequest = true;
+	if (mUsage > mIncome && mNow < mStorage/6.0f) mRequest = true;
+	if (eUsage > eIncome && eNow < eStorage/4.0f) eRequest = true;
 	if (eexceeding) eRequest = false;
 	if (mexceeding) mRequest = false;
 
@@ -366,7 +366,7 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 	/* See if we can get there in time */
 	best = suited.begin();
 	float buildTime  = (best->second->toBuild->def->buildTime / group.buildSpeed) * 32.0f;
-	float travelTime = best->first / (group.speed / 30.0f);
+	float travelTime = best->first / group.speed;
 	if (travelTime < buildTime)
 		return best->second;
 	else
