@@ -12,8 +12,8 @@
 class ATask;
 class CGroup;
 
-const float alpha = 0.001f;
-const float beta = 0.01f;
+const float alpha = 0.0f;
+const float beta = 0.0f;
 
 class CEconomy: public ARegistrar {
 	public:

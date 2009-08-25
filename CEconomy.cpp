@@ -167,8 +167,7 @@ void CEconomy::update(int frame) {
 		}
 		/* If we don't have a factory, build one */
 		else if (ai->unitTable->factories.empty()) {
-			if (canAffordToBuild(*group, factory))
-				ai->tasks->addBuildTask(BUILD_FACTORY, factory, *group, pos);
+			ai->tasks->addBuildTask(BUILD_FACTORY, factory, *group, pos);
 		}
 		/* If we require more income deal with it */
 		else if (mRequest || eRequest) {
@@ -207,15 +206,19 @@ void CEconomy::update(int frame) {
 				buildOrAssist(BUILD_FACTORY, factory, *group);
 			}
 		}
+		/* If no tasks are found, just expand */
+		if (!group->busy) {
+			if ((mNow / mStorage) > (eNow / eStorage))
+				buildEprovider(*group);
+			else
+				buildMprovider(*group);
+		}
 	}
 
-	if (activeGroups.size() <= 1)
+	if (activeGroups.size() < ai->intel->mobileBuilders.size() || activeGroups.size() < 2)
 		ai->wl->push(BUILDER, HIGH);
 
-	if (mexceeding)
-		ai->wl->push(BUILDER, HIGH);
-	else
-		ai->wl->push(BUILDER, NORMAL);
+	ai->wl->push(BUILDER, NORMAL);
 }
 
 bool CEconomy::taskInProgress(buildType bt) {
@@ -308,8 +311,8 @@ void CEconomy::updateIncomes(int frame) {
 	uMIncome   = alpha*(uMIncomeSummed / incomes) + (1.0f-alpha)*mU;
 	uEIncome   = beta*(uEIncomeSummed / incomes) + (1.0f-beta)*eU;
 
-	mstall     = (mNow < (30.0f+mIncome) && mUsage > mIncome);
-	estall     = (eNow < (3.0f*eIncome) && eUsage > eIncome);
+	mstall     = (mNow < (mStorage*0.1f+mIncome) && mUsage > mIncome);
+	estall     = (eNow < (eStorage*0.1f+eIncome) && eUsage > eIncome);
 	stalling   = (mstall || estall);
 
 	eexceeding = (eNow > eStorage*0.9f);
