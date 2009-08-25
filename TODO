@@ -1,11 +1,11 @@
 BUGS:
-* Factory queue (overflows) ✔
+* Factory queue (overflows)                                                            ✔
 * Storage/factory creation (spawns multiple instances at the same time)
-* Re-examine canAssist(), canAssistFactory() and canAffordToBuild()
+* Re-examine canAssist(), canAssistFactory() and canAffordToBuild()                    ✔
 * Construction units comming out of factory (sometimes blocks further building)
 * Running multiple E323AI instances (weird behaviour wrt mexbuilding)
 * Attack assistance (groups try to attack target directly instead of going through pf) ✔
-* Delete or fix merging
+* Delete or fix merging                                                                ✔
 
 FEATURES:
 * Attacktask should provide finegrained control on units when pf is over:
