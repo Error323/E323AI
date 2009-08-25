@@ -190,15 +190,13 @@ void CEconomy::update(int frame) {
 		else {
 			ATask *task;
 			/* If we are overflowing build a storage */
-			if (exceeding) {
-				if (mexceeding && !taskInProgress(BUILD_MSTORAGE)) {
-					UnitType *storage = ai->unitTable->canBuild(unit->type, MSTORAGE);
-					buildOrAssist(BUILD_MSTORAGE, storage, *group);
-				}
-				else if (!taskInProgress(BUILD_ESTORAGE)) {
-					UnitType *storage = ai->unitTable->canBuild(unit->type, ESTORAGE);
-					buildOrAssist(BUILD_ESTORAGE, storage, *group);
-				}
+			if (eexceeding && !taskInProgress(BUILD_ESTORAGE)) {
+				UnitType *storage = ai->unitTable->canBuild(unit->type, ESTORAGE);
+				buildOrAssist(BUILD_ESTORAGE, storage, *group);
+			}
+			else if (mexceeding && !taskInProgress(BUILD_MSTORAGE)) {
+				UnitType *storage = ai->unitTable->canBuild(unit->type, MSTORAGE);
+				buildOrAssist(BUILD_MSTORAGE, storage, *group);
 			}
 			/* If we can afford to assist a lab and it's close enough, do so */
 			else if ((task = canAssistFactory(*group)) != NULL)
@@ -209,16 +207,12 @@ void CEconomy::update(int frame) {
 				buildOrAssist(BUILD_FACTORY, factory, *group);
 			}
 		}
-
-		/* Ensure we only perform one task each update call */
-		if (group->busy)
-			break;
 	}
 
 	if (activeGroups.size() <= 1)
 		ai->wl->push(BUILDER, HIGH);
 
-	if (exceeding)
+	if (mexceeding)
 		ai->wl->push(BUILDER, HIGH);
 	else
 		ai->wl->push(BUILDER, NORMAL);
@@ -314,14 +308,14 @@ void CEconomy::updateIncomes(int frame) {
 	uMIncome   = alpha*(uMIncomeSummed / incomes) + (1.0f-alpha)*mU;
 	uEIncome   = beta*(uEIncomeSummed / incomes) + (1.0f-beta)*eU;
 
-	mstall     = (mNow < (3.0f*mIncome) && mUsage > mIncome);
+	mstall     = (mNow < (30.0f+mIncome) && mUsage > mIncome);
 	estall     = (eNow < (3.0f*eIncome) && eUsage > eIncome);
 	stalling   = (mstall || estall);
 
 	eexceeding = (eNow > eStorage*0.9f);
 	mexceeding = (mNow > mStorage*0.9f);
 	exceeding  = (mexceeding || eexceeding);
-	if (mUsage > mIncome && mNow < mStorage/5.0f) mRequest = true;
+	if (mUsage > mIncome && mNow < mStorage/6.0f) mRequest = true;
 	if (eUsage > eIncome && eNow < eStorage/4.0f) eRequest = true;
 	if (eexceeding) eRequest = false;
 	if (mexceeding) mRequest = false;

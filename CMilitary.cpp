@@ -212,10 +212,9 @@ void CMilitary::update(int frame) {
 	}
 
 	/* Always have enough scouts */
-	if (activeScoutGroups.size() == 0)
+	int harrasTargets = ai->intel->metalMakers.size() + ai->intel->mobileBuilders.size();
+	if (harrasTargets > activeScoutGroups.size())
 		ai->wl->push(SCOUTER, HIGH);
-	else if ((activeScoutGroups.size()-busyScouts) == 0)
-		ai->wl->push(SCOUTER, NORMAL);
 
 	/* Always build some unit */
 	ai->wl->push(requestUnit(), NORMAL);
