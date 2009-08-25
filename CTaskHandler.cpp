@@ -9,6 +9,7 @@ void ATask::remove() {
 	group->unreg(*this);
 	group->busy = false;
 	group->stop();
+	isMoving = true;
 
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
@@ -33,6 +34,7 @@ void ATask::addGroup(CGroup &g) {
 	this->group = &g;
 	group->reg(*this);
 	group->busy = true;
+	isMoving = true;
 }
 
 void ATask::reset() {
@@ -45,10 +47,10 @@ bool ATask::assistable() {
 	bool canAssist = false;
 	switch(t) {
 		case BUILD:
-			canAssist = (assisters.size() <= 1);
+			canAssist = (assisters.size() < 2);
 		break;
 		case ATTACK: case FACTORY_BUILD:
-			canAssist = true;
+			canAssist = (assisters.size() < 5);
 		break;
 		case MERGE: case ASSIST:
 			canAssist = false;
@@ -234,16 +236,11 @@ void CTaskHandler::addFactoryTask(CUnit &factory) {
 }
 
 void CTaskHandler::FactoryTask::update() {
-	if (!ai->unitTable->factories[factory->key] && !ai->wl->empty(factory->key)) {
+	if (ai->unitTable->idle[factory->key] && !ai->wl->empty(factory->key)) {
 		UnitType *ut = ai->wl->top(factory->key); ai->wl->pop(factory->key);
 		factory->factoryBuild(ut);
 		ai->unitTable->factoriesBuilding[factory->key] = ut;
-		ai->unitTable->factories[factory->key] = true;
-	}
-	else if (ai->unitTable->builders.find(factory->key) != ai->unitTable->builders.end() &&
-		ai->unitTable->builders[factory->key]) {
-		ai->unitTable->factories[factory->key] = false;
-		ai->unitTable->builders[factory->key] = true;
+		ai->unitTable->idle[factory->key] = false;
 	}
 }
 
@@ -286,10 +283,19 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 
 void CTaskHandler::AssistTask::update() {
 	float3 dist = group->pos() - pos;
-	if (isMoving && dist.Length2D() <= group->buildRange) {
-		group->assist(*assist);
-		ai->pf->remove(*group);
-		isMoving = false;
+	if (assist->t == ATTACK) {
+		if (isMoving && dist.Length2D() <= group->range) {
+			group->assist(*assist);
+			ai->pf->remove(*group);
+			isMoving = false;
+		}
+	}
+	else {
+		if (isMoving && dist.Length2D() <= group->buildRange) {
+			group->assist(*assist);
+			ai->pf->remove(*group);
+			isMoving = false;
+		}
 	}
 }
 

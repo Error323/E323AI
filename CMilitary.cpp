@@ -163,7 +163,6 @@ void CMilitary::update(int frame) {
 		ai->tasks->addAttackTask(target, *group);
 	}
 
-	std::vector<CGroup*> mergable;
 	/* Give idle, strong enough groups a new attack plan */
 	for (i = activeAttackGroups.begin(); i != activeAttackGroups.end(); i++) {
 		CGroup *group = i->second;
@@ -178,8 +177,8 @@ void CMilitary::update(int frame) {
 		if (target == -1) {
 			std::map<int,CTaskHandler::AttackTask*>::iterator i;
 			for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
-				if (i->second->assisters.size() <= 1) {
-					group->assist(*(i->second));
+				if (i->second->assistable()) {
+					ai->tasks->addAssistTask(*(i->second), *group);
 					break;
 				}
 			}
@@ -194,21 +193,23 @@ void CMilitary::update(int frame) {
 		{
 			bool isCurrent = false;
 			for (k = currentGroups.begin(); k != currentGroups.end(); k++)
-				if (k->first == group->key)
+				if (k->second->key == group->key)
 					isCurrent = true;
 
-			if (!isCurrent)
-				mergable.push_back(group);
-
+			if (!isCurrent) {
+				std::map<int,CTaskHandler::AttackTask*>::iterator i;
+				for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
+					if (i->second->assistable()) {
+						ai->tasks->addAssistTask(*(i->second), *group);
+						break;
+					}
+				}
+			}
 			continue;
 		}
 
 		ai->tasks->addAttackTask(target, *group);
 	}
-
-	/* Join forces */
-	if (mergable.size() >= 2)
-		ai->tasks->addMergeTask(mergable);
 
 	/* Always have enough scouts */
 	if (activeScoutGroups.size() == 0)

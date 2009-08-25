@@ -13,6 +13,7 @@ class ATask;
 class CGroup;
 
 const float alpha = 0.001f;
+const float beta = 0.01f;
 
 class CEconomy: public ARegistrar {
 	public:
@@ -99,8 +100,14 @@ class CEconomy: public ARegistrar {
 		/* See if we can help with a certain task */
 		ATask* canAssist(buildType t, CGroup &group);
 
+		int factoryBuildTasks;
+
 		/* Prevent stalling */
 		void preventStalling();
+
+		void buildMprovider(CGroup &group);
+		void buildEprovider(CGroup &group);
+		void buildOrAssist(buildType bt, UnitType *ut,  CGroup &group);
 
 };
 
