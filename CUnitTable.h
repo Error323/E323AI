@@ -33,11 +33,12 @@ class CUnitTable: public ARegistrar {
 		std::map<int, MoveData*>  moveTypes;
 
 		/* Ingame units, set in eco module */
+		std::map<int, bool>       idle;
 		std::map<int, bool>       builders;
-		std::map<int, bool>       factories;
 		std::map<int, bool>       metalMakers;
 		std::map<int, UnitType*>  factoriesBuilding;
 		std::map<int, CUnit*>     activeUnits;
+		std::map<int, bool>       factories;
 
 		/* Special commander hook, since it's the first to spawn */
 		UnitType *comm;

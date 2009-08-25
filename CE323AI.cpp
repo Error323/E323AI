@@ -95,6 +95,7 @@ void CE323AI::UnitCreated(int uid, int bid) {
 /* Called when units are finished in a factory and able to move */
 void CE323AI::UnitFinished(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
+	ai->unitTable->idle[uid] = true;
 
 	sprintf(buf, "[CE323AI::UnitFinished]\t%s(%d) finished", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
@@ -125,6 +126,7 @@ void CE323AI::UnitIdle(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
 	sprintf(buf, "[CE323AI::UnitIdle]\t%s(%d) idling", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
+	ai->unitTable->idle[uid] = true;
 }
 
 /* Called when unit is damaged */

@@ -209,10 +209,11 @@ void CUnitTable::remove(ARegistrar &unit) {
 	free.push(lookup[unit.key]);
 	lookup.erase(unit.key);
 	builders.erase(unit.key);
-	factories.erase(unit.key);
+	idle.erase(unit.key);
 	metalMakers.erase(unit.key);
 	factoriesBuilding.erase(unit.key);
 	activeUnits.erase(unit.key);
+	factories.erase(unit.key);
 }
 
 CUnit* CUnitTable::getUnit(int uid) {
@@ -245,8 +246,8 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	unit->reg(*this);
 	if (bid > 0) builders[bid] = false;
 	activeUnits[uid] = unit;
-	if (unit->type->cats&FACTORY)
-		ai->unitTable->factories[uid] = false;
+	idle[bid] = false;
+	idle[uid] = true;
 	return unit;
 }
 
