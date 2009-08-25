@@ -100,14 +100,13 @@ class CEconomy: public ARegistrar {
 		/* See if we can help with a certain task */
 		ATask* canAssist(buildType t, CGroup &group);
 
-		int factoryBuildTasks;
-
 		/* Prevent stalling */
 		void preventStalling();
 
 		void buildMprovider(CGroup &group);
 		void buildEprovider(CGroup &group);
 		void buildOrAssist(buildType bt, UnitType *ut,  CGroup &group);
+		bool taskInProgress(buildType bt);
 
 };
 

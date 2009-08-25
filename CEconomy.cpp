@@ -147,7 +147,7 @@ void CEconomy::buildOrAssist(buildType bt, UnitType *ut,  CGroup &group) {
 
 void CEconomy::update(int frame) {
 	/* If we are stalling, do something about it */
-	if (frame % 30 == 0) preventStalling();
+	if (frame % 10 == 0) preventStalling();
 
 	/* Update idle worker groups */
 	std::map<int, CGroup*>::iterator i;
@@ -191,11 +191,11 @@ void CEconomy::update(int frame) {
 			ATask *task;
 			/* If we are overflowing build a storage */
 			if (exceeding) {
-				if (mexceeding) {
+				if (mexceeding && !taskInProgress(BUILD_MSTORAGE)) {
 					UnitType *storage = ai->unitTable->canBuild(unit->type, MSTORAGE);
 					buildOrAssist(BUILD_MSTORAGE, storage, *group);
 				}
-				else {
+				else if (!taskInProgress(BUILD_ESTORAGE)) {
 					UnitType *storage = ai->unitTable->canBuild(unit->type, ESTORAGE);
 					buildOrAssist(BUILD_ESTORAGE, storage, *group);
 				}
@@ -204,7 +204,7 @@ void CEconomy::update(int frame) {
 			else if ((task = canAssistFactory(*group)) != NULL)
 				ai->tasks->addAssistTask(*task, *group);
 			/* See if we can build a new factory */
-			else if (factoryBuildTasks == 0) {
+			else if (!taskInProgress(BUILD_FACTORY)) {
 				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH2);
 				buildOrAssist(BUILD_FACTORY, factory, *group);
 			}
@@ -222,6 +222,15 @@ void CEconomy::update(int frame) {
 		ai->wl->push(BUILDER, HIGH);
 	else
 		ai->wl->push(BUILDER, NORMAL);
+}
+
+bool CEconomy::taskInProgress(buildType bt) {
+	std::map<int, CTaskHandler::BuildTask*>::iterator i;
+	for (i = ai->tasks->activeBuildTasks.begin(); i != ai->tasks->activeBuildTasks.end(); i++) {
+		if (i->second->bt == bt)
+			return true;
+	}
+	return false;
 }
 
 void CEconomy::preventStalling() {
@@ -305,14 +314,14 @@ void CEconomy::updateIncomes(int frame) {
 	uMIncome   = alpha*(uMIncomeSummed / incomes) + (1.0f-alpha)*mU;
 	uEIncome   = beta*(uEIncomeSummed / incomes) + (1.0f-beta)*eU;
 
-	mstall     = (mNow < 30.0f && mUsage > mIncome);
-	estall     = (eNow < 200.0f && eUsage > eIncome);
+	mstall     = (mNow < (3.0f*mIncome) && mUsage > mIncome);
+	estall     = (eNow < (3.0f*eIncome) && eUsage > eIncome);
 	stalling   = (mstall || estall);
 
 	eexceeding = (eNow > eStorage*0.9f);
 	mexceeding = (mNow > mStorage*0.9f);
 	exceeding  = (mexceeding || eexceeding);
-	if (mUsage > mIncome && mNow < mStorage/6.0f) mRequest = true;
+	if (mUsage > mIncome && mNow < mStorage/5.0f) mRequest = true;
 	if (eUsage > eIncome && eNow < eStorage/4.0f) eRequest = true;
 	if (eexceeding) eRequest = false;
 	if (mexceeding) mRequest = false;
@@ -342,12 +351,8 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 	std::map<float, CTaskHandler::BuildTask*> suited;
 	std::map<float, CTaskHandler::BuildTask*>::iterator best;
 	float3 pos = group.pos();
-	factoryBuildTasks = 0;
 	for (i = ai->tasks->activeBuildTasks.begin(); i != ai->tasks->activeBuildTasks.end(); i++) {
 		CTaskHandler::BuildTask *buildtask = i->second;
-
-		if (buildtask->bt == BUILD_FACTORY)
-			factoryBuildTasks++;
 
 		/* Only build tasks we are interested in */
 		if (buildtask->bt != t || !buildtask->assistable())
@@ -376,28 +381,28 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 ATask* CEconomy::canAssistFactory(CGroup &group) {
 	CUnit *unit = group.units.begin()->second;
 	std::map<int, CTaskHandler::FactoryTask*>::iterator i;
-	CTaskHandler::FactoryTask *best = NULL;
+	std::map<float, CTaskHandler::FactoryTask*> candidates;
 	float3 pos = group.pos();
-	float bestDist = MAX_FLOAT;
 	for (i = ai->tasks->activeFactoryTasks.begin(); i != ai->tasks->activeFactoryTasks.end(); i++) {
 		/* TODO: instead of euclid distance, use pathfinder distance */
 		float dist = (pos - i->second->pos).Length2D();
-
-		if (dist < bestDist) {
-			bestDist = dist;
-			best = i->second;
-		}
+		candidates[dist] = i->second;
 	}
-	if (best == NULL)
+
+	if (candidates.empty())
 		return NULL;
+
 	if (unit->def->isCommander)
-		return best;
+		return candidates.begin()->second;
 
-	UnitType *ut = ai->unitTable->factoriesBuilding[best->factory->key];
-	if (ut == NULL || best->assisters.size() > 5)
-		return NULL;
+	std::map<float, CTaskHandler::FactoryTask*>::iterator j;
+	for (j = candidates.begin(); j != candidates.end(); j++) {
+		if (j->second->assisters.size() > 5)
+			continue;
+		return j->second;
+	}
 
-	return best;
+	return NULL;
 }
 
 bool CEconomy::canAffordToBuild(CGroup &group, UnitType *utToBuild) {
