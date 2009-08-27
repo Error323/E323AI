@@ -389,7 +389,8 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 			continue;
 
 		/* TODO: instead of euclid distance, use pathfinder distance */
-		float builderdist = (buildtask->pos - buildtask->group->pos()).Length2D();
+		float3 grouppos   = buildtask->group->pos();
+		float builderdist = (buildtask->pos - grouppos).Length2D();
 		float dist        = (pos - buildtask->pos).Length2D() - builderdist;
 		suited[dist]      = buildtask;
 	}

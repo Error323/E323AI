@@ -204,7 +204,8 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 
 void CTaskHandler::BuildTask::update() {
 	bool hasFinished = false;
-	float3 dist = group->pos() - pos;
+	float3 grouppos = group->pos();
+	float3 dist = grouppos - pos;
 
 	/* See if we can build yet */
 	if (isMoving && dist.Length2D() <= group->buildRange) {
@@ -298,7 +299,8 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 }
 
 void CTaskHandler::AssistTask::update() {
-	float3 dist = group->pos() - pos;
+	float3 grouppos = group->pos();
+	float3 dist = grouppos - pos;
 	if (assist->t == ATTACK) {
 		if (isMoving && dist.Length2D() <= group->range) {
 			group->assist(*assist);
@@ -336,7 +338,8 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 
 void CTaskHandler::AttackTask::update() {
 	/* See if we can attack our target already */
-	float3 dist = group->pos() - pos;
+	float3 grouppos = group->pos();
+	float3 dist = grouppos - pos;
 	if (isMoving && dist.Length2D() <= group->range) {
 		group->attack(target);
 		isMoving = false;
@@ -377,7 +380,8 @@ void CTaskHandler::MergeTask::update() {
 	/* See which groups can be merged already */
 	for (unsigned i = 0; i < groups.size(); i++) {
 		CGroup *group = groups[i];
-		float3 dist = group->pos() - pos;
+		float3 grouppos = group->pos();
+		float3 dist = grouppos - pos;
 		if (dist.Length2D() <= range)
 			mergable.push_back(group);
 	}

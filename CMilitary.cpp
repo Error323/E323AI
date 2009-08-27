@@ -160,17 +160,13 @@ void CMilitary::update(int frame) {
 
 		int target = selectHarrasTarget(*group);
 
-		/* There are no targets available */
-		if (target == -1) {
-			std::map<int,CTaskHandler::AttackTask*>::iterator i;
-			for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
-				if (i->second->assistable()) {
-					ai->tasks->addAssistTask(*(i->second), *group);
-					break;
-				}
-			}
+		/* There are no harras targets available */
+		if (target == -1)
+			target = selectAttackTarget(*group);
+
+		/* Nothing available */
+		if (target == -1)
 			break;
-		}
 
 		ai->tasks->addAttackTask(target, *group);
 	}
@@ -186,23 +182,8 @@ void CMilitary::update(int frame) {
 		int target = selectAttackTarget(*group);
 
 		/* There are no targets available, assist an attack */
-		if (target == -1) {
-			bool isCurrent = false;
-			for (k = currentGroups.begin(); k != currentGroups.end(); k++)
-				if (k->second->key == group->key)
-					isCurrent = true;
-
-			if (!isCurrent) {
-				std::map<int,CTaskHandler::AttackTask*>::iterator i;
-				for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
-					if (i->second->assistable()) {
-						ai->tasks->addAssistTask(*(i->second), *group);
-						break;
-					}
-				}
-			}
+		if (target == -1)
 			break;
-		}
 		
 		float3 goal = ai->cheat->GetUnitPos(target);
 
@@ -216,13 +197,7 @@ void CMilitary::update(int frame) {
 					isCurrent = true;
 
 			if (!isCurrent) {
-				std::map<int,CTaskHandler::AttackTask*>::iterator i;
-				for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
-					if (i->second->assistable()) {
-						ai->tasks->addAssistTask(*(i->second), *group);
-						break;
-					}
-				}
+				//TODO: Defend?
 			}
 			continue;
 		}

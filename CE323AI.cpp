@@ -202,7 +202,7 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
 	/* Don't act before the 100th frame, messed up eco stuff :P */
-	if (frame < 100) return;
+	if (frame < 90) return;
 
 	/* Rotate through the different update events to distribute computations */
 	switch(frame % 9) {
