@@ -5,15 +5,11 @@ CIntel::CIntel(AIClasses *ai) {
 	units = new int[MAX_UNITS];
 	selector.push_back(ANTIAIR);
 	selector.push_back(ASSAULT);
-	//selector.push_back(SCOUTER);
+	selector.push_back(SCOUTER);
 	selector.push_back(SNIPER);
 	selector.push_back(ARTILLERY);
 	for (size_t i = 0; i < selector.size(); i++)
 		counts[selector[i]] = 1;
-}
-
-CIntel::~CIntel() {
-	delete[] units;
 }
 
 void CIntel::update(int frame) {
@@ -22,22 +18,22 @@ void CIntel::update(int frame) {
 	attackers.clear();
 	metalMakers.clear();
 	energyMakers.clear();
+	rest.clear();
 	resetCounters();
 	int numUnits = ai->cheat->GetEnemyUnits(units, MAX_UNITS);
 	for (int i = 0; i < numUnits; i++) {
 		const UnitDef *ud = ai->cheat->GetUnitDef(units[i]);
 		UnitType      *ut = UT(ud->id);
 		unsigned int    c = ut->cats;
+
+		if (ai->cheat->UnitBeingBuilt(units[i]))
+			continue;
 		
-		if (c&ATTACKER && c&MOBILE) {
+		if (c&ATTACKER) {
 			attackers.push_back(units[i]);
 		}
 		else if (c&FACTORY) {
 			factories.push_back(units[i]);
-			if (c&AIR)
-				hasAir = true;
-			else
-				hasAir = false;
 		}
 		else if (c&BUILDER && c&MOBILE) {
 			mobileBuilders.push_back(units[i]);

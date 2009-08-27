@@ -153,7 +153,7 @@ void CMilitary::update(int groupsize) {
 		CGroup *group = i->second;
 
 		/* This group is busy, don't bother */
-		if (group->busy || !group->isIdle()) {
+		if (group->busy) {
 			busyScouts++;
 			continue;
 		}
@@ -176,7 +176,7 @@ void CMilitary::update(int groupsize) {
 		CGroup *group = i->second;
 
 		/* This group is busy, don't bother */
-		if (group->busy || !group->isIdle())
+		if (group->busy)
 			continue;
 
 		int target = selectAttackTarget(*group);

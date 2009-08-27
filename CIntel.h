@@ -8,9 +8,7 @@
 class CIntel {
 	public:
 		CIntel(AIClasses *ai);
-		~CIntel();
-
-		bool hasAir;
+		~CIntel(){};
 
 		void update(int frame);
 		bool enemyInbound();
