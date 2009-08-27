@@ -37,7 +37,7 @@ bool CUnit::attack(int target) {
 	return false;
 }
 
-bool CUnit::moveForward(float dist) {
+bool CUnit::moveForward(float dist, bool enqueue) {
 	float3 upos = ai->call->GetUnitPos(key);
 	facing f = getBestFacing(upos);
 	float3 pos(upos);
@@ -56,7 +56,7 @@ bool CUnit::moveForward(float dist) {
 		break;
 		default: break;
 	}
-	return move(pos);
+	return move(pos, enqueue);
 }
 
 

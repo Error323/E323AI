@@ -40,7 +40,7 @@ class CUnit: public ARegistrar {
 		bool attack(int target);
 
 		/* Move a unit forward by dist */
-		bool moveForward(float dist);
+		bool moveForward(float dist, bool enqueue = true);
 
 		/* Move random */
 		bool moveRandom(float radius, bool enqueue = false);

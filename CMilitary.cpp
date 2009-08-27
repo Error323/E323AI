@@ -25,6 +25,7 @@ void CMilitary::addUnit(CUnit &unit) {
 			/* A scout is initially alone */
 			CGroup *group = requestGroup(SCOUT);
 			group->addUnit(unit);
+			unit.moveForward(100.0f);
 		}
 		else {
 			/* If there is a new factory, or the current group is busy, request
@@ -175,7 +176,7 @@ void CMilitary::update(int groupsize) {
 		CGroup *group = i->second;
 
 		/* This group is busy, don't bother */
-		if (group->busy|| !group->isIdle())
+		if (group->busy || !group->isIdle())
 			continue;
 
 		int target = selectAttackTarget(*group);
