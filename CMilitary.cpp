@@ -84,7 +84,6 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vect
 	for (unsigned i = 0; i < targets.size(); i++) {
 		int t = targets[i];
 		float3 epos = ai->cheat->GetUnitPos(t);
-		if (epos == NULLVECTOR) continue;
 		float dist = (epos-ourPos).Length2D();
 		M[dist] = t;
 	}
@@ -140,7 +139,7 @@ int CMilitary::selectAttackTarget(CGroup &group) {
 	return target;
 }
 
-void CMilitary::update(int frame) {
+void CMilitary::update(int groupsize) {
 	occupiedTargets.clear();
 	std::map<int, CTaskHandler::AttackTask*>::iterator j;
 	for (j = ai->tasks->activeAttackTasks.begin(); j != ai->tasks->activeAttackTasks.end(); j++)
@@ -183,23 +182,23 @@ void CMilitary::update(int frame) {
 
 		/* There are no targets available, assist an attack */
 		if (target == -1)
+			target = selectHarrasTarget(*group);
+
+		if (target == -1)
 			break;
 		
 		float3 goal = ai->cheat->GetUnitPos(target);
 
 		/* Not strong enough */
-		if (group->units.size() < 4 || 
-			ai->threatMap->getThreat(goal, group->range) > group->strength) 
+		if (group->units.size() < groupsize) 
 		{
 			bool isCurrent = false;
 			for (k = currentGroups.begin(); k != currentGroups.end(); k++)
 				if (k->second->key == group->key)
 					isCurrent = true;
 
-			if (!isCurrent) {
-				//TODO: Defend?
-			}
-			continue;
+			if (isCurrent)
+				continue;
 		}
 
 		ai->tasks->addAttackTask(target, *group);

@@ -136,7 +136,7 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 /* Called on move fail e.g. can't reach point */
 void CE323AI::UnitMoveFailed(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
-	unit->moveRandom(100.0f);
+	//unit->moveRandom(100.0f);
 	sprintf(buf, "[CE323AI::UnitMoveFailed]\t%s(%d) failed moving", unit->def->humanName.c_str(), uid);
 	LOGN(buf);
 }
@@ -170,7 +170,6 @@ void CE323AI::EnemyDamaged(int damaged, int attacker, float damage, float3 dir) 
  ****************/
 
 void CE323AI::GotChatMsg(const char* msg, int player) {
-	LOGS("Just lose plz, k thx bye!");
 }
 
 int CE323AI::HandleEvent(int msg, const void* data) {
@@ -203,6 +202,7 @@ void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
 	/* Don't act before the 100th frame, messed up eco stuff :P */
 	if (frame < 90) return;
+	int groupsize = (frame / (30*60*2))+1;
 
 	/* Rotate through the different update events to distribute computations */
 	switch(frame % 9) {
@@ -244,7 +244,7 @@ void CE323AI::Update() {
 
 		case 6: { /* update military */
 			ScopedTimer t(std::string("military"));
-			ai->military->update(frame);
+			ai->military->update(groupsize);
 		}
 		break;
 

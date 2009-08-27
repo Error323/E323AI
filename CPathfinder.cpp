@@ -96,6 +96,11 @@ void CPathfinder::resetMap(int thread) {
 }
 
 void CPathfinder::remove(ARegistrar &obj) {
+	sprintf(buf, 
+		"[CPathfinder::remove]\tremove task(%d)",
+		obj.key
+	);
+	LOGN(buf);
 	ATask *task = dynamic_cast<ATask*>(&obj);
 	paths.erase(task->group->key);
 	groups.erase(task->group->key);

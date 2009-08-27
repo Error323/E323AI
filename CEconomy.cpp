@@ -93,7 +93,7 @@ void CEconomy::addUnit(CUnit &unit) {
 	}
 
 	else if (c&MMAKER) {
-		ai->unitTable->metalMakers[unit.key] = false;
+		ai->unitTable->metalMakers[unit.key] = true;
 	}
 }
 
@@ -155,80 +155,88 @@ void CEconomy::update(int frame) {
 			/* If we are mstalling deal with it */
 			if (mstall) {
 				buildMprovider(*group);
+				if (group->busy) continue;
 			}
 			/* If we are estalling deal with it */
-			else if (estall) {
+			if (estall) {
 				buildEprovider(*group);
+				if (group->busy) continue;
 			}
 			/* If we don't have a factory, build one */
-			else if (ai->unitTable->factories.empty()) {
+			if (ai->unitTable->factories.empty()) {
 				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH1);
 				buildOrAssist(BUILD_FACTORY, factory, *group);
+				if (group->busy) continue;
 			}
-			else {
-				ATask *task = NULL;
-				/* If we can afford to assist a lab and it's close enough, do so */
-				if ((task = canAssistFactory(*group)) != NULL) {
-					ai->tasks->addAssistTask(*task, *group);
-				}
-				/* See if we can build a new factory */
-				else {
-					UnitType *factory = ai->unitTable->canBuild(unit->type, AIR|TECH1);
-					buildOrAssist(BUILD_FACTORY, factory, *group);
-				}
+			ATask *task = NULL;
+			/* If we can assist a lab and it's close enough, do so */
+			if ((task = canAssistFactory(*group)) != NULL) {
+				ai->tasks->addAssistTask(*task, *group);
+				if (group->busy) continue;
 			}
-		}
-		/* If we are mstalling deal with it */
-		else if (mstall) {
-			buildMprovider(*group);
-		}
-		/* If we are estalling deal with it */
-		else if (estall) {
-			buildEprovider(*group);
-		}
-		/* If we don't have a factory, build one */
-		else if (ai->unitTable->factories.empty()) {
-			UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH1);
+			/* See if we can build a new factory */
+			UnitType *factory = ai->unitTable->canBuild(unit->type, AIR|TECH1);
 			buildOrAssist(BUILD_FACTORY, factory, *group);
 		}
-		/* If both requested, see what is required most */
-		else if (eRequest && mRequest) {
-			if ((mNow / mStorage) > (eNow / eStorage))
-				buildEprovider(*group);
-			else
-				buildMprovider(*group);
-		}
-		/* Else just provide that which is requested */
-		else if (eRequest) {
-			buildEprovider(*group);
-		}
-		else if (mRequest) {
-			buildMprovider(*group);
-		}
 		else {
-			ATask *task = NULL;
-			/* If we are overflowing build a storage */
+			/* If we are mstalling deal with it */
+			if (mstall) {
+				buildMprovider(*group);
+				if (group->busy) continue;
+			}
+			/* If we are estalling deal with it */
+			if (estall) {
+				buildEprovider(*group);
+				if (group->busy) continue;
+			}
+			/* If we don't have a factory, build one */
+			if (ai->unitTable->factories.empty()) {
+				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH1);
+				buildOrAssist(BUILD_FACTORY, factory, *group);
+				if (group->busy) continue;
+			}
+			/* If we are overflowing energy build a estorage */
 			if (eexceeding) {
 				UnitType *storage = ai->unitTable->canBuild(unit->type, ESTORAGE);
 				buildOrAssist(BUILD_ESTORAGE, storage, *group);
+				if (group->busy) continue;
 			}
-			else if (mexceeding) {
+			/* If we are overflowing metal build an mstorage */
+			if (mexceeding) {
 				UnitType *storage = ai->unitTable->canBuild(unit->type, MSTORAGE);
 				buildOrAssist(BUILD_MSTORAGE, storage, *group);
+				if (group->busy) continue;
 			}
+			/* If both requested, see what is required most */
+			if (eRequest && mRequest) {
+				if ((mNow / mStorage) > (eNow / eStorage))
+					buildEprovider(*group);
+				else
+					buildMprovider(*group);
+				if (group->busy) continue;
+			}
+			/* Else just provide that which is requested */
+			if (eRequest) {
+				buildEprovider(*group);
+				if (group->busy) continue;
+			}
+			if (mRequest) {
+				buildMprovider(*group);
+				if (group->busy) continue;
+			}
+			ATask *task = NULL;
 			/* If we can afford to assist a lab and it's close enough, do so */
-			else if ((task = canAssistFactory(*group)) != NULL) {
+			if ((task = canAssistFactory(*group)) != NULL) {
 				ai->tasks->addAssistTask(*task, *group);
+				if (group->busy) continue;
 			}
 			/* See if we can build a new factory */
-			else {
-				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH2);
-				buildOrAssist(BUILD_FACTORY, factory, *group);
-			}
+			UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH2);
+			buildOrAssist(BUILD_FACTORY, factory, *group);
 		}
 	}
 
-	if (mexceeding || eexceeding || activeGroups.size() < 2)
+	if (mexceeding || activeGroups.size() < 2)
 		ai->wl->push(BUILDER, HIGH);
 	else
 		ai->wl->push(BUILDER, NORMAL);
@@ -244,7 +252,7 @@ bool CEconomy::taskInProgress(buildType bt) {
 }
 
 void CEconomy::preventStalling() {
-	/* TODO: If factorytask is on wait, unwait him */
+	/* If factorytask is on wait, unwait him */
 	std::map<int, CTaskHandler::FactoryTask*>::iterator k;
 	for (k = ai->tasks->activeFactoryTasks.begin(); k != ai->tasks->activeFactoryTasks.end(); k++)
 		k->second->setWait(false);
@@ -255,28 +263,38 @@ void CEconomy::preventStalling() {
 
 	/* If we are only stalling energy, see if we can turn metalmakers off */
 	std::map<int, bool>::iterator j;
-	if (estall) {
+	if (estall && !mstall) {
+		int success = 0;
 		for (j = ai->unitTable->metalMakers.begin(); j != ai->unitTable->metalMakers.end(); j++) {
 			if (j->second) {
 				CUnit *unit = ai->unitTable->getUnit(j->first);
 				unit->setOnOff(false);
 				j->second = false;
-				if (!mstall)
-					return;
+				success++;
 			}
+		}
+		if (success > 0) {
+			sprintf(buf, "[CEconomy::preventStalling]\tturned %d metalmakers off\n", success);
+			LOGN(buf);
+			return;
 		}
 	}
 
 	/* If we are only stalling metal, see if we can turn metalmakers on */
-	if (mstall) {
+	if (mstall && !estall) {
+		int success = 0;
 		for (j = ai->unitTable->metalMakers.begin(); j != ai->unitTable->metalMakers.end(); j++) {
 			if (!j->second) {
 				CUnit *unit = ai->unitTable->getUnit(j->first);
 				unit->setOnOff(true);
 				j->second = true;
-				if (!estall)
-					return;
+				success++;
 			}
+		}
+		if (success > 0) {
+			sprintf(buf, "[CEconomy::preventStalling]\tturned %d metalmakers on\n", success);
+			LOGN(buf);
+			return;
 		}
 	}
 
@@ -305,7 +323,7 @@ void CEconomy::preventStalling() {
 		return;
 	}
 
-	/* TODO: Wait all factories and their assisters */
+	/* Wait all factories and their assisters */
 	for (k = ai->tasks->activeFactoryTasks.begin(); k != ai->tasks->activeFactoryTasks.end(); k++)
 		k->second->setWait(true);
 

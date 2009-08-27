@@ -7,6 +7,7 @@ int ATask::counter = 0;
 
 void ATask::remove() {
 	sprintf(buf, "[ATask::remove]\tremove task(%d)", key);
+	LOGN(buf);
 	group->unreg(*this);
 	group->busy = false;
 	group->stop();
@@ -149,11 +150,11 @@ ATask* CTaskHandler::requestTask(task t) {
 	else {
 		index = free[t].top();
 		free[t].pop();
+		task = tasks[t][index];
+		task->reset();
 	}
 
-	task = tasks[t][index];
 	lookup[t][task->key] = index;
-	task->reset();
 	task->reg(*this);
 	activeTasks[task->key] = task;
 
@@ -203,7 +204,6 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 }
 
 void CTaskHandler::BuildTask::update() {
-	bool hasFinished = false;
 	float3 grouppos = group->pos();
 	float3 dist = grouppos - pos;
 
@@ -211,17 +211,14 @@ void CTaskHandler::BuildTask::update() {
 	if (isMoving && dist.Length2D() <= group->buildRange) {
 		group->build(pos, toBuild);
 		ai->pf->remove(*this);
+		unreg(*(ai->pf));
 		isMoving = false;
 	}
 
 	/* We are building, lets see if it finished already */
-	if (!isMoving)
-		if (ai->eco->hasFinishedBuilding(*group))
-			hasFinished = true;
-
-	/* This task is finished, remove it */
-	if (hasFinished)
+	if (!isMoving && ai->eco->hasFinishedBuilding(*group)) {
 		remove();
+	}
 }
 
 /**************************************************************/
@@ -272,15 +269,13 @@ void CTaskHandler::AssistTask::reset(ATask &task) {
 }
 
 void CTaskHandler::AssistTask::remove() {
+	sprintf(buf, "[AssistTask::remove]\tremove task(%d)", key);
+	LOGN(buf);
 	group->unreg(*this);
 	group->busy = false;
 	group->stop();
 
 	assist->assisters.remove(this);
-
-	std::list<ATask*>::iterator i;
-	for (i = assisters.begin(); i != assisters.end(); i++)
-		(*i)->remove();
 	
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
@@ -301,19 +296,12 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 void CTaskHandler::AssistTask::update() {
 	float3 grouppos = group->pos();
 	float3 dist = grouppos - pos;
-	if (assist->t == ATTACK) {
-		if (isMoving && dist.Length2D() <= group->range) {
-			group->assist(*assist);
-			ai->pf->remove(*this);
-			isMoving = false;
-		}
-	}
-	else {
-		if (isMoving && dist.Length2D() <= group->buildRange) {
-			group->assist(*assist);
-			ai->pf->remove(*this);
-			isMoving = false;
-		}
+	float range = (assist->t == ATTACK) ? group->range : group->buildRange;
+	if (isMoving && dist.Length2D() <= range*1.5f) {
+		group->assist(*assist);
+		ai->pf->remove(*this);
+		unreg(*(ai->pf));
+		isMoving = false;
 	}
 }
 
@@ -344,6 +332,7 @@ void CTaskHandler::AttackTask::update() {
 		group->attack(target);
 		isMoving = false;
 		ai->pf->remove(*this);
+		unreg(*(ai->pf));
 	}
 	/* Keep tracking it */
 	else pos = ai->cheat->GetUnitPos(target);

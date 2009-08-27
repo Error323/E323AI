@@ -26,7 +26,7 @@ class CMilitary: public ARegistrar {
 		CGroup* requestGroup(groupType type);
 
 		/* update callin */
-		void update(int frame);
+		void update(int groupsize);
 
 	private:
 		AIClasses *ai;
