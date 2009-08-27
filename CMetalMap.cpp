@@ -1,7 +1,5 @@
 #include "CMetalMap.h"
 
-bool sortme(const CMetalMap::MSpot &a, const CMetalMap::MSpot &b) {return a.dist < b.dist;}
-
 CMetalMap::CMetalMap(AIClasses *ai): ARegistrar(300) {
 	this->ai = ai;
 	threshold = 64;
@@ -21,7 +19,6 @@ CMetalMap::CMetalMap(AIClasses *ai): ARegistrar(300) {
 
 	for (int i = 0; i < X*Z; i++)
 		map[i] = callMap[i];
-	delete[] callMap;
 
 	findBestSpots();
 }
@@ -144,7 +141,7 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 		sorted.push_back(*ms);
 	}
 
-	std::sort(sorted.begin(), sorted.end(), sortme);
+	std::sort(sorted.begin(), sorted.end());
 
 	float lowestThreat = MAX_FLOAT;
 	for (unsigned i = 0; i < sorted.size(); i++) {
@@ -159,7 +156,7 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 	if (lowestThreat > 1.0f) return false;
 
 	CUnit *unit = group.units.begin()->second;
-	ai->metalMap->taken[unit->key] = bestMs->f;
+	taken[unit->key] = bestMs->f;
 	unit->reg(*this);
 	spot = bestMs->f;
 	return true;

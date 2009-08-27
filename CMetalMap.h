@@ -31,6 +31,10 @@ class CMetalMap: public ARegistrar {
 				this->c  = c;
 				dist = 0.0f;
 			}
+
+			bool operator<(const MSpot &a) const { 
+				return dist < a.dist; 
+			}
 		};
 
 		bool getMexSpot(CGroup &group, float3 &pos);
