@@ -20,6 +20,7 @@ class CIntel {
 		std::vector<int> mobileBuilders;
 		std::vector<int> metalMakers;
 		std::vector<int> energyMakers;
+		std::vector<int> rest;
 
 		std::multimap<float,unitCategory> roulette;
 

@@ -30,7 +30,7 @@ void CMilitary::addUnit(CUnit &unit) {
 			/* If there is a new factory, or the current group is busy, request
 			 * a new group 
 			 */
-			unit.moveForward(100.0f);
+			unit.moveForward(500.0f);
 			if (currentGroups.find(unit.builder) == currentGroups.end() ||
 				currentGroups[unit.builder]->busy) {
 				CGroup *group = requestGroup(ENGAGE);
@@ -133,6 +133,10 @@ int CMilitary::selectAttackTarget(CGroup &group) {
 	target = selectTarget(pos, ai->intel->attackers, occupiedTargets);
 	if (target != -1) return target;
 
+	/* Select remaining targets */
+	target = selectTarget(pos, ai->intel->rest, occupiedTargets);
+	if (target != -1) return target;
+
 	return target;
 }
 
@@ -157,8 +161,16 @@ void CMilitary::update(int frame) {
 		int target = selectHarrasTarget(*group);
 
 		/* There are no targets available */
-		if (target == -1) 
+		if (target == -1) {
+			std::map<int,CTaskHandler::AttackTask*>::iterator i;
+			for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
+				if (i->second->assistable()) {
+					ai->tasks->addAssistTask(*(i->second), *group);
+					break;
+				}
+			}
 			break;
+		}
 
 		ai->tasks->addAttackTask(target, *group);
 	}
@@ -175,11 +187,18 @@ void CMilitary::update(int frame) {
 
 		/* There are no targets available, assist an attack */
 		if (target == -1) {
-			std::map<int,CTaskHandler::AttackTask*>::iterator i;
-			for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
-				if (i->second->assistable()) {
-					ai->tasks->addAssistTask(*(i->second), *group);
-					break;
+			bool isCurrent = false;
+			for (k = currentGroups.begin(); k != currentGroups.end(); k++)
+				if (k->second->key == group->key)
+					isCurrent = true;
+
+			if (!isCurrent) {
+				std::map<int,CTaskHandler::AttackTask*>::iterator i;
+				for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
+					if (i->second->assistable()) {
+						ai->tasks->addAssistTask(*(i->second), *group);
+						break;
+					}
 				}
 			}
 			break;
@@ -212,7 +231,7 @@ void CMilitary::update(int frame) {
 	}
 
 	/* Always have enough scouts */
-	int harrasTargets = ai->intel->metalMakers.size() + ai->intel->mobileBuilders.size();
+	int harrasTargets = ai->intel->metalMakers.size();
 	if (harrasTargets > activeScoutGroups.size())
 		ai->wl->push(SCOUTER, HIGH);
 

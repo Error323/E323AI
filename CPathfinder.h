@@ -43,8 +43,11 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* Register a new group */
 		bool addGroup(CGroup &G, float3 &start, float3 &goal);
 
+		/* Add task */
+		bool addTask(ATask &task);
+
 		/* Overload */
-		void remove(ARegistrar &group);
+		void remove(ARegistrar &obj);
 
 		int X,Z,dx2,dz2;
 		float REAL;

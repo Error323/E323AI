@@ -87,6 +87,12 @@ class CTaskHandler: public ARegistrar {
 
 			CUnit *factory;
 
+			/* Let the factorytask wait */
+			bool wait;
+
+			/* set the factorytask to wait including assisters */
+			void setWait(bool wait);
+
 			/* If a factory is idle, make sure it gets something to build */
 			void update();
 
@@ -101,7 +107,7 @@ class CTaskHandler: public ARegistrar {
 
 			/* Update the assist task */
 			void update();
-			/* Overload, since removal also requires unreg @ assist task */
+
 			void remove();
 			
 			void reset(ATask &task);

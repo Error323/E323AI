@@ -13,7 +13,7 @@ class ATask;
 class CGroup;
 
 const float alpha = 0.0f;
-const float beta = 0.0f;
+const float beta = 0.00f;
 
 class CEconomy: public ARegistrar {
 	public:
@@ -33,16 +33,16 @@ class CEconomy: public ARegistrar {
 		/* total units eIncome averaged over 5 logical frames */
 		float uEIncome, uEIncomeSummed;
 		/* metal usage averaged over 5 logical frames */
-		float mUsage, mUsageSummed;
+		float mUsage, mUsageSummed, mStart;
 		/* energy usage averaged over 5 logical frames */
-		float eUsage, eUsageSummed;
+		float eUsage, eUsageSummed, eStart;
 		/* metal storage */
 		float mStorage;
 		/* energy storage */
 		float eStorage;
 
-		/* stalling vars, updated in updateIncomes() */
-		bool mstall, estall, stalling, mexceeding, eexceeding, exceeding;
+		/* stalling/exceeding vars, updated in updateIncomes() */
+		bool mstall, estall, mexceeding, eexceeding;
 
 		/* Returns a fresh CGroup instance */
 		CGroup* requestGroup();
@@ -60,7 +60,7 @@ class CEconomy: public ARegistrar {
 		void update(int frame);
 
 		/* Update averaged incomes */
-		void updateIncomes(int frame);
+		void updateIncomes(int frame = 100);
 
 		bool hasFinishedBuilding(CGroup &group);
 
@@ -83,7 +83,7 @@ class CEconomy: public ARegistrar {
 		char buf[1024];
 
 		/* energy provider, factory, builder */
-		UnitType *energyProvider, *factory, *builder, *mex, *utSolar;
+		UnitType *energyProvider;
 
 		/* Altered by canAfford() */
 		bool eRequest, mRequest;

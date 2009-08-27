@@ -66,6 +66,10 @@ void CGroup::remove(ARegistrar &unit) {
 	}
 }
 
+bool CGroup::isIdle() {
+	return false;
+}
+
 void CGroup::reset() {
 	strength   = 0.0f;
 	speed      = MAX_FLOAT;
@@ -134,6 +138,12 @@ void CGroup::move(float3 &pos, bool enqueue) {
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++)
 		i->second->move(pos, enqueue);
+}
+
+void CGroup::wait() {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++)
+		i->second->wait();
 }
 
 void CGroup::attack(int target) {

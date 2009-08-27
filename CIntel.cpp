@@ -5,7 +5,7 @@ CIntel::CIntel(AIClasses *ai) {
 	units = new int[MAX_UNITS];
 	selector.push_back(ANTIAIR);
 	selector.push_back(ASSAULT);
-	selector.push_back(SCOUTER);
+	//selector.push_back(SCOUTER);
 	selector.push_back(SNIPER);
 	selector.push_back(ARTILLERY);
 	for (size_t i = 0; i < selector.size(); i++)
@@ -47,6 +47,9 @@ void CIntel::update(int frame) {
 		}
 		else if (c&EMAKER) {
 			energyMakers.push_back(units[i]);
+		}
+		else {
+			rest.push_back(units[i]);
 		}
 
 		updateCounts(c);

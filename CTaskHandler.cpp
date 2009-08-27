@@ -6,10 +6,10 @@
 int ATask::counter = 0;
 
 void ATask::remove() {
+	sprintf(buf, "[ATask::remove]\tremove task(%d)", key);
 	group->unreg(*this);
 	group->busy = false;
 	group->stop();
-	isMoving = true;
 
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
@@ -23,9 +23,14 @@ void ATask::remove() {
 void ATask::remove(ARegistrar &group) {
 	sprintf(buf, "[ATask::remove]\tremove group(%d)", group.key);
 	LOGN(buf);
-	std::list<ARegistrar*>::iterator i;
-	for (i = records.begin(); i != records.end(); i++)
-		(*i)->remove(*this);
+
+	std::list<ATask*>::iterator i;
+	for (i = assisters.begin(); i != assisters.end(); i++)
+		(*i)->remove();
+	
+	std::list<ARegistrar*>::iterator j;
+	for (j = records.begin(); j != records.end(); j++)
+		(*j)->remove(*this);
 }
 
 void ATask::addGroup(CGroup &g) {
@@ -34,7 +39,6 @@ void ATask::addGroup(CGroup &g) {
 	this->group = &g;
 	group->reg(*this);
 	group->busy = true;
-	isMoving = true;
 }
 
 void ATask::reset() {
@@ -194,7 +198,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 	buildTask->addGroup(group);
 	activeBuildTasks[task->key] = buildTask;
 	float3 gp = group.pos();
-	ai->pf->addGroup(group, gp, task->pos);
+	ai->pf->addTask(*task);
 	groupToTask[group.key] = task;
 }
 
@@ -205,7 +209,7 @@ void CTaskHandler::BuildTask::update() {
 	/* See if we can build yet */
 	if (isMoving && dist.Length2D() <= group->buildRange) {
 		group->build(pos, toBuild);
-		ai->pf->remove(*group);
+		ai->pf->remove(*this);
 		isMoving = false;
 	}
 
@@ -226,6 +230,7 @@ void CTaskHandler::FactoryTask::reset(CUnit &unit) {
 	pos = unit.pos();
 	factory = &unit;
 	unit.reg(*this);
+	wait = false;
 }
 
 void CTaskHandler::addFactoryTask(CUnit &factory) {
@@ -242,6 +247,17 @@ void CTaskHandler::FactoryTask::update() {
 		ai->unitTable->factoriesBuilding[factory->key] = ut;
 		ai->unitTable->idle[factory->key] = false;
 	}
+}
+
+void CTaskHandler::FactoryTask::setWait(bool on) {
+	if (on == wait) return;
+	factory->wait();
+	std::list<ATask*>::iterator i;
+	for (i = assisters.begin(); i != assisters.end(); i++) {
+		if ((*i)->isMoving) continue;
+		(*i)->group->wait();
+	}
+	wait = on;
 }
 
 
@@ -277,7 +293,7 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 	assistTask->addGroup(group);
 	activeAssistTasks[task->key] = assistTask;
 	float3 gp = group.pos();
-	ai->pf->addGroup(group, gp, toAssist.pos);
+	ai->pf->addTask(*task);
 	groupToTask[group.key] = task;
 }
 
@@ -286,14 +302,14 @@ void CTaskHandler::AssistTask::update() {
 	if (assist->t == ATTACK) {
 		if (isMoving && dist.Length2D() <= group->range) {
 			group->assist(*assist);
-			ai->pf->remove(*group);
+			ai->pf->remove(*this);
 			isMoving = false;
 		}
 	}
 	else {
 		if (isMoving && dist.Length2D() <= group->buildRange) {
 			group->assist(*assist);
-			ai->pf->remove(*group);
+			ai->pf->remove(*this);
 			isMoving = false;
 		}
 	}
@@ -314,7 +330,7 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 	attackTask->addGroup(group);
 	activeAttackTasks[task->key] = attackTask;
 	float3 gp = group.pos();
-	ai->pf->addGroup(group, gp, task->pos);
+	ai->pf->addTask(*task);
 	groupToTask[group.key] = task;
 }
 
@@ -324,7 +340,7 @@ void CTaskHandler::AttackTask::update() {
 	if (isMoving && dist.Length2D() <= group->range) {
 		group->attack(target);
 		isMoving = false;
-		ai->pf->remove(*group);
+		ai->pf->remove(*this);
 	}
 	/* Keep tracking it */
 	else pos = ai->cheat->GetUnitPos(target);

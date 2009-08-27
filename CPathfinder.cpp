@@ -95,9 +95,10 @@ void CPathfinder::resetMap(int thread) {
 		maps[activeMap][i+offset].reset();
 }
 
-void CPathfinder::remove(ARegistrar &group) {
-	paths.erase(group.key);
-	groups.erase(group.key);
+void CPathfinder::remove(ARegistrar &obj) {
+	ATask *task = dynamic_cast<ATask*>(&obj);
+	paths.erase(task->group->key);
+	groups.erase(task->group->key);
 }
 
 void CPathfinder::updateMap(float *weights) {
@@ -218,6 +219,14 @@ bool CPathfinder::addGroup(CGroup &group, float3 &start, float3 &goal) {
 	groups[group.key] = &group;
 	group.reg(*this);
 	return addPath(group.key, start, goal);
+}
+
+bool CPathfinder::addTask(ATask &task) {
+	groups[task.group->key] = task.group;
+	task.reg(*this);
+	float3 start = task.group->pos();
+	float3 goal = task.pos;
+	return addPath(task.group->key, start, goal);
 }
 
 bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {

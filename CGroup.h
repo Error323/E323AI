@@ -66,6 +66,9 @@ class CGroup: public ARegistrar {
 		/* Merge another group with this group */
 		void merge(CGroup &group);
 
+		/* See if the entire group is idle */
+		bool isIdle();
+
 		/* Get the position of the group */
 		float3 pos();
 
@@ -75,6 +78,7 @@ class CGroup: public ARegistrar {
 		void stop();
 		void move(float3 &pos, bool enqueue = false);
 		void guard(int target, bool enqueue = false);
+		void wait();
 
 		/* Get the maximal lateral dispersion */
 		int maxLength();

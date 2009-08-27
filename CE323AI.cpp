@@ -201,60 +201,62 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 /* Update AI per logical frame = 1/30 sec on gamespeed 1.0 */
 void CE323AI::Update() {
 	int frame = ai->call->GetCurrentFrame();
+	/* Don't act before the 100th frame, messed up eco stuff :P */
+	if (frame < 100) return;
 
 	/* Rotate through the different update events to distribute computations */
 	switch(frame % 9) {
-		case 0: { /* update threatmap */
+		case 0: { /* update incomes */
+			ScopedTimer t(std::string("eco-incomes"));
+			ai->eco->updateIncomes();
+		}
+		break;
+
+		case 1: { /* update threatmap */
 			ScopedTimer t(std::string("threatmap"));
 			ai->threatMap->update(frame);
 		}
 		break;
 
-		case 1: { /* update pathfinder with threatmap */
+		case 2: { /* update pathfinder with threatmap */
 			ScopedTimer t(std::string("pf-map"));
 			ai->pf->updateMap(ai->threatMap->map);
 		}
 		break;
 
-		case 2: { /* update the path itself of a group */
+		case 3: { /* update the path itself of a group */
 			ScopedTimer t(std::string("pf-grouppath"));
 			ai->pf->updatePaths();
 		}
 		break;
 
-		case 3: { /* update the groups following a path */
+		case 4: { /* update the groups following a path */
 			ScopedTimer t(std::string("pf-followers"));
 			ai->pf->updateFollowers();
 		}
 		break;
 
-		case 4: { /* update enemy intel */
+		case 5: { /* update enemy intel */
 			ScopedTimer t(std::string("intel"));
 			ai->intel->update(frame);
 		}
 		break;
 
-		case 5: { /* update military */
+		case 6: { /* update military */
 			ScopedTimer t(std::string("military"));
 			ai->military->update(frame);
 		}
 		break;
 
-		case 6: { /* update incomes */
-			ScopedTimer t(std::string("eco-incomes"));
-			ai->eco->updateIncomes(frame);
-		}
-		break;
-
-		case 7: { /* update economy */
-			ScopedTimer t(std::string("eco-update"));
-			ai->eco->update(frame);
-		}
-		break;
-
-		case 8: { /* update taskhandler */
+		case 7: { /* update taskhandler */
 			ScopedTimer t(std::string("tasks"));
 			ai->tasks->update();
+		}
+		break;
+
+		case 8: { /* update economy */
+			ScopedTimer t(std::string("eco-update"));
+			ai->eco->update(frame);
 		}
 		break;
 
