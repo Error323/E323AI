@@ -338,7 +338,7 @@ void CTaskHandler::AttackTask::update() {
 	else pos = ai->cheat->GetUnitPos(target);
 
 	/* If the target is destroyed, remove the task, unreg groups */
-	if (ai->cheat->GetUnitPos(target) == NULLVECTOR) 
+	if (ai->cheat->GetUnitHealth(target) <= 0.0f) 
 		remove();
 }
 
