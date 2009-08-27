@@ -67,6 +67,11 @@ void CGroup::remove(ARegistrar &unit) {
 }
 
 bool CGroup::isIdle() {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++) {
+		if (ai->unitTable->idle[i->second->key])
+			return true;
+	}
 	return false;
 }
 

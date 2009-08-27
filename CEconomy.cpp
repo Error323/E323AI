@@ -146,7 +146,7 @@ void CEconomy::update(int frame) {
 	std::map<int, CGroup*>::iterator i;
 	for (i = activeGroups.begin(); i != activeGroups.end(); i++) {
 		CGroup *group = i->second;
-		if (group->busy) continue;
+		if (group->busy || !group->isIdle()) continue;
 
 		CUnit *unit = group->units.begin()->second;
 		float3 pos = group->pos();

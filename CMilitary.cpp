@@ -30,7 +30,7 @@ void CMilitary::addUnit(CUnit &unit) {
 			/* If there is a new factory, or the current group is busy, request
 			 * a new group 
 			 */
-			unit.moveForward(500.0f);
+			unit.moveForward(300.0f);
 			if (currentGroups.find(unit.builder) == currentGroups.end() ||
 				currentGroups[unit.builder]->busy) {
 				CGroup *group = requestGroup(ENGAGE);
@@ -152,7 +152,7 @@ void CMilitary::update(int groupsize) {
 		CGroup *group = i->second;
 
 		/* This group is busy, don't bother */
-		if (group->busy) {
+		if (group->busy || !group->isIdle()) {
 			busyScouts++;
 			continue;
 		}
@@ -175,7 +175,7 @@ void CMilitary::update(int groupsize) {
 		CGroup *group = i->second;
 
 		/* This group is busy, don't bother */
-		if (group->busy)
+		if (group->busy|| !group->isIdle())
 			continue;
 
 		int target = selectAttackTarget(*group);
@@ -223,5 +223,5 @@ unsigned CMilitary::requestUnit() {
 			return MOBILE | i->second;
 		}
 	}
-	return MOBILE | ASSAULT;
+	return MOBILE | ASSAULT; // unreachable code :)
 }
