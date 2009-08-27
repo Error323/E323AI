@@ -248,15 +248,15 @@ void CE323AI::Update() {
 		}
 		break;
 
-		case 7: { /* update taskhandler */
-			ScopedTimer t(std::string("tasks"));
-			ai->tasks->update();
+		case 7: { /* update economy */
+			ScopedTimer t(std::string("eco-update"));
+			ai->eco->update(frame);
 		}
 		break;
 
-		case 8: { /* update economy */
-			ScopedTimer t(std::string("eco-update"));
-			ai->eco->update(frame);
+		case 8: { /* update taskhandler */
+			ScopedTimer t(std::string("tasks"));
+			ai->tasks->update();
 		}
 		break;
 
