@@ -7,6 +7,7 @@ CE323AI::~CE323AI() {
 	/* Print ScopedTimer times */
 	std::string s = ScopedTimer::profile();
 	printf("%s", s.c_str());
+	team = 0;
 
 	/* close the logfile */
 	ai->logger->close();
@@ -28,6 +29,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai          = new AIClasses();
 	ai->call    = callback->GetAICallback();
 	ai->cheat   = callback->GetCheatInterface();
+	this->team  = team;
 
 	/* Retrieve mapname, time and team info for the log file */
 	std::string mapname = std::string(ai->call->GetMapName());
@@ -90,6 +92,14 @@ void CE323AI::UnitCreated(int uid, int bid) {
 
 	if (c&MEXTRACTOR)
 		ai->metalMap->addUnit(*unit);
+
+/*
+	if (c&ATTACKER && c&MOBILE)
+		unit->moveForward(300.0f);
+
+	if (c&BUILDER && c&MOBILE)
+		unit->moveForward(-100.0f);
+*/
 }
 
 /* Called when units are finished in a factory and able to move */
@@ -199,7 +209,7 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 
 /* Update AI per logical frame = 1/30 sec on gamespeed 1.0 */
 void CE323AI::Update() {
-	int frame = ai->call->GetCurrentFrame();
+	int frame = ai->call->GetCurrentFrame()+team;
 	/* Don't act before the 100th frame, messed up eco stuff :P */
 	if (frame < 90) return;
 	int groupsize = (frame / (30*60*2))+1;

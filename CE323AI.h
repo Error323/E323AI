@@ -33,6 +33,7 @@ class CE323AI: public IGlobalAI {
 		AIClasses *ai;
 		int unitCreated;
 		char buf[1024];
+		int team;
 };
 
 
