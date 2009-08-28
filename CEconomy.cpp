@@ -87,7 +87,6 @@ void CEconomy::addUnit(CUnit &unit) {
 	}
 
 	else if (c&BUILDER && c&MOBILE) {
-		unit.moveForward(-100.0f);
 		CGroup *group = requestGroup();
 		group->addUnit(unit);
 	}
@@ -231,8 +230,16 @@ void CEconomy::update(int frame) {
 				if (group->busy) continue;
 			}
 			/* See if we can build a new factory */
-			UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH2);
-			buildOrAssist(BUILD_FACTORY, factory, *group);
+			if (!mRequest && !eRequest) {
+				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH2);
+				buildOrAssist(BUILD_FACTORY, factory, *group);
+				if (group->busy) continue;
+			}
+			/* Otherwise just expand */
+			if ((mNow / mStorage) > (eNow / eStorage))
+				buildEprovider(*group);
+			else
+				buildMprovider(*group);
 		}
 	}
 
@@ -396,21 +403,15 @@ void CEconomy::updateIncomes(int frame) {
 
 ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 	std::map<int, CTaskHandler::BuildTask*>::iterator i;
-	std::map<float, CTaskHandler::BuildTask*> suited;
-	std::map<float, CTaskHandler::BuildTask*>::iterator best;
-	float3 pos = group.pos();
+	std::vector<CTaskHandler::BuildTask*> suited;
 	for (i = ai->tasks->activeBuildTasks.begin(); i != ai->tasks->activeBuildTasks.end(); i++) {
 		CTaskHandler::BuildTask *buildtask = i->second;
 
 		/* Only build tasks we are interested in */
-		if (buildtask->bt != t || !buildtask->assistable())
+		if (buildtask->bt != t || !buildtask->assistable(group))
 			continue;
 
-		/* TODO: instead of euclid distance, use pathfinder distance */
-		float3 grouppos   = buildtask->group->pos();
-		float builderdist = (buildtask->pos - grouppos).Length2D();
-		float dist        = (pos - buildtask->pos).Length2D() - builderdist;
-		suited[dist]      = buildtask;
+		suited.push_back(buildtask);
 	}
 
 	/* There are no suited tasks that require assistance */
@@ -418,13 +419,7 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 		return NULL;
 
 	/* See if we can get there in time */
-	best = suited.begin();
-	float buildTime  = (best->second->toBuild->def->buildTime / group.buildSpeed) * 32.0f;
-	float travelTime = best->first / group.speed;
-	if (travelTime < buildTime)
-		return best->second;
-	else
-		return NULL;
+	return suited[0];
 }
 
 ATask* CEconomy::canAssistFactory(CGroup &group) {
@@ -446,7 +441,7 @@ ATask* CEconomy::canAssistFactory(CGroup &group) {
 
 	std::map<float, CTaskHandler::FactoryTask*>::iterator j;
 	for (j = candidates.begin(); j != candidates.end(); j++) {
-		if (j->second->assisters.size() > 5)
+		if (!j->second->assistable(group))
 			continue;
 		return j->second;
 	}

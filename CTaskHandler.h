@@ -79,6 +79,8 @@ class CTaskHandler: public ARegistrar {
 			/* Update the build task, assumes 1 group on a task! */
 			void update();
 
+			bool assistable(CGroup &group);
+
 			void reset(float3 &pos, buildType bt, UnitType *ut);
 		};
 
@@ -95,6 +97,8 @@ class CTaskHandler: public ARegistrar {
 
 			/* If a factory is idle, make sure it gets something to build */
 			void update();
+
+			bool assistable(CGroup &group);
 
 			void reset(CUnit &factory);
 		};

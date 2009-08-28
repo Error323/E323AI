@@ -31,6 +31,8 @@ class CMilitary: public ARegistrar {
 	private:
 		AIClasses *ai;
 
+		void prepareTargets(std::vector<int> &targets);
+
 		/* Current group per factory <factory, CGroup*> */
 		std::map<int, CGroup*> currentGroups;
 
@@ -55,12 +57,8 @@ class CMilitary: public ARegistrar {
 		/* Scout and annoy >:) */
 		int selectHarrasTarget(CGroup &group);
 
-		/* All targets in a certain order */
-		int selectAttackTarget(CGroup &group);
-
-		/* Subfunction for select*Target */
-		int selectTarget(float3 &ourPos, std::vector<int> &targets,
-						 std::vector<int> &occupied);
+		/* Select a target */
+		int selectTarget(float3 &ourPos, std::vector<int> &targets);
 
 		/* Request a unit for building using a roulette wheel system */
 		unsigned requestUnit();

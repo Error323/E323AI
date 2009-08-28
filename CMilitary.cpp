@@ -25,13 +25,11 @@ void CMilitary::addUnit(CUnit &unit) {
 			/* A scout is initially alone */
 			CGroup *group = requestGroup(SCOUT);
 			group->addUnit(unit);
-			unit.moveForward(100.0f);
 		}
 		else {
 			/* If there is a new factory, or the current group is busy, request
 			 * a new group 
 			 */
-			unit.moveForward(300.0f);
 			if (currentGroups.find(unit.builder) == currentGroups.end() ||
 				currentGroups[unit.builder]->busy) {
 				CGroup *group = requestGroup(ENGAGE);
@@ -76,33 +74,20 @@ CGroup* CMilitary::requestGroup(groupType type) {
 	return group;
 }
 
-int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets, std::vector<int> &occupied) {
-	int target;
-	bool isOccupied = true;
-	std::map<float, int> M;
+int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets) {
+	std::multimap<float, int> candidates;
 
 	/* First sort the targets on distance */
 	for (unsigned i = 0; i < targets.size(); i++) {
-		int t = targets[i];
-		float3 epos = ai->cheat->GetUnitPos(t);
+		int target = targets[i];
+
+		float3 epos = ai->cheat->GetUnitPos(target);
 		float dist = (epos-ourPos).Length2D();
-		M[dist] = t;
+		dist *= (ai->threatMap->getThreat(epos, 300.0f)+1);
+		candidates.insert(std::pair<float,int>(dist, target));
 	}
 
-	/* Select a non taken target */
-	for (std::map<float,int>::iterator i = M.begin(); i != M.end(); i++) {
-		target = i->second;
-		isOccupied = false;
-		for (unsigned j = 0; j < occupied.size(); j++) {
-			if (target == occupied[j]) {
-				isOccupied = true;
-				break;
-			}
-		}
-		if (isOccupied) continue;
-		else break;
-	}
-	return isOccupied ? -1 : target;
+	return candidates.empty() ? -1 : candidates.begin()->second;
 }
 
 int CMilitary::selectHarrasTarget(CGroup &group) {
@@ -110,41 +95,45 @@ int CMilitary::selectHarrasTarget(CGroup &group) {
 	std::vector<int> targets;
 	targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
 	targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
-	return selectTarget(pos, targets, occupiedTargets);
+	return selectTarget(pos, targets);
 }
 
-int CMilitary::selectAttackTarget(CGroup &group) {
-	int target = -1;
-	float3 pos = group.pos();
-
-	/* Select an energyMaking target */
-	target = selectTarget(pos, ai->intel->energyMakers, occupiedTargets);
-	if (target != -1) return target;
-
-	/* Select a mobile builder target */
-	target = selectTarget(pos, ai->intel->mobileBuilders, occupiedTargets);
-	if (target != -1) return target;
-
-	/* Select a factory target */
-	target = selectTarget(pos, ai->intel->factories, occupiedTargets);
-	if (target != -1) return target;
-
-	/* Select an offensive target */
-	target = selectTarget(pos, ai->intel->attackers, occupiedTargets);
-	if (target != -1) return target;
-
-	/* Select remaining targets */
-	target = selectTarget(pos, ai->intel->rest, occupiedTargets);
-	if (target != -1) return target;
-
-	return target;
-}
-
-void CMilitary::update(int groupsize) {
+void CMilitary::prepareTargets(std::vector<int> &targets) {
 	occupiedTargets.clear();
 	std::map<int, CTaskHandler::AttackTask*>::iterator j;
 	for (j = ai->tasks->activeAttackTasks.begin(); j != ai->tasks->activeAttackTasks.end(); j++)
 		occupiedTargets.push_back(j->second->target);
+
+	std::vector<int> all;
+	all.insert(all.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
+	all.insert(all.end(), ai->intel->factories.begin(), ai->intel->factories.end());
+	all.insert(all.end(), ai->intel->attackers.begin(), ai->intel->attackers.end());
+	all.insert(all.end(), ai->intel->rest.begin(), ai->intel->rest.end());
+	all.insert(all.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
+	all.insert(all.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
+
+	for (unsigned i = 0; i < all.size(); i++) {
+		int target = all[i];
+		bool isOccupied = false;
+		for (unsigned j = 0; j < occupiedTargets.size(); j++) {
+			if (target == occupiedTargets[j]) {
+				isOccupied = true;
+				break;
+			}
+		}
+
+		if (isOccupied) 
+			continue;
+
+		targets.push_back(target);
+		if (targets.size() >= activeAttackGroups.size())
+			break;
+	}
+}
+
+void CMilitary::update(int groupsize) {
+	std::vector<int> targets;
+	prepareTargets(targets);
 
 	std::map<int, CGroup*>::iterator i,k;
 	int busyScouts = 0;
@@ -157,12 +146,13 @@ void CMilitary::update(int groupsize) {
 			busyScouts++;
 			continue;
 		}
+		float3 pos = group->pos();
 
 		int target = selectHarrasTarget(*group);
 
 		/* There are no harras targets available */
 		if (target == -1)
-			target = selectAttackTarget(*group);
+			target = selectTarget(pos, targets);
 
 		/* Nothing available */
 		if (target == -1)
@@ -179,14 +169,22 @@ void CMilitary::update(int groupsize) {
 		if (group->busy)
 			continue;
 
-		int target = selectAttackTarget(*group);
+		float3 pos = group->pos();
+		int target = selectTarget(pos, targets);
 
 		/* There are no targets available, assist an attack */
-		if (target == -1)
-			target = selectHarrasTarget(*group);
-
-		if (target == -1)
-			break;
+		if (target == -1) {
+			int j = 0, r = rng.RandInt(ai->tasks->activeAttackTasks.size()-1);
+			std::map<int,CTaskHandler::AttackTask*>::iterator i;
+			for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
+				if (j == r) {
+					ai->tasks->addAttackTask(i->second->target, *group);
+					break;
+				}
+				j++;
+			}
+			continue;
+		}
 		
 		float3 goal = ai->cheat->GetUnitPos(target);
 

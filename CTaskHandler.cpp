@@ -221,6 +221,21 @@ void CTaskHandler::BuildTask::update() {
 	}
 }
 
+bool CTaskHandler::BuildTask::assistable(CGroup &assister) {
+	float buildSpeed = group->buildSpeed;
+	std::list<ATask*>::iterator i;
+	for (i = assisters.begin(); i != assisters.end(); i++)
+		buildSpeed += (*i)->group->buildSpeed;
+
+	float3 apos = assister.pos();
+	float3 gpos = group->pos();
+	float dist = (apos - gpos).Length2D() - assister.buildRange;
+	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
+	float travelTime = dist / assister.speed;
+
+	return (buildTime > travelTime);
+}
+
 /**************************************************************/
 /************************* FACTORY TASK ***********************/
 /**************************************************************/
@@ -229,6 +244,23 @@ void CTaskHandler::FactoryTask::reset(CUnit &unit) {
 	factory = &unit;
 	unit.reg(*this);
 	wait = false;
+}
+
+bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
+	float buildSpeed = factory->def->buildSpeed;
+	std::list<ATask*>::iterator i;
+	for (i = assisters.begin(); i != assisters.end(); i++)
+		buildSpeed += (*i)->group->buildSpeed;
+
+	UnitType *toBuild = ai->unitTable->factoriesBuilding[factory->key];
+	float3 apos = assister.pos();
+	float3 gpos = factory->pos();
+	float dist = (apos - gpos).Length2D() - assister.buildRange;
+	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
+	float travelTime = dist / assister.speed;
+
+	/* If a build takes more then 10 seconds, we can assist it */
+	return (buildTime > travelTime);
 }
 
 void CTaskHandler::addFactoryTask(CUnit &factory) {

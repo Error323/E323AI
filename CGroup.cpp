@@ -110,7 +110,7 @@ float3 CGroup::pos() {
 }
 
 int CGroup::maxLength() {
-	return units.size()*30;
+	return units.size()*40;
 }
 
 void CGroup::assist(ATask &t) {

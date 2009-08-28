@@ -482,7 +482,9 @@ void CUnitTable::debugCategories(UnitType *ut) {
 void CUnitTable::debugUnitDefs(UnitType *ut) {
 	const UnitDef *ud = ut->def;
 	sprintf(buf, "metalUpKeep(%0.2f), metalMake(%0.2f), makesMetal(%0.2f), energyUpkeep(%0.2f), energyMake(%0.2f)\n", ud->metalUpkeep, ud->metalMake, ud->makesMetal, ud->energyUpkeep, ud->energyMake);
-	LOG(ud->name << " unitdefs: ");
+	LOG(ud->humanName << "(" << ud->name << ") unitdefs:\n");
+	LOG(buf);
+	sprintf(buf, "buildTime(%0.2f), mCost(%0.2f), eCost(%0.2f)\n", ud->buildTime, ud->metalCost, ud->energyCost);
 	LOG(buf);
 }
 
