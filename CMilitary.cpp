@@ -178,7 +178,7 @@ void CMilitary::update(int groupsize) {
 			std::map<int,CTaskHandler::AttackTask*>::iterator i;
 			for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
 				if (j == r) {
-					ai->tasks->addAttackTask(i->second->target, *group);
+					ai->tasks->addAssistTask(*(i->second), *group);
 					break;
 				}
 				j++;
