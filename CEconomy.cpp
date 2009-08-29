@@ -15,8 +15,8 @@ void CEconomy::init(CUnit &unit) {
 	const UnitDef *ud = ai->call->GetUnitDef(unit.key);
 	UnitType *utCommander = UT(ud->id);
 
-	UnitType *utWind  = ai->unitTable->canBuild(utCommander, EMAKER|WIND);
-	UnitType *utSolar = ai->unitTable->canBuild(utCommander, EMAKER);
+	UnitType *utWind  = ai->unitTable->canBuild(utCommander, LAND|EMAKER|WIND);
+	UnitType *utSolar = ai->unitTable->canBuild(utCommander, LAND|EMAKER);
 
 	float avgWind   = (ai->call->GetMinWind() + ai->call->GetMaxWind()) / 2.0f;
 	float windProf  = avgWind / utWind->cost;
@@ -107,11 +107,11 @@ void CEconomy::buildMprovider(CGroup &group) {
 		float3 mexPos;
 		bool canBuildMex = ai->metalMap->getMexSpot(group, mexPos);
 		if (canBuildMex) {
-			UnitType *mex = ai->unitTable->canBuild(unit->type, MEXTRACTOR);
+			UnitType *mex = ai->unitTable->canBuild(unit->type, LAND|MEXTRACTOR);
 			ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, group, mexPos);
 		}
 		else {
-			UnitType *mmaker = ai->unitTable->canBuild(unit->type, MMAKER);
+			UnitType *mmaker = ai->unitTable->canBuild(unit->type, LAND|MMAKER);
 			ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
 		}
 	}
@@ -120,7 +120,15 @@ void CEconomy::buildMprovider(CGroup &group) {
 
 void CEconomy::buildEprovider(CGroup &group) {
 	/* Handle energy income */
-	buildOrAssist(BUILD_EPROVIDER, energyProvider, group);
+	UnitType *ut = group.units.begin()->second->type;
+
+	if (ut->cats&TECH2) {
+		UnitType *fusion = ai->unitTable->canBuild(ut, LAND|EMAKER);
+		buildOrAssist(BUILD_EPROVIDER, fusion, group);
+	}
+	else {
+		buildOrAssist(BUILD_EPROVIDER, energyProvider, group);
+	}
 	eRequest = false;
 }
 
@@ -173,9 +181,6 @@ void CEconomy::update(int frame) {
 				ai->tasks->addAssistTask(*task, *group);
 				if (group->busy) continue;
 			}
-			/* See if we can build a new factory */
-			UnitType *factory = ai->unitTable->canBuild(unit->type, AIR|TECH1);
-			buildOrAssist(BUILD_FACTORY, factory, *group);
 		}
 		else {
 			/* If we are mstalling deal with it */
@@ -190,19 +195,19 @@ void CEconomy::update(int frame) {
 			}
 			/* If we don't have a factory, build one */
 			if (ai->unitTable->factories.empty()) {
-				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH1);
+				UnitType *factory = ai->unitTable->canBuild(unit->type, LAND|KBOT|TECH1);
 				buildOrAssist(BUILD_FACTORY, factory, *group);
 				if (group->busy) continue;
 			}
 			/* If we are overflowing energy build a estorage */
 			if (eexceeding) {
-				UnitType *storage = ai->unitTable->canBuild(unit->type, ESTORAGE);
+				UnitType *storage = ai->unitTable->canBuild(unit->type, LAND|ESTORAGE);
 				buildOrAssist(BUILD_ESTORAGE, storage, *group);
 				if (group->busy) continue;
 			}
 			/* If we are overflowing metal build an mstorage */
 			if (mexceeding) {
-				UnitType *storage = ai->unitTable->canBuild(unit->type, MSTORAGE);
+				UnitType *storage = ai->unitTable->canBuild(unit->type, LAND|MSTORAGE);
 				buildOrAssist(BUILD_MSTORAGE, storage, *group);
 				if (group->busy) continue;
 			}
@@ -230,7 +235,7 @@ void CEconomy::update(int frame) {
 				if (group->busy) continue;
 			}
 			/* See if we can build a new factory */
-			if (!mRequest && !eRequest) {
+			if (!mRequest && !eRequest && mIncome > 20.0f) {
 				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH2);
 				buildOrAssist(BUILD_FACTORY, factory, *group);
 				if (group->busy) continue;
