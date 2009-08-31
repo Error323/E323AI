@@ -279,3 +279,8 @@ facing CUnit::getBestFacing(float3 &pos) {
 
 	return f;
 }
+
+std::ostream& operator<<(std::ostream &out, const CUnit &unit) {
+	out << unit.def->humanName << "(" << unit.key << ")";
+	return out;
+}

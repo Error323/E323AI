@@ -8,7 +8,7 @@
 #define EPSILON   1/MAX_FLOAT
 
 #define ERRORVECTOR float3(-1.0f,0.0f,0.0f)
-#define NULLVECTOR  float3(0.0f,0.0f,0.0f)
+#define ZEROVECTOR  float3(0.0f,0.0f,0.0f)
 
 
 /* AI meta data */

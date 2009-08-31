@@ -16,7 +16,7 @@ class ATask: public ARegistrar {
 			ARegistrar(counter) {
 			counter++;
 			isMoving = true;
-			pos = NULLVECTOR;
+			pos = ZEROVECTOR;
 		}
 		~ATask(){}
 
@@ -82,6 +82,9 @@ class CTaskHandler: public ARegistrar {
 			bool assistable(CGroup &group);
 
 			void reset(float3 &pos, buildType bt, UnitType *ut);
+
+			/* output stream */
+			friend std::ostream& operator<<(std::ostream &out, const BuildTask &task);
 		};
 
 		struct FactoryTask: public ATask {
@@ -101,6 +104,9 @@ class CTaskHandler: public ARegistrar {
 			bool assistable(CGroup &group);
 
 			void reset(CUnit &factory);
+
+			/* output stream */
+			friend std::ostream& operator<<(std::ostream &out, const FactoryTask &task);
 		};
 
 		struct AssistTask: public ATask {
@@ -115,6 +121,9 @@ class CTaskHandler: public ARegistrar {
 			void remove();
 			
 			void reset(ATask &task);
+
+			/* output stream */
+			friend std::ostream& operator<<(std::ostream &out, const FactoryTask &task);
 		};
 
 		struct AttackTask: public ATask {
@@ -127,6 +136,9 @@ class CTaskHandler: public ARegistrar {
 			void update();
 
 			void reset(int target);
+
+			/* output stream */
+			friend std::ostream& operator<<(std::ostream &out, const AttackTask &task);
 		};
 
 		struct MergeTask: public ATask {
@@ -158,6 +170,9 @@ class CTaskHandler: public ARegistrar {
 		std::map<int, AttackTask*>  activeAttackTasks;
 		std::map<int, MergeTask*>   activeMergeTasks;
 		std::map<int, FactoryTask*> activeFactoryTasks;
+
+		/* build type to string */
+		static std::map<buildType, std::string> buildStr;
 
 		/* Tasks to string */
 		std::map<task, std::string> taskStr;

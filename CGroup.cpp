@@ -13,8 +13,8 @@ void CGroup::addUnit(CUnit &unit) {
 		
 	strength   += ai->call->GetUnitPower(unit.key);
 	buildSpeed += unit.def->buildSpeed;
-	range = std::max<float>(ai->call->GetUnitMaxRange(unit.key), range);
-	buildRange = std::max<float>(unit.def->buildDistance, buildRange);
+	range = std::max<float>(ai->call->GetUnitMaxRange(unit.key)*0.9f, range);
+	buildRange = std::max<float>(unit.def->buildDistance*1.5f, buildRange);
 	speed = std::min<float>(ai->call->GetUnitSpeed(unit.key), speed);
 
 	waiters[unit.key] = false;
@@ -47,7 +47,7 @@ void CGroup::remove(ARegistrar &unit) {
 	maxSlope = 1.0f;
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++) {
-		range       = std::max<float>(ai->call->GetUnitMaxRange(i->first), range);
+		range       = std::max<float>(ai->call->GetUnitMaxRange(i->first)*0.9f, range);
 		speed       = std::min<float>(ai->call->GetUnitSpeed(i->first), speed);
 		strength   += ai->call->GetUnitPower(i->first);
 		buildSpeed += i->second->def->buildSpeed;
@@ -175,4 +175,18 @@ void CGroup::guard(int target, bool enqueue) {
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++)
 		i->second->guard(target, enqueue);
+}
+
+std::ostream& operator<<(std::ostream &out, const CGroup &group) {
+	std::stringstream ss;
+	ss << "Group(" << group.key << ") [";
+	std::map<int, CUnit*>::const_iterator i = group.units.begin();
+	for (i = group.units.begin(); i != group.units.end(); i++) {
+		ss << (*i->second) << ", ";
+	}
+	std::string s = ss.str();
+	s = s.substr(0, s.size()-2);
+	s += "]\n";
+	out << s;
+	return out;
 }

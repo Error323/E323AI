@@ -5,8 +5,7 @@ CE323AI::CE323AI() {
 
 CE323AI::~CE323AI() {
 	/* Print ScopedTimer times */
-	std::string s = ScopedTimer::profile();
-	printf("%s", s.c_str());
+	std::cout << ScopedTimer::profile();
 	team = 0;
 
 	/* close the logfile */
@@ -93,13 +92,11 @@ void CE323AI::UnitCreated(int uid, int bid) {
 	if (c&MEXTRACTOR)
 		ai->metalMap->addUnit(*unit);
 
-/*
 	if (c&ATTACKER && c&MOBILE)
-		unit->moveForward(300.0f);
+		unit->moveForward(400.0f);
 
 	if (c&BUILDER && c&MOBILE)
 		unit->moveForward(-100.0f);
-*/
 }
 
 /* Called when units are finished in a factory and able to move */

@@ -79,6 +79,9 @@ class CUnit: public ARegistrar {
 		/* Get quadrant */
 		quadrant getQuadrant(float3 &pos);
 
+		/* output stream */
+		friend std::ostream& operator<<(std::ostream &out, const CUnit &unit);
+
 	private:
 		AIClasses *ai;
 		char buf[1024];

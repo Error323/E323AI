@@ -83,6 +83,9 @@ class CGroup: public ARegistrar {
 		/* Get the maximal lateral dispersion */
 		int maxLength();
 
+		/* output stream */
+		friend std::ostream& operator<<(std::ostream &out, const CGroup &group);
+
 	private:
 		AIClasses *ai;
 		
