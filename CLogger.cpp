@@ -7,12 +7,23 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 	logLevels[WARNING] = "(WW)";
 	logLevels[VERBOSE] = "(II)";
 
+	logDesc[ERROR]   = logLevels[ERROR]   + " error, ";
+	logDesc[WARNING] = logLevels[WARNING] + " warning, ";
+	logDesc[VERBOSE] = logLevels[VERBOSE] + " informational";
+
 	if (lt & CLogger::LOG_FILE) {
-		char fileName[255];
 		getFileName(fileName);
-		fs.open(fileName, std::fstream::out | std::fstream::trunc);
-		if (fs.good()) {
+		ofs.open(fileName, std::ios::app);
+		if (ofs.good()) {
 			std::cout << "Logging to file: " << fileName << "\n";
+			ofs << "Markers: ";
+			std::map<logLevel, std::string>::iterator i;
+			for (i = logDesc.begin(); i != logDesc.end(); i++)
+				ofs << i->second;
+
+			ofs << "\n\n";
+			ofs.flush();
+			ofs.close();
 		}
 		else {
 			logType -= CLogger::LOG_FILE;
@@ -20,12 +31,6 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 	}
 	if (lt & CLogger::LOG_SCREEN) {
 		std::cout << "Logging to screen:\n";
-	}
-}
-
-CLogger::~CLogger() {
-	if (logType & CLogger::LOG_FILE) {
-		fs.close();
 	}
 }
 
@@ -39,8 +44,12 @@ void CLogger::log(logLevel level, std::string &msg) {
 	output += logLevels[level] + ": " + msg + "\n";
 
 	if (logType & CLogger::LOG_FILE) {
-		fs << output;
-		fs.flush();
+		ofs.open(fileName, std::ios::app);
+		if (ofs.good()) {
+			ofs << output;
+			ofs.flush();
+			ofs.close();
+		}
 	}
 
 	if (logType & CLogger::LOG_SCREEN) {

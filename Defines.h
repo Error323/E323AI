@@ -24,9 +24,7 @@
 #define CFG_PATH    std::string(aiexport_getDataDir(true)) + CFG_FOLDER
 
 /* Logger */
-#define LOG(x)		(*ai->logger << x)
-#define LOGN(x)		(*ai->logger << x << " :" << ai->call->GetCurrentFrame() << std::endl)
-#define LOGS(x)     (ai->call->SendTextMsg(x, 0))
+#define LOGS(x)    (ai->call->SendTextMsg(x, 0))
 
 /* Misc macro's */
 #define UD(u) (ai->call->GetUnitDef(u))

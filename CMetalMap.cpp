@@ -31,18 +31,16 @@ CMetalMap::~CMetalMap() {
 
 void CMetalMap::remove(ARegistrar &unit) {
 	CUnit *u = dynamic_cast<CUnit*>(&unit);
-	if (u->type->cats&MEXTRACTOR) {
-		sprintf(buf, "[CMetalMap::remove]\tremoving mex(%d)", unit.key);
+	if (u->type->cats&MEXTRACTOR)
 		removeFromTaken(unit.key);
-	}
-	else {
+	else
 		taken.erase(unit.key);
-		sprintf(buf, "[CMetalMap::remove]\tremoving unit(%d)", unit.key);
-	}
-	LOGN(buf);
+	LOG_II("CMetalMap::remove " << *u)
 }
 
 void CMetalMap::addUnit(CUnit &mex) {
+	LOG_II("CMetalMap::addUnit " << mex)
+
 	mex.reg(*this);
 	taken[mex.key] = ai->call->GetUnitPos(mex.key);
 }

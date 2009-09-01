@@ -88,10 +88,6 @@ class CGroup: public ARegistrar {
 
 	private:
 		AIClasses *ai;
-		
-		char buf[256];
-
-
 };
 
 #endif

@@ -57,6 +57,8 @@ class CUnitTable: public ARegistrar {
 	private:
 		AIClasses *ai;
 
+		char buf[255];
+
 		/* The unit container */
 		std::vector<CUnit*> ingameUnits;
 
@@ -94,7 +96,6 @@ class CUnitTable: public ARegistrar {
 		/* Create a UnitType of ud and insert into units */
 		UnitType* insertUnit(const UnitDef *ud);
 
-		char buf[1024];
 };
 
 #endif

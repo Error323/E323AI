@@ -93,7 +93,6 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		if (movedata != NULL)
 			moveTypes[movedata->pathType] = movedata;
 
-		LOG("Cost " << utParent->def->name << " = " << utParent->cost << "\n");
 		debugCategories(utParent);
 		debugUnitDefs(utParent);
 		debugWeapons(utParent);
@@ -110,13 +109,10 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 			canBuild += l->second->def->name + "(" + out.str() + "), ";
 		}
 		canBuild = canBuild.substr(0, canBuild.length()-2);
-		LOG(utParent->def->name << "\nbuild by : {" << buildBy << "}\ncan build: {" << canBuild << "}\n\n");
-		LOG("\n-------------\n");
 	}
 }
 
 void CUnitTable::generateCategorizationFile(const char *fileName) {
-	LOGN("Generating categorization file");
 	std::ofstream file(fileName, std::ios::trunc);
 	file << "# Unit Categorization for E323AI\n\n# Categories to choose from:\n";
 	std::map<unitCategory,std::string>::iterator i;
@@ -141,7 +137,6 @@ void CUnitTable::generateCategorizationFile(const char *fileName) {
 }
 
 void CUnitTable::parseCategorizations(const char *fileName) {
-	LOGN("Parsing categorization file");
 	std::ifstream file(fileName);
 	unsigned linenr = 0;
 
@@ -204,8 +199,6 @@ void CUnitTable::split(std::string &line, char c, std::vector<std::string> &spli
 }
 
 void CUnitTable::remove(ARegistrar &unit) {
-	sprintf(buf, "[CUnitTable::remove]\tremove unit(%d)", unit.key);
-	LOGN(buf);
 	free.push(lookup[unit.key]);
 	lookup.erase(unit.key);
 	builders.erase(unit.key);
@@ -229,8 +222,6 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 		unit = new CUnit(ai, uid, bid);
 		ingameUnits.push_back(unit);
 		index = ingameUnits.size()-1;
-		sprintf(buf, "[CUnitTable::requestUnit]\tnew unit(%d), builder(%d)", unit->key, unit->builder);
-		LOGN(buf);
 	}
 
 	/* Use top free slot from stack */
@@ -238,8 +229,6 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 		index = free.top(); free.pop();
 		unit  = ingameUnits[index];
 		unit->reset(uid, bid);
-		sprintf(buf, "[CUnitTable::requestUnit]\texisting unit(%d), builder(%d)", unit->key, unit->builder);
-		LOGN(buf);
 	}
 
 	lookup[uid] = index;
@@ -475,27 +464,18 @@ void CUnitTable::debugCategories(UnitType *ut) {
 			cats += i->second + " | ";
 	}
 	cats = cats.substr(0, cats.length()-3);
-	LOG(ut->def->name + " categories: ");
-	LOG(cats << "\n");
 }
 
 void CUnitTable::debugUnitDefs(UnitType *ut) {
 	const UnitDef *ud = ut->def;
 	sprintf(buf, "metalUpKeep(%0.2f), metalMake(%0.2f), makesMetal(%0.2f), energyUpkeep(%0.2f), energyMake(%0.2f)\n", ud->metalUpkeep, ud->metalMake, ud->makesMetal, ud->energyUpkeep, ud->energyMake);
-	LOG(ud->humanName << "(" << ud->name << ") unitdefs:\n");
-	LOG(buf);
 	sprintf(buf, "buildTime(%0.2f), mCost(%0.2f), eCost(%0.2f)\n", ud->buildTime, ud->metalCost, ud->energyCost);
-	LOG(buf);
 }
 
 void CUnitTable::debugWeapons(UnitType *ut) {
 	const UnitDef *ud = ut->def;
-	LOG(ud->name << " weapons:\n");
 	for (unsigned int i = 0; i < ud->weapons.size(); i++) {
 		const UnitDef::UnitDefWeapon *w = &(ud->weapons[i]);
-		LOG(w->def->name << ": ");
 		sprintf(buf, "Weapon name = %s\n", w->def->type.c_str());
-		LOG(buf);
 	}
-	LOG("\n");
 }

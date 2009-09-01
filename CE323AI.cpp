@@ -5,11 +5,7 @@ CE323AI::CE323AI() {
 
 CE323AI::~CE323AI() {
 	/* Print ScopedTimer times */
-	std::cout << ScopedTimer::profile();
-	team = 0;
-
-	/* close the logfile */
-	ai->logger->close();
+	ai->l->v(ScopedTimer::profile());
 
 	delete ai->metalMap;
 	delete ai->unitTable;
@@ -40,27 +36,10 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	time(&now1);
 	struct tm* now2 = localtime(&now1);
 
-	sprintf(buf, "%s", LOG_FOLDER);
-	ai->call->GetValue(AIVAL_LOCATE_FILE_W, buf);
-	std::sprintf(
-		buf, "%s%2.2d%2.2d%2.2d%2.2d%2.2d-%s-team-%d.log", 
-		std::string(LOG_PATH).c_str(), 
-		now2->tm_year + 1900, 
-		now2->tm_mon + 1, 
-		now2->tm_mday, 
-		now2->tm_hour, 
-		now2->tm_min, 
-		mapname.c_str(), 
-		team
-	);
-	ai->logger		= new std::ofstream(buf, std::ios::app);
-
 	std::string version("*** " + AI_VERSION + " ***");
 	LOGS(version.c_str());
 	LOGS("*** " AI_CREDITS " ***");
 	LOGS("*** " AI_NOTES " ***");
-	LOGS(buf);
-	LOGN(AI_VERSION);
 
 	ai->metalMap	= new CMetalMap(ai);
 	ai->unitTable	= new CUnitTable(ai);
@@ -71,9 +50,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->pf          = new CPathfinder(ai);
 	ai->intel       = new CIntel(ai);
 	ai->military    = new CMilitary(ai);
-	ai->l           = new CLogger(ai, CLogger::LOG_SCREEN);
-
-	LOG("\n\n\nBEGIN\n\n\n");
+	ai->l           = new CLogger(ai, CLogger::LOG_SCREEN | CLogger::LOG_FILE);
 }
 
 
@@ -85,9 +62,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 void CE323AI::UnitCreated(int uid, int bid) {
 	CUnit *unit    = ai->unitTable->requestUnit(uid, bid);
 
-	std::stringstream ss;
-	ss << "UnitCreated " << (*unit);
-	ai->l->v(ss.str());
+	LOG_II("CE323::UnitCreated " << (*unit))
 
 	unsigned int c = unit->type->cats;
 	if (unit->def->isCommander)
@@ -108,8 +83,7 @@ void CE323AI::UnitFinished(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
 	ai->unitTable->idle[uid] = true;
 
-	sprintf(buf, "[CE323AI::UnitFinished]\t%s(%d) finished", unit->def->humanName.c_str(), uid);
-	LOGN(buf);
+	LOG_II("CE323::UnitFinished " << (*unit))
 
 	unsigned int c = unit->type->cats;
 	if (unit->builder > 0)
@@ -127,16 +101,14 @@ void CE323AI::UnitFinished(int uid) {
 /* Called on a destroyed unit */
 void CE323AI::UnitDestroyed(int uid, int attacker) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
-	sprintf(buf, "[CE323AI::UnitDestroyed]\t%s(%d) destroyed", unit->def->humanName.c_str(), uid);
-	LOGN(buf);
+	LOG_II("CE323::UnitDestroyed " << (*unit))
 	unit->remove();
 }
 
 /* Called when unit is idle */
 void CE323AI::UnitIdle(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
-	sprintf(buf, "[CE323AI::UnitIdle]\t%s(%d) idling", unit->def->humanName.c_str(), uid);
-	LOGN(buf);
+	LOG_II("CE323::UnitIdle " << (*unit))
 	ai->unitTable->idle[uid] = true;
 }
 
@@ -147,9 +119,7 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 /* Called on move fail e.g. can't reach point */
 void CE323AI::UnitMoveFailed(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
-	//unit->moveRandom(100.0f);
-	sprintf(buf, "[CE323AI::UnitMoveFailed]\t%s(%d) failed moving", unit->def->humanName.c_str(), uid);
-	LOGN(buf);
+	LOG_II("CE323::UnitMoveFailed " << (*unit))
 }
 
 
@@ -190,8 +160,9 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 			/* Unit gained */
 			if ((cte->newteam) == (ai->call->GetMyTeam())) {
 				UnitFinished(cte->unit);
-				sprintf(buf, "[CE323AI::HandleEvent]\tGiven/Gained unit(%d)", cte->unit);
-				LOGN(buf);
+				CUnit *unit = ai->unitTable->getUnit(cte->unit);
+
+				LOG_II("CE323::UnitGiven " << (*unit))
 			}
 		break;
 
@@ -199,8 +170,9 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 			/* Unit lost */
 			if ((cte->oldteam) == (ai->call->GetMyTeam())) {
 				UnitDestroyed(cte->unit, 0);
-				sprintf(buf, "[CE323AI::HandleEvent]\tCaptured/Lost unit(%d)", cte->unit);
-				LOGN(buf);
+				CUnit *unit = ai->unitTable->getUnit(cte->unit);
+
+				LOG_II("CE323::UnitCaptured " << (*unit))
 			}
 		break;
 	}

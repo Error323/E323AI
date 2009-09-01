@@ -6,8 +6,6 @@
 int ATask::counter = 0;
 
 void ATask::remove() {
-	sprintf(buf, "[ATask::remove]\tremove task(%d)", key);
-	LOGN(buf);
 	group->unreg(*this);
 	group->busy = false;
 	group->stop();
@@ -22,9 +20,6 @@ void ATask::remove() {
 }
 
 void ATask::remove(ARegistrar &group) {
-	sprintf(buf, "[ATask::remove]\tremove group(%d)", group.key);
-	LOGN(buf);
-
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
 		(*i)->remove();
@@ -35,8 +30,6 @@ void ATask::remove(ARegistrar &group) {
 }
 
 void ATask::addGroup(CGroup &g) {
-	sprintf(buf, "[ATask::addGroup]\tadd group(%d)", g.key);
-	LOGN(buf);
 	this->group = &g;
 	group->reg(*this);
 	group->busy = true;
@@ -122,12 +115,6 @@ void CTaskHandler::remove(ARegistrar &task) {
 
 		default: return;
 	}
-	sprintf(buf, 
-		"[CTaskHandler::remove]\tremove task %s(%d)",
-		taskStr[t->t].c_str(),
-		t->key
-	);
-	LOGN(buf);
 }
 
 ATask* CTaskHandler::requestTask(task t) {
@@ -207,9 +194,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 	float3 gp = group.pos();
 	ai->pf->addTask(*task);
 	groupToTask[group.key] = task;
-	std::stringstream ss;
-	ss << (*buildTask);
-	ai->l->v(ss.str());
+	LOG_II((*buildTask))
 }
 
 void CTaskHandler::BuildTask::update() {
@@ -252,7 +237,7 @@ std::ostream& operator<<(std::ostream &out, const CTaskHandler::BuildTask &task)
 	ss << " Pos(" << task.pos.x << "," << task.pos.z << ") by ";
 	ss << (*(task.group));
 
-	ss << " Assisters(" << task.assisters.size() << ") [";
+	ss << " Assisters: amount(" << task.assisters.size() << ") [";
 	std::list<ATask*>::const_iterator i;
 	for (i = task.assisters.begin(); i != task.assisters.end(); i++)
 		ss << (*i);
@@ -295,9 +280,7 @@ void CTaskHandler::addFactoryTask(CUnit &factory) {
 	FactoryTask *factoryTask = dynamic_cast<FactoryTask*>(task);
 	factoryTask->reset(factory);
 	activeFactoryTasks[task->key] = factoryTask;
-	std::stringstream ss;
-	ss << (*factoryTask);
-	ai->l->v(ss.str());
+	LOG_II((*factoryTask))
 }
 
 void CTaskHandler::FactoryTask::update() {
@@ -325,7 +308,7 @@ std::ostream& operator<<(std::ostream &out, const CTaskHandler::FactoryTask &tas
 	ss << "FactoryTask(" << task.key << ") " << (*(task.factory));
 	ss << " Pos(" << task.pos.x << "," << task.pos.z << ")";
 
-	ss << " Assisters(" << task.assisters.size() << ") [";
+	ss << " Assisters: amount(" << task.assisters.size() << ") [";
 	std::list<ATask*>::const_iterator i;
 	for (i = task.assisters.begin(); i != task.assisters.end(); i++)
 		ss << (*i);
@@ -346,8 +329,7 @@ void CTaskHandler::AssistTask::reset(ATask &task) {
 }
 
 void CTaskHandler::AssistTask::remove() {
-	sprintf(buf, "[AssistTask::remove]\tremove task(%d)", key);
-	LOGN(buf);
+	LOG_II("CGroup::remove " << (*this))
 	group->unreg(*this);
 	group->busy = false;
 	group->stop();
@@ -368,9 +350,7 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 	float3 gp = group.pos();
 	ai->pf->addTask(*task);
 	groupToTask[group.key] = task;
-	std::stringstream ss;
-	ss << (*assistTask);
-	ai->l->v(ss.str());
+	LOG_II((*assistTask))
 }
 
 void CTaskHandler::AssistTask::update() {
@@ -412,9 +392,7 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 	float3 gp = group.pos();
 	ai->pf->addTask(*task);
 	groupToTask[group.key] = task;
-	std::stringstream ss;
-	ss << (*attackTask);
-	ai->l->v(ss.str());
+	LOG_II((*attackTask))
 }
 
 void CTaskHandler::AttackTask::update() {
@@ -440,7 +418,7 @@ std::ostream& operator<<(std::ostream &out, const CTaskHandler::AttackTask &task
 	ss << "AttackTask(" << task.key << ") target(" << task.ai->cheat->GetUnitDef(task.target)->humanName << ") ";
 	ss << (*(task.group));
 
-	ss << " Assisters(" << task.assisters.size() << ") [";
+	ss << " Assisters: amount(" << task.assisters.size() << ") [";
 	std::list<ATask*>::const_iterator i;
 	for (i = task.assisters.begin(); i != task.assisters.end(); i++)
 		ss << (*i);

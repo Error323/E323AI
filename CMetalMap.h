@@ -58,7 +58,6 @@ class CMetalMap: public ARegistrar {
 		std::vector<MSpot> spots;
 
 		AIClasses *ai;
-		char buf[1024];
 };
 
 #endif

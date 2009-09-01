@@ -31,8 +31,6 @@ class CE323AI: public IGlobalAI {
 	
 	private:
 		AIClasses *ai;
-		int unitCreated;
-		char buf[1024];
 		int team;
 };
 

@@ -84,7 +84,6 @@ class CUnit: public ARegistrar {
 
 	private:
 		AIClasses *ai;
-		char buf[1024];
 
 		Command createPosCommand(int cmd, float3 pos, float radius = -1.0f, facing f = NONE);
 		Command createTargetCommand(int cmd, int target);

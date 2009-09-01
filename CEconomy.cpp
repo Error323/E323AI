@@ -66,8 +66,6 @@ CGroup* CEconomy::requestGroup() {
 }
 
 void CEconomy::remove(ARegistrar &group) {
-	sprintf(buf, "[CEconomy::remove]\tremove group(%d)", group.key);
-	LOGN(buf);
 	free.push(lookup[group.key]);
 	lookup.erase(group.key);
 	activeGroups.erase(group.key);
@@ -78,8 +76,8 @@ void CEconomy::remove(ARegistrar &group) {
 }
 
 void CEconomy::addUnit(CUnit &unit) {
-	sprintf(buf, "[CEconomy::addUnit]\tadded unit(%d):%s", unit.key, unit.def->humanName.c_str());
-	LOGN(buf);
+	LOG_II("Economy::addUnit " << unit)
+
 	unsigned c = unit.type->cats;
 	if (c&FACTORY) {
 		ai->tasks->addFactoryTask(unit);
@@ -286,8 +284,6 @@ void CEconomy::preventStalling() {
 			}
 		}
 		if (success > 0) {
-			sprintf(buf, "[CEconomy::preventStalling]\tturned %d metalmakers off\n", success);
-			LOGN(buf);
 			return;
 		}
 	}
@@ -304,8 +300,6 @@ void CEconomy::preventStalling() {
 			}
 		}
 		if (success > 0) {
-			sprintf(buf, "[CEconomy::preventStalling]\tturned %d metalmakers on\n", success);
-			LOGN(buf);
 			return;
 		}
 	}

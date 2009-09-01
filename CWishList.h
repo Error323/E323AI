@@ -46,8 +46,6 @@ class CWishList {
 		std::map<int, std::vector<Wish> > wishlist;  /* <factory type, wishes> */
 
 		AIClasses *ai;
-
-		char buf[1024];
 };
 
 #endif

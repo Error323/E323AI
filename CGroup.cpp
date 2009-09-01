@@ -3,8 +3,8 @@
 int CGroup::counter = 0;
 
 void CGroup::addUnit(CUnit &unit) {
+	LOG_II("CGroup::add " << unit)
 	MoveData* md = ai->call->GetUnitDef(unit.key)->movedata;
-	assert(md != NULL); /* this would be bad */
 
 	if (md->maxSlope <= maxSlope) {
 		moveType = md->pathType;
@@ -23,6 +23,8 @@ void CGroup::addUnit(CUnit &unit) {
 }
 
 void CGroup::remove() {
+	LOG_II("CGroup::remove " << (*this))
+
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++)
 		i->second->unreg(*this);
@@ -33,8 +35,6 @@ void CGroup::remove() {
 }
 
 void CGroup::remove(ARegistrar &unit) {
-	sprintf(buf, "[CGroup::remove]\tremove unit(%d)", unit.key);
-	LOGN(buf);
 	waiters.erase(unit.key);
 	units.erase(unit.key);
 
@@ -179,7 +179,7 @@ void CGroup::guard(int target, bool enqueue) {
 
 std::ostream& operator<<(std::ostream &out, const CGroup &group) {
 	std::stringstream ss;
-	ss << "Group(" << group.key << ") [";
+	ss << "Group(" << group.key << "):" << " amount(" << group.units.size() << ") [";
 	std::map<int, CUnit*>::const_iterator i = group.units.begin();
 	for (i = group.units.begin(); i != group.units.end(); i++) {
 		ss << (*i->second) << ", ";

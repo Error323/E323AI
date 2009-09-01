@@ -79,9 +79,6 @@ class CEconomy: public ARegistrar {
 		/* Active groups ingame */
 		std::map<int, CGroup*> activeGroups;
 
-		/* buffer */
-		char buf[1024];
-
 		/* energy provider, factory, builder */
 		UnitType *energyProvider;
 
