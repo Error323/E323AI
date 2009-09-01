@@ -21,6 +21,7 @@ CE323AI::~CE323AI() {
 	delete ai->intel;
 	delete ai->military;
 	delete ai->wl;
+	delete ai->l;
 	delete ai;
 }
 
@@ -28,6 +29,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai          = new AIClasses();
 	ai->call    = callback->GetAICallback();
 	ai->cheat   = callback->GetCheatInterface();
+	ai->team    = team;
 	this->team  = team;
 
 	/* Retrieve mapname, time and team info for the log file */
@@ -69,6 +71,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->pf          = new CPathfinder(ai);
 	ai->intel       = new CIntel(ai);
 	ai->military    = new CMilitary(ai);
+	ai->l           = new CLogger(ai, CLogger::LOG_SCREEN);
 
 	LOG("\n\n\nBEGIN\n\n\n");
 }
@@ -82,8 +85,9 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 void CE323AI::UnitCreated(int uid, int bid) {
 	CUnit *unit    = ai->unitTable->requestUnit(uid, bid);
 
-	sprintf(buf, "[CE323AI::UnitCreated]\t%s(%d) created", unit->def->humanName.c_str(), uid);
-	LOGN(buf);
+	std::stringstream ss;
+	ss << "UnitCreated " << (*unit);
+	ai->l->v(ss.str());
 
 	unsigned int c = unit->type->cats;
 	if (unit->def->isCommander)

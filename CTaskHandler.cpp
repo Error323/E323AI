@@ -167,9 +167,6 @@ ATask* CTaskHandler::requestTask(task t) {
 	lookup[t][task->key] = index;
 	task->reg(*this);
 	activeTasks[task->key] = task;
-
-	sprintf(buf, "[CTaskHandler::requestTask]\ttask %s(%d) created", taskStr[t].c_str(), task->key);
-	LOGN(buf);
 	return task;
 }
 
@@ -210,6 +207,9 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 	float3 gp = group.pos();
 	ai->pf->addTask(*task);
 	groupToTask[group.key] = task;
+	std::stringstream ss;
+	ss << (*buildTask);
+	ai->l->v(ss.str());
 }
 
 void CTaskHandler::BuildTask::update() {
@@ -247,15 +247,16 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister) {
 
 std::ostream& operator<<(std::ostream &out, const CTaskHandler::BuildTask &task) {
 	std::stringstream ss;
-	ss << "BuildTask(" << task.key << ") " << CTaskHandler::buildStr[task.bt] << "\n";
-	ss << "Build(" << task.toBuild->def->humanName << " @ ";
-	ss << "Pos(" << task.pos.x << "," << task.pos.z << ")\n";
+	ss << "BuildTask(" << task.key << ") " << CTaskHandler::buildStr[task.bt];
+	ss << " Build(" << task.toBuild->def->humanName << " @";
+	ss << " Pos(" << task.pos.x << "," << task.pos.z << ") by ";
 	ss << (*(task.group));
 
-	ss << "Assisters(" << task.assisters.size() << ")\n";
+	ss << " Assisters(" << task.assisters.size() << ") [";
 	std::list<ATask*>::const_iterator i;
 	for (i = task.assisters.begin(); i != task.assisters.end(); i++)
 		ss << (*i);
+	ss << "]";
 
 	std::string s = ss.str();
 	out << s;
@@ -294,6 +295,9 @@ void CTaskHandler::addFactoryTask(CUnit &factory) {
 	FactoryTask *factoryTask = dynamic_cast<FactoryTask*>(task);
 	factoryTask->reset(factory);
 	activeFactoryTasks[task->key] = factoryTask;
+	std::stringstream ss;
+	ss << (*factoryTask);
+	ai->l->v(ss.str());
 }
 
 void CTaskHandler::FactoryTask::update() {
@@ -318,13 +322,14 @@ void CTaskHandler::FactoryTask::setWait(bool on) {
 
 std::ostream& operator<<(std::ostream &out, const CTaskHandler::FactoryTask &task) {
 	std::stringstream ss;
-	ss << "FactoryTask(" << task.key << ") " << (*(task.factory)) << "\n";
-	ss << "Pos(" << task.pos.x << "," << task.pos.z << ")\n";
+	ss << "FactoryTask(" << task.key << ") " << (*(task.factory));
+	ss << " Pos(" << task.pos.x << "," << task.pos.z << ")";
 
-	ss << "Assisters(" << task.assisters.size() << ")\n";
+	ss << " Assisters(" << task.assisters.size() << ") [";
 	std::list<ATask*>::const_iterator i;
 	for (i = task.assisters.begin(); i != task.assisters.end(); i++)
 		ss << (*i);
+	ss << "]";
 
 	std::string s = ss.str();
 	out << s;
@@ -363,6 +368,9 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 	float3 gp = group.pos();
 	ai->pf->addTask(*task);
 	groupToTask[group.key] = task;
+	std::stringstream ss;
+	ss << (*assistTask);
+	ai->l->v(ss.str());
 }
 
 void CTaskHandler::AssistTask::update() {
@@ -379,7 +387,7 @@ void CTaskHandler::AssistTask::update() {
 
 std::ostream& operator<<(std::ostream &out, const CTaskHandler::AssistTask &task) {
 	std::stringstream ss;
-	ss << "AssistTask(" << task.key << ") @ Pos(" << task.pos.x << "," << task.pos.z << ")\n";
+	ss << "AssistTask(" << task.key << ") @ Pos(" << task.pos.x << "," << task.pos.z << ") ";
 	ss << (*(task.group));
 
 	std::string s = ss.str();
@@ -404,6 +412,9 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 	float3 gp = group.pos();
 	ai->pf->addTask(*task);
 	groupToTask[group.key] = task;
+	std::stringstream ss;
+	ss << (*attackTask);
+	ai->l->v(ss.str());
 }
 
 void CTaskHandler::AttackTask::update() {
@@ -426,13 +437,14 @@ void CTaskHandler::AttackTask::update() {
 
 std::ostream& operator<<(std::ostream &out, const CTaskHandler::AttackTask &task) {
 	std::stringstream ss;
-	ss << "AttackTask(" << task.key << ") target(" << task.ai->cheat->GetUnitDef(task.target)->humanName << ")\n";
+	ss << "AttackTask(" << task.key << ") target(" << task.ai->cheat->GetUnitDef(task.target)->humanName << ") ";
 	ss << (*(task.group));
 
-	ss << "Assisters(" << task.assisters.size() << ")\n";
+	ss << " Assisters(" << task.assisters.size() << ") [";
 	std::list<ATask*>::const_iterator i;
 	for (i = task.assisters.begin(); i != task.assisters.end(); i++)
 		ss << (*i);
+	ss << "]";
 
 	std::string s = ss.str();
 	out << s;

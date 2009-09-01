@@ -186,7 +186,7 @@ std::ostream& operator<<(std::ostream &out, const CGroup &group) {
 	}
 	std::string s = ss.str();
 	s = s.substr(0, s.size()-2);
-	s += "]\n";
+	s += "]";
 	out << s;
 	return out;
 }

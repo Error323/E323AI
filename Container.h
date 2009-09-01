@@ -13,6 +13,7 @@ class CPathfinder;
 class CIntel;
 class CMilitary;
 class CMyGroup;
+class CLogger;
 
 /* Ensures single instantiation of classes and good reachability */
 struct AIClasses {
@@ -28,6 +29,8 @@ struct AIClasses {
 	CIntel        *intel;
 	CMilitary     *military;
 	std::ofstream *logger;
+	CLogger       *l;
+	int           team;
 };
 
 /* Unit wrapper struct */

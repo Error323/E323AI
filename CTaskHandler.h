@@ -123,7 +123,7 @@ class CTaskHandler: public ARegistrar {
 			void reset(ATask &task);
 
 			/* output stream */
-			friend std::ostream& operator<<(std::ostream &out, const FactoryTask &task);
+			friend std::ostream& operator<<(std::ostream &out, const AssistTask &task);
 		};
 
 		struct AttackTask: public ATask {
