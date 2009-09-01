@@ -30,7 +30,7 @@ class ScopedTimer {
 
 		static std::string profile() {
 			std::stringstream ss;
-			ss << "\n[ScopedTimer] milliseconds\n";
+			ss << "[ScopedTimer] milliseconds\n";
 			for (int i = 0; i < MAX_STR_LENGTH; i++)
 				ss << " ";
 			ss << "PCT\tAVG\tTOT\n";

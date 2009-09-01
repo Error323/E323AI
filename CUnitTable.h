@@ -50,7 +50,8 @@ class CUnitTable: public ARegistrar {
 		UnitType* canBuild(UnitType *ut, unsigned int categories);
 
 		/* Debugging functions */
-		void debugCategories(UnitType *ut);
+		std::string debugCategories(UnitType *ut);
+		std::string debugCategories(unsigned categories);
 		void debugUnitDefs(UnitType *ut);
 		void debugWeapons(UnitType *ut);
 

@@ -6,6 +6,7 @@
 int ATask::counter = 0;
 
 void ATask::remove() {
+	LOG_II("ATask::remove task(" << key << ") " << (*group))
 	group->unreg(*this);
 	group->busy = false;
 	group->stop();
@@ -20,6 +21,7 @@ void ATask::remove() {
 }
 
 void ATask::remove(ARegistrar &group) {
+	LOG_II("ATask::remove task(" << key << ") " << (*this->group))
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
 		(*i)->remove();
@@ -30,6 +32,7 @@ void ATask::remove(ARegistrar &group) {
 }
 
 void ATask::addGroup(CGroup &g) {
+	LOG_II("ATask::addGroup task(" << key << ") " << g)
 	this->group = &g;
 	group->reg(*this);
 	group->busy = true;

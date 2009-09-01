@@ -62,7 +62,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 void CE323AI::UnitCreated(int uid, int bid) {
 	CUnit *unit    = ai->unitTable->requestUnit(uid, bid);
 
-	LOG_II("CE323::UnitCreated " << (*unit))
+	LOG_II("CE323AI::UnitCreated " << (*unit))
 
 	unsigned int c = unit->type->cats;
 	if (unit->def->isCommander)
@@ -83,7 +83,7 @@ void CE323AI::UnitFinished(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
 	ai->unitTable->idle[uid] = true;
 
-	LOG_II("CE323::UnitFinished " << (*unit))
+	LOG_II("CE323AI::UnitFinished " << (*unit))
 
 	unsigned int c = unit->type->cats;
 	if (unit->builder > 0)
@@ -101,14 +101,14 @@ void CE323AI::UnitFinished(int uid) {
 /* Called on a destroyed unit */
 void CE323AI::UnitDestroyed(int uid, int attacker) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
-	LOG_II("CE323::UnitDestroyed " << (*unit))
+	LOG_II("CE323AI::UnitDestroyed " << (*unit))
 	unit->remove();
 }
 
 /* Called when unit is idle */
 void CE323AI::UnitIdle(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
-	LOG_II("CE323::UnitIdle " << (*unit))
+	LOG_II("CE323AI::UnitIdle " << (*unit))
 	ai->unitTable->idle[uid] = true;
 }
 
@@ -119,7 +119,7 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 /* Called on move fail e.g. can't reach point */
 void CE323AI::UnitMoveFailed(int uid) {
 	CUnit *unit = ai->unitTable->getUnit(uid);
-	LOG_II("CE323::UnitMoveFailed " << (*unit))
+	LOG_WW("CE323AI::UnitMoveFailed " << (*unit))
 }
 
 
@@ -162,7 +162,7 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 				UnitFinished(cte->unit);
 				CUnit *unit = ai->unitTable->getUnit(cte->unit);
 
-				LOG_II("CE323::UnitGiven " << (*unit))
+				LOG_II("CE323AI::UnitGiven " << (*unit))
 			}
 		break;
 
@@ -172,7 +172,7 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 				UnitDestroyed(cte->unit, 0);
 				CUnit *unit = ai->unitTable->getUnit(cte->unit);
 
-				LOG_II("CE323::UnitCaptured " << (*unit))
+				LOG_II("CE323AI::UnitCaptured " << (*unit))
 			}
 		break;
 	}

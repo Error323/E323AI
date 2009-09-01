@@ -23,6 +23,10 @@ void CWishList::push(unsigned categories, buildPriority p) {
 			unique(wishlist[fac->id]);
 			std::stable_sort(wishlist[fac->id].begin(), wishlist[fac->id].end());
 		}
+		else {
+			CUnit *unit = ai->unitTable->getUnit(itFac->first);
+			LOG_EE("CWishList::push failed for " << (*unit) << " categories: " << ai->unitTable->debugCategories(categories))
+		}
 	}
 }
 

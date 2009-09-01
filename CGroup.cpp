@@ -35,6 +35,7 @@ void CGroup::remove() {
 }
 
 void CGroup::remove(ARegistrar &unit) {
+	LOG_II("CGroup::remove unit(" << unit.key << ")")
 	waiters.erase(unit.key);
 	units.erase(unit.key);
 

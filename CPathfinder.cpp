@@ -96,6 +96,7 @@ void CPathfinder::resetMap(int thread) {
 
 void CPathfinder::remove(ARegistrar &obj) {
 	ATask *task = dynamic_cast<ATask*>(&obj);
+	LOG_II("CPathfinder::remove " << (*task->group))
 	paths.erase(task->group->key);
 	groups.erase(task->group->key);
 }
@@ -215,12 +216,14 @@ void CPathfinder::updatePaths() {
 }
 
 bool CPathfinder::addGroup(CGroup &group, float3 &start, float3 &goal) {
+	LOG_II("CPathfinder::addGroup " << group)
 	groups[group.key] = &group;
 	group.reg(*this);
 	return addPath(group.key, start, goal);
 }
 
 bool CPathfinder::addTask(ATask &task) {
+	LOG_II("CPathfinder::addTask task(" << task.key << ") " << (*task.group))
 	groups[task.group->key] = task.group;
 	task.reg(*this);
 	float3 start = task.group->pos();

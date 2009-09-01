@@ -66,6 +66,7 @@ CGroup* CEconomy::requestGroup() {
 }
 
 void CEconomy::remove(ARegistrar &group) {
+	LOG_II("CEconomy::remove group(" << group.key << ")")
 	free.push(lookup[group.key]);
 	lookup.erase(group.key);
 	activeGroups.erase(group.key);

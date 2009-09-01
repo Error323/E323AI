@@ -5,6 +5,7 @@ CMilitary::CMilitary(AIClasses *ai): ARegistrar(200) {
 }
 
 void CMilitary::remove(ARegistrar &group) {
+	LOG_II("CMilitary::remove group(" << group.key << ")")
 	free.push(lookup[group.key]);
 	lookup.erase(group.key);
 	activeScoutGroups.erase(group.key);

@@ -199,6 +199,7 @@ void CUnitTable::split(std::string &line, char c, std::vector<std::string> &spli
 }
 
 void CUnitTable::remove(ARegistrar &unit) {
+	LOG_II("CUnitTable::remove unit(" << unit.key << ")")
 	free.push(lookup[unit.key]);
 	lookup.erase(unit.key);
 	builders.erase(unit.key);
@@ -455,7 +456,19 @@ UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
 	return NULL;
 }
 
-void CUnitTable::debugCategories(UnitType *ut) {
+std::string CUnitTable::debugCategories(unsigned categories) {
+	std::string cats("");
+	std::map<unitCategory, std::string>::iterator i;
+	for (i = cat2str.begin(); i != cat2str.end(); i++) {
+		int v = categories & i->first;
+		if (v == i->first)
+			cats += i->second + " | ";
+	}
+	cats = cats.substr(0, cats.length()-3);
+	return cats;
+}
+
+std::string CUnitTable::debugCategories(UnitType *ut) {
 	std::string cats("");
 	std::map<unitCategory, std::string>::iterator i;
 	for (i = cat2str.begin(); i != cat2str.end(); i++) {
@@ -464,6 +477,7 @@ void CUnitTable::debugCategories(UnitType *ut) {
 			cats += i->second + " | ";
 	}
 	cats = cats.substr(0, cats.length()-3);
+	return cats;
 }
 
 void CUnitTable::debugUnitDefs(UnitType *ut) {
