@@ -50,7 +50,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->pf          = new CPathfinder(ai);
 	ai->intel       = new CIntel(ai);
 	ai->military    = new CMilitary(ai);
-	ai->l           = new CLogger(ai, CLogger::LOG_SCREEN | CLogger::LOG_FILE);
+	ai->l           = new CLogger(ai, /*CLogger::LOG_SCREEN |*/ CLogger::LOG_FILE);
 }
 
 
@@ -65,8 +65,10 @@ void CE323AI::UnitCreated(int uid, int bid) {
 	LOG_II("CE323AI::UnitCreated " << (*unit))
 
 	unsigned int c = unit->type->cats;
-	if (unit->def->isCommander)
+	if (unit->def->isCommander) {
 		ai->eco->init(*unit);
+		return;
+	}
 
 	if (c&MEXTRACTOR)
 		ai->metalMap->addUnit(*unit);
@@ -140,6 +142,9 @@ void CE323AI::EnemyLeaveRadar(int enemy) {
 }
 
 void CE323AI::EnemyDestroyed(int enemy, int attacker) {
+	CUnit *unit = ai->unitTable->getUnit(attacker);
+	UnitType *enem = UT(enemy);
+	LOG_II("CE323AI::EnemyDestroyed " << enem->def->humanName << "(" << enemy << ")" << (*unit))
 }
 
 void CE323AI::EnemyDamaged(int damaged, int attacker, float damage, float3 dir) {

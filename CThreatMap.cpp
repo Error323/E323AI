@@ -53,6 +53,9 @@ void CThreatMap::update(int frame) {
 		map[i] = 1.0f;
 
 	int numUnits = ai->cheat->GetEnemyUnits(units, MAX_UNITS);
+	if (numUnits > MAX_UNITS)
+		LOG_WW("CThreatMap::update " << numUnits << " > " << MAX_UNITS)
+
 	for (int i = 0; i < numUnits; i++) {
 		const UnitDef *ud = ai->cheat->GetUnitDef(units[i]);
 		UnitType      *ut = UT(ud->id);

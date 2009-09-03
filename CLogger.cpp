@@ -16,6 +16,8 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 		ofs.open(fileName, std::ios::app);
 		if (ofs.good()) {
 			std::cout << "Logging to file: " << fileName << "\n";
+			ofs << "Version: " << AI_VERSION << "\n";
+			ofs << "Developer: " << AI_CREDITS << "\n";
 			ofs << "Markers: ";
 			std::map<logLevel, std::string>::iterator i;
 			for (i = logDesc.begin(); i != logDesc.end(); i++)

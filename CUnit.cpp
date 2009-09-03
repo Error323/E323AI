@@ -9,6 +9,7 @@ float3 CUnit::pos() {
 }
 
 void CUnit::remove(ARegistrar &reg) {
+	LOG_II("CUnit::remove " << (*this))
 	std::list<ARegistrar*>::iterator i;
 	for (i = records.begin(); i != records.end(); i++) {
 		(*i)->remove(reg);
@@ -267,6 +268,6 @@ facing CUnit::getBestFacing(float3 &pos) {
 }
 
 std::ostream& operator<<(std::ostream &out, const CUnit &unit) {
-	out << unit.def->humanName << "(" << unit.key << ")";
+	out << unit.def->humanName << "(" << unit.key << ", " << unit.builder << ")";
 	return out;
 }
