@@ -143,8 +143,8 @@ void CE323AI::EnemyLeaveRadar(int enemy) {
 
 void CE323AI::EnemyDestroyed(int enemy, int attacker) {
 	CUnit *unit = ai->unitTable->getUnit(attacker);
-	UnitType *enem = UT(enemy);
-	LOG_II("CE323AI::EnemyDestroyed " << enem->def->humanName << "(" << enemy << ")" << (*unit))
+	const UnitDef *enem = ai->call->GetUnitDef(enemy);
+	LOG_II("CE323AI::EnemyDestroyed destroyed " << enem->humanName << "(" << enemy << ") by " << (*unit))
 }
 
 void CE323AI::EnemyDamaged(int damaged, int attacker, float damage, float3 dir) {
