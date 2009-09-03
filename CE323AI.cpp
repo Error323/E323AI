@@ -50,7 +50,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->pf          = new CPathfinder(ai);
 	ai->intel       = new CIntel(ai);
 	ai->military    = new CMilitary(ai);
-	ai->l           = new CLogger(ai, /*CLogger::LOG_SCREEN |*/ CLogger::LOG_FILE);
+	ai->l           = new CLogger(ai, CLogger::LOG_SCREEN | CLogger::LOG_FILE);
 }
 
 

@@ -106,7 +106,7 @@ void CPathfinder::updateMap(float *weights) {
 	for (i = maps.begin(); i != maps.end(); i++) {
 		for (unsigned j = 0; j < i->second.size(); j++) {
 			/* Give a slight preference to non-steep slopes */
-			i->second[j].w = weights[j] + slopeMap[j]*5.0f;
+			i->second[j].w = weights[j] + slopeMap[j]*1.1f;
 		}
 	}
 }
@@ -119,7 +119,7 @@ void CPathfinder::updateFollowers() {
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		unsigned segment     = 1;
-		int     waypoint     = 3;
+		int     waypoint     = std::min<int>(3, path->second.size()-segment-1);
 		CGroup *group        = groups[path->first];
 		float maxGroupLength = group->maxLength();
 		std::map<float, CUnit*> M;
@@ -274,18 +274,12 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 
 	std::list<ANode*> nodepath;
 	bool success = findPath(nodepath);
-	if (success && !nodepath.empty()) {
+	if (success) {
 		/* Insert a pre-waypoint at the beginning of the path */
-		float3 s0, s1;
-		s0 = dynamic_cast<Node*>(*(nodepath.begin()))->toFloat3();
-		if (nodepath.size() >= 2)
-			s1 = dynamic_cast<Node*>(*(++nodepath.begin()))->toFloat3();
-		else 
-			s1 = g;
-
-		float3 seg= s0 - s1;
-		seg *= 10000.0f; /* Blow up the pre-waypoint */
-		seg += s0;
+		float3 ss  = dynamic_cast<Node*>(start)->toFloat3();
+		float3 seg = s - ss;
+		seg *= 1000.0f; /* Blow up the pre-waypoint */
+		seg += s;
 		seg *= REAL;
 		seg.y = ai->call->GetElevation(seg.x, seg.z)+10;
 		path.push_back(seg);
@@ -297,9 +291,11 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 			f.y = ai->call->GetElevation(f.x, f.z)+20;
 			path.push_back(f);
 		}
-
+		path.push_back(g);
 	}
-	if (success) path.push_back(g);
+	else {
+		LOG_EE("CPathfinder::getPath pathing failed for " << (*groups[group]) << " size " << nodepath.size())
+	}
 
 	if (success && draw) {
 		for (unsigned i = 2; i < path.size(); i++) 

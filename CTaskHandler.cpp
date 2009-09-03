@@ -195,9 +195,10 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 	buildTask->addGroup(group);
 	activeBuildTasks[task->key] = buildTask;
 	float3 gp = group.pos();
-	ai->pf->addTask(*task);
 	groupToTask[group.key] = task;
 	LOG_II((*buildTask))
+	if (!ai->pf->addTask(*task))
+		buildTask->remove();
 }
 
 void CTaskHandler::BuildTask::update() {
@@ -351,9 +352,10 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 	assistTask->addGroup(group);
 	activeAssistTasks[task->key] = assistTask;
 	float3 gp = group.pos();
-	ai->pf->addTask(*task);
 	groupToTask[group.key] = task;
 	LOG_II((*assistTask))
+	if (!ai->pf->addTask(*task))
+		assistTask->remove();
 }
 
 void CTaskHandler::AssistTask::update() {
@@ -393,9 +395,10 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 	attackTask->addGroup(group);
 	activeAttackTasks[task->key] = attackTask;
 	float3 gp = group.pos();
-	ai->pf->addTask(*task);
 	groupToTask[group.key] = task;
 	LOG_II((*attackTask))
+	if (!ai->pf->addTask(*task))
+		attackTask->remove();
 }
 
 void CTaskHandler::AttackTask::update() {
