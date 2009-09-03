@@ -223,6 +223,7 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 		unit = new CUnit(ai, uid, bid);
 		ingameUnits.push_back(unit);
 		index = ingameUnits.size()-1;
+		LOG_II("CUnitTable::requestUnit new " << (*unit))
 	}
 
 	/* Use top free slot from stack */
@@ -230,6 +231,7 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 		index = free.top(); free.pop();
 		unit  = ingameUnits[index];
 		unit->reset(uid, bid);
+		LOG_II("CUnitTable::requestUnit existing " << (*unit))
 	}
 
 	lookup[uid] = index;
@@ -453,6 +455,7 @@ UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
 		if (qualifies)
 			return j->second;
 	}
+	LOG_EE("CUnitTable::canBuild failed to build " << debugCategories(c))
 	return NULL;
 }
 
