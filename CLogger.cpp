@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <ctime>
 
 #include "CAI.h"
 
