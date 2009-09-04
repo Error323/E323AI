@@ -159,14 +159,14 @@ void CUnitTable::parseCategorizations(const char *fileName) {
 			unsigned categories = 0;
 			for (unsigned i = 1; i < splitted.size(); i++) {
 				if (str2cat.find(splitted[i]) == str2cat.end()) {
-					std::cerr << "line: " << linenr << "\tcategory `" << splitted[i] << "' is invalid.\n";
+					LOG_EE("Parsing config line: " << linenr << "\tcategory `" << splitted[i] << "' is invalid")
 					continue;
 				}
 				categories |= str2cat[splitted[i]];
 			}
 
 			if (categories == 0) {
-				std::cerr << "line: " << linenr << "\t" << ut->def->humanName << " is uncategorized, falling back to standard.\n";
+				LOG_EE("Parsing config line: " << linenr << "\t" << ut->def->humanName << " is uncategorized, falling back to standard")
 				continue;
 			}
 
@@ -175,9 +175,9 @@ void CUnitTable::parseCategorizations(const char *fileName) {
 		file.close();
 	}
 	else {
-		std::cerr << "could not open " << fileName << " for parsing.\n";
+		LOG_EE("Could not open " << fileName << " for parsing")
 	}
-	std::cout << "parsed " << linenr << " lines from " << fileName << ".\n";
+	LOG_II("Parsed " << linenr << " lines from " << fileName)
 }
 
 void CUnitTable::split(std::string &line, char c, std::vector<std::string> &splitted) {

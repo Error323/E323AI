@@ -28,19 +28,12 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->team    = team;
 	this->team  = team;
 
-	/* Retrieve mapname, time and team info for the log file */
-	std::string mapname = std::string(ai->call->GetMapName());
-	mapname.resize(mapname.size() - 4);
-
-	time_t now1;
-	time(&now1);
-	struct tm* now2 = localtime(&now1);
-
 	std::string version("*** " + AI_VERSION + " ***");
 	LOGS(version.c_str());
 	LOGS("*** " AI_CREDITS " ***");
 	LOGS("*** " AI_NOTES " ***");
 
+	ai->l           = new CLogger(ai, CLogger::LOG_SCREEN | CLogger::LOG_FILE);
 	ai->metalMap	= new CMetalMap(ai);
 	ai->unitTable	= new CUnitTable(ai);
 	ai->eco     	= new CEconomy(ai);
@@ -50,7 +43,6 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->pf          = new CPathfinder(ai);
 	ai->intel       = new CIntel(ai);
 	ai->military    = new CMilitary(ai);
-	ai->l           = new CLogger(ai, CLogger::LOG_SCREEN | CLogger::LOG_FILE);
 }
 
 
