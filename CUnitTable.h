@@ -4,15 +4,34 @@
 #include <map>
 #include <vector>
 #include <stack>
+#include <string>
 
 #include "ARegistrar.h"
-#include "CUnit.h"
-#include "CE323AI.h"
+#include "headers/Defines.h"
+#include "headers/HEngine.h"
+
+class CUnit;
+class AIClasses;
+
+/* Unit wrapper struct */
+struct UnitType {
+	const UnitDef *def;                 /* As defined by spring */
+	int id;                             /* Overloading the UnitDef id */
+	int techLevel;                      /* By looking at the factory cost in which it can be build */
+	float dps;                          /* A `briljant' measurement for the power of a unit :P */
+	float cost;                         /* Cost defined in energy units */
+	float energyMake;                   /* Netto energy this unit provides */
+	float metalMake;                    /* Netto metal this unit provides */
+	unsigned int cats;                  /* Categories this unit belongs, Categories @ Defines.h */
+	std::map<int, UnitType*> buildBy;
+	std::map<int, UnitType*> canBuild;
+};
 
 class CUnitTable: public ARegistrar {
 	public:
 		CUnitTable(AIClasses *ai);
 		~CUnitTable() {};
+
 
 		/* Returns a fresh CUnit instance */
 		CUnit* requestUnit(int uid, int bid);
@@ -96,7 +115,6 @@ class CUnitTable: public ARegistrar {
 
 		/* Create a UnitType of ud and insert into units */
 		UnitType* insertUnit(const UnitDef *ud);
-
 };
 
 #endif

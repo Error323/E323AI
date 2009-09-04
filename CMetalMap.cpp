@@ -1,15 +1,21 @@
 #include "CMetalMap.h"
 
+#include "CAI.h"
+#include "CUnit.h"
+#include "CGroup.h"
+#include "CUnitTable.h"
+#include "CThreatMap.h"
+
 CMetalMap::CMetalMap(AIClasses *ai): ARegistrar(300) {
 	this->ai = ai;
 	threshold = 64;
 
-	X = ai->call->GetMapWidth() / 2;
-	Z = ai->call->GetMapHeight() / 2;
+	X = ai->cb->GetMapWidth() / 2;
+	Z = ai->cb->GetMapHeight() / 2;
 	N = 100;
 
-	callMap = ai->call->GetMetalMap();
-	radius = (int) round( (ai->call->GetExtractorRadius()) / SCALAR);
+	cbMap = ai->cb->GetMetalMap();
+	radius = (int) round( (ai->cb->GetExtractorRadius()) / SCALAR);
 	diameter = radius*2;
 	squareRadius=radius*radius;
 
@@ -18,7 +24,7 @@ CMetalMap::CMetalMap(AIClasses *ai): ARegistrar(300) {
 	bestCoverage = new unsigned int[diameter*diameter];
 
 	for (int i = 0; i < X*Z; i++)
-		map[i] = callMap[i];
+		map[i] = cbMap[i];
 
 	findBestSpots();
 }
@@ -42,7 +48,7 @@ void CMetalMap::addUnit(CUnit &mex) {
 	LOG_II("CMetalMap::addUnit " << mex)
 
 	mex.reg(*this);
-	taken[mex.key] = ai->call->GetUnitPos(mex.key);
+	taken[mex.key] = ai->cb->GetUnitPos(mex.key);
 }
 
 void CMetalMap::findBestSpots() {
@@ -74,7 +80,7 @@ void CMetalMap::findBestSpots() {
 		
 		if (!metalSpots) break;
 
-		float3 pos = float3(bestX*SCALAR,ai->call->GetElevation(bestX*SCALAR,bestZ*SCALAR), bestZ*SCALAR);
+		float3 pos = float3(bestX*SCALAR,ai->cb->GetElevation(bestX*SCALAR,bestZ*SCALAR), bestZ*SCALAR);
 		spots.push_back(MSpot(spots.size(), pos, highestSaturation));
 
 		if (counter >= N) {
@@ -130,7 +136,7 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 		bool skip = false;
 		for (j = taken.begin(); j != taken.end(); j++) {
 			float3 diff = (j->second - ms->f);
-			if (diff.Length2D() <= ai->call->GetExtractorRadius()*1.5f)
+			if (diff.Length2D() <= ai->cb->GetExtractorRadius()*1.5f)
 				skip = true;
 		}
 		if (skip) continue;
@@ -143,7 +149,7 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 
 	float lowestThreat = MAX_FLOAT;
 	for (unsigned i = 0; i < sorted.size(); i++) {
-		float threat = ai->threatMap->getThreat(sorted[i].f);
+		float threat = ai->threatmap->getThreat(sorted[i].f);
 		if (threat < lowestThreat) {
 			bestMs = &sorted[i];
 			lowestThreat = threat;
@@ -161,12 +167,12 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 }
 
 void CMetalMap::removeFromTaken(int mex) {
-	float3 pos = ai->call->GetUnitPos(mex);
+	float3 pos = ai->cb->GetUnitPos(mex);
 	int erase = -1;
 	std::map<int,float3>::iterator i;
 	for (i = taken.begin(); i != taken.end(); i++) {
 		float3 diff = pos - i->second;
-		if (diff.Length2D() <= ai->call->GetExtractorRadius()*1.2f)
+		if (diff.Length2D() <= ai->cb->GetExtractorRadius()*1.2f)
 			erase = i->first;
 	}
 	assert(erase != -1);

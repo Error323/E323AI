@@ -5,12 +5,15 @@
 #include <vector>
 #include <stack>
 
-#include "CE323AI.h"
 #include "ARegistrar.h"
-#include "Defines.h"
+
+#include "headers/Defines.h"
 
 class ATask;
 class CGroup;
+class CUnit;
+class AIClasses;
+class UnitType;
 
 const float alpha = 0.0f;
 const float beta = 0.00f;

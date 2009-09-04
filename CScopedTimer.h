@@ -10,9 +10,9 @@
 
 #define MAX_STR_LENGTH 21
 
-class ScopedTimer {
+class CScopedTimer {
 	public:
-		ScopedTimer(const std::string& s): task(s) {
+		CScopedTimer(const std::string& s): task(s) {
 			if (times.find(task) == times.end()) {
 				times[task] = 0;
 				counters[task] = 0;
@@ -20,7 +20,7 @@ class ScopedTimer {
 			t1 = SDL_GetTicks();
 		}
 
-		~ScopedTimer() {
+		~CScopedTimer() {
 			t2           = SDL_GetTicks();
 			t3           = t2 - t1;
 			times[task] += t3;
@@ -30,7 +30,7 @@ class ScopedTimer {
 
 		static std::string profile() {
 			std::stringstream ss;
-			ss << "[ScopedTimer] milliseconds\n";
+			ss << "[CScopedTimer] milliseconds\n";
 			for (int i = 0; i < MAX_STR_LENGTH; i++)
 				ss << " ";
 			ss << "PCT\tAVG\tTOT\n";

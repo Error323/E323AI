@@ -6,8 +6,11 @@
 #include <stack>
 
 #include "ARegistrar.h"
-#include "CGroup.h"
-#include "CE323AI.h"
+#include "headers/HEngine.h"
+
+class CUnit;
+class CGroup;
+class AIClasses;
 
 enum groupType{SCOUT, ENGAGE};
 

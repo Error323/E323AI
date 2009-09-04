@@ -1,5 +1,17 @@
 #include "CMilitary.h"
 
+#include "headers/HEngine.h"
+
+#include "CRNG.h"
+#include "CAI.h"
+#include "CUnit.h"
+#include "CGroup.h"
+#include "CTaskHandler.h"
+#include "CThreatMap.h"
+#include "CIntel.h"
+#include "CWishList.h"
+#include "CUnitTable.h"
+
 CMilitary::CMilitary(AIClasses *ai): ARegistrar(200) {
 	this->ai = ai;
 }
@@ -81,9 +93,9 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets) {
 	for (unsigned i = 0; i < targets.size(); i++) {
 		int target = targets[i];
 
-		float3 epos = ai->cheat->GetUnitPos(target);
+		float3 epos = ai->cbc->GetUnitPos(target);
 		float dist = (epos-ourPos).Length2D();
-		dist *= (ai->threatMap->getThreat(epos, 300.0f)+1);
+		dist *= (ai->threatmap->getThreat(epos, 300.0f)+1);
 		candidates.insert(std::pair<float,int>(dist, target));
 	}
 
@@ -186,7 +198,7 @@ void CMilitary::update(int groupsize) {
 			continue;
 		}
 		
-		float3 goal = ai->cheat->GetUnitPos(target);
+		float3 goal = ai->cbc->GetUnitPos(target);
 
 		/* Not strong enough */
 		if (group->units.size() < groupsize) 
@@ -206,10 +218,10 @@ void CMilitary::update(int groupsize) {
 	/* Always have enough scouts */
 	int harrasTargets = ai->intel->metalMakers.size();
 	if (harrasTargets > activeScoutGroups.size())
-		ai->wl->push(SCOUTER, HIGH);
+		ai->wishlist->push(SCOUTER, HIGH);
 
 	/* Always build some unit */
-	ai->wl->push(requestUnit(), NORMAL);
+	ai->wishlist->push(requestUnit(), NORMAL);
 }
 
 unsigned CMilitary::requestUnit() {

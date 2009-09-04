@@ -2,6 +2,10 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
+
+#include "CAI.h"
+#include "CUnit.h"
 
 CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	this->ai = ai;
@@ -51,13 +55,13 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		cats.push_back(i->first);
 		str2cat[i->second] = i->first;
 	}
-	numUnits = ai->call->GetNumUnitDefs();
+	numUnits = ai->cb->GetNumUnitDefs();
 
  	/* Build the techtree, note that this is actually a graph in XTA */
 	buildTechTree();
 
 	/* Determine the modname (exists of 2 characters) */
-	std::string modName(ai->call->GetModName());
+	std::string modName(ai->cb->GetModName());
 	modName = modName.substr(0, 2);
 
 	sprintf(
@@ -75,7 +79,7 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	}
 	else {
 		sprintf(buf, "%s", CFG_FOLDER);
-		ai->call->GetValue(AIVAL_LOCATE_FILE_W, buf);
+		ai->cb->GetValue(AIVAL_LOCATE_FILE_W, buf);
 		generateCategorizationFile(fileName.c_str());
 	}
 
@@ -122,7 +126,7 @@ void CUnitTable::generateCategorizationFile(const char *fileName) {
 		file << "# " << i->second << "\n";
 		str2cat[i->second] = i->first;
 	}
-	numUnits = ai->call->GetNumUnitDefs();
+	numUnits = ai->cb->GetNumUnitDefs();
 	file << "\n\n# " << numUnits << " units in total\n\n";
 	for (j = units.begin(); j != units.end(); j++) {
 		utParent = &(j->second);
@@ -245,7 +249,7 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 
 void CUnitTable::buildTechTree() {
 	const UnitDef *unitdefs[numUnits];
-	ai->call->GetUnitDefList(unitdefs);
+	ai->cb->GetUnitDefList(unitdefs);
 
 	std::map<int, std::string> buildOptions;
 	std::map<int, std::string>::iterator j;
@@ -264,7 +268,7 @@ void CUnitTable::buildTechTree() {
 
 		buildOptions = ud->buildOptions;
 		for (j = buildOptions.begin(); j != buildOptions.end(); j++) {
-			ud = ai->call->GetUnitDef(j->second.c_str());
+			ud = ai->cb->GetUnitDef(j->second.c_str());
 			u = units.find(ud->id);
 
 			if (u == units.end())
@@ -358,7 +362,7 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 		std::map<int, std::string>::iterator j;
 		std::map<int, std::string> buildOptions = ud->buildOptions;
 		for (j = buildOptions.begin(); j != buildOptions.end(); j++) {
-			const UnitDef *canbuild = ai->call->GetUnitDef(j->second.c_str());
+			const UnitDef *canbuild = ai->cb->GetUnitDef(j->second.c_str());
 			if (canbuild->canfly) {
 				cats |= AIR;
 				cats -= LAND;

@@ -1,9 +1,18 @@
 #include "CPathfinder.h"
 
+#include <boost/bind.hpp>
+#include <boost/version.hpp>
+
+#include "CAI.h"
+#include "CTaskHandler.h"
+#include "CGroup.h"
+#include "CUnit.h"
+#include "CUnitTable.h"
+
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	this->ai   = ai;
-	this->X    = int(ai->call->GetMapWidth() / THREATRES);
-	this->Z    = int(ai->call->GetMapHeight() / THREATRES);
+	this->X    = int(ai->cb->GetMapWidth() / THREATRES);
+	this->Z    = int(ai->cb->GetMapHeight() / THREATRES);
 	this->REAL = THREATRES*8.0f;
 	int SLOPE  = THREATRES/2;
 	update     = 0;
@@ -11,8 +20,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 
 	heightMap.resize(X*Z, 0.0f);
 	slopeMap.resize(X*Z, 0.0f);
-	const float *hm = ai->call->GetHeightMap();
-	const float *sm = ai->call->GetSlopeMap();
+	const float *hm = ai->cb->GetHeightMap();
+	const float *sm = ai->cb->GetSlopeMap();
 
 	for (int i = -1; i <= 1; i++) {
 		for (int j = -1; j <= 1; j++) {
@@ -45,7 +54,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 
 	/* Initialize nodes per map type */
 	std::map<int, MoveData*>::iterator i;
-	for (i = ai->unitTable->moveTypes.begin(); i != ai->unitTable->moveTypes.end(); i++) {
+	for (i = ai->unittable->moveTypes.begin(); i != ai->unittable->moveTypes.end(); i++) {
 		std::vector<Node> map;
 		maps[i->first] = map;
 		MoveData *md   = i->second;
@@ -84,7 +93,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	#endif
 	threads.resize(nrThreads-1);
 
-	draw = true;
+	draw = false;
 }
 
 void CPathfinder::resetMap(int thread) {
@@ -176,13 +185,13 @@ void CPathfinder::updateFollowers() {
 			// REAR/FRONT unit debug
 			float3 rupos = M.begin()->second->pos();
 			float3 rhigh(rupos); rhigh.y += 100.0f;
-			ai->call->CreateLineFigure(rupos, rhigh, 8.0f, 0, 500, 2);
-			ai->call->SetFigureColor(2, 1.0f, 0.0f, 0.0f, 1.0f);
+			ai->cb->CreateLineFigure(rupos, rhigh, 8.0f, 0, 500, 2);
+			ai->cb->SetFigureColor(2, 1.0f, 0.0f, 0.0f, 1.0f);
 
 			float3 fupos = (--M.end())->second->pos();
 			float3 fhigh(fupos); fhigh.y += 100.0f;
-			ai->call->CreateLineFigure(fupos, fhigh, 8.0f, 0, 500, 3);
-			ai->call->SetFigureColor(3, 0.0f, 1.0f, 0.0f, 1.0f);
+			ai->cb->CreateLineFigure(fupos, fhigh, 8.0f, 0, 500, 3);
+			ai->cb->SetFigureColor(3, 0.0f, 1.0f, 0.0f, 1.0f);
 			*/
 
 
@@ -283,22 +292,22 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 		seg *= 1000.0f; /* Blow up the pre-waypoint */
 		seg += s;
 		seg *= REAL;
-		seg.y = ai->call->GetElevation(seg.x, seg.z)+10;
+		seg.y = ai->cb->GetElevation(seg.x, seg.z)+10;
 		path.push_back(seg);
 
 		for (std::list<ANode*>::iterator i = nodepath.begin(); i != nodepath.end(); i++) {
 			Node *n = dynamic_cast<Node*>(*i);
 			float3 f = n->toFloat3();
 			f *= REAL;
-			f.y = ai->call->GetElevation(f.x, f.z)+20;
+			f.y = ai->cb->GetElevation(f.x, f.z)+20;
 			path.push_back(f);
 		}
 		path.push_back(g);
 
-		if (success) {
+		if (draw) {
 			for (unsigned i = 2; i < path.size(); i++) 
-				ai->call->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, group);
-			ai->call->SetFigureColor(group, group/float(CGroup::counter), group/float(CGroup::counter), 1.0f, 1.0f);
+				ai->cb->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, group);
+			ai->cb->SetFigureColor(group, group/float(CGroup::counter), group/float(CGroup::counter), 1.0f, 1.0f);
 		}
 	}
 	else {
@@ -330,12 +339,12 @@ void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 void CPathfinder::drawMap(int map) {
 	for (int x = 0; x < X; x+=1) {
 		for (int z = 0; z < Z; z+=1) {
-			float3 p0(x*REAL, ai->call->GetElevation(x*REAL,z*REAL), z*REAL);
+			float3 p0(x*REAL, ai->cb->GetElevation(x*REAL,z*REAL), z*REAL);
 			float3 p1(p0);
 			p1.y += 100.0f;
 			if (maps[map][idx(x,z)].blocked())
-				ai->call->CreateLineFigure(p0, p1, map, 1, 10000, 4);
-			ai->call->SetFigureColor(map, 1.0f, 0.0f, 0.0f, 1.0f);
+				ai->cb->CreateLineFigure(p0, p1, map, 1, 10000, 4);
+			ai->cb->SetFigureColor(map, 1.0f, 0.0f, 0.0f, 1.0f);
 		}
 	}
 }

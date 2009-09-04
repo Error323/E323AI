@@ -1,21 +1,30 @@
 #include "CGroup.h"
 
+#include <sstream>
+#include <iostream>
+#include <string>
+
+#include "CAI.h"
+#include "CUnit.h"
+#include "CUnitTable.h"
+#include "CTaskHandler.h"
+
 int CGroup::counter = 0;
 
 void CGroup::addUnit(CUnit &unit) {
 	LOG_II("CGroup::add " << unit)
-	MoveData* md = ai->call->GetUnitDef(unit.key)->movedata;
+	MoveData* md = ai->cb->GetUnitDef(unit.key)->movedata;
 
 	if (md->maxSlope <= maxSlope) {
 		moveType = md->pathType;
 		maxSlope = md->maxSlope;
 	}
 		
-	strength   += ai->call->GetUnitPower(unit.key);
+	strength   += ai->cb->GetUnitPower(unit.key);
 	buildSpeed += unit.def->buildSpeed;
-	range = std::max<float>(ai->call->GetUnitMaxRange(unit.key)*0.9f, range);
+	range = std::max<float>(ai->cb->GetUnitMaxRange(unit.key)*0.9f, range);
 	buildRange = std::max<float>(unit.def->buildDistance*1.5f, buildRange);
-	speed = std::min<float>(ai->call->GetUnitSpeed(unit.key), speed);
+	speed = std::min<float>(ai->cb->GetUnitSpeed(unit.key), speed);
 
 	waiters[unit.key] = false;
 	units[unit.key]   = &unit;
@@ -48,11 +57,11 @@ void CGroup::remove(ARegistrar &unit) {
 	maxSlope = 1.0f;
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++) {
-		range       = std::max<float>(ai->call->GetUnitMaxRange(i->first)*0.9f, range);
-		speed       = std::min<float>(ai->call->GetUnitSpeed(i->first), speed);
-		strength   += ai->call->GetUnitPower(i->first);
+		range       = std::max<float>(ai->cb->GetUnitMaxRange(i->first)*0.9f, range);
+		speed       = std::min<float>(ai->cb->GetUnitSpeed(i->first), speed);
+		strength   += ai->cb->GetUnitPower(i->first);
 		buildSpeed += i->second->def->buildSpeed;
-		md          = ai->call->GetUnitDef(i->first)->movedata;
+		md          = ai->cb->GetUnitDef(i->first)->movedata;
 		if (md->maxSlope <= maxSlope) {
 			moveType = md->pathType;
 			maxSlope = md->maxSlope;
@@ -70,7 +79,7 @@ void CGroup::remove(ARegistrar &unit) {
 bool CGroup::isIdle() {
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++) {
-		if (ai->unitTable->idle[i->second->key])
+		if (ai->unittable->idle[i->second->key])
 			return true;
 	}
 	return false;
@@ -103,7 +112,7 @@ float3 CGroup::pos() {
 	float3 pos(0.0f, 0.0f, 0.0f);
 
 	for (i = units.begin(); i != units.end(); i++)
-		pos += ai->call->GetUnitPos(i->first);
+		pos += ai->cb->GetUnitPos(i->first);
 
 	pos /= units.size();
 

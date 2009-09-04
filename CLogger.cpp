@@ -1,6 +1,11 @@
 #include "CLogger.h"
 
-#include "CE323AI.h"
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+
+#include "CAI.h"
 
 CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 	logLevels[ERROR]   = "(EE)";
@@ -37,7 +42,7 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 }
 
 void CLogger::log(logLevel level, std::string &msg) {
-	int frame = ai->call->GetCurrentFrame();
+	int frame = ai->cb->GetCurrentFrame();
 	int sec   = (frame / 30) % 60;
 	int min   = ((frame / 30) - sec) / 60;
 	char time[10];
@@ -60,7 +65,7 @@ void CLogger::log(logLevel level, std::string &msg) {
 }
 
 void CLogger::getFileName(char *fileName) {
-	std::string mapname = std::string(ai->call->GetMapName());
+	std::string mapname = std::string(ai->cb->GetMapName());
 	mapname.resize(mapname.size() - 4);
 
 	time_t now1;
@@ -69,7 +74,7 @@ void CLogger::getFileName(char *fileName) {
 
 	char buf[255];
 	sprintf(buf, "%s", LOG_FOLDER);
-	ai->call->GetValue(AIVAL_LOCATE_FILE_W, buf);
+	ai->cb->GetValue(AIVAL_LOCATE_FILE_W, buf);
 	std::sprintf(
 		fileName, "%s%2.2d%2.2d%2.2d%2.2d%2.2d-%s-team-%d.log", 
 		std::string(LOG_PATH).c_str(), 

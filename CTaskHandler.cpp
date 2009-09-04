@@ -1,5 +1,18 @@
 #include "CTaskHandler.h"
 
+#include <iostream>
+#include <sstream>
+#include <string>
+
+#include "CAI.h"
+#include "CMetalMap.h"
+#include "CUnitTable.h"
+#include "CWishList.h"
+#include "CPathfinder.h"
+#include "CUnit.h"
+#include "CGroup.h"
+#include "CEconomy.h"
+
 /**************************************************************/
 /************************* ATASK ******************************/
 /**************************************************************/
@@ -241,7 +254,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 	float3 gp = group.pos();
 	groupToTask[group.key] = task;
 	LOG_II((*buildTask))
-	if (!ai->pf->addTask(*task))
+	if (!ai->pathfinder->addTask(*task))
 		buildTask->remove();
 }
 
@@ -252,13 +265,13 @@ void CTaskHandler::BuildTask::update() {
 	/* See if we can build yet */
 	if (isMoving && dist.Length2D() <= group->buildRange) {
 		group->build(pos, toBuild);
-		ai->pf->remove(*this);
-		unreg(*(ai->pf));
+		ai->pathfinder->remove(*this);
+		unreg(*(ai->pathfinder));
 		isMoving = false;
 	}
 
 	/* We are building, lets see if it finished already */
-	if (!isMoving && ai->eco->hasFinishedBuilding(*group)) {
+	if (!isMoving && ai->economy->hasFinishedBuilding(*group)) {
 		remove();
 	}
 }
@@ -294,7 +307,7 @@ bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 	for (i = assisters.begin(); i != assisters.end(); i++)
 		buildSpeed += (*i)->group->buildSpeed;
 
-	UnitType *toBuild = ai->unitTable->factoriesBuilding[factory->key];
+	UnitType *toBuild = ai->unittable->factoriesBuilding[factory->key];
 	float3 apos = assister.pos();
 	float3 gpos = factory->pos();
 	float dist = (apos - gpos).Length2D() - assister.buildRange;
@@ -314,11 +327,11 @@ void CTaskHandler::addFactoryTask(CUnit &factory) {
 }
 
 void CTaskHandler::FactoryTask::update() {
-	if (ai->unitTable->idle[factory->key] && !ai->wl->empty(factory->key)) {
-		UnitType *ut = ai->wl->top(factory->key); ai->wl->pop(factory->key);
+	if (ai->unittable->idle[factory->key] && !ai->wishlist->empty(factory->key)) {
+		UnitType *ut = ai->wishlist->top(factory->key); ai->wishlist->pop(factory->key);
 		factory->factoryBuild(ut);
-		ai->unitTable->factoriesBuilding[factory->key] = ut;
-		ai->unitTable->idle[factory->key] = false;
+		ai->unittable->factoriesBuilding[factory->key] = ut;
+		ai->unittable->idle[factory->key] = false;
 	}
 }
 
@@ -364,7 +377,7 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 	float3 gp = group.pos();
 	groupToTask[group.key] = task;
 	LOG_II((*assistTask))
-	if (!ai->pf->addTask(*task))
+	if (!ai->pathfinder->addTask(*task))
 		assistTask->remove();
 }
 
@@ -374,8 +387,8 @@ void CTaskHandler::AssistTask::update() {
 	float range = (assist->t == ATTACK) ? group->range : group->buildRange;
 	if (isMoving && dist.Length2D() <= range) {
 		group->assist(*assist);
-		ai->pf->remove(*this);
-		unreg(*(ai->pf));
+		ai->pathfinder->remove(*this);
+		unreg(*(ai->pathfinder));
 		isMoving = false;
 	}
 }
@@ -385,8 +398,8 @@ void CTaskHandler::AssistTask::update() {
 /**************************************************************/
 void CTaskHandler::AttackTask::reset(int t) {
 	target = t;
-	pos = ai->cheat->GetUnitPos(t);
-	enemy = ai->cheat->GetUnitDef(target)->humanName;
+	pos = ai->cbc->GetUnitPos(t);
+	enemy = ai->cbc->GetUnitDef(target)->humanName;
 }
 
 void CTaskHandler::addAttackTask(int target, CGroup &group) {
@@ -398,7 +411,7 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 	float3 gp = group.pos();
 	groupToTask[group.key] = task;
 	LOG_II((*attackTask))
-	if (!ai->pf->addTask(*task))
+	if (!ai->pathfinder->addTask(*task))
 		attackTask->remove();
 
 }
@@ -410,14 +423,14 @@ void CTaskHandler::AttackTask::update() {
 	if (isMoving && dist.Length2D() <= group->range) {
 		group->attack(target);
 		isMoving = false;
-		ai->pf->remove(*this);
-		unreg(*(ai->pf));
+		ai->pathfinder->remove(*this);
+		unreg(*(ai->pathfinder));
 	}
 	/* Keep tracking it */
-	else pos = ai->cheat->GetUnitPos(target);
+	else pos = ai->cbc->GetUnitPos(target);
 
 	/* If the target is destroyed, remove the task, unreg groups */
-	if (ai->cheat->GetUnitHealth(target) <= 0.0f) 
+	if (ai->cbc->GetUnitHealth(target) <= 0.0f) 
 		remove();
 }
 
@@ -437,7 +450,7 @@ void CTaskHandler::addMergeTask(std::vector<CGroup*> &groups) {
 	activeMergeTasks[task->key] = mergeTask;
 	for (unsigned i = 0; i < groups.size(); i++) {
 		float3 gp = groups[i]->pos();
-		ai->pf->addGroup(*groups[i], gp, task->pos);
+		ai->pathfinder->addGroup(*groups[i], gp, task->pos);
 		groupToTask[groups[i]->key] = task;
 	}
 }

@@ -1,11 +1,14 @@
 #ifndef GLOBALAI_H
 #define GLOBALAI_H
 
-#include "Include.h"
+#include "headers/HEngine.h"
+#include "headers/HAIInterface.h"
+
+class AIClasses;
 
 class CE323AI: public IGlobalAI {
 	public:
-		CE323AI();
+		CE323AI(){}
 		~CE323AI();
 
 		void InitAI(IGlobalAICallback* callback, int team);
@@ -28,11 +31,9 @@ class CE323AI: public IGlobalAI {
 		int HandleEvent(int msg, const void* data);
 
 		void Update();
-	
-	private:
-		AIClasses *ai;
-		int team;
-};
 
+		private:
+			AIClasses *ai;
+};
 
 #endif

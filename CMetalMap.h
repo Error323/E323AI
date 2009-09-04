@@ -1,12 +1,17 @@
 #ifndef METALMAP_H
 #define METALMAP_H
 
-#include "CE323AI.h"
+#include <vector>
+
 #include "ARegistrar.h"
+
+#include "headers/HEngine.h"
 
 #define SCALAR 16.0f
 
 class CGroup;
+class CUnit;
+class AIClasses;
 
 class CMetalMap: public ARegistrar {
 	public:
@@ -51,7 +56,7 @@ class CMetalMap: public ARegistrar {
 		int radius;
 		int squareRadius;
 		int diameter;
-		const unsigned char *callMap;
+		const unsigned char *cbMap;
 		unsigned char *map;
 		unsigned int *coverage;
 		unsigned int *bestCoverage;

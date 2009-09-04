@@ -1,7 +1,16 @@
 #ifndef WISHLIST_H
 #define WISHLIST_H
 
-#include "CE323AI.h"
+#include <vector>
+#include <queue>
+#include <map>
+#include <algorithm>
+
+#include "headers/Defines.h"
+
+class CEconomy;
+class AIClasses;
+class UnitType;
 
 class CWishList {
 	friend class CEconomy;

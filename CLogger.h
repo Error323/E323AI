@@ -1,5 +1,5 @@
-#ifndef LOGGER_HDR
-#define LOGGER_HDR
+#ifndef LOGGER_H
+#define LOGGER_H
 
 #include <string>
 #include <sstream>
@@ -8,10 +8,6 @@
 #include <map>
 
 class AIClasses;
-
-#define LOG_EE(x)  {std::stringstream ss; ss << x; ai->l->e(ss.str());}
-#define LOG_WW(x)  {std::stringstream ss; ss << x; ai->l->w(ss.str());}
-#define LOG_II(x)  {std::stringstream ss; ss << x; ai->l->v(ss.str());}
 
 class CLogger {
 	public:
@@ -52,5 +48,9 @@ class CLogger {
 		/* Get the filename for logging the fstream to */
 		void getFileName(char *fileName);
 };
+
+#define LOG_EE(x)  {std::stringstream ss; ss << x; ai->logger->e(ss.str());}
+#define LOG_WW(x)  {std::stringstream ss; ss << x; ai->logger->w(ss.str());}
+#define LOG_II(x)  {std::stringstream ss; ss << x; ai->logger->v(ss.str());}
 
 #endif

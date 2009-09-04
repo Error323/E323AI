@@ -2,8 +2,11 @@
 #define INTEL_H
 
 #include <vector>
+#include <map>
 
-#include "CE323AI.h"
+#include "headers/Defines.h"
+
+class AIClasses;
 
 class CIntel {
 	public:

@@ -1,5 +1,8 @@
 #include "CIntel.h"
 
+#include "CAI.h"
+#include "CUnitTable.h"
+
 CIntel::CIntel(AIClasses *ai) {
 	this->ai = ai;
 	units = new int[MAX_UNITS];
@@ -20,13 +23,13 @@ void CIntel::update(int frame) {
 	energyMakers.clear();
 	rest.clear();
 	resetCounters();
-	int numUnits = ai->cheat->GetEnemyUnits(units, MAX_UNITS);
+	int numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
 	for (int i = 0; i < numUnits; i++) {
-		const UnitDef *ud = ai->cheat->GetUnitDef(units[i]);
+		const UnitDef *ud = ai->cbc->GetUnitDef(units[i]);
 		UnitType      *ut = UT(ud->id);
 		unsigned int    c = ut->cats;
 
-		if (ai->cheat->UnitBeingBuilt(units[i]))
+		if (ai->cbc->UnitBeingBuilt(units[i]))
 			continue;
 		
 		if (c&ATTACKER) {

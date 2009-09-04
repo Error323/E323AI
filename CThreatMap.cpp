@@ -1,14 +1,16 @@
 #include "CThreatMap.h"
-#include "ScopedTimer.h"
+
+#include "CAI.h"
+#include "CUnitTable.h"
 
 CThreatMap::CThreatMap(AIClasses *ai) {
 	REAL = THREATRES*8.0f;
 	this->ai = ai;
-	this->X  = ai->call->GetMapWidth() / THREATRES;
-	this->Z  = ai->call->GetMapHeight() / THREATRES;
+	this->X  = ai->cb->GetMapWidth() / THREATRES;
+	this->Z  = ai->cb->GetMapHeight() / THREATRES;
 
 	map   = new float[X*Z];
-	units = new int[MAX_UNITS];
+	units = new int[MAX_UNITS_AI];
 	for (int i = 0; i < X*Z; i++)
 		map[i] = 1.0f;
 }
@@ -22,7 +24,7 @@ float CThreatMap::getThreat(float3 &pos) {
 	int x = (int) pos.x/REAL;
 	int z = (int) pos.z/REAL;
 	if (x >= 0 && x < X && z >= 0 && z < Z)
-		return map[id(x,z)];
+		return map[ID(x,z)];
 	else
 		return 0.0f;
 }
@@ -52,19 +54,19 @@ void CThreatMap::update(int frame) {
 	for (int i = 0; i < X*Z; i++)
 		map[i] = 1.0f;
 
-	int numUnits = ai->cheat->GetEnemyUnits(units, MAX_UNITS);
-	if (numUnits > MAX_UNITS)
-		LOG_WW("CThreatMap::update " << numUnits << " > " << MAX_UNITS)
+	int numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS_AI);
+	if (numUnits > MAX_UNITS_AI)
+		LOG_WW("CThreatMap::update " << numUnits << " > " << MAX_UNITS_AI)
 
 	for (int i = 0; i < numUnits; i++) {
-		const UnitDef *ud = ai->cheat->GetUnitDef(units[i]);
+		const UnitDef *ud = ai->cbc->GetUnitDef(units[i]);
 		UnitType      *ut = UT(ud->id);
-		float3 upos = ai->cheat->GetUnitPos(units[i]);
+		float3 upos = ai->cbc->GetUnitPos(units[i]);
 		float3 pos(0.0f, 0.0f, 0.0f);
 		
-		if (ut->cats&ATTACKER && !ai->cheat->UnitBeingBuilt(units[i])) {
+		if (ut->cats&ATTACKER && !ai->cbc->UnitBeingBuilt(units[i])) {
 			float range = (ud->maxWeaponRange*1.2f)/REAL;
-			float power = ai->cheat->GetUnitPower(units[i]);
+			float power = ai->cbc->GetUnitPower(units[i]);
 			if (ut->cats&COMMANDER)
 				power /= 100.0f; /* dgun gives overpowered dps */
 
@@ -79,7 +81,7 @@ void CThreatMap::update(int frame) {
 						int mx = (int) round(pos.x);
 						int mz = (int) round(pos.z);
 						if (mx >= 0 && mx < X && mz >= 0 && mz < Z)
-							map[id(mx,mz)] += power;
+							map[ID(mx,mz)] += power;
 					}
 				}
 			}
@@ -91,13 +93,13 @@ void CThreatMap::update(int frame) {
 void CThreatMap::draw() {
 	for (int x = 0; x < X; x++) {
 		for (int z = 0; z < Z; z++) {
-			if (map[id(x,z)] > 1.0f) {
+			if (map[ID(x,z)] > 1.0f) {
 				float3 p0(x*REAL, 0.0f, z*REAL);
 				float3 p1(p0);
-				p1.y += map[id(x,z)]/totalPower;
+				p1.y += map[ID(x,z)]/totalPower;
 				p1.y *= 30.0f;
 				p1.y += 100.0f;
-				ai->call->CreateLineFigure(p0, p1, 4, 1, 300, 1);
+				ai->cb->CreateLineFigure(p0, p1, 4, 1, 300, 1);
 			}
 		}
 	}

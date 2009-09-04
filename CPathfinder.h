@@ -1,11 +1,21 @@
 #ifndef CPATHFINDER_H
 #define CPATHFINDER_H
 
-#include "CGroup.h"
+#include <map>
+#include <vector>
+#include <boost/thread.hpp>
+
+#include "headers/HEngine.h"
+#include "headers/Defines.h"
+
 #include "ARegistrar.h"
-#include "CE323AI.h"
+#include "AAStar.h"
 
 #define MOVE_BUFFER 3
+
+class ATask;
+class CGroup;
+class AIClasses;
 
 class CPathfinder: public AAStar, public ARegistrar {
 	public:

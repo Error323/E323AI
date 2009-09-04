@@ -1,7 +1,9 @@
 #ifndef THREATMAP_H
 #define THREATMAP_H
 
-#include "CE323AI.h"
+#include "headers/HEngine.h"
+
+class AIClasses;
 
 class CThreatMap {
 	public:

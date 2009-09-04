@@ -1,16 +1,21 @@
 #include "CWishList.h"
 
+#include "CAI.h"
+#include "CUnitTable.h"
+#include "CUnit.h"
+#include "CEconomy.h"
+
 CWishList::CWishList(AIClasses *ai) {
 	this->ai = ai;
 }
 
 void CWishList::push(unsigned categories, buildPriority p) {
-	std::map<int, bool>::iterator itFac = ai->unitTable->factories.begin();
+	std::map<int, bool>::iterator itFac = ai->unittable->factories.begin();
 	UnitType *ut = NULL;
 	UnitType *fac;
-	for (;itFac != ai->unitTable->factories.end(); itFac++) {
-		fac = UT(ai->call->GetUnitDef(itFac->first)->id);
-		ut = ai->unitTable->canBuild(fac, categories);
+	for (;itFac != ai->unittable->factories.end(); itFac++) {
+		fac = UT(ai->cb->GetUnitDef(itFac->first)->id);
+		ut = ai->unittable->canBuild(fac, categories);
 		if (ut != NULL) { 
 			/* Initialize new std::vector */
 			if (wishlist.find(fac->id) == wishlist.end()) {
@@ -24,26 +29,26 @@ void CWishList::push(unsigned categories, buildPriority p) {
 			std::stable_sort(wishlist[fac->id].begin(), wishlist[fac->id].end());
 		}
 		else {
-			CUnit *unit = ai->unitTable->getUnit(itFac->first);
-			LOG_EE("CWishList::push failed for " << (*unit) << " categories: " << ai->unitTable->debugCategories(categories))
+			CUnit *unit = ai->unittable->getUnit(itFac->first);
+			LOG_EE("CWishList::push failed for " << (*unit) << " categories: " << ai->unittable->debugCategories(categories))
 		}
 	}
 }
 
 UnitType* CWishList::top(int factory) {
-	UnitType *fac = UT(ai->call->GetUnitDef(factory)->id);
+	UnitType *fac = UT(ai->cb->GetUnitDef(factory)->id);
 	Wish *w = &(wishlist[fac->id].front());
 	return w->ut;
 }
 
 void CWishList::pop(int factory) {
-	UnitType *fac = UT(ai->call->GetUnitDef(factory)->id);
+	UnitType *fac = UT(ai->cb->GetUnitDef(factory)->id);
 	wishlist[fac->id].erase(wishlist[fac->id].begin());
 }
 
 bool CWishList::empty(int factory) {
 	std::map<int, std::vector<Wish> >::iterator itList;
-	UnitType *fac = UT(ai->call->GetUnitDef(factory)->id);
+	UnitType *fac = UT(ai->cb->GetUnitDef(factory)->id);
 	itList = wishlist.find(fac->id);
 	return itList == wishlist.end() || itList->second.empty();
 }

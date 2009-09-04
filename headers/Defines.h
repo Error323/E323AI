@@ -1,7 +1,7 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#include "AIExport.h"
+#include "../AIExport.h"
 
 #define MAX_INT   1000000000
 #define MAX_FLOAT float(MAX_INT)
@@ -24,18 +24,18 @@
 #define CFG_PATH    std::string(aiexport_getDataDir(true)) + CFG_FOLDER
 
 /* Logger */
-#define LOGS(x)    (ai->call->SendTextMsg(x, 0))
+#define LOGS(x)    (ai->cb->SendTextMsg(x, 0))
 
 /* Misc macro's */
-#define UD(u) (ai->call->GetUnitDef(u))
-#define UT(u) (&(ai->unitTable->units[u]))
-#define id(x,z) (x*Z+z)
+#define UD(u) (ai->cb->GetUnitDef(u))
+#define UT(u) (&(ai->unittable->units[u]))
+#define ID(x,z) (x*Z+z)
 
 /* Metal to Energy ratio */
 #define METAL2ENERGY 45
 
 /* Max enemy units */
-#define MAX_UNITS 500
+#define MAX_UNITS_AI 500
 
 /* Threatmap resolution */
 #define THREATRES 8

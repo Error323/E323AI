@@ -1,11 +1,15 @@
 #ifndef CGROUP_H
 #define CGROUP_H
 
-#include "CE323AI.h"
+#include <map>
+
+#include "headers/HEngine.h"
 #include "ARegistrar.h"
 
 class ATask;
 class CUnit;
+class AIClasses;
+class UnitType;
 
 /* NOTE: CGroup silently assumes that waterunits will not be merged with
  * non-water units as a group, aswell as builders with attackers

@@ -1,5 +1,16 @@
 #include "CEconomy.h"
 
+#include "headers/HEngine.h"
+
+#include "CAI.h"
+#include "CTaskHandler.h"
+#include "CUnitTable.h"
+#include "CMetalMap.h"
+#include "CWishList.h"
+#include "CGroup.h"
+#include "CUnit.h"
+#include "CRNG.h"
+
 CEconomy::CEconomy(AIClasses *ai): ARegistrar(700) {
 	this->ai = ai;
 	incomes  = 0;
@@ -12,13 +23,13 @@ CEconomy::CEconomy(AIClasses *ai): ARegistrar(700) {
 }
 
 void CEconomy::init(CUnit &unit) {
-	const UnitDef *ud = ai->call->GetUnitDef(unit.key);
+	const UnitDef *ud = ai->cb->GetUnitDef(unit.key);
 	UnitType *utCommander = UT(ud->id);
 
-	UnitType *utWind  = ai->unitTable->canBuild(utCommander, LAND|EMAKER|WIND);
-	UnitType *utSolar = ai->unitTable->canBuild(utCommander, LAND|EMAKER);
+	UnitType *utWind  = ai->unittable->canBuild(utCommander, LAND|EMAKER|WIND);
+	UnitType *utSolar = ai->unittable->canBuild(utCommander, LAND|EMAKER);
 
-	float avgWind   = (ai->call->GetMinWind() + ai->call->GetMaxWind()) / 2.0f;
+	float avgWind   = (ai->cb->GetMinWind() + ai->cb->GetMaxWind()) / 2.0f;
 	float windProf  = avgWind / utWind->cost;
 	float solarProf = utSolar->energyMake / utSolar->cost;
 	mStart = utCommander->def->metalMake;
@@ -31,9 +42,9 @@ bool CEconomy::hasFinishedBuilding(CGroup &group) {
 	std::map<int, CUnit*>::iterator i;
 	for (i = group.units.begin(); i != group.units.end(); i++) {
 		CUnit *unit = i->second;
-		if (ai->unitTable->builders.find(unit->key) != ai->unitTable->builders.end() &&
-			ai->unitTable->builders[unit->key]) {
-			ai->unitTable->builders[unit->key] = false;
+		if (ai->unittable->builders.find(unit->key) != ai->unittable->builders.end() &&
+			ai->unittable->builders[unit->key]) {
+			ai->unittable->builders[unit->key] = false;
 			return true;
 		}
 	}
@@ -82,7 +93,7 @@ void CEconomy::addUnit(CUnit &unit) {
 	unsigned c = unit.type->cats;
 	if (c&FACTORY) {
 		ai->tasks->addFactoryTask(unit);
-		ai->unitTable->factories[unit.key] = true;
+		ai->unittable->factories[unit.key] = true;
 	}
 
 	else if (c&BUILDER && c&MOBILE) {
@@ -91,7 +102,7 @@ void CEconomy::addUnit(CUnit &unit) {
 	}
 
 	else if (c&MMAKER) {
-		ai->unitTable->metalMakers[unit.key] = true;
+		ai->unittable->metalMakers[unit.key] = true;
 	}
 }
 
@@ -104,13 +115,13 @@ void CEconomy::buildMprovider(CGroup &group) {
 		ai->tasks->addAssistTask(*task, group);
 	else  {
 		float3 mexPos;
-		bool canBuildMex = ai->metalMap->getMexSpot(group, mexPos);
+		bool canBuildMex = ai->metalmap->getMexSpot(group, mexPos);
 		if (canBuildMex) {
-			UnitType *mex = ai->unitTable->canBuild(unit->type, LAND|MEXTRACTOR);
+			UnitType *mex = ai->unittable->canBuild(unit->type, LAND|MEXTRACTOR);
 			ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, group, mexPos);
 		}
 		else {
-			UnitType *mmaker = ai->unitTable->canBuild(unit->type, LAND|MMAKER);
+			UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 			ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
 		}
 	}
@@ -122,14 +133,14 @@ void CEconomy::buildEprovider(CGroup &group) {
 	UnitType *ut = group.units.begin()->second->type;
 
 	if (ut->cats&TECH2) {
-		UnitType *fusion = ai->unitTable->canBuild(ut, LAND|EMAKER);
+		UnitType *fusion = ai->unittable->canBuild(ut, LAND|EMAKER);
 		buildOrAssist(BUILD_EPROVIDER, fusion, group);
 	}
 	else {
 		if (rng.RandInt(2) == 1)
 			buildOrAssist(BUILD_EPROVIDER, energyProvider, group);
 		else {
-			UnitType *solar = ai->unitTable->canBuild(ut, LAND|EMAKER);
+			UnitType *solar = ai->unittable->canBuild(ut, LAND|EMAKER);
 			buildOrAssist(BUILD_EPROVIDER, solar, group);
 		}
 	}
@@ -174,8 +185,8 @@ void CEconomy::update(int frame) {
 				if (group->busy) continue;
 			}
 			/* If we don't have a factory, build one */
-			if (ai->unitTable->factories.empty()) {
-				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH1);
+			if (ai->unittable->factories.empty()) {
+				UnitType *factory = ai->unittable->canBuild(unit->type, KBOT|TECH1);
 				buildOrAssist(BUILD_FACTORY, factory, *group);
 				if (group->busy) continue;
 			}
@@ -198,20 +209,20 @@ void CEconomy::update(int frame) {
 				if (group->busy) continue;
 			}
 			/* If we don't have a factory, build one */
-			if (ai->unitTable->factories.empty()) {
-				UnitType *factory = ai->unitTable->canBuild(unit->type, LAND|KBOT|TECH1);
+			if (ai->unittable->factories.empty()) {
+				UnitType *factory = ai->unittable->canBuild(unit->type, LAND|KBOT|TECH1);
 				buildOrAssist(BUILD_FACTORY, factory, *group);
 				if (group->busy) continue;
 			}
 			/* If we are overflowing energy build a estorage */
 			if (eexceeding) {
-				UnitType *storage = ai->unitTable->canBuild(unit->type, LAND|ESTORAGE);
+				UnitType *storage = ai->unittable->canBuild(unit->type, LAND|ESTORAGE);
 				buildOrAssist(BUILD_ESTORAGE, storage, *group);
 				if (group->busy) continue;
 			}
 			/* If we are overflowing metal build an mstorage */
 			if (mexceeding) {
-				UnitType *storage = ai->unitTable->canBuild(unit->type, LAND|MSTORAGE);
+				UnitType *storage = ai->unittable->canBuild(unit->type, LAND|MSTORAGE);
 				buildOrAssist(BUILD_MSTORAGE, storage, *group);
 				if (group->busy) continue;
 			}
@@ -240,7 +251,7 @@ void CEconomy::update(int frame) {
 			}
 			/* See if we can build a new factory */
 			if (!mRequest && !eRequest && mIncome > 20.0f) {
-				UnitType *factory = ai->unitTable->canBuild(unit->type, KBOT|TECH2);
+				UnitType *factory = ai->unittable->canBuild(unit->type, KBOT|TECH2);
 				buildOrAssist(BUILD_FACTORY, factory, *group);
 				if (group->busy) continue;
 			}
@@ -253,9 +264,9 @@ void CEconomy::update(int frame) {
 	}
 
 	if (mexceeding || activeGroups.size() < 2)
-		ai->wl->push(BUILDER, HIGH);
+		ai->wishlist->push(BUILDER, HIGH);
 	else
-		ai->wl->push(BUILDER, NORMAL);
+		ai->wishlist->push(BUILDER, NORMAL);
 }
 
 bool CEconomy::taskInProgress(buildType bt) {
@@ -281,9 +292,9 @@ void CEconomy::preventStalling() {
 	std::map<int, bool>::iterator j;
 	if (estall && !mstall) {
 		int success = 0;
-		for (j = ai->unitTable->metalMakers.begin(); j != ai->unitTable->metalMakers.end(); j++) {
+		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
 			if (j->second) {
-				CUnit *unit = ai->unitTable->getUnit(j->first);
+				CUnit *unit = ai->unittable->getUnit(j->first);
 				unit->setOnOff(false);
 				j->second = false;
 				success++;
@@ -297,9 +308,9 @@ void CEconomy::preventStalling() {
 	/* If we are only stalling metal, see if we can turn metalmakers on */
 	if (mstall && !estall) {
 		int success = 0;
-		for (j = ai->unitTable->metalMakers.begin(); j != ai->unitTable->metalMakers.end(); j++) {
+		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
 			if (!j->second) {
-				CUnit *unit = ai->unitTable->getUnit(j->first);
+				CUnit *unit = ai->unittable->getUnit(j->first);
 				unit->setOnOff(true);
 				j->second = true;
 				success++;
@@ -344,25 +355,25 @@ void CEconomy::preventStalling() {
 void CEconomy::updateIncomes(int frame) {
 	incomes++;
 
-	mNowSummed    += ai->call->GetMetal();
-	eNowSummed    += ai->call->GetEnergy();
-	mIncomeSummed += ai->call->GetMetalIncome();
-	eIncomeSummed += ai->call->GetEnergyIncome();
-	mUsageSummed  += ai->call->GetMetalUsage();
-	eUsageSummed  += ai->call->GetEnergyUsage();
-	mStorage       = ai->call->GetMetalStorage();
-	eStorage       = ai->call->GetEnergyStorage();
+	mNowSummed    += ai->cb->GetMetal();
+	eNowSummed    += ai->cb->GetEnergy();
+	mIncomeSummed += ai->cb->GetMetalIncome();
+	eIncomeSummed += ai->cb->GetEnergyIncome();
+	mUsageSummed  += ai->cb->GetMetalUsage();
+	eUsageSummed  += ai->cb->GetEnergyUsage();
+	mStorage       = ai->cb->GetMetalStorage();
+	eStorage       = ai->cb->GetEnergyStorage();
 
-	mNow     = ai->call->GetMetal();
-	eNow     = ai->call->GetEnergy();
-	mIncome  = ai->call->GetMetalIncome();
-	eIncome  = ai->call->GetEnergyIncome();
-	mUsage   = alpha*(mUsageSummed / incomes)  + (1.0f-alpha)*(ai->call->GetMetalUsage());
-	eUsage   = beta *(eUsageSummed / incomes)  + (1.0f-beta) *(ai->call->GetEnergyUsage());
+	mNow     = ai->cb->GetMetal();
+	eNow     = ai->cb->GetEnergy();
+	mIncome  = ai->cb->GetMetalIncome();
+	eIncome  = ai->cb->GetEnergyIncome();
+	mUsage   = alpha*(mUsageSummed / incomes)  + (1.0f-alpha)*(ai->cb->GetMetalUsage());
+	eUsage   = beta *(eUsageSummed / incomes)  + (1.0f-beta) *(ai->cb->GetEnergyUsage());
 
 	std::map<int, CUnit*>::iterator i;
 	float mU = 0.0f, eU = 0.0f;
-	for (i = ai->unitTable->activeUnits.begin(); i != ai->unitTable->activeUnits.end(); i++) {
+	for (i = ai->unittable->activeUnits.begin(); i != ai->unittable->activeUnits.end(); i++) {
 		unsigned int c = i->second->type->cats;
 		if (!(c&MMAKER) || !(c&EMAKER) || !(c&MEXTRACTOR)) {
 			mU += i->second->type->metalMake;

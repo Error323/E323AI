@@ -1,11 +1,15 @@
 #include "CUnit.h"
 
+#include "CAI.h"
+#include "CUnitTable.h"
+#include "CRNG.h"
+
 void CUnit::remove() {
 	remove(*this);
 }
 
 float3 CUnit::pos() {
-	return ai->call->GetUnitPos(key);
+	return ai->cb->GetUnitPos(key);
 }
 
 void CUnit::remove(ARegistrar &reg) {
@@ -19,27 +23,27 @@ void CUnit::remove(ARegistrar &reg) {
 void CUnit::reset(int uid, int bid) {
 	records.clear();
 	this->key     = uid;
-	this->def     = ai->call->GetUnitDef(uid);
+	this->def     = ai->cb->GetUnitDef(uid);
 	this->type    = UT(def->id);
 	this->builder = bid;
 }
 
 int CUnit::queueSize() {
-	return ai->call->GetCurrentUnitCommands(key)->size();
+	return ai->cb->GetCurrentUnitCommands(key)->size();
 }
 
 bool CUnit::attack(int target) {
 	Command c = createTargetCommand(CMD_ATTACK, target);
 	if (c.id != 0) {
-		ai->call->GiveOrder(key, &c);
-		ai->unitTable->idle[key] = false;
+		ai->cb->GiveOrder(key, &c);
+		ai->unittable->idle[key] = false;
 		return true;
 	}
 	return false;
 }
 
 bool CUnit::moveForward(float dist, bool enqueue) {
-	float3 upos = ai->call->GetUnitPos(key);
+	float3 upos = ai->cb->GetUnitPos(key);
 	facing f = getBestFacing(upos);
 	float3 pos(upos);
 	switch(f) {
@@ -65,7 +69,7 @@ bool CUnit::setOnOff(bool on) {
 	Command c = createTargetCommand(CMD_ONOFF, on);
 
 	if (c.id != 0) {
-		ai->call->GiveOrder(key, &c);
+		ai->cb->GiveOrder(key, &c);
 		return true;
 	}
 	
@@ -73,7 +77,7 @@ bool CUnit::setOnOff(bool on) {
 }
 
 bool CUnit::moveRandom(float radius, bool enqueue) {
-	float3 pos = ai->call->GetUnitPos(key);
+	float3 pos = ai->cb->GetUnitPos(key);
 	float3 newpos(rng.RandFloat(), 0.0f, rng.RandFloat());
 	newpos.Normalize();
 	newpos   *= radius;
@@ -89,8 +93,8 @@ bool CUnit::move(float3 &pos, bool enqueue) {
 	if (c.id != 0) {
 		if (enqueue)
 			c.options |= SHIFT_KEY;
-		ai->call->GiveOrder(key, &c);
-		ai->unitTable->idle[key] = false;
+		ai->cb->GiveOrder(key, &c);
+		ai->unittable->idle[key] = false;
 		return true;
 	}
 	return false;
@@ -102,10 +106,8 @@ bool CUnit::guard(int target, bool enqueue) {
 	if (c.id != 0) {
 		if (enqueue)
 			c.options |= SHIFT_KEY;
-		ai->call->GiveOrder(key, &c);
-		const UnitDef *u = ai->call->GetUnitDef(key);
-		const UnitDef *t = ai->call->GetUnitDef(target);
-		ai->unitTable->idle[key] = false;
+		ai->cb->GiveOrder(key, &c);
+		ai->unittable->idle[key] = false;
 		return true;
 	}
 	return false;
@@ -115,10 +117,8 @@ bool CUnit::repair(int target) {
 	Command c = createTargetCommand(CMD_REPAIR, target);
 
 	if (c.id != 0) {
-		ai->call->GiveOrder(key, &c);
-		const UnitDef *u = ai->call->GetUnitDef(key);
-		const UnitDef *t = ai->call->GetUnitDef(target);
-		ai->unitTable->idle[key] = false;
+		ai->cb->GiveOrder(key, &c);
+		ai->unittable->idle[key] = false;
 		return true;
 	}
 	return false;
@@ -133,13 +133,13 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 
 	float startRadius  = def->buildDistance;
 	facing f           = getBestFacing(pos);
-	float3 start       = ai->call->GetUnitPos(key);
-	float3 goal        = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
+	float3 start       = ai->cb->GetUnitPos(key);
+	float3 goal        = ai->cb->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
 
 	int i = 0;
 	while (goal == ERRORVECTOR) {
 		startRadius += def->buildDistance;
-		goal = ai->call->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
+		goal = ai->cb->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
 		i++;
 		if (i > 10) {
 			/* Building in this area seems impossible, relocate key */
@@ -150,8 +150,8 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 
 	Command c = createPosCommand(-(toBuild->id), goal, -1.0f, f);
 	if (c.id != 0) {
-		ai->call->GiveOrder(key, &c);
-		ai->unitTable->idle[key] = false;
+		ai->cb->GiveOrder(key, &c);
+		ai->unittable->idle[key] = false;
 		return true;
 	}
 	return false;
@@ -160,14 +160,14 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 bool CUnit::stop() {
 	Command c;
 	c.id = CMD_STOP;
-	ai->call->GiveOrder(key, &c);
+	ai->cb->GiveOrder(key, &c);
 	return true;
 }
 
 bool CUnit::wait() {
 	Command c;
 	c.id = CMD_WAIT;
-	ai->call->GiveOrder(key, &c);
+	ai->cb->GiveOrder(key, &c);
 	return true;
 }
 
@@ -177,8 +177,7 @@ bool CUnit::factoryBuild(UnitType *ut, bool enqueue) {
 	if (enqueue)
 		c.options |= SHIFT_KEY;
 	c.id = -(ut->def->id);
-	ai->call->GiveOrder(key, &c);
-	const UnitDef *u = ai->call->GetUnitDef(key);
+	ai->cb->GiveOrder(key, &c);
 	return true;
 }
 
@@ -192,11 +191,11 @@ Command CUnit::createTargetCommand(int cmd, int target) {
 
 /* From KAIK */
 Command CUnit::createPosCommand(int cmd, float3 pos, float radius, facing f) {
-	if (pos.x > ai->call->GetMapWidth() * 8)
-		pos.x = ai->call->GetMapWidth() * 8;
+	if (pos.x > ai->cb->GetMapWidth() * 8)
+		pos.x = ai->cb->GetMapWidth() * 8;
 
-	if (pos.z > ai->call->GetMapHeight() * 8)
-		pos.z = ai->call->GetMapHeight() * 8;
+	if (pos.z > ai->cb->GetMapHeight() * 8)
+		pos.z = ai->cb->GetMapHeight() * 8;
 
 	if (pos.x < 0)
 		pos.x = 0;
@@ -219,8 +218,8 @@ Command CUnit::createPosCommand(int cmd, float3 pos, float radius, facing f) {
 }
 
 quadrant CUnit::getQuadrant(float3 &pos) {
-	int mapWidth = ai->call->GetMapWidth() * 8;
-	int mapHeight = ai->call->GetMapHeight() * 8;
+	int mapWidth = ai->cb->GetMapWidth() * 8;
+	int mapHeight = ai->cb->GetMapHeight() * 8;
 	quadrant mapQuadrant = NORTH_EAST;
 
 	if (pos.x < (mapWidth >> 1)) {
@@ -244,8 +243,8 @@ quadrant CUnit::getQuadrant(float3 &pos) {
 
 /* From KAIK */
 facing CUnit::getBestFacing(float3 &pos) {
-	int mapWidth = ai->call->GetMapWidth() * 8;
-	int mapHeight = ai->call->GetMapHeight() * 8;
+	int mapWidth = ai->cb->GetMapWidth() * 8;
+	int mapHeight = ai->cb->GetMapHeight() * 8;
 	quadrant mapQuadrant = getQuadrant(pos);
 	facing f = NONE;
 

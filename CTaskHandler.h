@@ -5,8 +5,14 @@
 #include <map>
 #include <stack>
 
-#include "CE323AI.h"
 #include "ARegistrar.h"
+#include "headers/Defines.h"
+#include "headers/HEngine.h"
+
+class UnitType;
+class AIClasses;
+class CGroup;
+class CUnit;
 
 enum task{BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD};
 

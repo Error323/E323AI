@@ -2,9 +2,13 @@
 #define CUNIT_H
 
 #include <map>
+#include <iostream>
 
-#include "CE323AI.h"
 #include "ARegistrar.h"
+#include "headers/HEngine.h"
+
+class AIClasses;
+class UnitType;
 
 /* Building facings, NOTE: this order is important! */
 enum facing{SOUTH, EAST, NORTH, WEST, NONE};
