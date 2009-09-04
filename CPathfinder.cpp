@@ -280,14 +280,20 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 	int gz  = int(round(g.z/REAL)); gz = std::max<int>(gz, 1); gz = std::min<int>(gz, Z-2);
 	start   = &maps[activeMap][idx(sx, sz)];
 	goal    = &maps[activeMap][idx(gx, gz)];
-	dx2     = sx - gx;
-	dz2     = sz - gz;
 
 	std::list<ANode*> nodepath;
 	bool success = findPath(nodepath);
 	if (success) {
 		/* Insert a pre-waypoint at the beginning of the path */
-		float3 ss  = dynamic_cast<Node*>(start)->toFloat3();
+		int waypoint = std::min<int>(3, nodepath.size()-1);
+		std::list<ANode*>::iterator wp;
+		int x = 0;
+		for (wp = nodepath.begin(); wp != nodepath.end(); wp++) {
+			if (x >= waypoint) break;
+			x++;
+		}
+
+		float3 ss  = dynamic_cast<Node*>(*wp)->toFloat3();
 		float3 seg = s - ss;
 		seg *= 1000.0f; /* Blow up the pre-waypoint */
 		seg += s;

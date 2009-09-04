@@ -8,13 +8,10 @@
 
 #include "headers/Defines.h"
 
-class CEconomy;
 class AIClasses;
 class UnitType;
 
 class CWishList {
-	friend class CEconomy;
-
 	public:
 		CWishList(AIClasses *ai);
 		~CWishList() {}

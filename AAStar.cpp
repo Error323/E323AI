@@ -56,4 +56,5 @@ void AAStar::tracePath(ANode* x, std::list<ANode*>& path) {
 		path.push_front(x);
 		x = x->parent;
 	}
+	path.push_front(start);
 }

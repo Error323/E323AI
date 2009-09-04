@@ -59,7 +59,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* Overload */
 		void remove(ARegistrar &obj);
 
-		int X,Z,dx2,dz2;
+		int X,Z;
 		float REAL;
 
 		std::map<int, std::vector<Node> > maps;

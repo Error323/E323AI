@@ -3,7 +3,6 @@
 #include "CAI.h"
 #include "CUnitTable.h"
 #include "CUnit.h"
-#include "CEconomy.h"
 
 CWishList::CWishList(AIClasses *ai) {
 	this->ai = ai;
