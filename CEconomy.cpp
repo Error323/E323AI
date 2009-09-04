@@ -77,7 +77,7 @@ void CEconomy::remove(ARegistrar &group) {
 }
 
 void CEconomy::addUnit(CUnit &unit) {
-	LOG_II("Economy::addUnit " << unit)
+	LOG_II("CEconomy::addUnit " << unit)
 
 	unsigned c = unit.type->cats;
 	if (c&FACTORY) {
@@ -126,7 +126,12 @@ void CEconomy::buildEprovider(CGroup &group) {
 		buildOrAssist(BUILD_EPROVIDER, fusion, group);
 	}
 	else {
-		buildOrAssist(BUILD_EPROVIDER, energyProvider, group);
+		if (rng.RandInt(2) == 1)
+			buildOrAssist(BUILD_EPROVIDER, energyProvider, group);
+		else {
+			UnitType *solar = ai->unitTable->canBuild(ut, LAND|EMAKER);
+			buildOrAssist(BUILD_EPROVIDER, solar, group);
+		}
 	}
 	eRequest = false;
 }

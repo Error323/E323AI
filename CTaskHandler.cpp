@@ -6,7 +6,7 @@
 int ATask::counter = 0;
 
 void ATask::remove() {
-	LOG_II("ATask::remove task(" << key << ") " << (*group))
+	LOG_II("ATask::remove " << (*this))
 	group->unreg(*this);
 	group->busy = false;
 	group->stop();
@@ -21,7 +21,7 @@ void ATask::remove() {
 }
 
 void ATask::remove(ARegistrar &group) {
-	LOG_II("ATask::remove task(" << key << ") " << (*this->group))
+	LOG_II("ATask::remove " << (*this))
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
 		(*i)->remove();
@@ -32,7 +32,6 @@ void ATask::remove(ARegistrar &group) {
 }
 
 void ATask::addGroup(CGroup &g) {
-	LOG_II("ATask::addGroup task(" << key << ") " << g)
 	this->group = &g;
 	group->reg(*this);
 	group->busy = true;
@@ -59,6 +58,47 @@ bool ATask::assistable() {
 	}
 	return canAssist;
 }
+
+std::ostream& operator<<(std::ostream &out, const ATask &atask) {
+	std::stringstream ss;
+	switch(atask.t) {
+		case BUILD: {
+			const CTaskHandler::BuildTask *task = dynamic_cast<const CTaskHandler::BuildTask*>(&atask);
+			ss << "BuildTask(" << task->key << ") " << CTaskHandler::buildStr[task->bt];
+			ss << "(" << task->toBuild->def->humanName << ") " << (*(task->group));
+		} break;
+
+		case ASSIST: {
+			const CTaskHandler::AssistTask *task = dynamic_cast<const CTaskHandler::AssistTask*>(&atask);
+			ss << "AssistTask(" << task->key << ") Assisting(" << (*task->assist) << ") ";
+			ss << (*(task->group));
+		} break;
+
+		case ATTACK: {
+			const CTaskHandler::AttackTask *task = dynamic_cast<const CTaskHandler::AttackTask*>(&atask);
+			ss << "AttackTask(" << task->key << ") target("; ss << task->enemy << ") ";
+			ss << (*(task->group));
+		} break;
+
+		case FACTORY_BUILD: {
+			const CTaskHandler::FactoryTask *task = dynamic_cast<const CTaskHandler::FactoryTask*>(&atask);
+			ss << "FactoryTask(" << task->key << ") " << (*(task->factory));
+		} break;
+		default: return out;
+	}
+
+	if (atask.t != ASSIST) {
+		ss << " Assisters: amount(" << atask.assisters.size() << ") [";
+		std::list<ATask*>::const_iterator i;
+		for (i = atask.assisters.begin(); i != atask.assisters.end(); i++)
+			ss << (*(*i)->group);
+		ss << "] ";
+	}
+
+	std::string s = ss.str();
+	out << s;
+	return out;
+}
 /**************************************************************/
 /************************* CTASKHANDLER ***********************/
 /**************************************************************/
@@ -73,13 +113,13 @@ CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500) {
 	taskStr[MERGE]        = std::string("MERGE");
 	taskStr[FACTORY_BUILD]= std::string("FACTORY_BUILD");
 
-	CTaskHandler::buildStr[BUILD_MPROVIDER] = std::string("BUILD_MPROVIDER");
-	CTaskHandler::buildStr[BUILD_EPROVIDER] = std::string("BUILD_EPROVIDER");
-	CTaskHandler::buildStr[BUILD_AA_DEFENSE] = std::string("BUILD_AA_DEFENSE");
-	CTaskHandler::buildStr[BUILD_AG_DEFENSE] = std::string("BUILD_AG_DEFENSE");
-	CTaskHandler::buildStr[BUILD_FACTORY] = std::string("BUILD_FACTORY");
-	CTaskHandler::buildStr[BUILD_MSTORAGE] = std::string("BUILD_MSTORAGE");
-	CTaskHandler::buildStr[BUILD_ESTORAGE] = std::string("BUILD_ESTORAGE");
+	CTaskHandler::buildStr[BUILD_MPROVIDER] = std::string("MPROVIDER");
+	CTaskHandler::buildStr[BUILD_EPROVIDER] = std::string("EPROVIDER");
+	CTaskHandler::buildStr[BUILD_AA_DEFENSE] = std::string("AA_DEFENSE");
+	CTaskHandler::buildStr[BUILD_AG_DEFENSE] = std::string("AG_DEFENSE");
+	CTaskHandler::buildStr[BUILD_FACTORY] = std::string("FACTORY");
+	CTaskHandler::buildStr[BUILD_MSTORAGE] = std::string("MSTORAGE");
+	CTaskHandler::buildStr[BUILD_ESTORAGE] = std::string("ESTORAGE");
 
 	std::map<task, std::string>::iterator i;
 	for (i = taskStr.begin(); i != taskStr.end(); i++) {
@@ -179,6 +219,10 @@ float3 CTaskHandler::getPos(CGroup &group) {
 	return groupToTask[group.key]->pos;
 }
 
+void CTaskHandler::removeTask(CGroup &group) {
+	groupToTask[group.key]->remove();
+}
+
 /**************************************************************/
 /************************* BUILD TASK *************************/
 /**************************************************************/
@@ -232,24 +276,6 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister) {
 	float travelTime = dist / assister.speed;
 
 	return (buildTime > travelTime);
-}
-
-std::ostream& operator<<(std::ostream &out, const CTaskHandler::BuildTask &task) {
-	std::stringstream ss;
-	ss << "BuildTask(" << task.key << ") " << CTaskHandler::buildStr[task.bt];
-	ss << " Build(" << task.toBuild->def->humanName << " @";
-	ss << " Pos(" << task.pos.x << "," << task.pos.z << ") by ";
-	ss << (*(task.group));
-
-	ss << " Assisters: amount(" << task.assisters.size() << ") [";
-	std::list<ATask*>::const_iterator i;
-	for (i = task.assisters.begin(); i != task.assisters.end(); i++)
-		ss << (*i);
-	ss << "]";
-
-	std::string s = ss.str();
-	out << s;
-	return out;
 }
 
 /**************************************************************/
@@ -307,22 +333,6 @@ void CTaskHandler::FactoryTask::setWait(bool on) {
 	wait = on;
 }
 
-std::ostream& operator<<(std::ostream &out, const CTaskHandler::FactoryTask &task) {
-	std::stringstream ss;
-	ss << "FactoryTask(" << task.key << ") " << (*(task.factory));
-	ss << " Pos(" << task.pos.x << "," << task.pos.z << ")";
-
-	ss << " Assisters: amount(" << task.assisters.size() << ") [";
-	std::list<ATask*>::const_iterator i;
-	for (i = task.assisters.begin(); i != task.assisters.end(); i++)
-		ss << (*i);
-	ss << "]";
-
-	std::string s = ss.str();
-	out << s;
-	return out;
-}
-
 /**************************************************************/
 /************************* ASSIST TASK ************************/
 /**************************************************************/
@@ -370,22 +380,13 @@ void CTaskHandler::AssistTask::update() {
 	}
 }
 
-std::ostream& operator<<(std::ostream &out, const CTaskHandler::AssistTask &task) {
-	std::stringstream ss;
-	ss << "AssistTask(" << task.key << ") @ Pos(" << task.pos.x << "," << task.pos.z << ") ";
-	ss << (*(task.group));
-
-	std::string s = ss.str();
-	out << s;
-	return out;
-}
-
 /**************************************************************/
 /************************* ATTACK TASK ************************/
 /**************************************************************/
 void CTaskHandler::AttackTask::reset(int t) {
 	target = t;
 	pos = ai->cheat->GetUnitPos(t);
+	enemy = ai->cheat->GetUnitDef(target)->humanName;
 }
 
 void CTaskHandler::addAttackTask(int target, CGroup &group) {
@@ -399,6 +400,7 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 	LOG_II((*attackTask))
 	if (!ai->pf->addTask(*task))
 		attackTask->remove();
+
 }
 
 void CTaskHandler::AttackTask::update() {
@@ -417,22 +419,6 @@ void CTaskHandler::AttackTask::update() {
 	/* If the target is destroyed, remove the task, unreg groups */
 	if (ai->cheat->GetUnitHealth(target) <= 0.0f) 
 		remove();
-}
-
-std::ostream& operator<<(std::ostream &out, const CTaskHandler::AttackTask &task) {
-	std::stringstream ss;
-	ss << "AttackTask(" << task.key << ") target(" << task.ai->cheat->GetUnitDef(task.target)->humanName << ") ";
-	ss << (*(task.group));
-
-	ss << " Assisters: amount(" << task.assisters.size() << ") [";
-	std::list<ATask*>::const_iterator i;
-	for (i = task.assisters.begin(); i != task.assisters.end(); i++)
-		ss << (*i);
-	ss << "]";
-
-	std::string s = ss.str();
-	out << s;
-	return out;
 }
 
 /**************************************************************/

@@ -60,6 +60,7 @@ class ATask: public ARegistrar {
 
 		AIClasses *ai;
 		char buf[512];
+		friend std::ostream& operator<<(std::ostream &out, const ATask &task);
 };
 
 class CTaskHandler: public ARegistrar {
@@ -82,9 +83,6 @@ class CTaskHandler: public ARegistrar {
 			bool assistable(CGroup &group);
 
 			void reset(float3 &pos, buildType bt, UnitType *ut);
-
-			/* output stream */
-			friend std::ostream& operator<<(std::ostream &out, const BuildTask &task);
 		};
 
 		struct FactoryTask: public ATask {
@@ -104,9 +102,6 @@ class CTaskHandler: public ARegistrar {
 			bool assistable(CGroup &group);
 
 			void reset(CUnit &factory);
-
-			/* output stream */
-			friend std::ostream& operator<<(std::ostream &out, const FactoryTask &task);
 		};
 
 		struct AssistTask: public ATask {
@@ -121,9 +116,6 @@ class CTaskHandler: public ARegistrar {
 			void remove();
 			
 			void reset(ATask &task);
-
-			/* output stream */
-			friend std::ostream& operator<<(std::ostream &out, const AssistTask &task);
 		};
 
 		struct AttackTask: public ATask {
@@ -135,10 +127,9 @@ class CTaskHandler: public ARegistrar {
 			/* Update the attack task */
 			void update();
 
-			void reset(int target);
+			std::string enemy;
 
-			/* output stream */
-			friend std::ostream& operator<<(std::ostream &out, const AttackTask &task);
+			void reset(int target);
 		};
 
 		struct MergeTask: public ATask {
@@ -194,6 +185,9 @@ class CTaskHandler: public ARegistrar {
 
 		/* Add a fresh factory task */
 		void addFactoryTask(CUnit &factory);
+
+		/* Remove a task */
+		void removeTask(CGroup &group);
 
 		/* Get the group destination */
 		float3 getPos(CGroup &group);

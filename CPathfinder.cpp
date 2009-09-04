@@ -84,7 +84,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	#endif
 	threads.resize(nrThreads-1);
 
-	draw = false;
+	draw = true;
 }
 
 void CPathfinder::resetMap(int thread) {
@@ -96,7 +96,7 @@ void CPathfinder::resetMap(int thread) {
 
 void CPathfinder::remove(ARegistrar &obj) {
 	ATask *task = dynamic_cast<ATask*>(&obj);
-	LOG_II("CPathfinder::remove " << (*task->group))
+	LOG_II("CPathfinder::remove " << (*task))
 	paths.erase(task->group->key);
 	groups.erase(task->group->key);
 }
@@ -212,7 +212,9 @@ void CPathfinder::updatePaths() {
 
 	float3 start = groups[repathGroup]->pos();
 	float3 goal  = ai->tasks->getPos(*groups[repathGroup]);
-	addPath(repathGroup, start, goal);
+	if (!addPath(repathGroup, start, goal)) {
+		ai->tasks->removeTask(*groups[repathGroup]);
+	}
 }
 
 bool CPathfinder::addGroup(CGroup &group, float3 &start, float3 &goal) {
@@ -223,7 +225,7 @@ bool CPathfinder::addGroup(CGroup &group, float3 &start, float3 &goal) {
 }
 
 bool CPathfinder::addTask(ATask &task) {
-	LOG_II("CPathfinder::addTask task(" << task.key << ") " << (*task.group))
+	LOG_II("CPathfinder::addTask " << task)
 	groups[task.group->key] = task.group;
 	task.reg(*this);
 	float3 start = task.group->pos();
@@ -292,16 +294,17 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 			path.push_back(f);
 		}
 		path.push_back(g);
+
+		if (success) {
+			for (unsigned i = 2; i < path.size(); i++) 
+				ai->call->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, group);
+			ai->call->SetFigureColor(group, group/float(CGroup::counter), group/float(CGroup::counter), 1.0f, 1.0f);
+		}
 	}
 	else {
-		LOG_EE("CPathfinder::getPath pathing failed for " << (*groups[group]) << " size " << nodepath.size())
+		LOG_EE("CPathfinder::getPath pathing failed for " << (*groups[group]))
 	}
 
-	if (success && draw) {
-		for (unsigned i = 2; i < path.size(); i++) 
-			ai->call->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, group);
-		ai->call->SetFigureColor(group, group/float(CGroup::counter), group/float(CGroup::counter), 1.0f, 1.0f);
-	}
 	return success;
 }
 
