@@ -54,6 +54,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 
 	/* Initialize nodes per map type */
 	std::map<int, MoveData*>::iterator i;
+	X += 2; Z += 2;
 	for (i = ai->unittable->moveTypes.begin(); i != ai->unittable->moveTypes.end(); i++) {
 		std::vector<Node> map;
 		maps[i->first] = map;
@@ -62,16 +63,21 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 		for (int x = 0; x < X; x++) {
 			for (int z = 0; z < Z; z++) {
 				maps[i->first].push_back(Node(idx(x,z), x, z, 1.0f));
-				float slope = slopeMap[idx(x,z)];
 
 				/* Block the edges of the map */
 				if (x == 0 || x == X-1 || z == 0 || z == Z-1) {
 					maps[i->first][idx(x,z)].setType(BLOCKED);
+					continue;
 				}
-				/* Block too steep slopes */
-				if (slope > md->maxSlope) {
-					maps[i->first][idx(x,z)].setType(BLOCKED);
+
+				if (x >= 1 && x <= X-2 && z >= 1 && Z <= Z-2) {
+					float slope = slopeMap[idx((x-1),(z-1))];
+					/* Block too steep slopes */
+					if (slope > md->maxSlope) {
+						maps[i->first][idx(x,z)].setType(BLOCKED);
+					}
 				}
+
 				/* Block land */
 				if (md->moveType == MoveData::Ship_Move) {
 					if (heightMap[idx(x,z)] >= -md->depth)
