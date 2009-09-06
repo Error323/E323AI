@@ -54,7 +54,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 
 	/* Initialize nodes per map type */
 	std::map<int, MoveData*>::iterator i;
-	X += 2; Z += 2;
+	X += 2; Z += 2; /* Create an additional border */
 	for (i = ai->unittable->moveTypes.begin(); i != ai->unittable->moveTypes.end(); i++) {
 		std::vector<Node> map;
 		maps[i->first] = map;
@@ -70,9 +70,10 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 					continue;
 				}
 
+				/* Block too steep slopes */
 				if (x >= 1 && x <= X-2 && z >= 1 && Z <= Z-2) {
-					float slope = slopeMap[idx((x-1),(z-1))];
-					/* Block too steep slopes */
+					int j = (x-1)*(Z-2)+(z-1);
+					float slope = slopeMap[j];
 					if (slope > md->maxSlope) {
 						maps[i->first][idx(x,z)].setType(BLOCKED);
 					}
@@ -83,6 +84,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 					if (heightMap[idx(x,z)] >= -md->depth)
 						maps[i->first][idx(x,z)].setType(BLOCKED);
 				}
+
 				/* Block water */
 				else {
 					if (heightMap[idx(x,z)] <= -md->depth)
@@ -119,9 +121,11 @@ void CPathfinder::remove(ARegistrar &obj) {
 void CPathfinder::updateMap(float *weights) {
 	std::map<int, std::vector<Node> >::iterator i;
 	for (i = maps.begin(); i != maps.end(); i++) {
-		for (unsigned j = 0; j < i->second.size(); j++) {
-			/* Give a slight preference to non-steep slopes */
-			i->second[j].w = weights[j] + slopeMap[j]*1.1f;
+		for (int x = 1; x < X-1; x++) {
+			for (int z = 1; z < Z-1; z++) {
+				int j = (x-1)*(Z-2)+(z-1);
+				i->second[idx(x,z)].w = weights[j] + slopeMap[j]*1.1f;
+			}
 		}
 	}
 }
@@ -317,9 +321,9 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 		path.push_back(g);
 
 		if (draw) {
-			for (unsigned i = 2; i < path.size(); i++) 
+			for (unsigned i = 1; i < path.size(); i++) 
 				ai->cb->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, group);
-			ai->cb->SetFigureColor(group, group/float(CGroup::counter), group/float(CGroup::counter), 1.0f, 1.0f);
+			ai->cb->SetFigureColor(group, group/float(CGroup::counter), 1.0f-group/float(CGroup::counter), 1.0f, 1.0f);
 		}
 	}
 	else {

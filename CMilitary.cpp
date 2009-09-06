@@ -171,6 +171,7 @@ void CMilitary::update(int groupsize) {
 			break;
 
 		ai->tasks->addAttackTask(target, *group);
+		break;
 	}
 
 	/* Give idle, strong enough groups a new attack plan */
@@ -180,6 +181,18 @@ void CMilitary::update(int groupsize) {
 		/* This group is busy, don't bother */
 		if (group->busy)
 			continue;
+
+		/* Not strong enough */
+		if (group->units.size() < groupsize) 
+		{
+			bool isCurrent = false;
+			for (k = currentGroups.begin(); k != currentGroups.end(); k++)
+				if (k->second->key == group->key)
+					isCurrent = true;
+
+			if (isCurrent)
+				continue;
+		}
 
 		float3 pos = group->pos();
 		int target = selectTarget(pos, targets);
@@ -195,24 +208,11 @@ void CMilitary::update(int groupsize) {
 				}
 				j++;
 			}
-			continue;
+			break;
 		}
 		
-		float3 goal = ai->cbc->GetUnitPos(target);
-
-		/* Not strong enough */
-		if (group->units.size() < groupsize) 
-		{
-			bool isCurrent = false;
-			for (k = currentGroups.begin(); k != currentGroups.end(); k++)
-				if (k->second->key == group->key)
-					isCurrent = true;
-
-			if (isCurrent)
-				continue;
-		}
-
 		ai->tasks->addAttackTask(target, *group);
+		break;
 	}
 
 	/* Always have enough scouts */
