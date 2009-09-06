@@ -70,24 +70,22 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 					continue;
 				}
 
+				int j = (x-1)*(Z-2)+(z-1);
+
 				/* Block too steep slopes */
-				if (x >= 1 && x <= X-2 && z >= 1 && Z <= Z-2) {
-					int j = (x-1)*(Z-2)+(z-1);
-					float slope = slopeMap[j];
-					if (slope > md->maxSlope) {
-						maps[i->first][idx(x,z)].setType(BLOCKED);
-					}
+				if (slopeMap[j] > md->maxSlope) {
+					maps[i->first][idx(x,z)].setType(BLOCKED);
 				}
 
 				/* Block land */
 				if (md->moveType == MoveData::Ship_Move) {
-					if (heightMap[idx(x,z)] >= -md->depth)
+					if (heightMap[j] >= -md->depth)
 						maps[i->first][idx(x,z)].setType(BLOCKED);
 				}
 
 				/* Block water */
 				else {
-					if (heightMap[idx(x,z)] <= -md->depth)
+					if (heightMap[j] <= -md->depth)
 						maps[i->first][idx(x,z)].setType(BLOCKED);
 				}
 			}
