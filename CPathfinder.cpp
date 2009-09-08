@@ -31,8 +31,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 
 		for (int z = 0; z < Z; z++) {
 			for (int x = 0; x < X; x++) {
-				Node *node = new Node(idx(x,z), x, z, 1.0f);
-				int j = idx(x,z);
+				Node *node = new Node(ID(x,z), x, z, 1.0f);
+				int j = ID(x,z);
 
 				/* Block too steep slopes */
 				if (sm[j] > md->maxSlope) {
@@ -52,7 +52,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 				if ((x % I_MAP_RES == 0 && z % I_MAP_RES == 0) || node->blocked()) {
 					int id = (z/I_MAP_RES)*(X/I_MAP_RES)+(x/I_MAP_RES);
 					if (node->blocked())
-						maps[i->first][idx(x,z)] = node;
+						maps[i->first][ID(x,z)] = node;
 					else
 						maps[i->first][id] = node;
 
@@ -289,8 +289,9 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 	int sz  = int(round(s.z/REAL));
 	int gx  = int(round(g.x/REAL));
 	int gz  = int(round(g.z/REAL));
-	start   = maps[activeMap][idx(sx, sz)];
-	goal    = maps[activeMap][idx(gx, gz)];
+	LOG_II("CPathfinder::getPath start("<<s.x<<","<<","<<s.y<<","<<s.z<<") goal("<<g.x<<","<<","<<g.y<<","<<g.z<<")")
+	start   = maps[activeMap][ID(sx, sz)];
+	goal    = maps[activeMap][ID(gx, gz)];
 
 	std::list<ANode*> nodepath;
 	bool success = (start != NULL && goal != NULL && findPath(nodepath));
@@ -361,7 +362,7 @@ void CPathfinder::drawMap(int map) {
 		else if (node->w > 10.0f) {
 			p1.y += node->w;
 			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 30*9, 20);
-			ai->cb->SetFigureColor(20, 1.0f, 1.0f, 1.0f, 0.3f);
+			ai->cb->SetFigureColor(20, 1.0f, 1.0f, 1.0f, 0.1f);
 		}
 	}
 }
