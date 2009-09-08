@@ -32,14 +32,15 @@ class CPathfinder: public AAStar, public ARegistrar {
 					this->z = z;
 					this->type = CPathfinder::NORMAL;
 				}
+				std::vector<Node*> neighbours;
 				CPathfinder::nodeType type;
 				int x, z;
 				bool blocked() {return type == CPathfinder::BLOCKED;}
 				void setType(nodeType nt) {type = nt;}
 				float3 toFloat3() {
-					float fx = x*HEIGHT2REAL*I_MAP_RES-(I_MAP_RES/2);
+					float fx = x*HEIGHT2REAL*HEIGHT2SLOPE;
 					float fy = 0.0f;
-					float fz = z*HEIGHT2REAL*I_MAP_RES-(I_MAP_RES/2);
+					float fz = z*HEIGHT2REAL*HEIGHT2SLOPE;
 					return float3(fx,fy,fz);
 				}
 		};
@@ -70,12 +71,15 @@ class CPathfinder: public AAStar, public ARegistrar {
 		int X,Z;
 		float REAL;
 
-		std::map<int, std::vector<Node> > maps;
+		std::map<int, std::map<int, Node*> > maps;
 
 	private:
 		AIClasses *ai;
 
 		char buf[1024];
+
+		/* Nodes to be resetted */
+		std::map<int, std::vector<Node*> > activeNodes;
 
 		/* The threads */
 		std::vector<boost::thread*> threads;
@@ -98,12 +102,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* The groups */
 		std::map<int, CGroup*> groups;
 
-		/* spring maps */
-		std::vector<float> heightMap, slopeMap;
-
-		/* surrounding squares (x,y) */
-		std::vector<int> surrounding;
-	
 		/* draw the path ? */
 		bool draw;
 
@@ -123,6 +121,9 @@ class CPathfinder: public AAStar, public ARegistrar {
 		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius = EPSILON);
 		/* Draw the map */
 		void drawMap(int map);
+
+		const float *sm;
+		const float *hm;
 
 		float gauss(float x, float sigma = 1.0f, float mu = 0.0f);
 

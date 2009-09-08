@@ -12,107 +12,89 @@
 
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	this->ai   = ai;
-	this->X    = int(ai->cb->GetMapWidth() / I_MAP_RES)+1;
-	this->Z    = int(ai->cb->GetMapHeight() / I_MAP_RES)+1;
-	this->REAL = I_MAP_RES*HEIGHT2REAL;
+	this->X    = int(ai->cb->GetMapWidth()/HEIGHT2SLOPE);
+	this->Z    = int(ai->cb->GetMapHeight()/HEIGHT2SLOPE);
 	update     = 0;
 	repathGroup= -1;
 
-	heightMap.resize(X*Z, 0.0f);
-	slopeMap.resize(X*Z, 0.0f);
-	const float *hm = ai->cb->GetHeightMap();
-	const float *sm = ai->cb->GetSlopeMap();
-
-	for (int i = -1; i <= 1; i++) {
-		for (int j = -1; j <= 1; j++) {
-			if (i == 0 && j == 0)
-				continue;
-
-			surrounding.push_back(i);
-			surrounding.push_back(j);
-		}
-	}
-
-	/* Calculate heightmap on our resolution */
-	for (int z = 0; z < Z; z++) {
-		for (int x = 0; x < X; x++) {
-			float summedHeight = 0.0f;
-			int zz, xx, hCount = 0;
-			for (int i = -(I_MAP_RES/2); i <= (I_MAP_RES/2); i++) {
-				for (int j = -(I_MAP_RES/2); j <= (I_MAP_RES/2); j++) {
-					zz = (i + z)*I_MAP_RES;
-					xx = (j + x)*I_MAP_RES;
-
-					if (xx >= 0 && xx < ai->cb->GetMapWidth() && zz >= 0 && zz < ai->cb->GetMapHeight()) {
-						summedHeight += hm[zz*ai->cb->GetMapWidth()+xx];
-						hCount++;
-					}
-				}
-			}
-			heightMap[idx(x,z)] = (summedHeight / hCount);
-		}
-	}
-
-	/* Calculate slopemap on our resolution using a normal distribution */
-	for (int z = 0; z < Z; z++) {
-		for (int x = 0; x < X; x++) {
-			float slope = 0.0f;
-			int zz, xx;
-			for (int i = -(I_MAP_RES/HEIGHT2SLOPE/2); i <= (I_MAP_RES/HEIGHT2SLOPE/2); i++) {
-				for (int j = -(I_MAP_RES/HEIGHT2SLOPE/2); j <= (I_MAP_RES/HEIGHT2SLOPE/2); j++) {
-					zz = (i + z)*(I_MAP_RES/HEIGHT2SLOPE);
-					xx = (j + x)*(I_MAP_RES/HEIGHT2SLOPE);
-
-					if (xx >= 0 && xx < (ai->cb->GetMapWidth()/HEIGHT2SLOPE) && 
-						zz >= 0 && zz < (ai->cb->GetMapHeight()/HEIGHT2SLOPE))
-					{
-
-						float w = gauss(sqrt(i*i+j*j),0.8f)/gauss(0.0f, 0.8f);
-						slope += w*sm[zz*(ai->cb->GetMapWidth()/HEIGHT2SLOPE)+xx];
-					}
-				}
-			}
-			slopeMap[idx(x,z)] = slope;
-		}
-	}
+	hm = ai->cb->GetHeightMap();
+	sm = ai->cb->GetSlopeMap();
 
 	/* Initialize nodes per map type */
 	std::map<int, MoveData*>::iterator i;
 	for (i = ai->unittable->moveTypes.begin(); i != ai->unittable->moveTypes.end(); i++) {
-		std::vector<Node> map;
-		maps[i->first] = map;
+		std::vector<Node*> reset;
+		std::map<int, Node*> map;
+		maps[i->first]       = map;
+		activeNodes[i->first] = reset;
 		MoveData *md   = i->second;
 
 		for (int z = 0; z < Z; z++) {
 			for (int x = 0; x < X; x++) {
-				maps[i->first].push_back(Node(idx(x,z), x, z, 1.0f));
-
-				/* Don't block the edges of the map */
-				if (x <= 1 || x >= X-2 || z <= 1 || z >= Z-2) {
-					continue;
-				}
-
+				Node *node = new Node(idx(x,z), x, z, 1.0f);
 				int j = idx(x,z);
 
 				/* Block too steep slopes */
-				if (slopeMap[j] > md->maxSlope) {
-					maps[i->first][idx(x,z)].setType(BLOCKED);
+				if (sm[j] > md->maxSlope) {
+					node->setType(BLOCKED);
 				}
-
 				/* Block land */
 				if (md->moveType == MoveData::Ship_Move) {
-					if (heightMap[j] >= -md->depth)
-						maps[i->first][idx(x,z)].setType(BLOCKED);
+					if (hm[j] >= -md->depth)
+						node->setType(BLOCKED);
 				}
-
 				/* Block water */
 				else {
-					if (heightMap[j] <= -md->depth)
-						maps[i->first][idx(x,z)].setType(BLOCKED);
+					if (hm[j] <= -md->depth && md->moveType != MoveData::Hover_Move)
+						node->setType(BLOCKED);
 				}
+				/* Store the usefull nodes */
+				if ((x % I_MAP_RES == 0 && z % I_MAP_RES == 0) || node->blocked()) {
+					int id = (z/I_MAP_RES)*(X/I_MAP_RES)+(x/I_MAP_RES);
+					if (node->blocked())
+						maps[i->first][idx(x,z)] = node;
+					else
+						maps[i->first][id] = node;
+
+					if (!node->blocked())
+						activeNodes[i->first].push_back(node);
+				}
+				/* Delete the others */
+				else { delete node; }
 			}
 		}
 	}
+
+	/* Define neighbours, yeah this is expensive */
+	std::map<int, std::vector<Node*> >::iterator j;
+	float maxdist = sqrt(I_MAP_RES*I_MAP_RES + I_MAP_RES*I_MAP_RES)+I_MAP_RES/2;
+	for (j = activeNodes.begin(); j != activeNodes.end(); j++) {
+		LOG_II("MoveType(" << j->first << ") has " << activeNodes[j->first].size() << " active nodes")
+		for (size_t k = 0; k < activeNodes[j->first].size(); k++) {
+			Node *parent = activeNodes[j->first][k];
+
+			for (size_t l = 0; l < activeNodes[j->first].size(); l++) {
+				Node *node = activeNodes[j->first][l];
+				if (parent == node)
+					continue;
+
+				/* Determine if this node is a neighbour */
+				int dx = (parent->x - node->x);
+				int dz = (parent->z - node->z);
+				if (sqrt(dx*dx+dz*dz) <= maxdist)
+					parent->neighbours.push_back(node);
+			}
+			assert(parent->neighbours.size() <= 8);
+		}
+	}
+
+	//drawMap(3);
+	draw = false;
+
+	this->REAL = I_MAP_RES*HEIGHT2REAL*HEIGHT2SLOPE;
+	X /= I_MAP_RES; Z /= I_MAP_RES;
+	LOG_II("Heightmap " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
+	LOG_II("Pathmap   " << X << "x" << Z)
 
 	#if (BOOST_VERSION >= 103500)
 	nrThreads = boost::thread::hardware_concurrency();
@@ -120,16 +102,13 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	nrThreads = 2;
 	#endif
 	threads.resize(nrThreads-1);
-
-	drawMap(2);
-	draw = true;
 }
 
 void CPathfinder::resetMap(int thread) {
-	int size = (X*Z) / nrThreads;
+	int size = activeNodes[activeMap].size() / nrThreads;
 	int offset = size*thread;
 	for (unsigned i = 0; i < size; i++)
-		maps[activeMap][i+offset].reset();
+		activeNodes[activeMap][i+offset]->reset();
 }
 
 void CPathfinder::remove(ARegistrar &obj) {
@@ -140,13 +119,11 @@ void CPathfinder::remove(ARegistrar &obj) {
 }
 
 void CPathfinder::updateMap(float *weights) {
-	std::map<int, std::vector<Node> >::iterator i;
-	for (i = maps.begin(); i != maps.end(); i++) {
-		for (int z = 0; z < Z; z++) {
-			for (int x = 0; x < X; x++) {
-				int j = idx(x,z);
-				i->second[idx(x,z)].w = weights[j] + slopeMap[j]*10.0f;
-			}
+	std::map<int, std::vector<Node*> >::iterator i;
+	for (i = activeNodes.begin(); i != activeNodes.end(); i++) {
+		for (size_t j = 0; j < activeNodes[i->first].size(); j++) {
+			Node *node = activeNodes[i->first][j];
+			node->w = weights[node->id] + sm[node->id]*1.1f;
 		}
 	}
 }
@@ -288,10 +265,10 @@ bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 	}
 
 	/* Reset leftovers */
-	int rest   = (X*Z)%nrThreads;
-	int offset = (X*Z)-rest;
+	int rest   = activeNodes[activeMap].size() % nrThreads;
+	int offset = activeNodes[activeMap].size() - rest;
 	for (unsigned i = 0; i < rest; i++)
-		maps[activeMap][i+offset].reset();
+		activeNodes[activeMap][i+offset]->reset();
 
 	/* If we found a path, add it */
 	bool success = getPath(start, goal, path, group);
@@ -309,8 +286,8 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 	int sz  = int(round(s.z/REAL));
 	int gx  = int(round(g.x/REAL));
 	int gz  = int(round(g.z/REAL));
-	start   = &maps[activeMap][idx(sx, sz)];
-	goal    = &maps[activeMap][idx(gx, gz)];
+	start   = maps[activeMap][idx(sx, sz)];
+	goal    = maps[activeMap][idx(gx, gz)];
 
 	std::list<ANode*> nodepath;
 	bool success = findPath(nodepath);
@@ -361,32 +338,26 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 }
 
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
-	Node *s, *n = dynamic_cast<Node*>(an);
-	int x,z;
-
-	for (unsigned u = 0; u < surrounding.size(); u+=2) {
-		x = n->x+surrounding[u]; z = n->z+surrounding[u+1];
-		s = &maps[activeMap][idx(x, z)];
-		if (!s->blocked()) succ.push(s);
-	}
+	Node *n = dynamic_cast<Node*>(an);
+	for (size_t u = 0; u < n->neighbours.size(); u++)
+		succ.push(n->neighbours[u]);
 }
 
 void CPathfinder::drawMap(int map) {
-	for (int x = 0; x < X; x+=1) {
-		for (int z = 0; z < Z; z+=1) {
-			float3 p0 = maps[map][idx(x,z)].toFloat3();
-			p0.y = ai->cb->GetElevation(p0.x, p0.z);
-			float3 p1(p0);
-			p1.y += 100.0f;
-			if (maps[map][idx(x,z)].blocked()) {
-				ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 100000, 10);
-				ai->cb->SetFigureColor(10, 1.0f, 0.0f, 0.0f, 1.0f);
-			}
-			else {
-				ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 100000, 20);
-				float w = 1.0f/(10.0f*slopeMap[idx(x,z)]);
-				ai->cb->SetFigureColor(20, w, w, w, 1.0f);
-			}
+	std::map<int, Node*>::iterator i;
+	for (i = maps[map].begin(); i != maps[map].end(); i++) {
+		Node *node = i->second; 
+		float3 p0 = node->toFloat3();
+		p0.y = ai->cb->GetElevation(p0.x, p0.z);
+		float3 p1(p0);
+		p1.y += 100.0f;
+		if (node->blocked()) {
+			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 100000, 10);
+			ai->cb->SetFigureColor(10, 1.0f, 0.0f, 0.0f, 1.0f);
+		}
+		else {
+			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 100000, 20);
+			ai->cb->SetFigureColor(20, 1.0f, 1.0f, 1.0f, 0.3f);
 		}
 	}
 }
