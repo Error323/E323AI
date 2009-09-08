@@ -11,10 +11,9 @@
 
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	this->ai   = ai;
-	this->X    = int(ai->cb->GetMapWidth() / THREATRES);
-	this->Z    = int(ai->cb->GetMapHeight() / THREATRES);
-	this->REAL = THREATRES*8.0f;
-	int SLOPE  = THREATRES/2;
+	this->X    = int(ai->cb->GetMapWidth() / I_MAP_RES)+1;
+	this->Z    = int(ai->cb->GetMapHeight() / I_MAP_RES)+1;
+	this->REAL = I_MAP_RES*HEIGHT2REAL;
 	update     = 0;
 	repathGroup= -1;
 
@@ -33,20 +32,40 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 		}
 	}
 
-	for (int x = 0; x < X; x++)
-		for (int z = 0; z < Z; z++)
-			heightMap[x*Z+z] = hm[z*X*THREATRES*THREATRES+x*THREATRES];
-	
-	for (int x = 0; x < X; x++) {
-		for (int z = 0; z < Z; z++) {
-			float maxSlope = sm[z*SLOPE*SLOPE*X+x*SLOPE];
-			for (unsigned u = 0; u < surrounding.size(); u+=2) {
-				int i = surrounding[u] + x;
-				int j = surrounding[u+1] + z;
-				if (i < 0 || i > X-1 || j < 0 || j > Z-1)
-					continue;
-				float slope = sm[j*SLOPE*SLOPE*X+i*SLOPE];
-				maxSlope = std::max<float>(slope, maxSlope);
+	/* Calculate heightmap on our resolution */
+	for (int z = 0; z < Z; z++) {
+		for (int x = 0; x < X; x++) {
+			float summedHeight = 0.0f;
+			int zz, xx, hCount = 0;
+			for (int i = -(I_MAP_RES/SURROUNDING); i <= (I_MAP_RES/SURROUNDING); i++) {
+				for (int j = -(I_MAP_RES/SURROUNDING); j <= (I_MAP_RES/SURROUNDING); j++) {
+					zz = (i + z)*I_MAP_RES;
+					xx = (j + x)*I_MAP_RES;
+
+					if (xx >= 0 && xx < ai->cb->GetMapWidth() && zz >= 0 && zz < ai->cb->GetMapHeight()) {
+						summedHeight += hm[zz*ai->cb->GetMapWidth()+xx];
+						hCount++;
+					}
+				}
+			}
+			heightMap[idx(x,z)] = (summedHeight / hCount);
+		}
+	}
+
+	/* Calculate slopemap on our resolution */
+	for (int z = 0; z < Z; z++) {
+		for (int x = 0; x < X; x++) {
+			float maxSlope = 0.0f;
+			int zz, xx;
+			for (int i = -(I_MAP_RES/HEIGHT2SLOPE/SURROUNDING); i <= (I_MAP_RES/HEIGHT2SLOPE/SURROUNDING); i++) {
+				for (int j = -(I_MAP_RES/HEIGHT2SLOPE/SURROUNDING); j <= (I_MAP_RES/HEIGHT2SLOPE/SURROUNDING); j++) {
+					zz = (i + z)*(I_MAP_RES/HEIGHT2SLOPE);
+					xx = (j + x)*(I_MAP_RES/HEIGHT2SLOPE);
+
+					if (xx >= 0 && xx < (ai->cb->GetMapWidth()/HEIGHT2SLOPE) && zz >= 0 && zz < (ai->cb->GetMapHeight()/HEIGHT2SLOPE)) {
+						maxSlope = std::max<float>(maxSlope,sm[zz*(ai->cb->GetMapWidth()/HEIGHT2SLOPE)+xx]);
+					}
+				}
 			}
 			slopeMap[idx(x,z)] = maxSlope;
 		}
@@ -54,14 +73,13 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 
 	/* Initialize nodes per map type */
 	std::map<int, MoveData*>::iterator i;
-	X += 2; Z += 2; /* Create an additional border */
 	for (i = ai->unittable->moveTypes.begin(); i != ai->unittable->moveTypes.end(); i++) {
 		std::vector<Node> map;
 		maps[i->first] = map;
 		MoveData *md   = i->second;
 
-		for (int x = 0; x < X; x++) {
-			for (int z = 0; z < Z; z++) {
+		for (int z = 0; z < Z; z++) {
+			for (int x = 0; x < X; x++) {
 				maps[i->first].push_back(Node(idx(x,z), x, z, 1.0f));
 
 				/* Block the edges of the map */
@@ -70,7 +88,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 					continue;
 				}
 
-				int j = (x-1)*(Z-2)+(z-1);
+				int j = idx(x,z);
 
 				/* Block too steep slopes */
 				if (slopeMap[j] > md->maxSlope) {
@@ -99,6 +117,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	#endif
 	threads.resize(nrThreads-1);
 
+	drawMap(2);
 	draw = false;
 }
 
@@ -119,10 +138,10 @@ void CPathfinder::remove(ARegistrar &obj) {
 void CPathfinder::updateMap(float *weights) {
 	std::map<int, std::vector<Node> >::iterator i;
 	for (i = maps.begin(); i != maps.end(); i++) {
-		for (int x = 1; x < X-1; x++) {
-			for (int z = 1; z < Z-1; z++) {
-				int j = (x-1)*(Z-2)+(z-1);
-				i->second[idx(x,z)].w = weights[j] + slopeMap[j]*1.1f;
+		for (int z = 0; z < Z; z++) {
+			for (int x = 0; x < X; x++) {
+				int j = idx(x,z);
+				i->second[idx(x,z)].w = weights[j] + slopeMap[j]*100.0f;
 			}
 		}
 	}
@@ -282,10 +301,10 @@ bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius) {
 	/* If exceeding, snap to boundaries */
-	int sx  = int(round(s.x/REAL)); sx = std::max<int>(sx, 1); sx = std::min<int>(sx, X-2);
-	int sz  = int(round(s.z/REAL)); sz = std::max<int>(sz, 1); sz = std::min<int>(sz, Z-2);
-	int gx  = int(round(g.x/REAL)); gx = std::max<int>(gx, 1); gx = std::min<int>(gx, X-2);
-	int gz  = int(round(g.z/REAL)); gz = std::max<int>(gz, 1); gz = std::min<int>(gz, Z-2);
+	int sx  = int(round(s.x/REAL));
+	int sz  = int(round(s.z/REAL));
+	int gx  = int(round(g.x/REAL));
+	int gz  = int(round(g.z/REAL));
 	start   = &maps[activeMap][idx(sx, sz)];
 	goal    = &maps[activeMap][idx(gx, gz)];
 
@@ -305,21 +324,19 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 		float3 seg = s - ss;
 		seg *= 1000.0f; /* Blow up the pre-waypoint */
 		seg += s;
-		seg *= REAL;
 		seg.y = ai->cb->GetElevation(seg.x, seg.z)+10;
 		path.push_back(seg);
 
 		for (std::list<ANode*>::iterator i = nodepath.begin(); i != nodepath.end(); i++) {
 			Node *n = dynamic_cast<Node*>(*i);
 			float3 f = n->toFloat3();
-			f *= REAL;
 			f.y = ai->cb->GetElevation(f.x, f.z)+20;
 			path.push_back(f);
 		}
 		path.push_back(g);
 
 		if (draw) {
-			for (unsigned i = 1; i < path.size(); i++) 
+			for (unsigned i = 2; i < path.size(); i++) 
 				ai->cb->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, group);
 			ai->cb->SetFigureColor(group, group/float(CGroup::counter), 1.0f-group/float(CGroup::counter), 1.0f, 1.0f);
 		}
@@ -353,16 +370,22 @@ void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 void CPathfinder::drawMap(int map) {
 	for (int x = 0; x < X; x+=1) {
 		for (int z = 0; z < Z; z+=1) {
-			float3 p0(x*REAL, ai->cb->GetElevation(x*REAL,z*REAL), z*REAL);
+			float3 p0 = maps[map][idx(x,z)].toFloat3();
+			p0.y = ai->cb->GetElevation(p0.x, p0.z);
 			float3 p1(p0);
 			p1.y += 100.0f;
-			if (maps[map][idx(x,z)].blocked())
-				ai->cb->CreateLineFigure(p0, p1, map, 1, 10000, 4);
-			ai->cb->SetFigureColor(map, 1.0f, 0.0f, 0.0f, 1.0f);
+			if (maps[map][idx(x,z)].blocked()) {
+				ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 10000, 10);
+				ai->cb->SetFigureColor(10, 1.0f, 0.0f, 0.0f, 1.0f);
+			}
+			else {
+				ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 10000, 20);
+				ai->cb->SetFigureColor(20, 1.0f, 1.0f, 1.0f, 0.8f);
+			}
 		}
 	}
 }
 
 inline int CPathfinder::idx(int x, int z) {
-	return x*Z+z;
+	return z*X+x;
 }

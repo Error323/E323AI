@@ -36,7 +36,12 @@ class CPathfinder: public AAStar, public ARegistrar {
 				int x, z;
 				bool blocked() {return type == CPathfinder::BLOCKED;}
 				void setType(nodeType nt) {type = nt;}
-				float3 toFloat3() {return float3(x,0.0f,z);}
+				float3 toFloat3() {
+					float fx = x*HEIGHT2REAL*I_MAP_RES-(I_MAP_RES/2);
+					float fy = 0.0f;
+					float fz = z*HEIGHT2REAL*I_MAP_RES-(I_MAP_RES/2);
+					return float3(fx,fy,fz);
+				}
 		};
 
 		/* Update the map weights */
@@ -59,6 +64,9 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* Overload */
 		void remove(ARegistrar &obj);
 
+		/* NOTE: slopemap 1:2 heightmap 1:8 realmap, GetMapWidth() and
+		 * GetMapHeight() give map dimensions in heightmap resolution
+		 */
 		int X,Z;
 		float REAL;
 

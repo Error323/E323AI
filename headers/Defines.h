@@ -37,8 +37,11 @@
 /* Max enemy units */
 #define MAX_UNITS_AI 500
 
-/* Threatmap resolution */
-#define THREATRES 8
+/* Map ratios */
+#define HEIGHT2REAL 8
+#define I_MAP_RES 8 /* Inverse map resolution (power of 2) */
+#define HEIGHT2SLOPE 2
+#define SURROUNDING 3
 
 /* Unit categories */
 enum unitCategory {
