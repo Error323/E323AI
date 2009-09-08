@@ -117,7 +117,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	#endif
 	threads.resize(nrThreads-1);
 
-	drawMap(2);
+	//drawMap(2);
 	draw = false;
 }
 
