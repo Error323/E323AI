@@ -124,6 +124,8 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* Draw the map */
 		void drawMap(int map);
 
+		float gauss(float x, float sigma = 1.0f, float mu = 0.0f);
+
 		inline int idx(int x, int z);
 };
 

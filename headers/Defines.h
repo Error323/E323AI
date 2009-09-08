@@ -39,9 +39,8 @@
 
 /* Map ratios */
 #define HEIGHT2REAL 8
-#define I_MAP_RES 8 /* Inverse map resolution (power of 2) */
+#define I_MAP_RES 8 /* Inverse map resolution (must be even) */
 #define HEIGHT2SLOPE 2
-#define SURROUNDING 3
 
 /* Unit categories */
 enum unitCategory {

@@ -4,10 +4,10 @@
 #include "CUnitTable.h"
 
 CThreatMap::CThreatMap(AIClasses *ai) {
-	REAL = HEIGHT2REAL*8.0f;
 	this->ai = ai;
-	this->X  = ai->cb->GetMapWidth() / HEIGHT2REAL;
-	this->Z  = ai->cb->GetMapHeight() / HEIGHT2REAL;
+	this->X  = ai->cb->GetMapWidth() / I_MAP_RES;
+	this->Z  = ai->cb->GetMapHeight() / I_MAP_RES;
+	REAL = HEIGHT2REAL*I_MAP_RES;
 
 	map   = new float[X*Z];
 	units = new int[MAX_UNITS_AI];

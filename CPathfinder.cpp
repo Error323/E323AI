@@ -1,5 +1,6 @@
 #include "CPathfinder.h"
 
+#include <math.h>
 #include <boost/bind.hpp>
 #include <boost/version.hpp>
 
@@ -37,8 +38,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 		for (int x = 0; x < X; x++) {
 			float summedHeight = 0.0f;
 			int zz, xx, hCount = 0;
-			for (int i = -(I_MAP_RES/SURROUNDING); i <= (I_MAP_RES/SURROUNDING); i++) {
-				for (int j = -(I_MAP_RES/SURROUNDING); j <= (I_MAP_RES/SURROUNDING); j++) {
+			for (int i = -(I_MAP_RES/2); i <= (I_MAP_RES/2); i++) {
+				for (int j = -(I_MAP_RES/2); j <= (I_MAP_RES/2); j++) {
 					zz = (i + z)*I_MAP_RES;
 					xx = (j + x)*I_MAP_RES;
 
@@ -52,22 +53,26 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 		}
 	}
 
-	/* Calculate slopemap on our resolution */
+	/* Calculate slopemap on our resolution using a normal distribution */
 	for (int z = 0; z < Z; z++) {
 		for (int x = 0; x < X; x++) {
-			float maxSlope = 0.0f;
+			float slope = 0.0f;
 			int zz, xx;
-			for (int i = -(I_MAP_RES/HEIGHT2SLOPE/SURROUNDING); i <= (I_MAP_RES/HEIGHT2SLOPE/SURROUNDING); i++) {
-				for (int j = -(I_MAP_RES/HEIGHT2SLOPE/SURROUNDING); j <= (I_MAP_RES/HEIGHT2SLOPE/SURROUNDING); j++) {
+			for (int i = -(I_MAP_RES/HEIGHT2SLOPE/2); i <= (I_MAP_RES/HEIGHT2SLOPE/2); i++) {
+				for (int j = -(I_MAP_RES/HEIGHT2SLOPE/2); j <= (I_MAP_RES/HEIGHT2SLOPE/2); j++) {
 					zz = (i + z)*(I_MAP_RES/HEIGHT2SLOPE);
 					xx = (j + x)*(I_MAP_RES/HEIGHT2SLOPE);
 
-					if (xx >= 0 && xx < (ai->cb->GetMapWidth()/HEIGHT2SLOPE) && zz >= 0 && zz < (ai->cb->GetMapHeight()/HEIGHT2SLOPE)) {
-						maxSlope = std::max<float>(maxSlope,sm[zz*(ai->cb->GetMapWidth()/HEIGHT2SLOPE)+xx]);
+					if (xx >= 0 && xx < (ai->cb->GetMapWidth()/HEIGHT2SLOPE) && 
+						zz >= 0 && zz < (ai->cb->GetMapHeight()/HEIGHT2SLOPE))
+					{
+
+						float w = gauss(sqrt(i*i+j*j),0.8f)/gauss(0.0f, 0.8f);
+						slope += w*sm[zz*(ai->cb->GetMapWidth()/HEIGHT2SLOPE)+xx];
 					}
 				}
 			}
-			slopeMap[idx(x,z)] = maxSlope;
+			slopeMap[idx(x,z)] = slope;
 		}
 	}
 
@@ -82,9 +87,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 			for (int x = 0; x < X; x++) {
 				maps[i->first].push_back(Node(idx(x,z), x, z, 1.0f));
 
-				/* Block the edges of the map */
-				if (x == 0 || x == X-1 || z == 0 || z == Z-1) {
-					maps[i->first][idx(x,z)].setType(BLOCKED);
+				/* Don't block the edges of the map */
+				if (x <= 1 || x >= X-2 || z <= 1 || z >= Z-2) {
 					continue;
 				}
 
@@ -117,8 +121,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	#endif
 	threads.resize(nrThreads-1);
 
-	//drawMap(2);
-	draw = false;
+	drawMap(2);
+	draw = true;
 }
 
 void CPathfinder::resetMap(int thread) {
@@ -141,7 +145,7 @@ void CPathfinder::updateMap(float *weights) {
 		for (int z = 0; z < Z; z++) {
 			for (int x = 0; x < X; x++) {
 				int j = idx(x,z);
-				i->second[idx(x,z)].w = weights[j] + slopeMap[j]*100.0f;
+				i->second[idx(x,z)].w = weights[j] + slopeMap[j]*10.0f;
 			}
 		}
 	}
@@ -375,15 +379,22 @@ void CPathfinder::drawMap(int map) {
 			float3 p1(p0);
 			p1.y += 100.0f;
 			if (maps[map][idx(x,z)].blocked()) {
-				ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 10000, 10);
+				ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 100000, 10);
 				ai->cb->SetFigureColor(10, 1.0f, 0.0f, 0.0f, 1.0f);
 			}
 			else {
-				ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 10000, 20);
-				ai->cb->SetFigureColor(20, 1.0f, 1.0f, 1.0f, 0.8f);
+				ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 100000, 20);
+				float w = 1.0f/(10.0f*slopeMap[idx(x,z)]);
+				ai->cb->SetFigureColor(20, w, w, w, 1.0f);
 			}
 		}
 	}
+}
+
+float CPathfinder::gauss(float x, float sigma, float mu) {
+	float a = 1.0f / (sigma * sqrt(2*M_PI));
+	float b = exp( -( pow(x-mu, 2) / (2*(pow(sigma,2))) ) );
+	return a * b;
 }
 
 inline int CPathfinder::idx(int x, int z) {
