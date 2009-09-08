@@ -35,7 +35,7 @@ void CEconomy::init(CUnit &unit) {
 	mStart = utCommander->def->metalMake;
 	eStart = utCommander->def->energyMake;
 
-	energyProvider  = windProf > solarProf ? utWind : utSolar;
+	energyProvider  = windProf*0.6f > solarProf ? utWind : utSolar;
 }
 		
 bool CEconomy::hasFinishedBuilding(CGroup &group) {

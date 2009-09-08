@@ -290,7 +290,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 	goal    = maps[activeMap][idx(gx, gz)];
 
 	std::list<ANode*> nodepath;
-	bool success = findPath(nodepath);
+	bool success = (start != NULL && goal != NULL && findPath(nodepath));
 	if (success) {
 		/* Insert a pre-waypoint at the beginning of the path */
 		int waypoint = std::min<int>(3, nodepath.size()-1);
