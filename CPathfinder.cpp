@@ -88,7 +88,6 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 		}
 	}
 
-	//drawMap(3);
 	draw = false;
 
 	this->REAL = I_MAP_RES*HEIGHT2REAL*HEIGHT2SLOPE;
@@ -126,6 +125,8 @@ void CPathfinder::updateMap(float *weights) {
 			node->w = weights[node->id] + sm[node->id]*1.1f;
 		}
 	}
+	if (ai->cb->GetCurrentFrame() > 200)
+		drawMap(3);
 }
 
 void CPathfinder::updateFollowers() {
@@ -350,13 +351,14 @@ void CPathfinder::drawMap(int map) {
 		float3 p0 = node->toFloat3();
 		p0.y = ai->cb->GetElevation(p0.x, p0.z);
 		float3 p1(p0);
-		p1.y += 100.0f;
 		if (node->blocked()) {
-			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 100000, 10);
+			p0.y += 100.0f;
+			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 30*9, 10);
 			ai->cb->SetFigureColor(10, 1.0f, 0.0f, 0.0f, 1.0f);
 		}
-		else {
-			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 100000, 20);
+		else if (node->w > 10.0f) {
+			p1.y += node->w;
+			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 30*9, 20);
 			ai->cb->SetFigureColor(20, 1.0f, 1.0f, 1.0f, 0.3f);
 		}
 	}

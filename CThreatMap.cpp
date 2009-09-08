@@ -5,9 +5,9 @@
 
 CThreatMap::CThreatMap(AIClasses *ai) {
 	this->ai = ai;
-	this->X  = ai->cb->GetMapWidth() / I_MAP_RES;
-	this->Z  = ai->cb->GetMapHeight() / I_MAP_RES;
-	REAL = HEIGHT2REAL*I_MAP_RES;
+	this->X  = ai->cb->GetMapWidth() / (HEIGHT2SLOPE);
+	this->Z  = ai->cb->GetMapHeight() / (HEIGHT2SLOPE);
+	REAL = (HEIGHT2SLOPE)*HEIGHT2REAL;
 
 	map   = new float[X*Z];
 	units = new int[MAX_UNITS_AI];
@@ -34,8 +34,8 @@ float CThreatMap::getThreat(float3 &center, float radius) {
 	float3 pos(0.0f, 0.0f, 0.0f);
 	float summedPower = 0.0f;
 	int count = 0;
-	for (int x = -R; x <= R; x+=2) {
-		for (int z = -R; z <= R; z+=2) {
+	for (int z = -R; z <= R; z+=2) {
+		for (int x = -R; x <= R; x+=2) {
 			pos.x = x;
 			pos.z = z;
 			if (pos.Length2D() <= radius) {
@@ -71,8 +71,8 @@ void CThreatMap::update(int frame) {
 				power /= 100.0f; /* dgun gives overpowered dps */
 
 			int   R = (int) ceil(range);
-			for (int x = -R; x <= R; x++) {
-				for (int z = -R; z <= R; z++) {
+			for (int z = -R; z <= R; z++) {
+				for (int x = -R; x <= R; x++) {
 					pos.x = x;
 					pos.z = z;
 					if (pos.Length2D() <= range) {
@@ -91,8 +91,8 @@ void CThreatMap::update(int frame) {
 }
 
 void CThreatMap::draw() {
-	for (int x = 0; x < X; x++) {
-		for (int z = 0; z < Z; z++) {
+	for (int z = 0; z < Z; z++) {
+		for (int x = 0; x < X; x++) {
 			if (map[ID(x,z)] > 1.0f) {
 				float3 p0(x*REAL, 0.0f, z*REAL);
 				float3 p1(p0);
