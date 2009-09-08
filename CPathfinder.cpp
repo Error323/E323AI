@@ -125,8 +125,10 @@ void CPathfinder::updateMap(float *weights) {
 			node->w = weights[node->id] + sm[node->id]*1.1f;
 		}
 	}
+	/*
 	if (ai->cb->GetCurrentFrame() > 200)
 		drawMap(3);
+	*/
 }
 
 void CPathfinder::updateFollowers() {
