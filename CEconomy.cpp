@@ -137,7 +137,7 @@ void CEconomy::buildEprovider(CGroup &group) {
 		buildOrAssist(BUILD_EPROVIDER, fusion, group);
 	}
 	else {
-		if (rng.RandInt(2) == 1)
+		if (rng.RandInt(3) != 1)
 			buildOrAssist(BUILD_EPROVIDER, energyProvider, group);
 		else {
 			UnitType *solar = ai->unittable->canBuild(ut, LAND|EMAKER);
