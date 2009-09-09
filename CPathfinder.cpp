@@ -65,7 +65,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 		}
 	}
 
-	/* Define neighbours, yeah this is expensive */
+	/* Define neighbours closest neighbours */
+	const float r[] = {M_PI/2, M_PI/4, 0, 7*M_PI/4, 3*M_PI/2, 5*M_PI/4, M_PI, 3*M_PI/4};
 	std::map<int, std::vector<Node*> >::iterator j;
 	float maxdist = sqrt(I_MAP_RES*I_MAP_RES + I_MAP_RES*I_MAP_RES)+I_MAP_RES/2;
 	for (j = activeNodes.begin(); j != activeNodes.end(); j++) {
@@ -73,18 +74,48 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 		for (size_t k = 0; k < activeNodes[j->first].size(); k++) {
 			Node *parent = activeNodes[j->first][k];
 
-			for (size_t l = 0; l < activeNodes[j->first].size(); l++) {
-				Node *node = activeNodes[j->first][l];
-				if (parent == node)
-					continue;
+			/* Spiral outwards until closure is achieved */
+			float radius = 1.0f;
+			/* Closure is defined as the surrounding neighbours in sectors
+			 * {N,NE,E,SE,S,SW,W,NW} containing exactly one node 
+			 */
+			bool s[] = {false, false, false, false, false, false, false, false};
+			while (true) {
+				for (int z = -radius; z <= radius; z++) {
+					for (int x = -radius; x <= radius; x++) {
+						int zz = z + parent->z;
+						int xx = x + parent->x;
+						if (maps[j->first].find(ID(xx,zz)) == maps[j->first].end())
+							continue;
 
-				/* Determine if this node is a neighbour */
-				int dx = (parent->x - node->x);
-				int dz = (parent->z - node->z);
-				if (sqrt(dx*dx+dz*dz) <= maxdist)
-					parent->neighbours.push_back(node);
+						float dist = sqrt(x*x + z*z);
+						if (dist > radius+0.5f || dist < radius-0.5f)
+							continue;
+
+						float alpha = asin(z/dist);
+
+						int index = 0;
+						float min = r[7];
+						for (; index < 8; index++) {
+							float max = r[index];
+							if (alpha > min && alpha < max)
+								break;
+							min = max;
+						}
+
+						if (!s[index]) {
+							s[index] = true;
+							Node *neighbour = maps[j->first][ID(xx,zz)];
+							if (!neighbour->blocked())
+								parent->neighbours.push_back(neighbour);
+						}
+					}
+				}
+				if (s[0] && s[1] && s[2] && s[3] && s[4] && s[5] && s[6] && s[7])
+					break;
+
+				radius += 1.0f;
 			}
-			assert(parent->neighbours.size() <= 8);
 		}
 	}
 
