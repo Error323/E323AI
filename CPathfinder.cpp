@@ -50,11 +50,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 				}
 				/* Store the usefull nodes */
 				if ((x % I_MAP_RES == 0 && z % I_MAP_RES == 0) || node->blocked()) {
-					int id = (z/I_MAP_RES)*(X/I_MAP_RES)+(x/I_MAP_RES);
-					if (node->blocked())
-						maps[i->first][ID(x,z)] = node;
-					else
-						maps[i->first][id] = node;
+					maps[i->first][ID(x,z)] = node;
 
 					if (!node->blocked())
 						activeNodes[i->first].push_back(node);
@@ -65,56 +61,89 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 		}
 	}
 
+	/* Precalculate surrounding nodes */
+	float radius    = 0.0f;
+	while (radius < I_MAP_RES*HEIGHT2SLOPE+EPSILON) {
+		radius += float(I_MAP_RES/2);
+		for (int z = -radius; z <= radius; z++) {
+			for (int x = -radius; x <= radius; x++) {
+				if (x == 0 && z == 0) continue;
+				float length = sqrt(x*x + z*z);
+				if (length > radius-0.5f && length < radius+0.5f) {
+					surrounding.push_back(z);
+					surrounding.push_back(x);
+				}
+			}
+		}
+	}
+
+	/* Create the 8 quadrants a node can be in */
+	float r[9]; float angle = 22.5f;
+	for (int g = 0; g < 8; g++) {
+		r[g] = angle;
+		angle += 45.0f;
+	}
+	r[8] = -22.5f;
+
 	/* Define neighbours closest neighbours */
-	const float r[] = {M_PI/2, M_PI/4, 0, 7*M_PI/4, 3*M_PI/2, 5*M_PI/4, M_PI, 3*M_PI/4};
 	std::map<int, std::vector<Node*> >::iterator j;
-	float maxdist = sqrt(I_MAP_RES*I_MAP_RES + I_MAP_RES*I_MAP_RES)+I_MAP_RES/2;
 	for (j = activeNodes.begin(); j != activeNodes.end(); j++) {
 		LOG_II("MoveType(" << j->first << ") has " << activeNodes[j->first].size() << " active nodes")
 		for (size_t k = 0; k < activeNodes[j->first].size(); k++) {
 			Node *parent = activeNodes[j->first][k];
 
-			/* Spiral outwards until closure is achieved */
-			float radius = 1.0f;
-			/* Closure is defined as the surrounding neighbours in sectors
-			 * {N,NE,E,SE,S,SW,W,NW} containing exactly one node 
-			 */
 			bool s[] = {false, false, false, false, false, false, false, false};
-			while (true) {
-				for (int z = -radius; z <= radius; z++) {
-					for (int x = -radius; x <= radius; x++) {
-						int zz = z + parent->z;
-						int xx = x + parent->x;
-						if (maps[j->first].find(ID(xx,zz)) == maps[j->first].end())
-							continue;
+			for (size_t p = 0; p < surrounding.size(); p+=2) {
+				int z = surrounding[p];
+				int x = surrounding[p+1];
+				
+				int zz = z + parent->z;
+				int xx = x + parent->x;
 
-						float dist = sqrt(x*x + z*z);
-						if (dist > radius+0.5f || dist < radius-0.5f)
-							continue;
+				if (xx < 0)   {s[5] = s[6] = s[7] = true; continue;}
+				if (xx > X-1) {s[1] = s[2] = s[3] = true; continue;}
+				if (zz < 0)   {s[7] = s[0] = s[1] = true; continue;}
+				if (zz > Z-1) {s[5] = s[4] = s[3] = true; continue;}
 
-						float alpha = asin(z/dist);
+				if (maps[j->first].find(ID(xx,zz)) == maps[j->first].end())
+					continue;
 
-						int index = 0;
-						float min = r[7];
-						for (; index < 8; index++) {
-							float max = r[index];
-							if (alpha > min && alpha < max)
-								break;
-							min = max;
-						}
-
-						if (!s[index]) {
-							s[index] = true;
-							Node *neighbour = maps[j->first][ID(xx,zz)];
-							if (!neighbour->blocked())
-								parent->neighbours.push_back(neighbour);
-						}
-					}
+				float a;
+				if (x == 0) {
+					if (z >= 0)
+						a = 0.5f * M_PI;
+					else
+						a = 1.5f * M_PI;
 				}
-				if (s[0] && s[1] && s[2] && s[3] && s[4] && s[5] && s[6] && s[7])
-					break;
+				else if (x > 0) {
+					if (z < 0)
+						a = 2.0f * M_PI + atan(z/x);
+					else
+						a = atan(z/x);
+				}
+				else
+					a = M_PI + atan(z/x);
 
-				radius += 1.0f;
+				a = int((2.5 * M_PI - a) / M_PI * 180) % 360;
+
+				float min = r[8];
+				int index = 0;
+				for (; index < 8; index++) {
+					float max = r[index];
+					if (a > min && a < max)
+						break;
+					min = max;
+				}
+
+				if (!s[index]) {
+					s[index] = true;
+					Node *neighbour = maps[j->first][ID(xx,zz)];
+					if (!neighbour->blocked())
+						parent->neighbours.push_back(neighbour);
+				}
+				if (s[0] && s[1] && s[2] && s[3] && s[4] && s[5] && s[6] && s[7]) {
+					break;
+				}
 			}
 		}
 	}
@@ -156,10 +185,9 @@ void CPathfinder::updateMap(float *weights) {
 			node->w = weights[node->id] + sm[node->id]*1.1f;
 		}
 	}
-	/*
-	if (ai->cb->GetCurrentFrame() > 200)
-		drawMap(3);
-	*/
+	if (ai->cb->GetCurrentFrame() > 200) {
+		//drawGraph(3);
+	}
 }
 
 void CPathfinder::updateFollowers() {
@@ -376,6 +404,23 @@ void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	Node *n = dynamic_cast<Node*>(an);
 	for (size_t u = 0; u < n->neighbours.size(); u++)
 		succ.push(n->neighbours[u]);
+}
+
+void CPathfinder::drawGraph(int map) {
+	for (size_t i = 0; i < activeNodes[map].size(); i++) {
+		Node *p = activeNodes[map][i]; 
+		if (p->x % 8 == 0 && p->z % 8 == 0) {
+			float3 fp = p->toFloat3();
+			fp.y = ai->cb->GetElevation(fp.x, fp.z) + 20.0f;
+			for (size_t j = 0; j < p->neighbours.size(); j++) {
+				Node *n = p->neighbours[j];
+				float3 fn = n->toFloat3();
+				fn.y = ai->cb->GetElevation(fn.x, fn.z) + 20.0f;
+				ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, 30*9, 10);
+				ai->cb->SetFigureColor(10, 0.0f, 0.0f, 1.0f, 0.5f);
+			}
+		}
+	}
 }
 
 void CPathfinder::drawMap(int map) {

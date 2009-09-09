@@ -84,6 +84,9 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* The threads */
 		std::vector<boost::thread*> threads;
 
+		/* Surrounding nodes */
+		std::vector<int> surrounding;
+
 		/* Number of threads */
 		size_t nrThreads;
 
@@ -121,6 +124,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius = EPSILON);
 		/* Draw the map */
 		void drawMap(int map);
+		void drawGraph(int map);
 
 		const float *sm;
 		const float *hm;
