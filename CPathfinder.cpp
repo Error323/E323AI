@@ -56,9 +56,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 						activeNodes[i->first].push_back(node);
 				}
 				/* Delete the others */
-				/*
 				else { delete node; }
-				*/
 			}
 		}
 	}
@@ -153,8 +151,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	draw = false;
 
 	this->REAL = HEIGHT2REAL*HEIGHT2SLOPE;
-	LOG_II("CPathfinder::CPathfinder Heightmap " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
-	LOG_II("CPathfinder::CPathfinder Pathmap   " << X/I_MAP_RES << "x" << Z/I_MAP_RES)
+	LOG_II("CPathfinder::CPathfinder Heightmap dimensions " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
+	LOG_II("CPathfinder::CPathfinder Pathmap dimensions   " << X/I_MAP_RES << "x" << Z/I_MAP_RES)
 
 	#if (BOOST_VERSION >= 103500)
 	nrThreads = boost::thread::hardware_concurrency();
@@ -468,14 +466,4 @@ void CPathfinder::drawMap(int map) {
 			ai->cb->SetFigureColor(20, 1.0f, 1.0f, 1.0f, 0.1f);
 		}
 	}
-}
-
-float CPathfinder::gauss(float x, float sigma, float mu) {
-	float a = 1.0f / (sigma * sqrt(2*M_PI));
-	float b = exp( -( pow(x-mu, 2) / (2*(pow(sigma,2))) ) );
-	return a * b;
-}
-
-inline int CPathfinder::idx(int x, int z) {
-	return z*X+x;
 }

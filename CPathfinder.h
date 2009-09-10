@@ -130,10 +130,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 		const float *sm;
 		const float *hm;
-
-		float gauss(float x, float sigma = 1.0f, float mu = 0.0f);
-
-		inline int idx(int x, int z);
 };
 
 #endif
