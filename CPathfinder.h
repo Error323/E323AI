@@ -111,6 +111,8 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* overload */
 		void successors(ANode *an, std::queue<ANode*> &succ);
 
+		int getClosestNodeId(float3 &f);
+
 		/* overload */
 		float heuristic(ANode *an1, ANode *an2);
 

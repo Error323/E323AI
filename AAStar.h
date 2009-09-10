@@ -54,8 +54,6 @@ class AAStar {
 		};
 
 		bool findPath(std::list<ANode*> &path);
-		ANode* start;
-		ANode* goal;
 
 	protected:
 		void init();
@@ -63,6 +61,7 @@ class AAStar {
 
 		virtual void successors(ANode *n, std::queue<ANode*> &succ) = 0;
 		virtual float heuristic(ANode *n1, ANode *n2) = 0;
+		ANode *start, *goal;
 
 	private:
 		/* priority queue of the open list */

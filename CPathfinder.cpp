@@ -56,7 +56,9 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 						activeNodes[i->first].push_back(node);
 				}
 				/* Delete the others */
+				/*
 				else { delete node; }
+				*/
 			}
 		}
 	}
@@ -64,7 +66,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	/* Precalculate surrounding nodes */
 	float radius    = 0.0f;
 	while (radius < I_MAP_RES*HEIGHT2SLOPE+EPSILON) {
-		radius += float(I_MAP_RES/2);
+		radius += 1.0f;
 		for (int z = -radius; z <= radius; z++) {
 			for (int x = -radius; x <= radius; x++) {
 				if (x == 0 && z == 0) continue;
@@ -88,7 +90,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	/* Define neighbours closest neighbours */
 	std::map<int, std::vector<Node*> >::iterator j;
 	for (j = activeNodes.begin(); j != activeNodes.end(); j++) {
-		LOG_II("MoveType(" << j->first << ") has " << activeNodes[j->first].size() << " active nodes")
+		LOG_II("CPathfinder::CPathfinder MoveType(" << j->first << ") has " << activeNodes[j->first].size() << " active nodes")
 		for (size_t k = 0; k < activeNodes[j->first].size(); k++) {
 			Node *parent = activeNodes[j->first][k];
 
@@ -150,10 +152,9 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 
 	draw = false;
 
-	this->REAL = I_MAP_RES*HEIGHT2REAL*HEIGHT2SLOPE;
-	X /= I_MAP_RES; Z /= I_MAP_RES;
-	LOG_II("Heightmap " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
-	LOG_II("Pathmap   " << X << "x" << Z)
+	this->REAL = HEIGHT2REAL*HEIGHT2SLOPE;
+	LOG_II("CPathfinder::CPathfinder Heightmap " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
+	LOG_II("CPathfinder::CPathfinder Pathmap   " << X/I_MAP_RES << "x" << Z/I_MAP_RES)
 
 	#if (BOOST_VERSION >= 103500)
 	nrThreads = boost::thread::hardware_concurrency();
@@ -342,20 +343,45 @@ bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 	return success;
 }
 
+int CPathfinder::getClosestNodeId(float3 &f) {
+	int fz = int(round(f.z/REAL));
+	int fx = int(round(f.x/REAL));
+	if (maps[activeMap].find(ID(fx,fz)) != maps[activeMap].end()) {
+		Node *n = maps[activeMap][ID(fx,fz)];
+		if (!n->blocked()) {
+			float3 f = n->toFloat3();
+			return ID(fx, fz);
+		}
+	}
+
+	for (size_t i = 0; i < surrounding.size(); i+=2) {
+		int z = fz + surrounding[i];
+		int x = fx + surrounding[i+1];
+		if (maps[activeMap].find(ID(x,z)) != maps[activeMap].end()) {
+			Node *n = maps[activeMap][ID(x,z)];
+			if (!n->blocked()) {
+				float3 f = n->toFloat3();
+				return ID(x, z);
+			}
+		}
+	}
+
+	LOG_EE("CPathfinder::getClosestNode failed to lock node")
+	return -1;
+}
+
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius) {
-	/* If exceeding, snap to boundaries */
-	int sx  = int(round(s.x/REAL));
-	int sz  = int(round(s.z/REAL));
-	int gx  = int(round(g.x/REAL));
-	int gz  = int(round(g.z/REAL));
-	LOG_II("CPathfinder::getPath start("<<s.x<<","<<","<<s.y<<","<<s.z<<") goal("<<g.x<<","<<","<<g.y<<","<<g.z<<")")
-	start   = maps[activeMap][ID(sx, sz)];
-	goal    = maps[activeMap][ID(gx, gz)];
+
+	int sid = getClosestNodeId(s);
+	start = maps[activeMap][sid];
+
+	int gid = getClosestNodeId(g);
+	goal = maps[activeMap][gid];
 
 	std::list<ANode*> nodepath;
-	bool success = (start != NULL && goal != NULL && findPath(nodepath));
+	bool success = (sid != -1 && gid != -1 && (findPath(nodepath)));
 	if (success) {
-		/* Insert a pre-waypoint at the beginning of the path */
+		/* Insert a pre-waypoint at the startning of the path */
 		int waypoint = std::min<int>(3, nodepath.size()-1);
 		std::list<ANode*>::iterator wp;
 		int x = 0;
@@ -386,7 +412,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 		}
 	}
 	else {
-		LOG_EE("CPathfinder::getPath pathing failed for " << (*groups[group]))
+		LOG_EE("CPathfinder::getPath failed for " << (*groups[group]) << " sid " << sid << " gid " << gid << " start("<<s.x<<","<<s.z<<") goal("<<g.x<<","<<g.z<<")")
 	}
 
 	return success;
@@ -409,6 +435,7 @@ void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 void CPathfinder::drawGraph(int map) {
 	for (size_t i = 0; i < activeNodes[map].size(); i++) {
 		Node *p = activeNodes[map][i]; 
+		if (p->x < X/6 || p->x > (X/6)*3 || p->z > Z/2) continue;
 		if (p->x % 8 == 0 && p->z % 8 == 0) {
 			float3 fp = p->toFloat3();
 			fp.y = ai->cb->GetElevation(fp.x, fp.z) + 20.0f;
