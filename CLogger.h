@@ -11,7 +11,7 @@ class AIClasses;
 
 class CLogger {
 	public:
-		enum type{LOG_FILE = (1<<0), LOG_SCREEN = (1<<1)};
+		enum type{LOG_FILE = (1<<0), LOG_SCREEN = (1<<1), LOG_SPRING = (1<<2)};
 
 		CLogger(AIClasses *_ai, unsigned lt);
 		~CLogger(){}
