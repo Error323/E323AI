@@ -138,6 +138,10 @@ void CMilitary::prepareTargets(std::vector<int> &targets) {
 			continue;
 
 		targets.push_back(target);
+
+		/* Go easy on the cpu */
+		if (targets.size() > activeAttackGroups.size()+1)
+			break;
 	}
 }
 
@@ -186,11 +190,8 @@ void CMilitary::update(int frame) {
 			if (k->second->key == group->key)
 				isCurrent = true;
 
+		/* Select a target */
 		float3 pos = group->pos();
-		/* Not strong enough */
-		if (isCurrent && group->strength < ai->threatmap->getThreat(pos, group->range))
-			continue;
-
 		int target = selectTarget(pos, targets);
 
 		/* There are no targets available, assist an attack */
@@ -206,7 +207,12 @@ void CMilitary::update(int frame) {
 			}
 			break;
 		}
-		
+
+		/* Not strong enough */
+		float3 targetpos = ai->cbc->GetUnitPos(target);
+		if (isCurrent && group->strength < ai->threatmap->getThreat(targetpos, group->range))
+			continue;
+
 		ai->tasks->addAttackTask(target, *group);
 		break;
 	}

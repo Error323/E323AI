@@ -2,6 +2,7 @@
 
 #include "CAI.h"
 #include "CUnitTable.h"
+#include "CIntel.h"
 
 CThreatMap::CThreatMap(AIClasses *ai) {
 	this->ai = ai;
@@ -30,21 +31,16 @@ float CThreatMap::getThreat(float3 &pos) {
 }
 
 float CThreatMap::getThreat(float3 &center, float radius) {
-	int R = (int) ceil(radius);
-	float3 pos(0.0f, 0.0f, 0.0f);
-	float summedPower = 0.0f;
-	for (int z = -R; z <= R; z+=2) {
-		for (int x = -R; x <= R; x+=2) {
-			pos.x = x;
-			pos.z = z;
-			if (pos.Length2D() <= radius) {
-				pos.x += center.x;
-				pos.z += center.z;
-				summedPower += getThreat(pos);
-			}
+	float power = 0.0f;
+	for (size_t i = 0; i < ai->intel->attackers.size(); i++) {
+		int enemy = ai->intel->attackers[i];
+		float3 pos = ai->cbc->GetUnitPos(enemy);
+		if ((pos - center).Length2D() < radius) {
+			power += ai->cbc->GetUnitPower(enemy);
 		}
 	}
-	return summedPower;
+
+	return power;
 }
 
 void CThreatMap::update(int frame) {
