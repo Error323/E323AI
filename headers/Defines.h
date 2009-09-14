@@ -42,6 +42,10 @@
 #define I_MAP_RES 4 /* Inverse map resolution (must be even) */
 #define HEIGHT2SLOPE 2
 
+/* Group vars */
+#define MAX_GROUP_SIZE 10
+#define GROUP_VAR 3
+
 /* Unit categories */
 enum unitCategory {
 	TECH1        = (1<<0),

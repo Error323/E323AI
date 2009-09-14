@@ -124,10 +124,10 @@ void CMilitary::prepareTargets(std::vector<int> &targets) {
 	all.insert(all.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
 	all.insert(all.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
 
-	for (unsigned i = 0; i < all.size(); i++) {
+	for (size_t i = 0; i < all.size(); i++) {
 		int target = all[i];
 		bool isOccupied = false;
-		for (unsigned j = 0; j < occupiedTargets.size(); j++) {
+		for (size_t j = 0; j < occupiedTargets.size(); j++) {
 			if (target == occupiedTargets[j]) {
 				isOccupied = true;
 				break;
@@ -138,12 +138,12 @@ void CMilitary::prepareTargets(std::vector<int> &targets) {
 			continue;
 
 		targets.push_back(target);
-		if (targets.size() >= activeAttackGroups.size())
-			break;
 	}
 }
 
-void CMilitary::update(int groupsize) {
+void CMilitary::update(int gs) {
+	int range = std::min<int>(MAX_GROUP_SIZE, gs)-GROUP_VAR;
+	int groupsize = rng.RandInt(range) + GROUP_VAR + 1;
 	std::vector<int> targets;
 	prepareTargets(targets);
 

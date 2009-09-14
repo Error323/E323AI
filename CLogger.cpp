@@ -67,7 +67,7 @@ void CLogger::log(logLevel level, std::string &msg) {
 		std::cout << output;
 	}
 
-	if ((logType & CLogger::LOG_SCREEN) && level == ERROR) {
+	if ((logType & CLogger::LOG_SPRING) && level == ERROR) {
 		ai->cb->SendTextMsg(msg.c_str(), 0);
 	}
 }
