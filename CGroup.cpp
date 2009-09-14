@@ -22,7 +22,7 @@ void CGroup::addUnit(CUnit &unit) {
 		
 	strength   += ai->cb->GetUnitPower(unit.key);
 	buildSpeed += unit.def->buildSpeed;
-	range = std::max<float>(ai->cb->GetUnitMaxRange(unit.key)*0.9f, range);
+	range = std::max<float>(ai->cb->GetUnitMaxRange(unit.key)*0.8f, range);
 	buildRange = std::max<float>(unit.def->buildDistance*1.5f, buildRange);
 	speed = std::min<float>(ai->cb->GetUnitSpeed(unit.key), speed);
 

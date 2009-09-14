@@ -95,7 +95,7 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets) {
 
 		float3 epos = ai->cbc->GetUnitPos(target);
 		float dist = (epos-ourPos).Length2D();
-		dist *= (ai->threatmap->getThreat(epos, 300.0f)+1);
+		dist *= ai->threatmap->getThreat(epos);
 		candidates.insert(std::pair<float,int>(dist, target));
 	}
 
@@ -138,10 +138,6 @@ void CMilitary::prepareTargets(std::vector<int> &targets) {
 			continue;
 
 		targets.push_back(target);
-
-		/* Go easy on the cpu */
-		if (targets.size() > activeAttackGroups.size()+1)
-			break;
 	}
 }
 
@@ -210,7 +206,7 @@ void CMilitary::update(int frame) {
 
 		/* Not strong enough */
 		float3 targetpos = ai->cbc->GetUnitPos(target);
-		if (isCurrent && group->strength < ai->threatmap->getThreat(targetpos, group->range))
+		if (isCurrent && group->strength < ai->threatmap->getThreat(targetpos))
 			continue;
 
 		ai->tasks->addAttackTask(target, *group);

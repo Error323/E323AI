@@ -21,21 +21,14 @@ CThreatMap::~CThreatMap() {
 	delete[] units;
 }
 
-float CThreatMap::getThreat(float3 &pos) {
-	int x = (int) pos.x/REAL;
-	int z = (int) pos.z/REAL;
-	if (x >= 0 && x < X && z >= 0 && z < Z)
-		return map[ID(x,z)];
-	else
-		return 0.0f;
-}
-
-float CThreatMap::getThreat(float3 &center, float radius) {
+float CThreatMap::getThreat(float3 &center) {
 	float power = 0.0f;
 	for (size_t i = 0; i < ai->intel->attackers.size(); i++) {
 		int enemy = ai->intel->attackers[i];
 		float3 pos = ai->cbc->GetUnitPos(enemy);
-		if ((pos - center).Length2D() < radius) {
+		const UnitDef *ud = ai->cbc->GetUnitDef(enemy);
+		float range = ud->maxWeaponRange*1.2f;
+		if ((pos - center).Length2D() < range) {
 			power += ai->cbc->GetUnitPower(enemy);
 		}
 	}
