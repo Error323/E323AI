@@ -45,9 +45,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 				}
 		};
 
-		/* Update the map weights */
-		void updateMap(float* weights);
-
 		/* Update groups following paths */
 		void updateFollowers();
 

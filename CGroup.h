@@ -58,9 +58,6 @@ class CGroup: public ARegistrar {
 		/* Reset for object re-usage */
 		void reset();
 
-		/* The waiters <id,iswaiting> */
-		std::map<int, bool> waiters;
-
 		/* The units <id, CUnit*> */
 		std::map<int, CUnit*> units;
 
@@ -83,6 +80,7 @@ class CGroup: public ARegistrar {
 		void move(float3 &pos, bool enqueue = false);
 		void guard(int target, bool enqueue = false);
 		void wait();
+		void unwait();
 
 		/* Get the maximal lateral dispersion */
 		int maxLength();

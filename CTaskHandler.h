@@ -96,9 +96,6 @@ class CTaskHandler: public ARegistrar {
 
 			CUnit *factory;
 
-			/* Let the factorytask wait */
-			bool wait;
-
 			/* set the factorytask to wait including assisters */
 			void setWait(bool wait);
 

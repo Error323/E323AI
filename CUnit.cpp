@@ -26,6 +26,7 @@ void CUnit::reset(int uid, int bid) {
 	this->def     = ai->cb->GetUnitDef(uid);
 	this->type    = UT(def->id);
 	this->builder = bid;
+	this->waiting = false;
 }
 
 int CUnit::queueSize() {
@@ -165,10 +166,23 @@ bool CUnit::stop() {
 }
 
 bool CUnit::wait() {
-	Command c;
-	c.id = CMD_WAIT;
-	ai->cb->GiveOrder(key, &c);
-	return true;
+	if (!waiting) {
+		Command c;
+		c.id = CMD_WAIT;
+		ai->cb->GiveOrder(key, &c);
+		waiting = true;
+	}
+	return waiting;
+}
+
+bool CUnit::unwait() {
+	if (waiting) {
+		Command c;
+		c.id = CMD_WAIT;
+		ai->cb->GiveOrder(key, &c);
+		waiting = false;
+	}
+	return waiting;
 }
 
 /* From KAIK */

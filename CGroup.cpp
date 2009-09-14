@@ -26,7 +26,6 @@ void CGroup::addUnit(CUnit &unit) {
 	buildRange = std::max<float>(unit.def->buildDistance*1.5f, buildRange);
 	speed = std::min<float>(ai->cb->GetUnitSpeed(unit.key), speed);
 
-	waiters[unit.key] = false;
 	units[unit.key]   = &unit;
 	unit.reg(*this);
 }
@@ -45,7 +44,6 @@ void CGroup::remove() {
 
 void CGroup::remove(ARegistrar &unit) {
 	LOG_II("CGroup::remove unit(" << unit.key << ")")
-	waiters.erase(unit.key);
 	units.erase(unit.key);
 
 	strength = buildSpeed = 0.0f;
@@ -94,7 +92,6 @@ void CGroup::reset() {
 	busy       = false;
 	maxSlope   = 1.0f;
 	units.clear();
-	waiters.clear();
 }
 
 void CGroup::merge(CGroup &group) {
@@ -159,6 +156,12 @@ void CGroup::wait() {
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++)
 		i->second->wait();
+}
+
+void CGroup::unwait() {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++)
+		i->second->unwait();
 }
 
 void CGroup::attack(int target) {

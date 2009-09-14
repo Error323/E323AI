@@ -9,6 +9,7 @@
 #include "CGroup.h"
 #include "CUnit.h"
 #include "CUnitTable.h"
+#include "CThreatMap.h"
 
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	this->ai   = ai;
@@ -165,8 +166,11 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 void CPathfinder::resetMap(int thread) {
 	int size = activeNodes[activeMap].size() / nrThreads;
 	int offset = size*thread;
-	for (unsigned i = 0; i < size; i++)
-		activeNodes[activeMap][i+offset]->reset();
+	for (unsigned i = 0; i < size; i++) {
+		Node *n = activeNodes[activeMap][i+offset];
+		n->w = ai->threatmap->map[n->id] + sm[n->id]*5.0f;
+		n->reset();
+	}
 }
 
 void CPathfinder::remove(ARegistrar &obj) {
@@ -174,19 +178,6 @@ void CPathfinder::remove(ARegistrar &obj) {
 	LOG_II("CPathfinder::remove " << (*task))
 	paths.erase(task->group->key);
 	groups.erase(task->group->key);
-}
-
-void CPathfinder::updateMap(float *weights) {
-	std::map<int, std::vector<Node*> >::iterator i;
-	for (i = activeNodes.begin(); i != activeNodes.end(); i++) {
-		for (size_t j = 0; j < activeNodes[i->first].size(); j++) {
-			Node *node = activeNodes[i->first][j];
-			node->w = weights[node->id] + sm[node->id]*1.1f;
-		}
-	}
-	if (ai->cb->GetCurrentFrame() > 200) {
-		//drawGraph(3);
-	}
 }
 
 void CPathfinder::updateFollowers() {
@@ -204,10 +195,7 @@ void CPathfinder::updateFollowers() {
 		/* Go through all the units in a group */
 		for (u = group->units.begin(); u != group->units.end(); u++) {
 			CUnit *unit = u->second;
-			if (group->waiters[unit->key]) {
-				unit->wait();
-				group->waiters[unit->key] = false;
-			}
+			unit->unwait();
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
 			float length = 0.0f;
 			int s1 = 0, s2 = 1;
@@ -267,10 +255,7 @@ void CPathfinder::updateFollowers() {
 			for (std::map<float,CUnit*>::iterator i = --M.end(); i != M.begin(); i--) {
 				CUnit *unit = i->second;
 				if (i->first - rearval > maxGroupLength) {
-					if (!group->waiters[unit->key]) {
-						unit->wait();
-						group->waiters[unit->key] = true;
-					}
+					unit->wait();
 				}
 			}
 		}

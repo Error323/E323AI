@@ -75,6 +75,11 @@ class CUnit: public ARegistrar {
 		/* Wait with what you are doing */
 		bool wait();
 
+		/* Undo wait command */
+		bool unwait();
+
+		bool waiting;
+
 		float3 pos();
 
 		/* Get best facing */

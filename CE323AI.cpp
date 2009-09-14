@@ -192,7 +192,7 @@ void CE323AI::Update() {
 	int groupsize = (frame / (30*60*2))+1;
 
 	/* Rotate through the different update events to distribute computations */
-	switch(frame % 9) {
+	switch(frame % 8) {
 		case 0: { /* update incomes */
 			CScopedTimer t(std::string("eco-incomes"));
 			ai->economy->updateIncomes();
@@ -205,43 +205,37 @@ void CE323AI::Update() {
 		}
 		break;
 
-		case 2: { /* update pathfinder with threatmap */
-			CScopedTimer t(std::string("pf-map"));
-			ai->pathfinder->updateMap(ai->threatmap->map);
-		}
-		break;
-
-		case 3: { /* update the path itself of a group */
+		case 2: { /* update the path itself of a group */
 			CScopedTimer t(std::string("pf-grouppath"));
 			ai->pathfinder->updatePaths();
 		}
 		break;
 
-		case 4: { /* update the groups following a path */
+		case 3: { /* update the groups following a path */
 			CScopedTimer t(std::string("pf-followers"));
 			ai->pathfinder->updateFollowers();
 		}
 		break;
 
-		case 5: { /* update enemy intel */
+		case 4: { /* update enemy intel */
 			CScopedTimer t(std::string("intel"));
 			ai->intel->update(frame);
 		}
 		break;
 
-		case 6: { /* update military */
+		case 5: { /* update military */
 			CScopedTimer t(std::string("military"));
 			ai->military->update(groupsize);
 		}
 		break;
 
-		case 7: { /* update economy */
+		case 6: { /* update economy */
 			CScopedTimer t(std::string("eco-update"));
 			ai->economy->update(frame);
 		}
 		break;
 
-		case 8: { /* update taskhandler */
+		case 7: { /* update taskhandler */
 			CScopedTimer t(std::string("tasks"));
 			ai->tasks->update();
 		}

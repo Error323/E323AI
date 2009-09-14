@@ -298,7 +298,6 @@ void CTaskHandler::FactoryTask::reset(CUnit &unit) {
 	pos = unit.pos();
 	factory = &unit;
 	unit.reg(*this);
-	wait = false;
 }
 
 bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
@@ -336,14 +335,22 @@ void CTaskHandler::FactoryTask::update() {
 }
 
 void CTaskHandler::FactoryTask::setWait(bool on) {
-	if (on == wait) return;
-	factory->wait();
-	std::list<ATask*>::iterator i;
-	for (i = assisters.begin(); i != assisters.end(); i++) {
-		if ((*i)->isMoving) continue;
-		(*i)->group->wait();
+	if (on) {
+		factory->wait();
+		std::list<ATask*>::iterator i;
+		for (i = assisters.begin(); i != assisters.end(); i++) {
+			if ((*i)->isMoving) continue;
+			(*i)->group->wait();
+		}
 	}
-	wait = on;
+	else {
+		factory->unwait();
+		std::list<ATask*>::iterator i;
+		for (i = assisters.begin(); i != assisters.end(); i++) {
+			if ((*i)->isMoving) continue;
+			(*i)->group->unwait();
+		}
+	}
 }
 
 /**************************************************************/
