@@ -141,9 +141,7 @@ void CMilitary::prepareTargets(std::vector<int> &targets) {
 	}
 }
 
-void CMilitary::update(int gs) {
-	int range = std::min<int>(MAX_GROUP_SIZE, gs)-GROUP_VAR;
-	int groupsize = rng.RandInt(range) + GROUP_VAR + 1;
+void CMilitary::update(int frame) {
 	std::vector<int> targets;
 	prepareTargets(targets);
 
@@ -182,19 +180,17 @@ void CMilitary::update(int gs) {
 		if (group->busy)
 			continue;
 
-		/* Not strong enough */
-		if (group->units.size() < groupsize) 
-		{
-			bool isCurrent = false;
-			for (k = currentGroups.begin(); k != currentGroups.end(); k++)
-				if (k->second->key == group->key)
-					isCurrent = true;
-
-			if (isCurrent)
-				continue;
-		}
+		/* Determine if this group is the current group */
+		bool isCurrent = false;
+		for (k = currentGroups.begin(); k != currentGroups.end(); k++)
+			if (k->second->key == group->key)
+				isCurrent = true;
 
 		float3 pos = group->pos();
+		/* Not strong enough */
+		if (isCurrent && group->strength < ai->threatmap->getThreat(pos, group->range))
+			continue;
+
 		int target = selectTarget(pos, targets);
 
 		/* There are no targets available, assist an attack */

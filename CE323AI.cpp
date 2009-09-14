@@ -186,10 +186,9 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 /* Update AI per logical frame = 1/30 sec on gamespeed 1.0 */
 void CE323AI::Update() {
 	int frame = ai->cb->GetCurrentFrame()+ai->team;
-	/* Don't act before the 100th frame, messed up eco stuff :P */
-	if (frame < 100) return;
 
-	int groupsize = (frame / (30*60*2))+1;
+	/* Don't act before the 100th frame, messed up eco stuff -_- */
+	if (frame < 100) return;
 
 	/* Rotate through the different update events to distribute computations */
 	switch(frame % 8) {
@@ -225,7 +224,7 @@ void CE323AI::Update() {
 
 		case 5: { /* update military */
 			CScopedTimer t(std::string("military"));
-			ai->military->update(groupsize);
+			ai->military->update(frame);
 		}
 		break;
 

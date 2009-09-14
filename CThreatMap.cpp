@@ -33,7 +33,6 @@ float CThreatMap::getThreat(float3 &center, float radius) {
 	int R = (int) ceil(radius);
 	float3 pos(0.0f, 0.0f, 0.0f);
 	float summedPower = 0.0f;
-	int count = 0;
 	for (int z = -R; z <= R; z+=2) {
 		for (int x = -R; x <= R; x+=2) {
 			pos.x = x;
@@ -42,11 +41,10 @@ float CThreatMap::getThreat(float3 &center, float radius) {
 				pos.x += center.x;
 				pos.z += center.z;
 				summedPower += getThreat(pos);
-				count++;
 			}
 		}
 	}
-	return summedPower/count;
+	return summedPower;
 }
 
 void CThreatMap::update(int frame) {

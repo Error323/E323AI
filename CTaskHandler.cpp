@@ -322,6 +322,7 @@ void CTaskHandler::addFactoryTask(CUnit &factory) {
 	FactoryTask *factoryTask = dynamic_cast<FactoryTask*>(task);
 	factoryTask->reset(factory);
 	activeFactoryTasks[task->key] = factoryTask;
+	factory.reg(*task);
 	LOG_II((*factoryTask))
 }
 
