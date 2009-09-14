@@ -22,7 +22,7 @@ void ATask::remove() {
 	LOG_II("ATask::remove " << (*this))
 	group->unreg(*this);
 	group->busy = false;
-	group->stop();
+	group->unwait();
 
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
@@ -367,7 +367,7 @@ void CTaskHandler::AssistTask::remove() {
 	LOG_II("CGroup::remove " << (*this))
 	group->unreg(*this);
 	group->busy = false;
-	group->stop();
+	group->unwait();
 
 	assist->assisters.remove(this);
 	

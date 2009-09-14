@@ -80,7 +80,7 @@ void CThreatMap::update(int frame) {
 void CThreatMap::draw() {
 	for (int z = 0; z < Z; z++) {
 		for (int x = 0; x < X; x++) {
-			if (map[ID(x,z)] > 1.0f) {
+			if (map[ID(x,z)] > 1.0f+EPSILON) {
 				float3 p0(x*REAL, 0.0f, z*REAL);
 				float3 p1(p0);
 				p1.y += map[ID(x,z)]/totalPower;
