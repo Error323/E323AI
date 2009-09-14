@@ -16,10 +16,9 @@ struct RNG {
 		range = (range < 0.0f)? -range: range;
 		return ((rand() / FRAND_MAX) * range);
 	}
-	/* random int in range [0, range] */
+	/* random int in range [0, (-)range] */
 	/* (rand() can return RAND_MAX) */
 	int RandInt(int range = 1) const {
-		range = (range < 0)? -range: range;
 		return int((rand() / FRAND_MAX) * range);
 	}
 };
