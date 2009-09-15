@@ -25,6 +25,10 @@ float CThreatMap::getThreat(float3 &center) {
 	float power = 0.0f;
 	for (size_t i = 0; i < ai->intel->attackers.size(); i++) {
 		int enemy = ai->intel->attackers[i];
+		float health = ai->cbc->GetUnitHealth(enemy);
+		if (health <= 0.0f) 
+			continue;
+
 		float3 pos = ai->cbc->GetUnitPos(enemy);
 		const UnitDef *ud = ai->cbc->GetUnitDef(enemy);
 		float range = ud->maxWeaponRange*1.2f;

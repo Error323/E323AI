@@ -35,6 +35,13 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 				Node *node = new Node(ID(x,z), x, z, 1.0f);
 				int j = ID(x,z);
 
+				/* Block edges */
+				if (z == 0 || z == Z-1 || x == 0 || x == X-1) {
+					node->setType(BLOCKED);
+					maps[i->first][ID(x,z)] = node;
+					continue;
+				}
+
 				/* Block too steep slopes */
 				if (sm[j] > md->maxSlope) {
 					node->setType(BLOCKED);
@@ -331,7 +338,7 @@ int CPathfinder::getClosestNodeId(float3 &f) {
 	int fx = int(round(f.x/REAL));
 	if (maps[activeMap].find(ID(fx,fz)) != maps[activeMap].end()) {
 		Node *n = maps[activeMap][ID(fx,fz)];
-		if (!n->blocked()) {
+		if (n != NULL && !n->blocked()) {
 			float3 f = n->toFloat3();
 			return ID(fx, fz);
 		}
@@ -342,7 +349,7 @@ int CPathfinder::getClosestNodeId(float3 &f) {
 		int x = fx + surrounding[i+1];
 		if (maps[activeMap].find(ID(x,z)) != maps[activeMap].end()) {
 			Node *n = maps[activeMap][ID(x,z)];
-			if (!n->blocked()) {
+			if (!n == NULL && !n->blocked()) {
 				float3 f = n->toFloat3();
 				return ID(x, z);
 			}

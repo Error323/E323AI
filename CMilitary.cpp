@@ -206,8 +206,11 @@ void CMilitary::update(int frame) {
 
 		/* Not strong enough */
 		float3 targetpos = ai->cbc->GetUnitPos(target);
-		if (isCurrent && group->strength < ai->threatmap->getThreat(targetpos))
-			continue;
+		if (
+			isCurrent && 
+			(group->strength < ai->threatmap->getThreat(targetpos) || 
+			group->units.size() < GROUP_SIZE)
+		) continue;
 
 		ai->tasks->addAttackTask(target, *group);
 		break;

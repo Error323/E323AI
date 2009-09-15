@@ -43,8 +43,7 @@
 #define HEIGHT2SLOPE 2
 
 /* Group vars */
-#define MAX_GROUP_SIZE 10
-#define GROUP_VAR 3
+#define GROUP_SIZE 3
 
 /* Unit categories */
 enum unitCategory {
