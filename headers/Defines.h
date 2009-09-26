@@ -15,13 +15,15 @@
 #define AI_VERSION_NR  aiexport_getVersion()
 #define AI_VERSION     std::string("E323AI ") + AI_VERSION_NR + " - Ultralisk"
 #define AI_CREDITS     "Error323 - folkerthuizinga@gmail.com"
-#define AI_NOTES	   "This A.I. mainly focusses on the XTA and BA mods"
+#define AI_NOTES       "This A.I. mainly focusses on the XTA and BA mods"
 
 /* Folders */
-#define LOG_FOLDER  "logs/"
-#define CFG_FOLDER  "configs/"
-#define LOG_PATH    std::string(aiexport_getDataDir(true)) + LOG_FOLDER
-#define CFG_PATH    std::string(aiexport_getDataDir(true)) + CFG_FOLDER
+#define LOG_FOLDER   "logs/"
+#define CFG_FOLDER   "configs/"
+#define CACHE_FOLDER "cache/"
+#define LOG_PATH     std::string(aiexport_getDataDir(true)) + LOG_FOLDER
+#define CFG_PATH     std::string(aiexport_getDataDir(true)) + CFG_FOLDER
+#define CACHE_PATH   std::string(aiexport_getDataDir(true)) + CACHE_FOLDER
 
 /* Logger */
 #define LOGS(x)    (ai->cb->SendTextMsg(x, 0))

@@ -349,7 +349,7 @@ int CPathfinder::getClosestNodeId(float3 &f) {
 		int x = fx + surrounding[i+1];
 		if (maps[activeMap].find(ID(x,z)) != maps[activeMap].end()) {
 			Node *n = maps[activeMap][ID(x,z)];
-			if (!n == NULL && !n->blocked()) {
+			if (n != NULL && !n->blocked()) {
 				float3 f = n->toFloat3();
 				return ID(x, z);
 			}
