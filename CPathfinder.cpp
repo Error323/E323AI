@@ -162,11 +162,14 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	LOG_II("CPathfinder::CPathfinder Heightmap dimensions " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
 	LOG_II("CPathfinder::CPathfinder Pathmap dimensions   " << X/I_MAP_RES << "x" << Z/I_MAP_RES)
 
+/*
 	#if (BOOST_VERSION >= 103500)
 	nrThreads = boost::thread::hardware_concurrency();
 	#else
 	nrThreads = 2;
 	#endif
+*/
+	nrThreads = 1;
 	threads.resize(nrThreads-1);
 }
 
@@ -307,21 +310,27 @@ bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 	activeMap = groups[group]->moveType;
 	std::vector<float3> path;
 	/* Initialize threads */
+	/*
 	for (size_t i = 1; i < nrThreads; i++)
 		threads[i-1] = new boost::thread(boost::bind(&CPathfinder::resetMap, this, i));
+	*/
 
 	/* Reset the nodes of this map using threads */
 	resetMap(0);
+	/*
 	for (size_t i = 1; i < nrThreads; i++) {
 		threads[i-1]->join();
 		delete threads[i-1];
 	}
+	*/
 
 	/* Reset leftovers */
+	/*
 	int rest   = activeNodes[activeMap].size() % nrThreads;
 	int offset = activeNodes[activeMap].size() - rest;
 	for (unsigned i = 0; i < rest; i++)
 		activeNodes[activeMap][i+offset]->reset();
+	*/
 
 	/* If we found a path, add it */
 	bool success = getPath(start, goal, path, group);
