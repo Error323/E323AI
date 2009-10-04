@@ -28,11 +28,6 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->pathfinder  = new CPathfinder(ai);
 	ai->intel       = new CIntel(ai);
 	ai->military    = new CMilitary(ai);
-
-	std::string version("*** " + AI_VERSION " ***");
-	LOGS(version.c_str());
-	LOGS("*** " AI_CREDITS " ***");
-	LOGS("*** " AI_NOTES " ***");
 }
 
 
@@ -185,10 +180,16 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 
 /* Update AI per logical frame = 1/30 sec on gamespeed 1.0 */
 void CE323AI::Update() {
+	/* Make sure we shift the multiplexer for each instance of E323AI */
 	int frame = ai->cb->GetCurrentFrame()+ai->team;
 
 	/* Don't act before the 100th frame, messed up eco stuff -_- */
 	if (frame < 100) return;
+	else if (frame == (500+(ai->team*100))) {
+		LOG_SS("*** " << AI_VERSION << " ***");
+		LOG_SS("*** " << AI_CREDITS << " ***");
+		LOG_SS("*** " <<  AI_NOTES  << " ***");
+	}
 
 	/* Rotate through the different update events to distribute computations */
 	switch(frame % 8) {

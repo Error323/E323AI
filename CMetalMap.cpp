@@ -84,7 +84,7 @@ void CMetalMap::findBestSpots() {
 		spots.push_back(MSpot(spots.size(), pos, highestSaturation));
 
 		if (counter >= N) {
-			LOGS("Speedmetal infects my skills... I won't play");
+			LOG_SS("Speedmetal infects my skills... I won't play");
 			break;
 		}
 

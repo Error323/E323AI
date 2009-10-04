@@ -25,6 +25,9 @@ class CLogger {
 		/* Verbose logging */
 		void v(std::string msg) { log(VERBOSE, msg); }
 
+		/* Log to spring */
+		void s(std::string msg);
+
 	private:
 		enum logLevel{ERROR, WARNING, VERBOSE};
 
@@ -52,5 +55,6 @@ class CLogger {
 #define LOG_EE(x)  {std::stringstream ss; ss << x; ai->logger->e(ss.str());}
 #define LOG_WW(x)  {std::stringstream ss; ss << x; ai->logger->w(ss.str());}
 #define LOG_II(x)  {std::stringstream ss; ss << x; ai->logger->v(ss.str());}
+#define LOG_SS(x)  {std::stringstream ss; ss << x; ai->logger->s(ss.str());}
 
 #endif

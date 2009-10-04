@@ -25,9 +25,6 @@
 #define CFG_PATH     std::string(aiexport_getDataDir(true)) + CFG_FOLDER
 #define CACHE_PATH   std::string(aiexport_getDataDir(true)) + CACHE_FOLDER
 
-/* Logger */
-#define LOGS(x)    (ai->cb->SendTextMsg(x, 0))
-
 /* Misc macro's */
 #define UD(u) (ai->cb->GetUnitDef(u))
 #define UT(u) (&(ai->unittable->units[u]))

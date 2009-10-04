@@ -45,6 +45,10 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 	}
 }
 
+void CLogger::s(std::string msg) {
+	ai->cb->SendTextMsg(msg.c_str(), 0);
+}
+
 void CLogger::log(logLevel level, std::string &msg) {
 	int frame = ai->cb->GetCurrentFrame();
 	int sec   = (frame / 30) % 60;
