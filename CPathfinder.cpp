@@ -198,7 +198,7 @@ void CPathfinder::updateFollowers() {
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		unsigned segment     = 1;
-		int     waypoint     = std::min<int>(3, path->second.size()-segment-1);
+		int     waypoint     = std::min<int>(MOVE_BUFFER, path->second.size()-segment-1);
 		CGroup *group        = groups[path->first];
 		float maxGroupLength = group->maxLength();
 		std::map<float, CUnit*> M;
