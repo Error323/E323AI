@@ -5,5 +5,5 @@ E323AI - Ultralisk
    2 cd spring
    3 git submodule update --init
 
-  Ofcourse, if you already have a clone of spring, just update.  To keep up to
+  Of course, if you already have a clone of spring, just update.  To keep up to
   date, cd into the submodule and fetch,merge (like any normal git repo).
