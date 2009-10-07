@@ -29,8 +29,10 @@ void CIntel::update(int frame) {
 		UnitType      *ut = UT(ud->id);
 		unsigned int    c = ut->cats;
 
-		if (ai->cbc->UnitBeingBuilt(units[i]))
-			continue;
+		if (
+			ai->cbc->UnitBeingBuilt(units[i]) || /* Ignore units being built */
+			ai->cbc->IsUnitCloaked(units[i])    /* Ignore cloaked units */
+		) continue;
 		
 		if (c&ATTACKER) {
 			attackers.push_back(units[i]);
