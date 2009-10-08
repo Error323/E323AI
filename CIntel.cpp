@@ -31,7 +31,7 @@ void CIntel::update(int frame) {
 
 		if (
 			ai->cbc->UnitBeingBuilt(units[i]) || /* Ignore units being built */
-			ai->cbc->IsUnitCloaked(units[i])    /* Ignore cloaked units */
+			ai->cbc->IsUnitCloaked(units[i])     /* Ignore cloaked units */
 		) continue;
 		
 		if (c&ATTACKER) {

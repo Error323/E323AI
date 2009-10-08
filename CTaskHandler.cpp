@@ -407,7 +407,14 @@ void CTaskHandler::AssistTask::update() {
 void CTaskHandler::AttackTask::reset(int t) {
 	target = t;
 	pos = ai->cbc->GetUnitPos(t);
-	enemy = ai->cbc->GetUnitDef(target)->humanName;
+	const UnitDef *ud = ai->cbc->GetUnitDef(target);
+	if (ud == NULL) {
+		LOG_EE("CTaskHandler::AttackTask::reset target("<<t<<") undefined")
+		enemy = "NULL";
+	}
+	else {
+		enemy = ud->humanName;
+	}
 }
 
 void CTaskHandler::addAttackTask(int target, CGroup &group) {
