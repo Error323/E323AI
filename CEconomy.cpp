@@ -29,6 +29,15 @@ void CEconomy::init(CUnit &unit) {
 	UnitType *utWind  = ai->unittable->canBuild(utCommander, LAND|EMAKER|WIND);
 	UnitType *utSolar = ai->unittable->canBuild(utCommander, LAND|EMAKER);
 
+	if (utWind == NULL) {
+		energyProvider = utSolar;
+		return;
+	}
+	if (utSolar == NULL) {
+		energyProvider = utWind;
+		return;
+	}
+
 	float avgWind   = (ai->cb->GetMinWind() + ai->cb->GetMaxWind()) / 2.0f;
 	float windProf  = avgWind / utWind->cost;
 	float solarProf = utSolar->energyMake / utSolar->cost;
