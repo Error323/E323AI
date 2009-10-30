@@ -130,8 +130,8 @@ void CUnitTable::generateCategorizationFile(const char *fileName) {
 	file << "\n\n# " << numUnits << " units in total\n\n";
 	for (j = units.begin(); j != units.end(); j++) {
 		utParent = &(j->second);
-		file << "# " << utParent->def->humanName << " - " << utParent->def->name << "\n";
-		file << utParent->id;
+		file << "# " << utParent->def->humanName << "\n";
+		file << utParent->def->name;
 		for (unsigned i = 0; i < cats.size(); i++)
 			if (cats[i] & utParent->cats)
 				file << "," << cat2str[cats[i]];
@@ -157,8 +157,8 @@ void CUnitTable::parseCategorizations(const char *fileName) {
 
 			line = line.substr(0, line.find('#')-1);
 			split(line, ',', splitted);
-			int id = atoi(splitted[0].c_str());
-			UnitType *ut = &units[id];
+			const UnitDef *ud = ai->cb->GetUnitDef(splitted[0].c_str());
+			UnitType *ut = &units[ud->id];
 
 			unsigned categories = 0;
 			for (unsigned i = 1; i < splitted.size(); i++) {
