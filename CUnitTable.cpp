@@ -60,10 +60,9 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
  	/* Build the techtree, note that this is actually a graph in XTA */
 	buildTechTree();
 
-	/* Determine the modname (exists of 2 characters) */
+	/* Determine the modname */
 	std::string modName(ai->cb->GetModName());
-	modName = modName.substr(0, 2);
-
+	modName = modName.substr(0, modName.size()-4);
 	sprintf(
 		buf, "%s%s-categorization.cfg", 
 		std::string(CFG_PATH).c_str(),
