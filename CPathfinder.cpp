@@ -11,7 +11,7 @@
 #include "CUnitTable.h"
 #include "CThreatMap.h"
 
-CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
+CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder")) {
 	this->ai   = ai;
 	this->X    = int(ai->cb->GetMapWidth()/HEIGHT2SLOPE);
 	this->Z    = int(ai->cb->GetMapHeight()/HEIGHT2SLOPE);
@@ -183,13 +183,6 @@ void CPathfinder::resetMap(int thread) {
 	}
 }
 
-void CPathfinder::remove(ARegistrar &obj) {
-	ATask *task = dynamic_cast<ATask*>(&obj);
-	LOG_II("CPathfinder::remove " << (*task))
-	paths.erase(task->group->key);
-	groups.erase(task->group->key);
-}
-
 void CPathfinder::updateFollowers() {
 	std::map<int, std::vector<float3> >::iterator path;
 	std::map<int, CUnit*>::iterator u;
@@ -286,15 +279,16 @@ void CPathfinder::updatePaths() {
 	float3 start = groups[repathGroup]->pos();
 	float3 goal  = ai->tasks->getPos(*groups[repathGroup]);
 	if (!addPath(repathGroup, start, goal)) {
+		LOG_EE("CPathfinder::updatePaths failed for " << (*groups[repathGroup]))
 		ai->tasks->removeTask(*groups[repathGroup]);
 	}
 }
 
-bool CPathfinder::addGroup(CGroup &group, float3 &start, float3 &goal) {
-	LOG_II("CPathfinder::addGroup " << group)
-	groups[group.key] = &group;
-	group.reg(*this);
-	return addPath(group.key, start, goal);
+void CPathfinder::remove(ARegistrar &obj) {
+	ATask *task = dynamic_cast<ATask*>(&obj);
+	LOG_II("CPathfinder::remove " << (*task))
+	paths.erase(task->group->key);
+	groups.erase(task->group->key);
 }
 
 bool CPathfinder::addTask(ATask &task) {

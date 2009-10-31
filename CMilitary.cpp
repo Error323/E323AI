@@ -12,7 +12,7 @@
 #include "CWishList.h"
 #include "CUnitTable.h"
 
-CMilitary::CMilitary(AIClasses *ai): ARegistrar(200) {
+CMilitary::CMilitary(AIClasses *ai): ARegistrar(200, std::string("military")) {
 	this->ai = ai;
 }
 

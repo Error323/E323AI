@@ -92,6 +92,7 @@ void CGroup::reset() {
 	busy       = false;
 	maxSlope   = 1.0f;
 	units.clear();
+	records.clear();
 }
 
 void CGroup::merge(CGroup &group) {

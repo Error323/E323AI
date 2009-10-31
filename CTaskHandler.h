@@ -19,7 +19,7 @@ enum task{BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD};
 class ATask: public ARegistrar {
 	public:
 		ATask(): 
-			ARegistrar(counter) {
+			ARegistrar(counter, std::string("task")) {
 			counter++;
 			isMoving = true;
 			pos = ZEROVECTOR;

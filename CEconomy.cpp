@@ -11,7 +11,7 @@
 #include "CUnit.h"
 #include "CRNG.h"
 
-CEconomy::CEconomy(AIClasses *ai): ARegistrar(700) {
+CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	this->ai = ai;
 	incomes  = 0;
 	mNow     = mNowSummed     = eNow     = eNowSummed     = 0.0f;

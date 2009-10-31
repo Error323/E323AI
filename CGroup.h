@@ -17,7 +17,7 @@ class UnitType;
 class CGroup: public ARegistrar {
 	public:
 
-		CGroup(AIClasses *ai): ARegistrar(counter) {
+		CGroup(AIClasses *ai): ARegistrar(counter, std::string("group")) {
 			this->ai = ai;
 			reset();
 			counter++;

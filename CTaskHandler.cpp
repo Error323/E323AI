@@ -31,8 +31,6 @@ void ATask::remove() {
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
 		(*j)->remove(*this);
-
-	delete this;
 }
 
 void ATask::remove(ARegistrar &group) {
@@ -44,8 +42,6 @@ void ATask::remove(ARegistrar &group) {
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
 		(*j)->remove(*this);
-
-	delete this;
 }
 
 void ATask::addGroup(CGroup &g) {
@@ -116,7 +112,7 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 /**************************************************************/
 std::map<buildType, std::string> CTaskHandler::buildStr;
 
-CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500) {
+CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500, std::string("taskhandler")) {
 	this->ai = ai;
 
 	taskStr[ASSIST]       = std::string("ASSIST");
@@ -136,6 +132,7 @@ CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500) {
 
 void CTaskHandler::remove(ARegistrar &task) {
 	ATask *t = dynamic_cast<ATask*>(&task);
+	LOG_II("CTaskHandler::remove " << (*t))
 	activeTasks.erase(t->key);
 	switch(t->t) {
 		case BUILD:
@@ -314,7 +311,7 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 }
 
 void CTaskHandler::AssistTask::remove() {
-	LOG_II("CGroup::remove " << (*this))
+	LOG_II("AssistTask::remove " << (*this))
 	group->unreg(*this);
 	group->busy = false;
 	group->unwait();
@@ -342,10 +339,13 @@ void CTaskHandler::AssistTask::update() {
 /************************* ATTACK TASK ************************/
 /**************************************************************/
 void CTaskHandler::addAttackTask(int target, CGroup &group) {
+	const UnitDef *ud = ai->cbc->GetUnitDef(target);
+	if (ud == NULL) return;
+
 	AttackTask *attackTask = new AttackTask(ai);
 	attackTask->target     = target;
 	attackTask->pos        = ai->cbc->GetUnitPos(target);
-	attackTask->enemy      = ai->cbc->GetUnitDef(target)->humanName;
+	attackTask->enemy      = ud->humanName;
 	attackTask->reg(*this);
 	attackTask->addGroup(group);
 
@@ -358,6 +358,12 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 }
 
 void CTaskHandler::AttackTask::update() {
+	/* If the target is destroyed, remove the task, unreg groups */
+	if (ai->cbc->GetUnitHealth(target) <= 0.0f) {
+		remove();
+		return;
+	}
+
 	/* See if we can attack our target already */
 	float3 grouppos = group->pos();
 	float3 dist = grouppos - pos;
@@ -369,10 +375,6 @@ void CTaskHandler::AttackTask::update() {
 	}
 	/* Keep tracking it */
 	else pos = ai->cbc->GetUnitPos(target);
-
-	/* If the target is destroyed, remove the task, unreg groups */
-	if (ai->cbc->GetUnitHealth(target) <= 0.0f) 
-		remove();
 }
 
 /**************************************************************/

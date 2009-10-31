@@ -2,6 +2,7 @@
 #define AREGISTRAR_H
 
 #include <list>
+#include <string>
 
 class ARegistrar {
 	public:
@@ -9,6 +10,9 @@ class ARegistrar {
 
 		/* The key of this register, e.g. group id */
 		int key;
+
+		/* The name of this Registrar */
+		std::string name;
 
 		/* Register an object */
 		void reg(ARegistrar &obj) { records.push_front(&obj); }
@@ -20,8 +24,9 @@ class ARegistrar {
 		virtual void remove(ARegistrar &obj) = 0;
 
 	protected:
-		ARegistrar(): key(0) {}
-		ARegistrar(int _key): key(_key) {}
+		ARegistrar(): key(0), name("undefined") {}
+		ARegistrar(int _key): key(_key), name("undefined") {}
+		ARegistrar(int _key, std::string _name): key(_key), name(_name) {}
 
 		/* The other objects where this registrar is registered */
 		std::list<ARegistrar*> records;
