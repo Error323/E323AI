@@ -102,15 +102,7 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets) {
 	return candidates.empty() ? -1 : candidates.begin()->second;
 }
 
-int CMilitary::selectHarrasTarget(CGroup &group) {
-	float3 pos = group.pos();
-	std::vector<int> targets;
-	targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
-	targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
-	return selectTarget(pos, targets);
-}
-
-void CMilitary::prepareTargets(std::vector<int> &targets) {
+void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &targets2) {
 	occupiedTargets.clear();
 	std::map<int, CTaskHandler::AttackTask*>::iterator j;
 	for (j = ai->tasks->activeAttackTasks.begin(); j != ai->tasks->activeAttackTasks.end(); j++)
@@ -137,13 +129,34 @@ void CMilitary::prepareTargets(std::vector<int> &targets) {
 		if (isOccupied) 
 			continue;
 
-		targets.push_back(target);
+		targets1.push_back(target);
+	}
+
+	std::vector<int> harras;
+	harras.insert(harras.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
+	harras.insert(harras.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
+	harras.insert(harras.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
+
+	for (size_t i = 0; i < harras.size(); i++) {
+		int target = harras[i];
+		bool isOccupied = false;
+		for (size_t j = 0; j < occupiedTargets.size(); j++) {
+			if (target == occupiedTargets[j]) {
+				isOccupied = true;
+				break;
+			}
+		}
+
+		if (isOccupied) 
+			continue;
+
+		targets2.push_back(target);
 	}
 }
 
 void CMilitary::update(int frame) {
-	std::vector<int> targets;
-	prepareTargets(targets);
+	std::vector<int> all, harras;
+	prepareTargets(all, harras);
 
 	std::map<int, CGroup*>::iterator i,k;
 	int busyScouts = 0;
@@ -158,11 +171,11 @@ void CMilitary::update(int frame) {
 		}
 		float3 pos = group->pos();
 
-		int target = selectHarrasTarget(*group);
+		int target = selectTarget(pos, harras);
 
 		/* There are no harras targets available */
 		if (target == -1)
-			target = selectTarget(pos, targets);
+			target = selectTarget(pos, all);
 
 		/* Nothing available */
 		if (target == -1)
@@ -188,7 +201,7 @@ void CMilitary::update(int frame) {
 
 		/* Select a target */
 		float3 pos = group->pos();
-		int target = selectTarget(pos, targets);
+		int target = selectTarget(pos, all);
 
 		/* There are no targets available, assist an attack */
 		if (target == -1) {

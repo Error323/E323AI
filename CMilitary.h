@@ -34,7 +34,7 @@ class CMilitary: public ARegistrar {
 	private:
 		AIClasses *ai;
 
-		void prepareTargets(std::vector<int> &targets);
+		void prepareTargets(std::vector<int> &all, std::vector<int> &harras);
 
 		/* Current group per factory <factory, CGroup*> */
 		std::map<int, CGroup*> currentGroups;
@@ -56,9 +56,6 @@ class CMilitary: public ARegistrar {
 
 		/* Occupied targets */
 		std::vector<int> occupiedTargets;
-
-		/* Scout and annoy >:) */
-		int selectHarrasTarget(CGroup &group);
 
 		/* Select a target */
 		int selectTarget(float3 &ourPos, std::vector<int> &targets);
