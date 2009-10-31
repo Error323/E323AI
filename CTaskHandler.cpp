@@ -31,6 +31,8 @@ void ATask::remove() {
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
 		(*j)->remove(*this);
+	
+	delete this;
 }
 
 void ATask::remove(ARegistrar &group) {
@@ -42,6 +44,8 @@ void ATask::remove(ARegistrar &group) {
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
 		(*j)->remove(*this);
+	
+	delete this;
 }
 
 void ATask::addGroup(CGroup &g) {
