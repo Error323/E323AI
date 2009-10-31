@@ -158,7 +158,7 @@ void CUnitTable::parseCategorizations(const char *fileName) {
 			split(line, ',', splitted);
 			const UnitDef *ud = ai->cb->GetUnitDef(splitted[0].c_str());
 			if (ud == NULL) {
-				LOG_EE("Parsing config line: " << linenr << "\tunit `" << splitted[i] << "' is invalid")
+				LOG_EE("Parsing config line: " << linenr << "\tunit `" << splitted[0] << "' is invalid")
 				continue;
 			}
 			UnitType *ut = &units[ud->id];
