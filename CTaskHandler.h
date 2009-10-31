@@ -55,9 +55,6 @@ class ATask: public ARegistrar {
 		/* Add a group to this task */
 		void addGroup(CGroup &group);
 
-		/* Reset this task for reuse */
-		void reset();
-
 		/* Is this task assistable */
 		bool assistable();
 
@@ -75,7 +72,7 @@ class CTaskHandler: public ARegistrar {
 		~CTaskHandler(){};
 
 		struct BuildTask: public ATask {
-			BuildTask(){}
+			BuildTask(AIClasses *_ai){t = BUILD; ai = _ai;}
 
 			/* The build task */
 			buildType bt;
@@ -92,7 +89,7 @@ class CTaskHandler: public ARegistrar {
 		};
 
 		struct FactoryTask: public ATask {
-			FactoryTask(){}
+			FactoryTask(AIClasses *_ai){t = FACTORY_BUILD; ai = _ai;}
 
 			CUnit *factory;
 
@@ -108,7 +105,7 @@ class CTaskHandler: public ARegistrar {
 		};
 
 		struct AssistTask: public ATask {
-			AssistTask(){}
+			AssistTask(AIClasses *_ai){t = ASSIST; ai = _ai;}
 
 			/* The (build)task to assist */
 			ATask *assist;
@@ -122,7 +119,7 @@ class CTaskHandler: public ARegistrar {
 		};
 
 		struct AttackTask: public ATask {
-			AttackTask(){}
+			AttackTask(AIClasses *_ai){t = ATTACK; ai = _ai;}
 
 			/* The target to attack */
 			int target;
@@ -136,7 +133,7 @@ class CTaskHandler: public ARegistrar {
 		};
 
 		struct MergeTask: public ATask {
-			MergeTask(){}
+			MergeTask(AIClasses *_ai){t = MERGE; ai = _ai;}
 
 			/* The maximal range from the target when attacking */
 			float range;
@@ -148,15 +145,6 @@ class CTaskHandler: public ARegistrar {
 
 			void reset(std::vector<CGroup*> &groups);
 		};
-
-		/* The ATask container per task type */
-		std::map<task, std::vector<ATask*> > tasks;
-
-		/* The <task, taskid, vectorid> table */
-		std::map<task, std::map<int, int> > lookup;
-
-		/* The free slots per task type */
-		std::map<task, std::stack<int> >    free;
 
 		/* The active tasks per type */
 		std::map<int, BuildTask*>   activeBuildTasks;
@@ -202,15 +190,11 @@ class CTaskHandler: public ARegistrar {
 		AIClasses *ai;
 		char buf[1024];
 
-
 		/* The active tasks to update */
 		std::map<int, ATask*> activeTasks;
 
 		/* The group to task table */
 		std::map<int, ATask*> groupToTask;
-
-		/* Request an unoccupied task */
-		ATask* requestTask(task t);
 
 		/* Calculate avg range and pos of groups */
 		static void getGroupsPos(std::vector<CGroup*> &groups, float3 &pos);
