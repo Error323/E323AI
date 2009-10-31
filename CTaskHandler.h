@@ -146,6 +146,9 @@ class CTaskHandler: public ARegistrar {
 			void reset(std::vector<CGroup*> &groups);
 		};
 
+		/* The -to be removed- tasks */
+		std::stack<ATask*> obsoleteTasks;
+
 		/* The active tasks per type */
 		std::map<int, BuildTask*>   activeBuildTasks;
 		std::map<int, AssistTask*>  activeAssistTasks;

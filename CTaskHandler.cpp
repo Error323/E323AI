@@ -31,8 +31,6 @@ void ATask::remove() {
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
 		(*j)->remove(*this);
-	
-	delete this;
 }
 
 void ATask::remove(ARegistrar &group) {
@@ -44,8 +42,6 @@ void ATask::remove(ARegistrar &group) {
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
 		(*j)->remove(*this);
-	
-	delete this;
 }
 
 void ATask::addGroup(CGroup &g) {
@@ -136,6 +132,7 @@ CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500, std::string("taskhand
 
 void CTaskHandler::remove(ARegistrar &task) {
 	ATask *t = dynamic_cast<ATask*>(&task);
+	obsoleteTasks.push(t);
 	LOG_II("CTaskHandler::remove " << (*t))
 	activeTasks.erase(t->key);
 	switch(t->t) {
@@ -167,6 +164,14 @@ void CTaskHandler::getGroupsPos(std::vector<CGroup*> &groups, float3 &pos) {
 }
 
 void CTaskHandler::update() {
+	/* delete obsolete tasks from memory */
+	while(!obsoleteTasks.empty()) {
+		ATask *t = obsoleteTasks.top();
+		obsoleteTasks.pop();
+		delete t;
+	}
+
+	/* Begin task updates */
 	std::map<int, ATask*>::iterator i;
 	for (i = activeTasks.begin(); i != activeTasks.end(); i++) {
 		i->second->update();
