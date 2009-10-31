@@ -157,6 +157,10 @@ void CUnitTable::parseCategorizations(const char *fileName) {
 			line = line.substr(0, line.find('#')-1);
 			split(line, ',', splitted);
 			const UnitDef *ud = ai->cb->GetUnitDef(splitted[0].c_str());
+			if (ud == NULL) {
+				LOG_EE("Parsing config line: " << linenr << "\tunit `" << splitted[i] << "' is invalid")
+				continue;
+			}
 			UnitType *ut = &units[ud->id];
 
 			unsigned categories = 0;
