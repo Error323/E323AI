@@ -113,7 +113,11 @@ class CTaskHandler: public ARegistrar {
 			/* Update the assist task */
 			void update();
 
+			/* overload */
 			void remove();
+
+			/* overload */
+			void remove(ARegistrar& group);
 			
 			void reset(ATask &task);
 		};

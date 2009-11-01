@@ -319,6 +319,16 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 		assistTask->remove();
 }
 
+void CTaskHandler::AssistTask::remove(ARegistrar &group) {
+	LOG_II("AssistTask::remove " << (*this))
+
+	assist->assisters.remove(this);
+	
+	std::list<ARegistrar*>::iterator j;
+	for (j = records.begin(); j != records.end(); j++)
+		(*j)->remove(*this);
+}
+
 void CTaskHandler::AssistTask::remove() {
 	LOG_II("AssistTask::remove " << (*this))
 	group->unreg(*this);
