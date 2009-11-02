@@ -6,11 +6,11 @@
 CIntel::CIntel(AIClasses *ai) {
 	this->ai = ai;
 	units = new int[MAX_UNITS];
-	selector.push_back(ANTIAIR);
 	selector.push_back(ASSAULT);
 	selector.push_back(SCOUTER);
 	selector.push_back(SNIPER);
 	selector.push_back(ARTILLERY);
+	selector.push_back(ANTIAIR);
 	for (size_t i = 0; i < selector.size(); i++)
 		counts[selector[i]] = 1;
 }
@@ -53,15 +53,15 @@ void CIntel::update(int frame) {
 			rest.push_back(units[i]);
 		}
 
-		updateCounts(c);
+		if (c&ATTACKER && c&MOBILE)
+			updateCounts(c);
 	}
 }
 
 void CIntel::updateCounts(unsigned c) {
-	std::map<unitCategory, int>::iterator i;
-	for (i = counts.begin(); i != counts.end(); i++) {
-		if (i->first & c) {
-			i->second++;
+	for (size_t i = 0; i < selector.size(); i++) {
+		if (selector[i] & c) {
+			counts[selector[i]]++;
 			totalCount++;
 		}
 	}
