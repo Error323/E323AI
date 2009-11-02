@@ -50,28 +50,31 @@ void CThreatMap::update(int frame) {
 		LOG_WW("CThreatMap::update " << numUnits << " > " << MAX_UNITS_AI)
 
 	for (int i = 0; i < numUnits; i++) {
-		const UnitDef *ud = ai->cbc->GetUnitDef(units[i]);
-		UnitType      *ut = UT(ud->id);
-		float3 upos = ai->cbc->GetUnitPos(units[i]);
-		float3 pos(0.0f, 0.0f, 0.0f);
+		const UnitDef  *ud = ai->cbc->GetUnitDef(units[i]);
+		const UnitType *ut = UT(ud->id);
 		
 		if (ut->cats&ATTACKER && !ai->cbc->UnitBeingBuilt(units[i])) {
-			float range = (ud->maxWeaponRange*1.2f)/REAL;
-			float power = ai->cbc->GetUnitPower(units[i]);
+			const float3  upos = ai->cbc->GetUnitPos(units[i]);
+			const float uRealX = upos.x/REAL;
+			const float uRealZ = upos.z/REAL;
+			const float  range = (ud->maxWeaponRange*1.2f)/REAL;
+			float       powerT = ai->cbc->GetUnitPower(units[i]);
 			if (ut->cats&COMMANDER)
-				power /= 100.0f; /* dgun gives overpowered dps */
+				powerT /= 100.0f; /* dgun gives overpowered dps */
+			const float  power = powerT;
+			float3 pos(0.0f, 0.0f, 0.0f);
 
-			int   R = (int) ceil(range);
+			const int        R = (int) ceil(range);
 			for (int z = -R; z <= R; z++) {
 				for (int x = -R; x <= R; x++) {
 					pos.x = x;
 					pos.z = z;
 					if (pos.Length2D() <= range) {
-						pos.x += upos.x/REAL;
-						pos.z += upos.z/REAL;
-						int mx = (int) round(pos.x);
-						int mz = (int) round(pos.z);
-						if (mx >= 0 && mx < X && mz >= 0 && mz < Z)
+						pos.x += uRealX;
+						pos.z += uRealZ;
+						const unsigned int mx = (unsigned int) round(pos.x);
+						const unsigned int mz = (unsigned int) round(pos.z);
+						if (mx < X && mz < Z)
 							map[ID(mx,mz)] += power;
 					}
 				}
