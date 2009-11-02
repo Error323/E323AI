@@ -6,12 +6,12 @@
 
 CThreatMap::CThreatMap(AIClasses *ai) {
 	this->ai = ai;
-	this->X  = ai->cb->GetMapWidth() / (HEIGHT2SLOPE);
-	this->Z  = ai->cb->GetMapHeight() / (HEIGHT2SLOPE);
-	REAL = (HEIGHT2SLOPE)*HEIGHT2REAL;
+	this->X  = ai->cb->GetMapWidth() / (HEIGHT2SLOPE*I_MAP_RES);
+	this->Z  = ai->cb->GetMapHeight() / (HEIGHT2SLOPE*I_MAP_RES);
+	REAL     = HEIGHT2SLOPE*HEIGHT2REAL*I_MAP_RES;
+	map      = new float[X*Z];
+	units    = new int[MAX_UNITS_AI];
 
-	map   = new float[X*Z];
-	units = new int[MAX_UNITS_AI];
 	for (int i = 0; i < X*Z; i++)
 		map[i] = 1.0f;
 }
@@ -79,6 +79,7 @@ void CThreatMap::update(int frame) {
 			totalPower += power;
 		}
 	}
+	draw();
 }
 
 void CThreatMap::draw() {

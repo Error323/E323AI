@@ -26,9 +26,9 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	for (i = ai->unittable->moveTypes.begin(); i != ai->unittable->moveTypes.end(); i++) {
 		std::vector<Node*> reset;
 		std::map<int, Node*> map;
-		maps[i->first]       = map;
+		maps[i->first]        = map;
 		activeNodes[i->first] = reset;
-		MoveData *md   = i->second;
+		MoveData *md          = i->second;
 
 		for (int z = 0; z < Z; z++) {
 			for (int x = 0; x < X; x++) {
@@ -178,7 +178,9 @@ void CPathfinder::resetMap(int thread) {
 	int offset = size*thread;
 	for (unsigned i = 0; i < size; i++) {
 		Node *n = activeNodes[activeMap][i+offset];
-		n->w = ai->threatmap->map[n->id] + sm[n->id]*5.0f;
+
+		int j = (n->z/I_MAP_RES)*(X/I_MAP_RES)+(n->x/I_MAP_RES);
+		n->w = ai->threatmap->map[j] + sm[n->id]*5.0f;
 		n->reset();
 	}
 }
