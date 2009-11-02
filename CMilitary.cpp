@@ -136,6 +136,7 @@ void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &tar
 	harras.insert(harras.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
 	harras.insert(harras.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
 	harras.insert(harras.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
+	harras.insert(harras.end(), ai->intel->factories.begin(), ai->intel->factories.end());
 
 	for (size_t i = 0; i < harras.size(); i++) {
 		int target = harras[i];
