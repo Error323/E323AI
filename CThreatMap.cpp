@@ -79,19 +79,17 @@ void CThreatMap::update(int frame) {
 			totalPower += power;
 		}
 	}
-	draw();
+	//draw();
 }
 
 void CThreatMap::draw() {
 	for (int z = 0; z < Z; z++) {
 		for (int x = 0; x < X; x++) {
 			if (map[ID(x,z)] > 1.0f+EPSILON) {
-				float3 p0(x*REAL, 0.0f, z*REAL);
+				float3 p0(x*REAL, ai->cb->GetElevation(x*REAL,z*REAL), z*REAL);
 				float3 p1(p0);
-				p1.y += map[ID(x,z)]/totalPower;
-				p1.y *= 30.0f;
-				p1.y += 100.0f;
-				ai->cb->CreateLineFigure(p0, p1, 4, 1, 300, 1);
+				p1.y += (map[ID(x,z)]/totalPower) * 300.0f;
+				ai->cb->CreateLineFigure(p0, p1, 4, 1, 360, 1);
 			}
 		}
 	}
