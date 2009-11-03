@@ -81,7 +81,9 @@ enum unitCategory {
 	TIDAL        = (1<<25),
 
 	KBOT         = (1<<26),
-	VEHICLE      = (1<<27)
+	VEHICLE      = (1<<27),
+
+	DEFENSE      = (1<<28)
 };
 
 /* Build priorities */

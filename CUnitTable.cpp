@@ -49,6 +49,8 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	cat2str[KBOT]        = "KBOT";  
 	cat2str[VEHICLE]     = "VEHICLE";  
 
+	cat2str[DEFENSE]     = "DEFENSE";
+
 	/* Create the str2cat table and cats vector */
 	std::map<unitCategory,std::string>::iterator i;
 	for (i = cat2str.begin(); i != cat2str.end(); i++) {
@@ -216,6 +218,7 @@ void CUnitTable::remove(ARegistrar &unit) {
 	factoriesBuilding.erase(unit.key);
 	activeUnits.erase(unit.key);
 	factories.erase(unit.key);
+	defenses.erase(unit.key);
 }
 
 CUnit* CUnitTable::getUnit(int uid) {
@@ -248,6 +251,8 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	activeUnits[uid] = unit;
 	idle[bid] = false;
 	idle[uid] = true;
+	if ((unit->type->cats&STATIC) && (unit->type->cats&ATTACKER))
+		defenses[unit->key] = unit;
 	return unit;
 }
 

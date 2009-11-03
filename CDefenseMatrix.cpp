@@ -3,9 +3,16 @@
 #include "CAI.h"
 #include "CUnit.h"
 #include "CUnitTable.h"
+#include "CThreatMap.h"
 
 CDefenseMatrix::CDefenseMatrix(AIClasses *ai) {
 	this->ai = ai;
+}
+
+float3 CDefenseMatrix::getDefenseBuildSite(UnitType *tower) {
+	if (clusters.empty()) return ZEROVECTOR;
+	Cluster *targetCluster = (--clusters.end())->second;
+	return targetCluster->center;
 }
 
 void CDefenseMatrix::update() {
@@ -20,9 +27,10 @@ void CDefenseMatrix::update() {
 
 	/* Gather the non attacking, non mobile buildings */
 	std::map<int, CUnit*>::iterator i, j;
+	std::multimap<float,CUnit*>::iterator k;
 	for (i = ai->unittable->activeUnits.begin(); i != ai->unittable->activeUnits.end(); i++) {
 		unsigned c = i->second->type->cats;
-		if (!(c&MOBILE) && !(c&ATTACKER))
+		if ((c&STATIC) && !(c&ATTACKER))
 			buildings[i->first] = i->second;
 	}
 
@@ -37,19 +45,19 @@ void CDefenseMatrix::update() {
 		c->members.insert(std::pair<float,CUnit*>(i->second->type->cost, i->second));
 		buildingToCluster[i->first] = c;
 		float3 summedCenter(i->second->pos());
-		c->value = i->second->type->cost;
+		c->value = getValue(i->second);
 
 		for (++(j = i); j != buildings.end(); j++) {
 			/* Continue if the building is already contained in a cluster */
 			if (buildingToCluster.find(j->first) != buildingToCluster.end())
 				continue;
 			
+			/* If the unit is within range of the cluster, add it to the cluster */
 			const float3 pos1 = j->second->pos();
-			std::multimap<float,CUnit*>::iterator k;
 			for (k = c->members.begin(); k != c->members.end(); k++) {
 				const float3 pos2 = k->second->pos();
-				if ((pos1 - pos2).Length2D() <= 300.0f) {
-					float buildingValue = j->second->type->cost;
+				if ((pos1 - pos2).Length2D() <= 320.0f) {
+					float buildingValue = getValue(j->second);
 					c->members.insert(std::pair<float,CUnit*>(buildingValue, j->second));
 					c->value += buildingValue;
 					summedCenter += pos1;
@@ -59,8 +67,21 @@ void CDefenseMatrix::update() {
 			}
 		}
 
-		/* Add the cluster */
+		/* Calculate coverage of current defense for this cluster */
 		c->center = (summedCenter / c->members.size());
+		std::map<int, CUnit*>::iterator l;
+		for (l = ai->unittable->defenses.begin(); l != ai->unittable->defenses.end(); l++) {
+			const float3 pos1 = l->second->pos();
+			float range = l->second->def->maxWeaponRange*0.8f;
+			for (k = c->members.begin(); k != c->members.end(); k++) {
+				const float3 pos2 = k->second->pos();
+				if ((pos1 - pos2).Length2D() < range) {
+					c->value -= k->first*range;
+				}
+			}
+		}
+		
+		/* Add the cluster */
 		clusters.insert(std::pair<float,Cluster*>(c->value, c));
 		totalValue += c->value;
 
@@ -70,6 +91,10 @@ void CDefenseMatrix::update() {
 	}
 
 	draw();
+}
+
+float CDefenseMatrix::getValue(CUnit *unit) {
+	return unit->type->cost;
 }
 
 void CDefenseMatrix::draw() {

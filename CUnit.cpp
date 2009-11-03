@@ -131,6 +131,8 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 		mindist = 10;
 	else if(toBuild->cats&MEXTRACTOR)
 		mindist = 0;
+	else if(toBuild->cats&ATTACKER)
+		mindist = 1;
 
 	float startRadius  = def->buildDistance;
 	facing f           = getBestFacing(pos);

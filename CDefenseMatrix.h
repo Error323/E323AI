@@ -49,6 +49,8 @@ class CDefenseMatrix {
 
 		AIClasses *ai;
 
+		float getValue(CUnit *building);
+
 		void draw();
 };
 

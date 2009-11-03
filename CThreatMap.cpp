@@ -3,6 +3,7 @@
 #include "CAI.h"
 #include "CUnitTable.h"
 #include "CIntel.h"
+#include "CUnit.h"
 
 CThreatMap::CThreatMap(AIClasses *ai) {
 	this->ai = ai;
@@ -43,12 +44,13 @@ float CThreatMap::getThreat(float3 &center) {
 void CThreatMap::update(int frame) {
 	totalPower = 0.0f;
 	for (int i = 0; i < X*Z; i++)
-		map[i] = 1.0f;
+		map[i] = 10000.0f;
 
 	int numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS_AI);
 	if (numUnits > MAX_UNITS_AI)
 		LOG_WW("CThreatMap::update " << numUnits << " > " << MAX_UNITS_AI)
 
+	/* Add enemy threats */
 	for (int i = 0; i < numUnits; i++) {
 		const UnitDef  *ud = ai->cbc->GetUnitDef(units[i]);
 		const UnitType *ut = UT(ud->id);
@@ -82,6 +84,39 @@ void CThreatMap::update(int frame) {
 			totalPower += power;
 		}
 	}
+
+	/* Subtract defense */
+	std::map<int, CUnit*>::iterator i;
+	for (i = ai->unittable->defenses.begin(); i != ai->unittable->defenses.end(); i++) {
+		CUnit *unit = i->second;
+		const float3  upos = unit->pos();
+		const float uRealX = upos.x/REAL;
+		const float uRealZ = upos.z/REAL;
+		const float  range = (unit->def->maxWeaponRange*0.8f)/REAL;
+		float       powerT = ai->cbc->GetUnitPower(unit->key);
+		const float  power = powerT;
+		float3 pos(0.0f, 0.0f, 0.0f);
+
+		const int        R = (int) ceil(range);
+		for (int z = -R; z <= R; z++) {
+			for (int x = -R; x <= R; x++) {
+				pos.x = x;
+				pos.z = z;
+				if (pos.Length2D() <= range) {
+					pos.x += uRealX;
+					pos.z += uRealZ;
+					const unsigned int mx = (unsigned int) round(pos.x);
+					const unsigned int mz = (unsigned int) round(pos.z);
+					if (mx < X && mz < Z) {
+						map[ID(mx,mz)] -= power;
+						int v = map[ID(mx,mz)];
+						map[ID(mx,mz)] = v < 1.0f ? 1.0f : v;
+					}
+				}
+			}
+		}
+		totalPower -= power;
+	}
 	//draw();
 }
 
@@ -92,7 +127,7 @@ void CThreatMap::draw() {
 				float3 p0(x*REAL, ai->cb->GetElevation(x*REAL,z*REAL), z*REAL);
 				float3 p1(p0);
 				p1.y += (map[ID(x,z)]/totalPower) * 300.0f;
-				ai->cb->CreateLineFigure(p0, p1, 4, 1, 360, 1);
+				ai->cb->CreateLineFigure(p0, p1, 4, 1, DRAW_TIME, 1);
 			}
 		}
 	}

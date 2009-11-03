@@ -58,6 +58,7 @@ class CUnitTable: public ARegistrar {
 		std::map<int, UnitType*>  factoriesBuilding;
 		std::map<int, CUnit*>     activeUnits;
 		std::map<int, bool>       factories;
+		std::map<int, CUnit*>     defenses;
 
 		/* Special commander hook, since it's the first to spawn */
 		UnitType *comm;

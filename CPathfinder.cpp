@@ -247,12 +247,12 @@ void CPathfinder::updateFollowers() {
 			// REAR/FRONT unit debug
 			float3 rupos = M.begin()->second->pos();
 			float3 rhigh(rupos); rhigh.y += 100.0f;
-			ai->cb->CreateLineFigure(rupos, rhigh, 8.0f, 0, 500, 2);
+			ai->cb->CreateLineFigure(rupos, rhigh, 8.0f, 0, DRAW_TIME 2);
 			ai->cb->SetFigureColor(2, 1.0f, 0.0f, 0.0f, 1.0f);
 
 			float3 fupos = (--M.end())->second->pos();
 			float3 fhigh(fupos); fhigh.y += 100.0f;
-			ai->cb->CreateLineFigure(fupos, fhigh, 8.0f, 0, 500, 3);
+			ai->cb->CreateLineFigure(fupos, fhigh, 8.0f, 0, DRAW_TIME 3);
 			ai->cb->SetFigureColor(3, 0.0f, 1.0f, 0.0f, 1.0f);
 			*/
 
@@ -402,7 +402,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 
 		if (draw) {
 			for (unsigned i = 2; i < path.size(); i++) 
-				ai->cb->CreateLineFigure(path[i-1], path[i], 8.0f, 0, 500, group);
+				ai->cb->CreateLineFigure(path[i-1], path[i], 8.0f, 0, DRAW_TIME, group);
 			ai->cb->SetFigureColor(group, group/float(CGroup::counter), 1.0f-group/float(CGroup::counter), 1.0f, 1.0f);
 		}
 	}
@@ -438,7 +438,7 @@ void CPathfinder::drawGraph(int map) {
 				Node *n = p->neighbours[j];
 				float3 fn = n->toFloat3();
 				fn.y = ai->cb->GetElevation(fn.x, fn.z) + 20.0f;
-				ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, 30*9, 10);
+				ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, DRAW_TIME, 10);
 				ai->cb->SetFigureColor(10, 0.0f, 0.0f, 1.0f, 0.5f);
 			}
 		}
@@ -454,12 +454,12 @@ void CPathfinder::drawMap(int map) {
 		float3 p1(p0);
 		if (node->blocked()) {
 			p0.y += 100.0f;
-			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 30*9, 10);
+			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, DRAW_TIME, 10);
 			ai->cb->SetFigureColor(10, 1.0f, 0.0f, 0.0f, 1.0f);
 		}
 		else if (node->w > 10.0f) {
 			p1.y += node->w;
-			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, 30*9, 20);
+			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, DRAW_TIME, 20);
 			ai->cb->SetFigureColor(20, 1.0f, 1.0f, 1.0f, 0.1f);
 		}
 	}

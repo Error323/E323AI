@@ -7,6 +7,7 @@
 #include "CUnitTable.h"
 #include "CMetalMap.h"
 #include "CWishList.h"
+#include "CDefenseMatrix.h"
 #include "CGroup.h"
 #include "CUnit.h"
 #include "CRNG.h"
@@ -159,10 +160,14 @@ void CEconomy::buildEprovider(CGroup &group) {
 void CEconomy::buildOrAssist(buildType bt, UnitType *ut,  CGroup &group) {
 	ATask *task = canAssist(bt, group);
 	float3 pos = group.pos();
+	if (bt == BUILD_AG_DEFENSE)
+		pos = ai->defensematrix->getDefenseBuildSite(ut);
 	if (task != NULL)
 		ai->tasks->addAssistTask(*task, group);
 	else {
 		if (bt == BUILD_EPROVIDER || bt == BUILD_MPROVIDER)
+			ai->tasks->addBuildTask(bt, ut, group, pos);
+		else if (bt == BUILD_AG_DEFENSE && canAffordToBuild(group, ut))
 			ai->tasks->addBuildTask(bt, ut, group, pos);
 		else if (canAffordToBuild(group, ut) && !taskInProgress(bt))
 			ai->tasks->addBuildTask(bt, ut, group, pos);
@@ -262,6 +267,12 @@ void CEconomy::update(int frame) {
 			if (!mRequest && !eRequest && mIncome > 20.0f) {
 				UnitType *factory = ai->unittable->canBuild(unit->type, KBOT|TECH2);
 				buildOrAssist(BUILD_FACTORY, factory, *group);
+				if (group->busy) continue;
+			}
+			/* See if we can build defense */
+			if (!mRequest && !eRequest) {
+				UnitType *defense = ai->unittable->canBuild(unit->type, DEFENSE);
+				buildOrAssist(BUILD_AG_DEFENSE, defense, *group);
 				if (group->busy) continue;
 			}
 			/* Otherwise just expand */
