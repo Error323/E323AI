@@ -21,9 +21,6 @@
 #define LOG_FOLDER   "logs/"
 #define CFG_FOLDER   "configs/"
 #define CACHE_FOLDER "cache/"
-#define LOG_PATH     std::string(aiexport_getDataDir(true)) + LOG_FOLDER
-#define CFG_PATH     std::string(aiexport_getDataDir(true)) + CFG_FOLDER
-#define CACHE_PATH   std::string(aiexport_getDataDir(true)) + CACHE_FOLDER
 
 /* Misc macro's */
 #define UD(u) (ai->cb->GetUnitDef(u))

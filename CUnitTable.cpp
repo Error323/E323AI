@@ -65,9 +65,10 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	modName = modName.substr(0, modName.size()-4);
 	sprintf(
 		buf, "%s%s-categorization.cfg", 
-		std::string(CFG_PATH).c_str(),
+		CFG_FOLDER,
 		modName.c_str()
 	);
+	ai->cb->GetValue(AIVAL_LOCATE_FILE_R, buf);
 	std::string fileName(buf);
 
 	/* Determine if we should generate the config or parse the config */

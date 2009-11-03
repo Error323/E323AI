@@ -89,7 +89,7 @@ void CLogger::getFileName(char *fileName) {
 	ai->cb->GetValue(AIVAL_LOCATE_FILE_W, buf);
 	std::sprintf(
 		fileName, "%s%2.2d%2.2d%2.2d%2.2d%2.2d-%s-team-%d.log", 
-		std::string(LOG_PATH).c_str(), 
+		buf, 
 		now2->tm_year + 1900, 
 		now2->tm_mon + 1, 
 		now2->tm_mday, 
