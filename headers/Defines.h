@@ -41,6 +41,12 @@
 /* Group vars */
 #define GROUP_SIZE 3
 
+/* Number of multiplex iterations */
+#define MULTIPLEXER 9
+
+/* Draw time */
+#define DRAW_TIME MULTIPLEXER*30
+
 /* Unit categories */
 enum unitCategory {
 	TECH1        = (1<<0),

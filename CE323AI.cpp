@@ -10,30 +10,33 @@
 #include "CPathfinder.h"
 #include "CIntel.h"
 #include "CMilitary.h"
+#include "CDefenseMatrix.h"
 #include "CUnit.h"
 #include "CScopedTimer.h"
 
 void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
-	ai              = new AIClasses();
-	ai->cb          = callback->GetAICallback();
-	ai->cbc         = callback->GetCheatInterface();
-	ai->team        = team;
-	ai->logger      = new CLogger(ai, CLogger::LOG_SCREEN | CLogger::LOG_FILE);
-	ai->metalmap    = new CMetalMap(ai);
-	ai->unittable   = new CUnitTable(ai);
-	ai->economy     = new CEconomy(ai);
-	ai->wishlist    = new CWishList(ai);
-	ai->tasks       = new CTaskHandler(ai);
-	ai->threatmap   = new CThreatMap(ai);
-	ai->pathfinder  = new CPathfinder(ai);
-	ai->intel       = new CIntel(ai);
-	ai->military    = new CMilitary(ai);
+	ai                = new AIClasses();
+	ai->cb            = callback->GetAICallback();
+	ai->cbc           = callback->GetCheatInterface();
+	ai->team          = team;
+	ai->logger        = new CLogger(ai, CLogger::LOG_SCREEN | CLogger::LOG_FILE);
+	ai->metalmap      = new CMetalMap(ai);
+	ai->unittable     = new CUnitTable(ai);
+	ai->economy       = new CEconomy(ai);
+	ai->wishlist      = new CWishList(ai);
+	ai->tasks         = new CTaskHandler(ai);
+	ai->threatmap     = new CThreatMap(ai);
+	ai->pathfinder    = new CPathfinder(ai);
+	ai->intel         = new CIntel(ai);
+	ai->military      = new CMilitary(ai);
+	ai->defensematrix = new CDefenseMatrix(ai);
 }
 
 
 CE323AI::~CE323AI() {
 	LOG_II(CScopedTimer::profile())
 
+	delete ai->defensematrix;
 	delete ai->military;
 	delete ai->intel;
 	delete ai->pathfinder;
@@ -185,14 +188,14 @@ void CE323AI::Update() {
 
 	/* Don't act before the 100th frame, messed up eco stuff -_- */
 	if (frame < 100) return;
-	else if (frame == (500+(ai->team*100))) {
+	else if (frame == (800+(ai->team*100))) {
 		LOG_SS("*** " << AI_VERSION << " ***");
 		LOG_SS("*** " << AI_CREDITS << " ***");
 		LOG_SS("*** " <<  AI_NOTES  << " ***");
 	}
 
 	/* Rotate through the different update events to distribute computations */
-	switch(frame % 8) {
+	switch(frame % MULTIPLEXER) {
 		case 0: { /* update incomes */
 			CScopedTimer t(std::string("eco-incomes"));
 			ai->economy->updateIncomes();
@@ -223,24 +226,27 @@ void CE323AI::Update() {
 		}
 		break;
 
-		case 5: { /* update military */
+		case 5: { /* update defense matrix */
+			CScopedTimer t(std::string("defensematrix"));
+			ai->defensematrix->update();
+		}
+
+		case 6: { /* update military */
 			CScopedTimer t(std::string("military"));
 			ai->military->update(frame);
 		}
 		break;
 
-		case 6: { /* update economy */
+		case 7: { /* update economy */
 			CScopedTimer t(std::string("eco-update"));
 			ai->economy->update(frame);
 		}
 		break;
 
-		case 7: { /* update taskhandler */
+		case 8: { /* update taskhandler */
 			CScopedTimer t(std::string("tasks"));
 			ai->tasks->update();
 		}
 		break;
-
-		default: return;
 	}
 }
