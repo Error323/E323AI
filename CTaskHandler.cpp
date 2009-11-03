@@ -134,7 +134,6 @@ void CTaskHandler::remove(ARegistrar &task) {
 	ATask *t = dynamic_cast<ATask*>(&task);
 	obsoleteTasks.push(t);
 	LOG_II("CTaskHandler::remove " << (*t))
-	activeTasks.erase(t->key);
 	switch(t->t) {
 		case BUILD:
 			activeBuildTasks.erase(t->key);
@@ -168,6 +167,7 @@ void CTaskHandler::update() {
 	while(!obsoleteTasks.empty()) {
 		ATask *t = obsoleteTasks.top();
 		obsoleteTasks.pop();
+		activeTasks.erase(t->key);
 		delete t;
 	}
 
