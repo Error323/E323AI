@@ -68,6 +68,7 @@ class CUnitTable: public ARegistrar {
 
 		/* Returns a unittype with categories that ut can build */
 		UnitType* canBuild(UnitType *ut, unsigned int categories);
+		void getBuildables(UnitType *ut, unsigned int c, std::multimap<float, UnitType*> &candidates);
 
 		/* Debugging functions */
 		std::string debugCategories(UnitType *ut);

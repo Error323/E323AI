@@ -44,7 +44,7 @@ float CThreatMap::getThreat(float3 &center) {
 void CThreatMap::update(int frame) {
 	totalPower = 0.0f;
 	for (int i = 0; i < X*Z; i++)
-		map[i] = 10000.0f;
+		map[i] = 1.0f;
 
 	int numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS_AI);
 	if (numUnits > MAX_UNITS_AI)
@@ -86,6 +86,7 @@ void CThreatMap::update(int frame) {
 	}
 
 	/* Subtract defense */
+	/*
 	std::map<int, CUnit*>::iterator i;
 	for (i = ai->unittable->defenses.begin(); i != ai->unittable->defenses.end(); i++) {
 		CUnit *unit = i->second;
@@ -117,6 +118,7 @@ void CThreatMap::update(int frame) {
 		}
 		totalPower -= power;
 	}
+	*/
 	//draw();
 }
 

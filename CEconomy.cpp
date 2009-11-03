@@ -26,26 +26,12 @@ CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 void CEconomy::init(CUnit &unit) {
 	const UnitDef *ud = ai->cb->GetUnitDef(unit.key);
 	UnitType *utCommander = UT(ud->id);
-
-	UnitType *utWind  = ai->unittable->canBuild(utCommander, LAND|EMAKER|WIND);
-	UnitType *utSolar = ai->unittable->canBuild(utCommander, LAND|EMAKER);
-
-	if (utWind == NULL) {
-		energyProvider = utSolar;
-		return;
-	}
-	if (utSolar == NULL) {
-		energyProvider = utWind;
-		return;
-	}
-
-	float avgWind   = (ai->cb->GetMinWind() + ai->cb->GetMaxWind()) / 2.0f;
-	float windProf  = avgWind / utWind->cost;
-	float solarProf = utSolar->energyMake / utSolar->cost;
+	windmap = ai->cb->GetMaxWind() > 1;
+	//float avgWind   = (ai->cb->GetMinWind() + ai->cb->GetMaxWind()) / 2.0f;
+	//float windProf  = avgWind / utWind->cost;
+	//float solarProf = utSolar->energyMake / utSolar->cost;
 	mStart = utCommander->def->metalMake;
 	eStart = utCommander->def->energyMake;
-
-	energyProvider  = windProf*0.6f > solarProf ? utWind : utSolar;
 }
 		
 bool CEconomy::hasFinishedBuilding(CGroup &group) {
@@ -140,37 +126,64 @@ void CEconomy::buildMprovider(CGroup &group) {
 
 void CEconomy::buildEprovider(CGroup &group) {
 	/* Handle energy income */
-	UnitType *ut = group.units.begin()->second->type;
-
-	if (ut->cats&TECH2) {
-		UnitType *fusion = ai->unittable->canBuild(ut, LAND|EMAKER);
-		buildOrAssist(BUILD_EPROVIDER, fusion, group);
-	}
-	else {
-		if (rng.RandInt(6) != 1)
-			buildOrAssist(BUILD_EPROVIDER, energyProvider, group);
-		else {
-			UnitType *solar = ai->unittable->canBuild(ut, LAND|EMAKER);
-			buildOrAssist(BUILD_EPROVIDER, solar, group);
-		}
-	}
+	buildOrAssist(BUILD_EPROVIDER, LAND|EMAKER, group);
 	eRequest = false;
 }
 
-void CEconomy::buildOrAssist(buildType bt, UnitType *ut,  CGroup &group) {
+void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 	ATask *task = canAssist(bt, group);
-	float3 pos = group.pos();
-	if (bt == BUILD_AG_DEFENSE)
-		pos = ai->defensematrix->getDefenseBuildSite(ut);
 	if (task != NULL)
 		ai->tasks->addAssistTask(*task, group);
 	else {
-		if (bt == BUILD_EPROVIDER || bt == BUILD_MPROVIDER)
-			ai->tasks->addBuildTask(bt, ut, group, pos);
-		else if (bt == BUILD_AG_DEFENSE && canAffordToBuild(group, ut))
-			ai->tasks->addBuildTask(bt, ut, group, pos);
-		else if (canAffordToBuild(group, ut) && !taskInProgress(bt))
-			ai->tasks->addBuildTask(bt, ut, group, pos);
+		CUnit *unit = group.units.begin()->second;
+		std::multimap<float, UnitType*> candidates;
+		ai->unittable->getBuildables(unit->type, c, candidates);
+
+		if (candidates.empty()) 
+			return;
+
+		float3 pos = group.pos();
+		std::multimap<float, UnitType*>::iterator i = --candidates.end();
+		bool affordable = false;
+		while(true) {
+			if (canAffordToBuild(group, i->second)) {
+				affordable = true;
+				break;
+			}
+			if (i == candidates.begin())
+				break;
+			i--;
+		}
+		switch(bt) {
+			case BUILD_EPROVIDER: {
+				if (windmap)
+					ai->tasks->addBuildTask(bt, i->second, group, pos);
+				else if (i->second->cats&WIND)
+					ai->tasks->addBuildTask(bt, (++candidates.begin())->second, group, pos);
+				else
+					ai->tasks->addBuildTask(bt, i->second, group, pos);
+				break;
+			}
+
+			case BUILD_MPROVIDER: {
+				ai->tasks->addBuildTask(bt, i->second, group, pos);
+				break;
+			}
+			
+			case BUILD_AG_DEFENSE: case BUILD_AA_DEFENSE: {
+				if (affordable && !taskInProgress(bt)) {
+					pos = ai->defensematrix->getDefenseBuildSite(i->second);
+					ai->tasks->addBuildTask(bt, i->second, group, pos);
+				}
+				break;
+			}
+
+			default: {
+				if (affordable && !taskInProgress(bt))
+					ai->tasks->addBuildTask(bt, i->second, group, pos);
+				break;
+			}
+		}
 	}
 }
 
@@ -200,8 +213,7 @@ void CEconomy::update(int frame) {
 			}
 			/* If we don't have a factory, build one */
 			if (ai->unittable->factories.empty()) {
-				UnitType *factory = ai->unittable->canBuild(unit->type, KBOT|TECH1);
-				buildOrAssist(BUILD_FACTORY, factory, *group);
+				buildOrAssist(BUILD_FACTORY, KBOT|TECH1, *group);
 				if (group->busy) continue;
 			}
 			ATask *task = NULL;
@@ -224,20 +236,17 @@ void CEconomy::update(int frame) {
 			}
 			/* If we don't have a factory, build one */
 			if (ai->unittable->factories.empty()) {
-				UnitType *factory = ai->unittable->canBuild(unit->type, LAND|KBOT|TECH1);
-				buildOrAssist(BUILD_FACTORY, factory, *group);
+				buildOrAssist(BUILD_FACTORY, KBOT|TECH1, *group);
 				if (group->busy) continue;
 			}
 			/* If we are overflowing energy build a estorage */
 			if (eexceeding) {
-				UnitType *storage = ai->unittable->canBuild(unit->type, LAND|ESTORAGE);
-				buildOrAssist(BUILD_ESTORAGE, storage, *group);
+				buildOrAssist(BUILD_ESTORAGE, LAND|ESTORAGE, *group);
 				if (group->busy) continue;
 			}
 			/* If we are overflowing metal build an mstorage */
 			if (mexceeding) {
-				UnitType *storage = ai->unittable->canBuild(unit->type, LAND|MSTORAGE);
-				buildOrAssist(BUILD_MSTORAGE, storage, *group);
+				buildOrAssist(BUILD_MSTORAGE, LAND|MSTORAGE, *group);
 				if (group->busy) continue;
 			}
 			/* If both requested, see what is required most */
@@ -263,16 +272,12 @@ void CEconomy::update(int frame) {
 				ai->tasks->addAssistTask(*task, *group);
 				if (group->busy) continue;
 			}
+			/* See if we can build defense */
+			buildOrAssist(BUILD_AG_DEFENSE, DEFENSE, *group);
+			if (group->busy) continue;
 			/* See if we can build a new factory */
 			if (!mRequest && !eRequest && mIncome > 20.0f) {
-				UnitType *factory = ai->unittable->canBuild(unit->type, KBOT|TECH2);
-				buildOrAssist(BUILD_FACTORY, factory, *group);
-				if (group->busy) continue;
-			}
-			/* See if we can build defense */
-			if (!mRequest && !eRequest) {
-				UnitType *defense = ai->unittable->canBuild(unit->type, DEFENSE);
-				buildOrAssist(BUILD_AG_DEFENSE, defense, *group);
+				buildOrAssist(BUILD_FACTORY, KBOT|TECH2, *group);
 				if (group->busy) continue;
 			}
 			/* Otherwise just expand */

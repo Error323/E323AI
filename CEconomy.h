@@ -14,6 +14,7 @@ class CGroup;
 class CUnit;
 class AIClasses;
 class UnitType;
+class float3;
 
 const float alpha = 0.0f;
 const float beta = 0.00f;
@@ -82,11 +83,11 @@ class CEconomy: public ARegistrar {
 		/* Active groups ingame */
 		std::map<int, CGroup*> activeGroups;
 
-		/* energy provider, factory, builder */
-		UnitType *energyProvider;
-
 		/* Altered by canAfford() */
 		bool eRequest, mRequest;
+
+		/* Is this a windmap ? */
+		bool windmap;
 
 		/* updateIncomes counter */
 		unsigned int incomes;
@@ -105,7 +106,7 @@ class CEconomy: public ARegistrar {
 
 		void buildMprovider(CGroup &group);
 		void buildEprovider(CGroup &group);
-		void buildOrAssist(buildType bt, UnitType *ut,  CGroup &group);
+		void buildOrAssist(buildType bt, unsigned c, CGroup &group);
 		bool taskInProgress(buildType bt);
 
 };

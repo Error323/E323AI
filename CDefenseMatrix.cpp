@@ -75,8 +75,9 @@ void CDefenseMatrix::update() {
 			float range = l->second->def->maxWeaponRange*0.8f;
 			for (k = c->members.begin(); k != c->members.end(); k++) {
 				const float3 pos2 = k->second->pos();
-				if ((pos1 - pos2).Length2D() < range) {
-					c->value -= k->first*range;
+				float dist = (pos1 - pos2).Length2D();
+				if (dist < range) {
+					c->value -= k->first*(range-dist);
 				}
 			}
 		}
@@ -90,7 +91,7 @@ void CDefenseMatrix::update() {
 			break;
 	}
 
-	draw();
+	//draw();
 }
 
 float CDefenseMatrix::getValue(CUnit *unit) {

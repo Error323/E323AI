@@ -453,6 +453,26 @@ float CUnitTable::calcUnitDps(UnitType *ut) {
 	return ut->def->power;
 }
 
+void CUnitTable::getBuildables(UnitType *ut, unsigned int c, std::multimap<float, UnitType*> &candidates) {
+	std::vector<unitCategory> utcats;
+	for (unsigned int i = 0; i < cats.size(); i++)
+		if (c&cats[i])
+			utcats.push_back(cats[i]);
+
+	std::map<int, UnitType*>::iterator j;
+	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); j++) {
+		bool qualifies = true;
+		unsigned int ccb = j->second->cats;
+		for (unsigned int i = 0; i < utcats.size(); i++)
+			if (!(utcats[i]&ccb))
+				qualifies = false;
+		if (qualifies)
+			candidates.insert(std::pair<float,UnitType*>(j->second->cost, j->second));
+	}
+	if (candidates.empty())
+		LOG_EE("CUnitTable::getBuildables no candidates found " << debugCategories(c))
+}
+
 UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
 	std::vector<unitCategory> utcats;
 	for (unsigned int i = 0; i < cats.size(); i++)

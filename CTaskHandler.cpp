@@ -256,6 +256,9 @@ void CTaskHandler::addFactoryTask(CUnit &factory) {
 }
 
 bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
+	if (assisters.size() > 10) 
+		return false;
+
 	float buildSpeed = factory->def->buildSpeed;
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
