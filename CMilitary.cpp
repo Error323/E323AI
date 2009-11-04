@@ -99,13 +99,17 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets) {
 		candidates.insert(std::pair<float,int>(dist, target));
 	}
 
-	int cur = 0, max = 20, target = -1;
+	int cur = 0;
+	int target = -1;
+	int max = ai->intel->numUnits < 80 ? ai->intel->numUnits : 80;
 	float closest = MAX_FLOAT;
 	std::multimap<float, int>::iterator i;
 	for (i = candidates.begin(); i != candidates.end(); i++) {
 		float3 epos = ai->cbc->GetUnitPos(i->second);
-		if (i->first*ai->threatmap->getThreat(epos) < closest)
+		if (i->first*ai->threatmap->getThreat(epos) < closest) {
 			target = i->second;
+			closest = i->first;
+		}
 		if (cur++ > max)
 			break;
 	}
