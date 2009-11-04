@@ -34,6 +34,17 @@ void CEconomy::init(CUnit &unit) {
 	eStart = utCommander->def->energyMake;
 }
 		
+bool CEconomy::hasBegunBuilding(CGroup &group) {
+	std::map<int, CUnit*>::iterator i;
+	for (i = group.units.begin(); i != group.units.end(); i++) {
+		CUnit *unit = i->second;
+		if (ai->unittable->builders.find(unit->key) != ai->unittable->builders.end())
+			return true;
+	}
+	
+	return false;
+}
+
 bool CEconomy::hasFinishedBuilding(CGroup &group) {
 	std::map<int, CUnit*>::iterator i;
 	for (i = group.units.begin(); i != group.units.end(); i++) {

@@ -11,6 +11,7 @@
 #include "CIntel.h"
 #include "CWishList.h"
 #include "CUnitTable.h"
+#include "CScopedTimer.h"
 
 CMilitary::CMilitary(AIClasses *ai): ARegistrar(200, std::string("military")) {
 	this->ai = ai;
@@ -95,11 +96,21 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets) {
 
 		float3 epos = ai->cbc->GetUnitPos(target);
 		float dist = (epos-ourPos).Length2D();
-		dist *= ai->threatmap->getThreat(epos);
 		candidates.insert(std::pair<float,int>(dist, target));
 	}
 
-	return candidates.empty() ? -1 : candidates.begin()->second;
+	int cur = 0, max = 10, target = -1;
+	float closest = MAX_FLOAT;
+	std::multimap<float, int>::iterator i;
+	for (i = candidates.begin(); i != candidates.end(); i++) {
+		float3 epos = ai->cbc->GetUnitPos(i->second);
+		if (i->first*ai->threatmap->getThreat(epos) < closest)
+			target = i->second;
+		if (cur++ > max)
+			break;
+	}
+
+	return target;
 }
 
 void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &targets2) {
@@ -157,7 +168,10 @@ void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &tar
 
 void CMilitary::update(int frame) {
 	std::vector<int> all, harras;
-	prepareTargets(all, harras);
+	{
+		CScopedTimer t(std::string("military-prepare"));
+		prepareTargets(all, harras);
+	}
 
 	std::map<int, CGroup*>::iterator i,k;
 	int busyScouts = 0;

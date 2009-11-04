@@ -185,6 +185,13 @@ void CPathfinder::resetMap(int thread) {
 	}
 }
 
+float CPathfinder::getETA(CGroup &group, float3 &pos) {
+	float3 gpos = group.pos();
+	float dist = (pos - gpos).Length2D()+MULTIPLEXER;
+	float travelTime = (dist / group.speed);
+	return travelTime;
+}
+
 void CPathfinder::updateFollowers() {
 	std::map<int, std::vector<float3> >::iterator path;
 	std::map<int, CUnit*>::iterator u;

@@ -55,9 +55,6 @@ class ATask: public ARegistrar {
 		/* Add a group to this task */
 		void addGroup(CGroup &group);
 
-		/* Is this task assistable */
-		bool assistable();
-
 		/* Update this task */
 		virtual void update() = 0;
 
@@ -72,10 +69,16 @@ class CTaskHandler: public ARegistrar {
 		~CTaskHandler(){};
 
 		struct BuildTask: public ATask {
-			BuildTask(AIClasses *_ai){t = BUILD; ai = _ai;}
+			BuildTask(AIClasses *_ai){t = BUILD; ai = _ai; timer = 0;}
 
 			/* The build task */
 			buildType bt;
+
+			/* The ETA in frames */
+			unsigned eta;
+
+			/* Time this buildtask has been active */
+			unsigned timer;
 
 			/* The UnitType to build */
 			UnitType *toBuild;

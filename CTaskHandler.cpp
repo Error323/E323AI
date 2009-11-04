@@ -50,29 +50,14 @@ void ATask::addGroup(CGroup &g) {
 	group->busy = true;
 }
 
-bool ATask::assistable() {
-	bool canAssist = false;
-	switch(t) {
-		case BUILD:
-			canAssist = (assisters.size() < 2);
-		break;
-		case ATTACK: case FACTORY_BUILD:
-			canAssist = (assisters.size() < 5);
-		break;
-		case MERGE: case ASSIST:
-			canAssist = false;
-		break;
-	}
-	return canAssist;
-}
-
 std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 	std::stringstream ss;
 	switch(atask.t) {
 		case BUILD: {
 			const CTaskHandler::BuildTask *task = dynamic_cast<const CTaskHandler::BuildTask*>(&atask);
 			ss << "BuildTask(" << task->key << ") " << CTaskHandler::buildStr[task->bt];
-			ss << "(" << task->toBuild->def->humanName << ") " << (*(task->group));
+			ss << "(" << task->toBuild->def->humanName << ") ETA(" << task->eta << ")";
+			ss << " timer("<<task->timer<<") "<<(*(task->group));
 		} break;
 
 		case ASSIST: {
@@ -194,6 +179,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 	buildTask->pos       = pos;
 	buildTask->bt        = build;
 	buildTask->toBuild   = toBuild;
+	buildTask->eta       = int(ai->pathfinder->getETA(group, pos)*1.3f);
 	buildTask->reg(*this);
 	buildTask->addGroup(group);
 
@@ -209,6 +195,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 void CTaskHandler::BuildTask::update() {
 	float3 grouppos = group->pos();
 	float3 dist = grouppos - pos;
+	timer += MULTIPLEXER;
 
 	/* See if we can build yet */
 	if (isMoving && dist.Length2D() <= group->buildRange) {
@@ -218,9 +205,14 @@ void CTaskHandler::BuildTask::update() {
 		isMoving = false;
 	}
 
-	/* We are building, lets see if it finished already */
-	if (!isMoving && ai->economy->hasFinishedBuilding(*group)) {
-		remove();
+	/* We are building or blocked */
+	if (!isMoving) { 
+		if (ai->economy->hasFinishedBuilding(*group))
+			remove();
+		if (timer > eta && !ai->economy->hasBegunBuilding(*group)) {
+			LOG_WW("BuildTask::update assuming buildpos blocked for group "<<(*group))
+			remove();
+		}
 	}
 }
 
@@ -230,13 +222,12 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister) {
 	for (i = assisters.begin(); i != assisters.end(); i++)
 		buildSpeed += (*i)->group->buildSpeed;
 
-	float3 apos = assister.pos();
 	float3 gpos = group->pos();
-	float dist = (apos - gpos).Length2D() - assister.buildRange;
 	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
-	float travelTime = dist / assister.speed;
+	float travelTime = ai->pathfinder->getETA(assister, gpos);
 
-	return (buildTime > travelTime);
+	/* If a build takes more then 5 seconds after arrival, we can assist it */
+	return ((buildTime+30*5) > travelTime);
 }
 
 /**************************************************************/
@@ -265,13 +256,10 @@ bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 		buildSpeed += (*i)->group->buildSpeed;
 
 	UnitType *toBuild = ai->unittable->factoriesBuilding[factory->key];
-	float3 apos = assister.pos();
 	float3 gpos = factory->pos();
-	float dist = (apos - gpos).Length2D() - assister.buildRange;
 	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
-	float travelTime = dist / assister.speed;
+	float travelTime = ai->pathfinder->getETA(assister, gpos);
 
-	/* If a build takes more then 10 seconds, we can assist it */
 	return (buildTime > travelTime);
 }
 

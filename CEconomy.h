@@ -66,7 +66,11 @@ class CEconomy: public ARegistrar {
 		/* Update averaged incomes */
 		void updateIncomes(int frame = 100);
 
+		/* See if this group has finished a building */
 		bool hasFinishedBuilding(CGroup &group);
+
+		/* See if this group begun building */
+		bool hasBegunBuilding(CGroup &group);
 
 	private:
 		AIClasses *ai;
