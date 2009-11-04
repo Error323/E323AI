@@ -3,7 +3,7 @@
 
 #include "../AIExport.h"
 
-#define MAX_INT   10000000000000
+#define MAX_INT   10000000000
 #define MAX_FLOAT float(MAX_INT)
 #define EPSILON   1/MAX_FLOAT
 
@@ -32,6 +32,8 @@
 
 /* Max enemy units */
 #define MAX_UNITS_AI 500
+
+#define MAX_UNITS_MILITARY 50
 
 /* Map ratios */
 #define HEIGHT2REAL 8

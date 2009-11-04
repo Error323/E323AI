@@ -101,7 +101,7 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets) {
 
 	int cur = 0;
 	int target = -1;
-	int max = ai->intel->numUnits < 80 ? ai->intel->numUnits : 80;
+	int max = ai->intel->numUnits < MAX_UNITS_MILITARY ? ai->intel->numUnits : MAX_UNITS_MILITARY;
 	float closest = MAX_FLOAT;
 	std::multimap<float, int>::iterator i;
 	for (i = candidates.begin(); i != candidates.end(); i++) {
