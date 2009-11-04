@@ -11,6 +11,7 @@
 #include "CGroup.h"
 #include "CUnit.h"
 #include "CRNG.h"
+#include "CPathfinder.h"
 
 CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	this->ai = ai;
@@ -32,13 +33,15 @@ void CEconomy::init(CUnit &unit) {
 	//float solarProf = utSolar->energyMake / utSolar->cost;
 	mStart = utCommander->def->metalMake;
 	eStart = utCommander->def->energyMake;
+	ecolvl = T1;
 }
 		
 bool CEconomy::hasBegunBuilding(CGroup &group) {
 	std::map<int, CUnit*>::iterator i;
 	for (i = group.units.begin(); i != group.units.end(); i++) {
 		CUnit *unit = i->second;
-		if (ai->unittable->builders.find(unit->key) != ai->unittable->builders.end())
+		if (ai->unittable->idle.find(unit->key) == ai->unittable->builders.end()
+			|| !ai->unittable->idle[unit->key])
 			return true;
 	}
 	
@@ -124,8 +127,16 @@ void CEconomy::buildMprovider(CGroup &group) {
 		float3 mexPos;
 		bool canBuildMex = ai->metalmap->getMexSpot(group, mexPos);
 		if (canBuildMex) {
-			UnitType *mex = ai->unittable->canBuild(unit->type, LAND|MEXTRACTOR);
-			ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, group, mexPos);
+			bool b1 = mIncome < 3.0f;
+			bool b2 = unit->def->isCommander;
+			if (b1 || (!b2 || ai->pathfinder->getETA(group, mexPos) < 32*20)) {
+				UnitType *mex = ai->unittable->canBuild(unit->type, LAND|MEXTRACTOR);
+				ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, group, mexPos);
+			}
+			else {
+				UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
+				ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
+			}
 		}
 		else {
 			UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
@@ -146,6 +157,7 @@ void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 	if (task != NULL)
 		ai->tasks->addAssistTask(*task, group);
 	else {
+		/* Retrieve the allowed buildable units */
 		CUnit *unit = group.units.begin()->second;
 		std::multimap<float, UnitType*> candidates;
 		ai->unittable->getBuildables(unit->type, c, candidates);
@@ -153,51 +165,65 @@ void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 		if (candidates.empty()) 
 			return;
 
-		float3 pos = group.pos();
-		std::multimap<float, UnitType*>::iterator i = --candidates.end();
+		/* Determine which of these we can afford */
+		std::multimap<float, UnitType*>::iterator i = candidates.begin();
+		int iterations = ceil(candidates.size() / (6-ecolvl));
 		bool affordable = false;
-		while(true) {
-			if (canAffordToBuild(group, i->second) && rng.RandInt(2) == 1) {
+		while(iterations >= 0) {
+			if (canAffordToBuild(group, i->second))
 				affordable = true;
+			else
+				break;
+
+			if (i == --candidates.end())
+				break;
+			iterations--;
+			i++;
+		}
+		
+		/* Determine the location where to build */
+		float3 pos = group.pos();
+		facing f = unit->getBestFacing(pos);
+		int mindist = 5;
+		float startRadius = unit->def->buildDistance;
+		float3 goal = ai->cb->ClosestBuildSite(i->second->def, pos, startRadius, mindist, f);
+		int tries = 0;
+		while (goal == ERRORVECTOR) {
+			startRadius += i->second->def->buildDistance;
+			goal = ai->cb->ClosestBuildSite(i->second->def, pos, startRadius, mindist, f);
+			tries++;
+			if (tries > 10) {
+				goal = pos;
 				break;
 			}
-			if (i == candidates.begin())
-				break;
-			i--;
 		}
+
+		/* Perform the build */
 		switch(bt) {
 			case BUILD_EPROVIDER: {
 				if (windmap)
-					ai->tasks->addBuildTask(bt, i->second, group, pos);
+					ai->tasks->addBuildTask(bt, i->second, group, goal);
 				else if (i->second->cats&WIND)
-					ai->tasks->addBuildTask(bt, (++candidates.begin())->second, group, pos);
+					ai->tasks->addBuildTask(bt, (++candidates.begin())->second, group, goal);
 				else
-					ai->tasks->addBuildTask(bt, i->second, group, pos);
+					ai->tasks->addBuildTask(bt, i->second, group, goal);
 				break;
 			}
 
 			case BUILD_MPROVIDER: {
-				ai->tasks->addBuildTask(bt, i->second, group, pos);
+				buildMprovider(group);
 				break;
 			}
 			
 			case BUILD_AG_DEFENSE: case BUILD_AA_DEFENSE: {
-				pos = ai->defensematrix->getDefenseBuildSite(i->second);
-				if (i == candidates.begin()) {
-					while(i != --candidates.end()) {
-						if (rng.RandInt(2) == 1)
-							i++;
-						else
-							break;
-					}
-				}
-				ai->tasks->addBuildTask(bt, i->second, group, pos);
+				goal = ai->defensematrix->getDefenseBuildSite(i->second);
+				ai->tasks->addBuildTask(bt, i->second, group, goal);
 				break;
 			}
 
 			default: {
 				if (affordable && !taskInProgress(bt))
-					ai->tasks->addBuildTask(bt, i->second, group, pos);
+					ai->tasks->addBuildTask(bt, i->second, group, goal);
 				break;
 			}
 		}
@@ -295,8 +321,12 @@ void CEconomy::update(int frame) {
 				if (group->busy) continue;
 			}
 			/* See if we can build a new factory */
-			if (!mRequest && !eRequest && mIncome > 20.0f) {
-				buildOrAssist(BUILD_FACTORY, KBOT|TECH2, *group);
+			if (!mRequest && !eRequest && ecolvl >= T3) {
+				unsigned techlvl = TECH2;
+				if (ecolvl >= T5)
+					techlvl = TECH3;
+				if (!ai->unittable->gotFactory(KBOT|techlvl))
+					buildOrAssist(BUILD_FACTORY, KBOT|techlvl, *group);
 				if (group->busy) continue;
 			}
 			/* Otherwise just expand */
@@ -334,7 +364,7 @@ void CEconomy::preventStalling() {
 
 	/* If we are only stalling energy, see if we can turn metalmakers off */
 	std::map<int, bool>::iterator j;
-	if (estall && !mstall) {
+	if ((estall && mstall) || (eRequest && !mRequest)) {
 		int success = 0;
 		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
 			if (j->second) {
@@ -350,7 +380,7 @@ void CEconomy::preventStalling() {
 	}
 
 	/* If we are only stalling metal, see if we can turn metalmakers on */
-	if (mstall && !estall) {
+	if ((mstall && !estall) || (mRequest && !eRequest)) {
 		int success = 0;
 		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
 			if (!j->second) {
@@ -439,26 +469,10 @@ void CEconomy::updateIncomes(int frame) {
 	mRequest   = (mNow < (mStorage*0.5f));
 	eRequest   = (eNow < (eStorage*0.5f));
 
-/*
-	printf("min(%0.2f)\tmout(%0.2f)\tmnow(%0.2f)\tmstor(%0.2f)\tmstall(%d)\tmreq(%d)\n",
-			mIncome,
-			mUsage,
-			mNow,
-			mStorage,
-			mstall,
-			mRequest
-	);
-	printf("ein(%0.2f)\teout(%0.2f)\tenow(%0.2f)\testor(%0.2f)\testall(%d)\tereq(%d)\n\n",
-			eIncome,
-			eUsage,
-			eNow,
-			eStorage,
-			estall,
-			eRequest
-	);
-*/
-
-
+	if (mIncome >= 10) ecolvl  = T2;
+	if (mIncome >= 20) ecolvl  = T3;
+	if (mIncome >= 40) ecolvl  = T4;
+	if (mIncome >= 80) ecolvl  = T5;
 }
 
 ATask* CEconomy::canAssist(buildType t, CGroup &group) {

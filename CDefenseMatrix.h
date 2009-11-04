@@ -21,7 +21,7 @@ class CDefenseMatrix {
 		/* Get the spot that needs defense the most */
 		float3 getDefenseBuildSite(UnitType *tower);
 
-		/* Get clusters >= 3 */
+		/* Get clusters >= 2 */
 		int getBigClusters();
 
 

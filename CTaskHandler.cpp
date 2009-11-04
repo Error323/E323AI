@@ -179,7 +179,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 	buildTask->pos       = pos;
 	buildTask->bt        = build;
 	buildTask->toBuild   = toBuild;
-	buildTask->eta       = int(ai->pathfinder->getETA(group, pos)*1.3f);
+	buildTask->eta       = int((ai->pathfinder->getETA(group, pos)+100)*1.3f);
 	buildTask->reg(*this);
 	buildTask->addGroup(group);
 
@@ -209,7 +209,7 @@ void CTaskHandler::BuildTask::update() {
 	if (!isMoving) { 
 		if (ai->economy->hasFinishedBuilding(*group))
 			remove();
-		if (timer > eta && !ai->economy->hasBegunBuilding(*group)) {
+		else if (timer > eta && !ai->economy->hasBegunBuilding(*group)) {
 			LOG_WW("BuildTask::update assuming buildpos blocked for group "<<(*group))
 			remove();
 		}

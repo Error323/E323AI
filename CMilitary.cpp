@@ -99,7 +99,7 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets) {
 		candidates.insert(std::pair<float,int>(dist, target));
 	}
 
-	int cur = 0, max = 10, target = -1;
+	int cur = 0, max = 20, target = -1;
 	float closest = MAX_FLOAT;
 	std::multimap<float, int>::iterator i;
 	for (i = candidates.begin(); i != candidates.end(); i++) {
@@ -168,10 +168,7 @@ void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &tar
 
 void CMilitary::update(int frame) {
 	std::vector<int> all, harras;
-	{
-		CScopedTimer t(std::string("military-prepare"));
-		prepareTargets(all, harras);
-	}
+	prepareTargets(all, harras);
 
 	std::map<int, CGroup*>::iterator i,k;
 	int busyScouts = 0;

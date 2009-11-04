@@ -250,7 +250,7 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	if (bid > 0) builders[bid] = false;
 	activeUnits[uid] = unit;
 	idle[bid] = false;
-	idle[uid] = true;
+	idle[uid] = false;
 	if ((unit->type->cats&STATIC) && (unit->type->cats&ATTACKER))
 		defenses[unit->key] = unit;
 	return unit;
@@ -451,6 +451,25 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 float CUnitTable::calcUnitDps(UnitType *ut) {
 	// FIXME: Make our own *briljant* dps calc here
 	return ut->def->power;
+}
+
+bool CUnitTable::gotFactory(unsigned c) {
+	std::vector<unitCategory> utcats;
+	for (unsigned int i = 0; i < cats.size(); i++)
+		if (c&cats[i])
+			utcats.push_back(cats[i]);
+
+	std::map<int, bool>::iterator i;
+	for (i = factories.begin(); i != factories.end(); i++) {
+		bool qualifies = true;
+		unsigned int ccb = activeUnits[i->first]->type->cats;
+		for (unsigned int i = 0; i < utcats.size(); i++)
+			if (!(utcats[i]&ccb))
+				qualifies = false;
+		if (qualifies)
+			return true;
+	}
+	return false;
 }
 
 void CUnitTable::getBuildables(UnitType *ut, unsigned int c, std::multimap<float, UnitType*> &candidates) {

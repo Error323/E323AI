@@ -59,6 +59,7 @@ class CUnitTable: public ARegistrar {
 		std::map<int, CUnit*>     activeUnits;
 		std::map<int, bool>       factories;
 		std::map<int, CUnit*>     defenses;
+		std::map<int, int>        newUnits;
 
 		/* Special commander hook, since it's the first to spawn */
 		UnitType *comm;
@@ -69,6 +70,7 @@ class CUnitTable: public ARegistrar {
 		/* Returns a unittype with categories that ut can build */
 		UnitType* canBuild(UnitType *ut, unsigned int categories);
 		void getBuildables(UnitType *ut, unsigned int c, std::multimap<float, UnitType*> &candidates);
+		bool gotFactory(unsigned c);
 
 		/* Debugging functions */
 		std::string debugCategories(UnitType *ut);
