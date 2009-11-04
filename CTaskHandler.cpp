@@ -216,7 +216,7 @@ void CTaskHandler::BuildTask::update() {
 	}
 }
 
-bool CTaskHandler::BuildTask::assistable(CGroup &assister) {
+bool CTaskHandler::BuildTask::assistable(CGroup &assister, float &travelTime) {
 	float buildSpeed = group->buildSpeed;
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
@@ -224,7 +224,7 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister) {
 
 	float3 gpos = group->pos();
 	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
-	float travelTime = ai->pathfinder->getETA(assister, gpos);
+	travelTime = ai->pathfinder->getETA(assister, gpos);
 
 	/* If a build takes more then 5 seconds after arrival, we can assist it */
 	return ((buildTime+30*5) > travelTime);

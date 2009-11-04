@@ -42,7 +42,7 @@
 #define GROUP_SIZE 3
 
 /* Number of multiplex iterations */
-#define MULTIPLEXER 9
+#define MULTIPLEXER 10 
 
 /* Draw time */
 #define DRAW_TIME MULTIPLEXER*30

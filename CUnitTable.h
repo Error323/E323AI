@@ -59,10 +59,15 @@ class CUnitTable: public ARegistrar {
 		std::map<int, CUnit*>     activeUnits;
 		std::map<int, bool>       factories;
 		std::map<int, CUnit*>     defenses;
-		std::map<int, int>        newUnits;
+		std::map<int, int>        unitsAliveTime;
 
 		/* Special commander hook, since it's the first to spawn */
 		UnitType *comm;
+
+		/* Determine if alive long enough */
+		bool canPerformTask(CUnit &unit);
+
+		void update();
 
 		/* Overload */
 		void remove(ARegistrar &unit);

@@ -86,7 +86,7 @@ class CTaskHandler: public ARegistrar {
 			/* Update the build task, assumes 1 group on a task! */
 			void update();
 
-			bool assistable(CGroup &group);
+			bool assistable(CGroup &group, float &travelTime);
 
 			void reset(float3 &pos, buildType bt, UnitType *ut);
 		};

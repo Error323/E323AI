@@ -80,6 +80,7 @@ void CE323AI::UnitCreated(int uid, int bid) {
 void CE323AI::UnitFinished(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
 	ai->unittable->idle[uid] = true;
+	ai->unittable->unitsAliveTime[uid] = 0;
 
 	LOG_II("CE323AI::UnitFinished " << (*unit))
 
@@ -246,6 +247,11 @@ void CE323AI::Update() {
 		case 8: { /* update taskhandler */
 			CScopedTimer t(std::string("tasks"));
 			ai->tasks->update();
+		}
+		
+		case 9: { /* update unit table */
+			CScopedTimer t(std::string("unittable"));
+			ai->unittable->update();
 		}
 		break;
 	}

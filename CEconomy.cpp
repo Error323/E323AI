@@ -133,12 +133,12 @@ void CEconomy::buildMprovider(CGroup &group) {
 				UnitType *mex = ai->unittable->canBuild(unit->type, LAND|MEXTRACTOR);
 				ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, group, mexPos);
 			}
-			else {
+			else if (!eRequest && !estall) {
 				UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 				ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
 			}
 		}
-		else {
+		else if (!estall) {
 			UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 			ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
 		}
@@ -238,9 +238,10 @@ void CEconomy::update(int frame) {
 	std::map<int, CGroup*>::iterator i;
 	for (i = activeGroups.begin(); i != activeGroups.end(); i++) {
 		CGroup *group = i->second;
-		if (group->busy) continue;
-
 		CUnit *unit = group->units.begin()->second;
+
+		if (group->busy || !ai->unittable->canPerformTask(*unit)) continue;
+
 		float3 pos = group->pos();
 
 		if (unit->def->isCommander) {
@@ -469,31 +470,37 @@ void CEconomy::updateIncomes(int frame) {
 	mRequest   = (mNow < (mStorage*0.5f));
 	eRequest   = (eNow < (eStorage*0.5f));
 
-	if (mIncome >= 10) ecolvl  = T2;
-	if (mIncome >= 20) ecolvl  = T3;
-	if (mIncome >= 40) ecolvl  = T4;
-	if (mIncome >= 80) ecolvl  = T5;
+	if (mIncome >= 10) ecolvl = T2;
+	if (mIncome >= 20) ecolvl = T3;
+	if (mIncome >= 40) ecolvl = T4;
+	if (mIncome >= 80) ecolvl = T5;
 }
 
 ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 	std::map<int, CTaskHandler::BuildTask*>::iterator i;
-	std::vector<CTaskHandler::BuildTask*> suited;
+	std::multimap<float, CTaskHandler::BuildTask*> suited;
 	for (i = ai->tasks->activeBuildTasks.begin(); i != ai->tasks->activeBuildTasks.end(); i++) {
 		CTaskHandler::BuildTask *buildtask = i->second;
 
 		/* Only build tasks we are interested in */
-		if (buildtask->bt != t || !buildtask->assistable(group))
+		float travelTime;
+		if (buildtask->bt != t || !buildtask->assistable(group, travelTime))
 			continue;
 
-		suited.push_back(buildtask);
+		
+		suited.insert(std::pair<float, CTaskHandler::BuildTask*>(travelTime, buildtask));
 	}
 
 	/* There are no suited tasks that require assistance */
 	if (suited.empty())
 		return NULL;
 
-	/* See if we can get there in time */
-	return suited[0];
+	bool isCommander = group.units.begin()->second->def->isCommander;
+	bool isToFar     = suited.begin()->first > 30*10;
+	if (isCommander && isToFar)
+		return NULL;
+
+	return suited.begin()->second;
 }
 
 ATask* CEconomy::canAssistFactory(CGroup &group) {

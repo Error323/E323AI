@@ -219,6 +219,7 @@ void CUnitTable::remove(ARegistrar &unit) {
 	activeUnits.erase(unit.key);
 	factories.erase(unit.key);
 	defenses.erase(unit.key);
+	unitsAliveTime.erase(unit.key);
 }
 
 CUnit* CUnitTable::getUnit(int uid) {
@@ -254,6 +255,17 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	if ((unit->type->cats&STATIC) && (unit->type->cats&ATTACKER))
 		defenses[unit->key] = unit;
 	return unit;
+}
+
+void CUnitTable::update() {
+	std::map<int,int>::iterator i;
+	for (i = unitsAliveTime.begin(); i != unitsAliveTime.end(); i++)
+		i->second+=MULTIPLEXER;
+}
+
+bool CUnitTable::canPerformTask(CUnit &unit) {
+	/* lifetime of more then 5 seconds */
+	return unitsAliveTime.find(unit.key) != unitsAliveTime.end() && unitsAliveTime[unit.key] > 30*5;
 }
 
 void CUnitTable::buildTechTree() {
