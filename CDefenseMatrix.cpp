@@ -15,6 +15,16 @@ float3 CDefenseMatrix::getDefenseBuildSite(UnitType *tower) {
 	return targetCluster->center;
 }
 
+int CDefenseMatrix::getBigClusters() {
+	int bigClusters = 0;
+	std::multimap<float, Cluster*>::iterator i;
+	for (i = clusters.begin(); i != clusters.end(); i++) {
+		if (i->second->members.size() >= 2)
+			bigClusters++;
+	}
+	return bigClusters;
+}
+
 void CDefenseMatrix::update() {
 	/* Reset variables */
 	buildingToCluster.clear();
@@ -73,11 +83,12 @@ void CDefenseMatrix::update() {
 		for (l = ai->unittable->defenses.begin(); l != ai->unittable->defenses.end(); l++) {
 			const float3 pos1 = l->second->pos();
 			float range = l->second->def->maxWeaponRange*0.8f;
+			float power = ai->cb->GetUnitPower(l->first);
 			for (k = c->members.begin(); k != c->members.end(); k++) {
 				const float3 pos2 = k->second->pos();
 				float dist = (pos1 - pos2).Length2D();
 				if (dist < range) {
-					c->value -= k->first*(range-dist);
+					c->value -= ((power+k->first)*(range-dist)) / c->members.size();
 				}
 			}
 		}

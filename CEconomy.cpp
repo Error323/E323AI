@@ -146,7 +146,7 @@ void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 		std::multimap<float, UnitType*>::iterator i = --candidates.end();
 		bool affordable = false;
 		while(true) {
-			if (canAffordToBuild(group, i->second) && rng.RandInt(1) == 0) {
+			if (canAffordToBuild(group, i->second) && rng.RandInt(2) == 1) {
 				affordable = true;
 				break;
 			}
@@ -171,10 +171,16 @@ void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 			}
 			
 			case BUILD_AG_DEFENSE: case BUILD_AA_DEFENSE: {
-				if (affordable) {
-					pos = ai->defensematrix->getDefenseBuildSite(i->second);
-					ai->tasks->addBuildTask(bt, i->second, group, pos);
+				pos = ai->defensematrix->getDefenseBuildSite(i->second);
+				if (i == candidates.begin()) {
+					while(i != --candidates.end()) {
+						if (rng.RandInt(2) == 1)
+							i++;
+						else
+							break;
+					}
 				}
+				ai->tasks->addBuildTask(bt, i->second, group, pos);
 				break;
 			}
 
@@ -249,6 +255,11 @@ void CEconomy::update(int frame) {
 				buildOrAssist(BUILD_MSTORAGE, LAND|MSTORAGE, *group);
 				if (group->busy) continue;
 			}
+			/* See if we can build defense */
+			if (ai->defensematrix->getBigClusters() > ai->unittable->defenses.size()) {
+				buildOrAssist(BUILD_AG_DEFENSE, DEFENSE, *group);
+				if (group->busy) continue;
+			}
 			/* If both requested, see what is required most */
 			if (eRequest && mRequest) {
 				if ((mNow / mStorage) > (eNow / eStorage))
@@ -277,9 +288,6 @@ void CEconomy::update(int frame) {
 				buildOrAssist(BUILD_FACTORY, KBOT|TECH2, *group);
 				if (group->busy) continue;
 			}
-			/* See if we can build defense */
-			buildOrAssist(BUILD_AG_DEFENSE, DEFENSE, *group);
-			if (group->busy) continue;
 			/* Otherwise just expand */
 			if ((mNow / mStorage) > (eNow / eStorage))
 				buildEprovider(*group);

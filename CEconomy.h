@@ -16,8 +16,8 @@ class AIClasses;
 class UnitType;
 class float3;
 
-const float alpha = 0.0f;
-const float beta = 0.00f;
+const float alpha = 0.2f;
+const float beta = 0.05f;
 
 class CEconomy: public ARegistrar {
 	public:

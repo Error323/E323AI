@@ -21,6 +21,10 @@ class CDefenseMatrix {
 		/* Get the spot that needs defense the most */
 		float3 getDefenseBuildSite(UnitType *tower);
 
+		/* Get clusters >= 3 */
+		int getBigClusters();
+
+
 	private:
 		/* A group with spacing s between each building such that s < n */
 		struct Cluster {
