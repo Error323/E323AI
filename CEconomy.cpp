@@ -365,7 +365,7 @@ void CEconomy::preventStalling() {
 
 	/* If we are only stalling energy, see if we can turn metalmakers off */
 	std::map<int, bool>::iterator j;
-	if ((estall && mstall) || (eRequest && !mRequest)) {
+	if ((estall && !mstall) || (eRequest && !mRequest)) {
 		int success = 0;
 		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
 			if (j->second) {

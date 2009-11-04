@@ -5,8 +5,10 @@
 #include <map>
 
 #include "headers/Defines.h"
+#include "headers/HEngine.h"
 
 class AIClasses;
+class CUnit;
 
 class CIntel {
 	public:
@@ -14,7 +16,9 @@ class CIntel {
 		~CIntel(){};
 
 		void update(int frame);
+		void init();
 		bool enemyInbound();
+		float3 getEnemyVector();
 
 		std::vector<int> factories;
 		std::vector<int> attackers;
@@ -25,6 +29,8 @@ class CIntel {
 
 		std::multimap<float,unitCategory> roulette;
 
+		int numUnits;
+
 
 	private:
 		AIClasses *ai;
@@ -33,6 +39,7 @@ class CIntel {
 		std::map<unitCategory,int> counts;
 		std::vector<unitCategory> selector;
 		int totalCount;
+		float3 enemyvector;
 
 		/* Reset enemy unit counters */
 		void resetCounters();

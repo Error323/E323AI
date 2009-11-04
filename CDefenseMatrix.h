@@ -31,10 +31,13 @@ class CDefenseMatrix {
 			Cluster() {
 				value = 0.0f;
 				center = ZEROVECTOR;
+				defenses = 0;
 			}
 			float value;
 
 			float3 center;
+
+			int defenses;
 
 			std::multimap<float, CUnit*> members;
 		};

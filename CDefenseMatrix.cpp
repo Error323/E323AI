@@ -4,15 +4,21 @@
 #include "CUnit.h"
 #include "CUnitTable.h"
 #include "CThreatMap.h"
+#include "CIntel.h"
 
 CDefenseMatrix::CDefenseMatrix(AIClasses *ai) {
 	this->ai = ai;
 }
 
 float3 CDefenseMatrix::getDefenseBuildSite(UnitType *tower) {
-	if (clusters.empty()) return ZEROVECTOR;
-	Cluster *targetCluster = (--clusters.end())->second;
-	return targetCluster->center;
+	Cluster *c = (--clusters.end())->second;
+	float3 dir = ai->intel->getEnemyVector() - c->center;
+	dir.Normalize();
+	dir *= (tower->def->maxWeaponRange*0.5f);
+	// angle code here
+	float3 pos = dir + c->center;
+	ai->cb->CreateLineFigure(c->center, pos, 10.0f, 0, DRAW_TIME, 1000);
+	return pos;
 }
 
 int CDefenseMatrix::getBigClusters() {
@@ -84,13 +90,17 @@ void CDefenseMatrix::update() {
 			const float3 pos1 = l->second->pos();
 			float range = l->second->def->maxWeaponRange*0.8f;
 			float power = ai->cb->GetUnitPower(l->first);
+			bool hasDefense = false;
 			for (k = c->members.begin(); k != c->members.end(); k++) {
 				const float3 pos2 = k->second->pos();
 				float dist = (pos1 - pos2).Length2D();
 				if (dist < range) {
 					c->value -= ((power+k->first)*(range-dist)) / c->members.size();
+					hasDefense = true;
 				}
 			}
+			if (hasDefense)
+				c->defenses++;
 		}
 		
 		/* Add the cluster */
@@ -102,7 +112,7 @@ void CDefenseMatrix::update() {
 			break;
 	}
 
-	//draw();
+	draw();
 }
 
 float CDefenseMatrix::getValue(CUnit *unit) {

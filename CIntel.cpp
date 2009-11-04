@@ -2,6 +2,7 @@
 
 #include "CAI.h"
 #include "CUnitTable.h"
+#include "CUnit.h"
 
 CIntel::CIntel(AIClasses *ai) {
 	this->ai = ai;
@@ -13,9 +14,26 @@ CIntel::CIntel(AIClasses *ai) {
 	selector.push_back(ANTIAIR);
 	for (size_t i = 0; i < selector.size(); i++)
 		counts[selector[i]] = 1;
+	numUnits = 1;
+}
+
+float3 CIntel::getEnemyVector() {
+	return enemyvector;
+}
+
+void CIntel::init() {
+	numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
+	assert(numUnits > 0);
+	enemyvector = float3(0.0f, 0.0f, 0.0f);
+	for (int i = 0; i < numUnits; i++) {
+		enemyvector += ai->cbc->GetUnitPos(units[i]);
+	}
+	enemyvector /= numUnits;
 }
 
 void CIntel::update(int frame) {
+	if (frame >= 100 && frame <= 100+MULTIPLEXER)
+		init();
 	mobileBuilders.clear();
 	factories.clear();
 	attackers.clear();
@@ -23,7 +41,7 @@ void CIntel::update(int frame) {
 	energyMakers.clear();
 	rest.clear();
 	resetCounters();
-	int numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
+	numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
 	for (int i = 0; i < numUnits; i++) {
 		const UnitDef *ud = ai->cbc->GetUnitDef(units[i]);
 		UnitType      *ut = UT(ud->id);

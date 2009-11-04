@@ -3,7 +3,7 @@
 
 #include "../AIExport.h"
 
-#define MAX_INT   1000000000
+#define MAX_INT   10000000000000
 #define MAX_FLOAT float(MAX_INT)
 #define EPSILON   1/MAX_FLOAT
 
