@@ -146,7 +146,7 @@ void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 		std::multimap<float, UnitType*>::iterator i = --candidates.end();
 		bool affordable = false;
 		while(true) {
-			if (canAffordToBuild(group, i->second)) {
+			if (canAffordToBuild(group, i->second) && rng.RandInt(1) == 0) {
 				affordable = true;
 				break;
 			}
@@ -171,7 +171,7 @@ void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 			}
 			
 			case BUILD_AG_DEFENSE: case BUILD_AA_DEFENSE: {
-				if (affordable && !taskInProgress(bt)) {
+				if (affordable) {
 					pos = ai->defensematrix->getDefenseBuildSite(i->second);
 					ai->tasks->addBuildTask(bt, i->second, group, pos);
 				}
@@ -272,14 +272,14 @@ void CEconomy::update(int frame) {
 				ai->tasks->addAssistTask(*task, *group);
 				if (group->busy) continue;
 			}
-			/* See if we can build defense */
-			buildOrAssist(BUILD_AG_DEFENSE, DEFENSE, *group);
-			if (group->busy) continue;
 			/* See if we can build a new factory */
 			if (!mRequest && !eRequest && mIncome > 20.0f) {
 				buildOrAssist(BUILD_FACTORY, KBOT|TECH2, *group);
 				if (group->busy) continue;
 			}
+			/* See if we can build defense */
+			buildOrAssist(BUILD_AG_DEFENSE, DEFENSE, *group);
+			if (group->busy) continue;
 			/* Otherwise just expand */
 			if ((mNow / mStorage) > (eNow / eStorage))
 				buildEprovider(*group);
@@ -495,8 +495,8 @@ bool CEconomy::canAffordToBuild(CGroup &group, UnitType *utToBuild) {
 	float buildTime   = (utToBuild->def->buildTime / group.buildSpeed) * 32.0f;
 	float mCost       = utToBuild->def->metalCost;
 	float eCost       = utToBuild->def->energyCost;
-	float mPrediction = (mIncome - mUsage)*buildTime - mCost + mNow;
-	float ePrediction = (eIncome - eUsage)*buildTime - eCost + eNow;
+	float mPrediction = (mIncome - mUsage - mCost/buildTime)*buildTime - mCost + mNow;
+	float ePrediction = (eIncome - eUsage - eCost/buildTime)*buildTime - eCost + eNow;
 	mRequest          = mPrediction < 0.0f;
 	eRequest          = ePrediction < 0.0f;
 	return (mPrediction >= 0.0f && ePrediction >= 0.0f);

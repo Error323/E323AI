@@ -466,8 +466,10 @@ void CUnitTable::getBuildables(UnitType *ut, unsigned int c, std::multimap<float
 		for (unsigned int i = 0; i < utcats.size(); i++)
 			if (!(utcats[i]&ccb))
 				qualifies = false;
-		if (qualifies)
-			candidates.insert(std::pair<float,UnitType*>(j->second->cost, j->second));
+		if (qualifies) {
+			float cost = j->second->cost;
+			candidates.insert(std::pair<float,UnitType*>(cost, j->second));
+		}
 	}
 	if (candidates.empty())
 		LOG_EE("CUnitTable::getBuildables no candidates found " << debugCategories(c))

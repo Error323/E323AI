@@ -3,6 +3,7 @@
 #include "CAI.h"
 #include "CUnitTable.h"
 #include "CUnit.h"
+#include "CRNG.h"
 
 CWishList::CWishList(AIClasses *ai) {
 	this->ai = ai;
@@ -10,12 +11,12 @@ CWishList::CWishList(AIClasses *ai) {
 
 void CWishList::push(unsigned categories, buildPriority p) {
 	std::map<int, bool>::iterator itFac = ai->unittable->factories.begin();
-	UnitType *ut = NULL;
 	UnitType *fac;
 	for (;itFac != ai->unittable->factories.end(); itFac++) {
 		fac = UT(ai->cb->GetUnitDef(itFac->first)->id);
-		ut = ai->unittable->canBuild(fac, categories);
-		if (ut != NULL) { 
+		std::multimap<float, UnitType*> candidates;
+		ai->unittable->getBuildables(fac, categories, candidates);
+		if (!candidates.empty()) { 
 			/* Initialize new std::vector */
 			if (wishlist.find(fac->id) == wishlist.end()) {
 				std::vector<Wish> L;
@@ -23,7 +24,14 @@ void CWishList::push(unsigned categories, buildPriority p) {
 			}
 
 			/* pushback, uniqify, stable sort */
-			wishlist[fac->id].push_back(Wish(ut, p));
+			std::multimap<float, UnitType*>::iterator i = --candidates.end();
+			while(true) {
+				if (rng.RandInt(2) == 0 || i == candidates.begin())
+					break;
+				i--;
+			}
+			
+			wishlist[fac->id].push_back(Wish(i->second, p));
 			unique(wishlist[fac->id]);
 			std::stable_sort(wishlist[fac->id].begin(), wishlist[fac->id].end());
 		}
