@@ -19,15 +19,10 @@ class float3;
 const float alpha = 0.2f;
 const float beta = 0.05f;
 
-enum ecoLevel {T1 = 1, T2 = 2, T3 = 3, T4 = 4, T5 = 5};
-
 class CEconomy: public ARegistrar {
 	public:
 		CEconomy(AIClasses *ai);
 		~CEconomy(){};
-
-		/* Ecolevel, a sort of measurement how far advanced we are */
-		ecoLevel ecolvl;
 
 		/* overal mNow averaged over 5 logical frames */
 		float mNow, mNowSummed;
@@ -49,6 +44,9 @@ class CEconomy: public ARegistrar {
 		float mStorage;
 		/* energy storage */
 		float eStorage;
+		
+		/* State, a sort of measurement how far advanced we are */
+		State state, prevState;
 
 		/* stalling/exceeding vars, updated in updateIncomes() */
 		bool mstall, estall, mexceeding, eexceeding;
@@ -91,6 +89,10 @@ class CEconomy: public ARegistrar {
 
 		/* Active groups ingame */
 		std::map<int, CGroup*> activeGroups;
+
+		/* Min and Max workers per level */
+		std::map<State, int> minWorkers;
+		std::map<State, int> maxWorkers;
 
 		/* Altered by canAfford() */
 		bool eRequest, mRequest;

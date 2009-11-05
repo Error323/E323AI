@@ -77,7 +77,7 @@ void CThreatMap::update(int frame) {
 						const unsigned int mx = (unsigned int) round(pos.x);
 						const unsigned int mz = (unsigned int) round(pos.z);
 						if (mx < X && mz < Z)
-							map[ID(mx,mz)] += gauss(power, 2.0f, 0.0f)/gauss(0.0f, 2.0f, 0.0f);
+							map[ID(mx,mz)] += power;
 					}
 				}
 			}

@@ -15,6 +15,13 @@ void CGroup::addUnit(CUnit &unit) {
 	LOG_II("CGroup::add " << unit)
 	MoveData* md = ai->cb->GetUnitDef(unit.key)->movedata;
 
+	if (unit.builder > 0) {
+		unsigned c = ai->unittable->activeUnits[unit.builder]->type->cats;
+		if (c&TECH1) techlvl = 1;
+		if (c&TECH2) techlvl = 2;
+		if (c&TECH3) techlvl = 3;
+	}
+
 	if (md->maxSlope <= maxSlope) {
 		moveType = md->pathType;
 		maxSlope = md->maxSlope;
@@ -91,6 +98,7 @@ void CGroup::reset() {
 	buildRange = 0.0f;
 	busy       = false;
 	maxSlope   = 1.0f;
+	techlvl    = 1;
 	units.clear();
 	records.clear();
 }

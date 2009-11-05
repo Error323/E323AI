@@ -28,6 +28,9 @@ class CGroup: public ARegistrar {
 		/* Group counter */
 		static int counter;
 
+		/* Tech level */
+		int techlvl;
+
 		/* movetype, the movetype with the smallest slope */
 		int moveType;
 

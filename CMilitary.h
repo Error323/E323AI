@@ -7,6 +7,7 @@
 
 #include "ARegistrar.h"
 #include "headers/HEngine.h"
+#include "headers/Defines.h"
 
 class CUnit;
 class CGroup;
@@ -35,6 +36,12 @@ class CMilitary: public ARegistrar {
 		AIClasses *ai;
 
 		void prepareTargets(std::vector<int> &all, std::vector<int> &harras);
+
+		/* Minimal group sizes */
+		std::map<State, int> minGroupSize;
+
+		/* Minimal simultanious scouts */
+		std::map<State, int> minScouts;
 
 		/* Current group per factory <factory, CGroup*> */
 		std::map<int, CGroup*> currentGroups;
