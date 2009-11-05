@@ -32,7 +32,7 @@ float CThreatMap::getThreat(float3 &center) {
 
 		float3 pos = ai->cbc->GetUnitPos(enemy);
 		const UnitDef *ud = ai->cbc->GetUnitDef(enemy);
-		float range = ud->maxWeaponRange*1.2f;
+		float range = ud->maxWeaponRange;
 		if ((pos - center).Length2D() < range) {
 			power += ai->cbc->GetUnitPower(enemy);
 		}

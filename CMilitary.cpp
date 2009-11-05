@@ -106,7 +106,7 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets) {
 	std::multimap<float, int>::iterator i;
 	for (i = candidates.begin(); i != candidates.end(); i++) {
 		float3 epos = ai->cbc->GetUnitPos(i->second);
-		if (i->first*ai->threatmap->getThreat(epos) < closest) {
+		if (i->first/**ai->threatmap->getThreat(epos)*/ < closest) {
 			target = i->second;
 			closest = i->first;
 		}

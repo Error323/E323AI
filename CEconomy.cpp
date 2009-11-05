@@ -216,7 +216,21 @@ void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 			}
 			
 			case BUILD_AG_DEFENSE: case BUILD_AA_DEFENSE: {
-				goal = ai->defensematrix->getDefenseBuildSite(i->second);
+				pos = ai->defensematrix->getDefenseBuildSite(i->second);
+				facing f = unit->getBestFacing(pos);
+				int mindist = 5;
+				float startRadius = unit->def->buildDistance;
+				goal = ai->cb->ClosestBuildSite(i->second->def, pos, startRadius, mindist, f);
+				int tries = 0;
+				while (goal == ERRORVECTOR) {
+					startRadius += i->second->def->buildDistance;
+					goal = ai->cb->ClosestBuildSite(i->second->def, pos, startRadius, mindist, f);
+					tries++;
+					if (tries > 10) {
+						goal = pos;
+						break;
+					}
+				}
 				ai->tasks->addBuildTask(bt, i->second, group, goal);
 				break;
 			}
@@ -268,14 +282,14 @@ void CEconomy::update(int frame) {
 			}
 		}
 		else {
-			/* If we are mstalling deal with it */
-			if (mstall) {
-				buildMprovider(*group);
-				if (group->busy) continue;
-			}
 			/* If we are estalling deal with it */
 			if (estall) {
 				buildEprovider(*group);
+				if (group->busy) continue;
+			}
+			/* If we are mstalling deal with it */
+			if (mstall) {
+				buildMprovider(*group);
 				if (group->busy) continue;
 			}
 			/* If we don't have a factory, build one */
@@ -338,10 +352,11 @@ void CEconomy::update(int frame) {
 		}
 	}
 
-	if (mexceeding || activeGroups.size() < ai->metalmap->taken.size())
+	if (mexceeding || 
+		activeGroups.size() < 2 ||
+		int(0.3f*ai->metalmap->taken.size())
+		)
 		ai->wishlist->push(BUILDER, HIGH);
-	else
-		ai->wishlist->push(BUILDER, NORMAL);
 }
 
 bool CEconomy::taskInProgress(buildType bt) {

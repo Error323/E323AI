@@ -73,7 +73,7 @@ void CE323AI::UnitCreated(int uid, int bid) {
 		unit->moveForward(400.0f);
 
 	if (c&BUILDER && c&MOBILE)
-		unit->moveForward(-100.0f);
+		unit->moveForward(200.0f);
 }
 
 /* Called when units are finished in a factory and able to move */
