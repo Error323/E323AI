@@ -338,7 +338,7 @@ void CEconomy::update(int frame) {
 		}
 	}
 
-	if (mexceeding || activeGroups.size() < ai->metalmap->taken.size()/2)
+	if (mexceeding || activeGroups.size() < ai->metalmap->taken.size())
 		ai->wishlist->push(BUILDER, HIGH);
 	else
 		ai->wishlist->push(BUILDER, NORMAL);

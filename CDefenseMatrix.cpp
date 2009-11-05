@@ -17,7 +17,6 @@ float3 CDefenseMatrix::getDefenseBuildSite(UnitType *tower) {
 	dir *= (tower->def->maxWeaponRange*0.5f);
 	// angle code here
 	float3 pos = dir + c->center;
-	ai->cb->CreateLineFigure(c->center, pos, 10.0f, 0, DRAW_TIME, 1000);
 	return pos;
 }
 
@@ -112,7 +111,7 @@ void CDefenseMatrix::update() {
 			break;
 	}
 
-	draw();
+	//draw();
 }
 
 float CDefenseMatrix::getValue(CUnit *unit) {
