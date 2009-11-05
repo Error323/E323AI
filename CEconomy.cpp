@@ -338,7 +338,7 @@ void CEconomy::update(int frame) {
 		}
 	}
 
-	if (mexceeding || activeGroups.size() < 2)
+	if (mexceeding || activeGroups.size() < ai->metalmap->taken.size()/2)
 		ai->wishlist->push(BUILDER, HIGH);
 	else
 		ai->wishlist->push(BUILDER, NORMAL);
@@ -481,6 +481,11 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 	std::multimap<float, CTaskHandler::BuildTask*> suited;
 	for (i = ai->tasks->activeBuildTasks.begin(); i != ai->tasks->activeBuildTasks.end(); i++) {
 		CTaskHandler::BuildTask *buildtask = i->second;
+
+		/* Don't build TECH1 mexes together */
+		unsigned c = buildtask->toBuild->cats;
+		if (c&MEXTRACTOR && c&TECH1)
+			continue;
 
 		/* Only build tasks we are interested in */
 		float travelTime;
