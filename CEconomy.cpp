@@ -257,7 +257,7 @@ void CEconomy::update(int frame) {
 			}
 			/* If we don't have a factory, build one */
 			if (ai->unittable->factories.empty()) {
-				buildOrAssist(BUILD_FACTORY, KBOT|TECH1, *group);
+				buildOrAssist(BUILD_FACTORY, VEHICLE|TECH1, *group);
 				if (group->busy) continue;
 			}
 			ATask *task = NULL;
@@ -280,7 +280,7 @@ void CEconomy::update(int frame) {
 			}
 			/* If we don't have a factory, build one */
 			if (ai->unittable->factories.empty()) {
-				buildOrAssist(BUILD_FACTORY, KBOT|TECH1, *group);
+				buildOrAssist(BUILD_FACTORY, VEHICLE|TECH1, *group);
 				if (group->busy) continue;
 			}
 			/* If we are overflowing energy build a estorage */
@@ -326,8 +326,8 @@ void CEconomy::update(int frame) {
 				unsigned techlvl = TECH2;
 				if (ecolvl >= T5)
 					techlvl = TECH3;
-				if (!ai->unittable->gotFactory(KBOT|techlvl))
-					buildOrAssist(BUILD_FACTORY, KBOT|techlvl, *group);
+				if (!ai->unittable->gotFactory(VEHICLE|techlvl))
+					buildOrAssist(BUILD_FACTORY, VEHICLE|techlvl, *group);
 				if (group->busy) continue;
 			}
 			/* Otherwise just expand */
