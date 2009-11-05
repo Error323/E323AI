@@ -153,7 +153,7 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 		if (threat < lowestThreat) {
 			bestMs = &sorted[i];
 			lowestThreat = threat;
-			if (lowestThreat < 1.0f) break;
+			if (lowestThreat <= 1.0f) break;
 		}
 	}
 		

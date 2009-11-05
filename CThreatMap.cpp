@@ -59,7 +59,7 @@ void CThreatMap::update(int frame) {
 			const float3  upos = ai->cbc->GetUnitPos(units[i]);
 			const float uRealX = upos.x/REAL;
 			const float uRealZ = upos.z/REAL;
-			const float  range = (ud->maxWeaponRange*1.2f)/REAL;
+			const float  range = (ud->maxWeaponRange+100.0f)/REAL;
 			float       powerT = ai->cbc->GetUnitPower(units[i]);
 			if (ut->cats&COMMANDER)
 				powerT /= 100.0f; /* dgun gives overpowered dps */
@@ -77,49 +77,19 @@ void CThreatMap::update(int frame) {
 						const unsigned int mx = (unsigned int) round(pos.x);
 						const unsigned int mz = (unsigned int) round(pos.z);
 						if (mx < X && mz < Z)
-							map[ID(mx,mz)] += power;
+							map[ID(mx,mz)] += gauss(power, 2.0f, 0.0f)/gauss(0.0f, 2.0f, 0.0f);
 					}
 				}
 			}
 			totalPower += power;
 		}
 	}
+}
 
-	/* Subtract defense */
-	/*
-	std::map<int, CUnit*>::iterator i;
-	for (i = ai->unittable->defenses.begin(); i != ai->unittable->defenses.end(); i++) {
-		CUnit *unit = i->second;
-		const float3  upos = unit->pos();
-		const float uRealX = upos.x/REAL;
-		const float uRealZ = upos.z/REAL;
-		const float  range = (unit->def->maxWeaponRange*0.8f)/REAL;
-		float       powerT = ai->cbc->GetUnitPower(unit->key);
-		const float  power = powerT;
-		float3 pos(0.0f, 0.0f, 0.0f);
-
-		const int        R = (int) ceil(range);
-		for (int z = -R; z <= R; z++) {
-			for (int x = -R; x <= R; x++) {
-				pos.x = x;
-				pos.z = z;
-				if (pos.Length2D() <= range) {
-					pos.x += uRealX;
-					pos.z += uRealZ;
-					const unsigned int mx = (unsigned int) round(pos.x);
-					const unsigned int mz = (unsigned int) round(pos.z);
-					if (mx < X && mz < Z) {
-						map[ID(mx,mz)] -= power;
-						int v = map[ID(mx,mz)];
-						map[ID(mx,mz)] = v < 1.0f ? 1.0f : v;
-					}
-				}
-			}
-		}
-		totalPower -= power;
-	}
-	*/
-	//draw();
+float CThreatMap::gauss(float x, float sigma, float mu) {
+	float a = 1.0f / (sigma * sqrt(2*M_PI));
+	float b = exp( -( pow(x-mu, 2) / (2*(pow(sigma,2))) ) );
+	return a * b;
 }
 
 void CThreatMap::draw() {

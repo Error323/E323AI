@@ -18,12 +18,12 @@ class CThreatMap {
 
 	private:
 		AIClasses *ai;	
+		int   *units;
 
 		void draw();
-
-		int   *units;
 		float totalPower;
 		float REAL;
+		float gauss(float x, float sigma, float mu);
 };
 
 #endif

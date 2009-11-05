@@ -116,42 +116,6 @@ void CEconomy::addUnit(CUnit &unit) {
 	}
 }
 
-void CEconomy::buildMprovider(CGroup &group) {
-	/* Handle metal income */
-	CUnit *unit = group.units.begin()->second;
-	ATask *task = canAssist(BUILD_MPROVIDER, group);
-	float3 pos  = group.pos();
-	if (task != NULL)
-		ai->tasks->addAssistTask(*task, group);
-	else  {
-		float3 mexPos;
-		bool canBuildMex = ai->metalmap->getMexSpot(group, mexPos);
-		if (canBuildMex) {
-			bool b1 = mIncome < 3.0f;
-			bool b2 = unit->def->isCommander;
-			if (b1 || (!b2 || ai->pathfinder->getETA(group, mexPos) < 32*20)) {
-				UnitType *mex = ai->unittable->canBuild(unit->type, LAND|MEXTRACTOR);
-				ai->tasks->addBuildTask(BUILD_MPROVIDER, mex, group, mexPos);
-			}
-			else if (!eRequest && !estall) {
-				UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
-				ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
-			}
-		}
-		else if (!estall) {
-			UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
-			ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
-		}
-	}
-	mRequest = false;
-}
-
-void CEconomy::buildEprovider(CGroup &group) {
-	/* Handle energy income */
-	buildOrAssist(BUILD_EPROVIDER, LAND|EMAKER, group);
-	eRequest = false;
-}
-
 void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 	ATask *task = canAssist(bt, group);
 	if (task != NULL)
@@ -167,7 +131,7 @@ void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 
 		/* Determine which of these we can afford */
 		std::multimap<float, UnitType*>::iterator i = candidates.begin();
-		int iterations = ceil(candidates.size() / (6-ecolvl));
+		int iterations = candidates.size() / (6-ecolvl);
 		bool affordable = false;
 		while(iterations >= 0) {
 			if (canAffordToBuild(group, i->second))
@@ -211,7 +175,21 @@ void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 			}
 
 			case BUILD_MPROVIDER: {
-				buildMprovider(group);
+				bool canBuildMex = ai->metalmap->getMexSpot(group, goal);
+				if (canBuildMex) {
+					bool b1 = mIncome < 3.0f;
+					bool b2 = !unit->def->isCommander;
+					if (b1 || (b2 || ai->pathfinder->getETA(group, goal) < 32*20))
+						ai->tasks->addBuildTask(BUILD_MPROVIDER, i->second, group, goal);
+					else if (!eRequest && !estall) {
+						UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
+						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
+					}
+				}
+				else if (!eRequest) {
+					UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
+					ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
+				}
 				break;
 			}
 			
@@ -221,16 +199,6 @@ void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 				int mindist = 5;
 				float startRadius = unit->def->buildDistance;
 				goal = ai->cb->ClosestBuildSite(i->second->def, pos, startRadius, mindist, f);
-				int tries = 0;
-				while (goal == ERRORVECTOR) {
-					startRadius += i->second->def->buildDistance;
-					goal = ai->cb->ClosestBuildSite(i->second->def, pos, startRadius, mindist, f);
-					tries++;
-					if (tries > 10) {
-						goal = pos;
-						break;
-					}
-				}
 				ai->tasks->addBuildTask(bt, i->second, group, goal);
 				break;
 			}
@@ -261,17 +229,17 @@ void CEconomy::update(int frame) {
 		if (unit->def->isCommander) {
 			/* If we are mstalling deal with it */
 			if (mstall) {
-				buildMprovider(*group);
+				buildOrAssist(BUILD_MPROVIDER, MEXTRACTOR|LAND, *group);
 				if (group->busy) continue;
 			}
 			/* If we are estalling deal with it */
 			if (estall) {
-				buildEprovider(*group);
+				buildOrAssist(BUILD_EPROVIDER, EMAKER|LAND, *group);
 				if (group->busy) continue;
 			}
 			/* If we don't have a factory, build one */
 			if (ai->unittable->factories.empty()) {
-				buildOrAssist(BUILD_FACTORY, VEHICLE|TECH1, *group);
+				buildOrAssist(BUILD_FACTORY, KBOT|TECH1, *group);
 				if (group->busy) continue;
 			}
 			ATask *task = NULL;
@@ -284,17 +252,17 @@ void CEconomy::update(int frame) {
 		else {
 			/* If we are estalling deal with it */
 			if (estall) {
-				buildEprovider(*group);
+				buildOrAssist(BUILD_EPROVIDER, EMAKER|LAND, *group);
 				if (group->busy) continue;
 			}
 			/* If we are mstalling deal with it */
 			if (mstall) {
-				buildMprovider(*group);
+				buildOrAssist(BUILD_MPROVIDER, MEXTRACTOR|LAND, *group);
 				if (group->busy) continue;
 			}
 			/* If we don't have a factory, build one */
 			if (ai->unittable->factories.empty()) {
-				buildOrAssist(BUILD_FACTORY, VEHICLE|TECH1, *group);
+				buildOrAssist(BUILD_FACTORY, KBOT|TECH1, *group);
 				if (group->busy) continue;
 			}
 			/* If we are overflowing energy build a estorage */
@@ -315,18 +283,18 @@ void CEconomy::update(int frame) {
 			/* If both requested, see what is required most */
 			if (eRequest && mRequest) {
 				if ((mNow / mStorage) > (eNow / eStorage))
-					buildEprovider(*group);
+					buildOrAssist(BUILD_EPROVIDER, EMAKER|LAND, *group);
 				else
-					buildMprovider(*group);
+					buildOrAssist(BUILD_MPROVIDER, MEXTRACTOR|LAND, *group);
 				if (group->busy) continue;
 			}
 			/* Else just provide that which is requested */
 			if (eRequest) {
-				buildEprovider(*group);
+				buildOrAssist(BUILD_EPROVIDER, EMAKER|LAND, *group);
 				if (group->busy) continue;
 			}
 			if (mRequest) {
-				buildMprovider(*group);
+				buildOrAssist(BUILD_MPROVIDER, MEXTRACTOR|LAND, *group);
 				if (group->busy) continue;
 			}
 			ATask *task = NULL;
@@ -340,21 +308,21 @@ void CEconomy::update(int frame) {
 				unsigned techlvl = TECH2;
 				if (ecolvl >= T5)
 					techlvl = TECH3;
-				if (!ai->unittable->gotFactory(VEHICLE|techlvl))
-					buildOrAssist(BUILD_FACTORY, VEHICLE|techlvl, *group);
+				if (!ai->unittable->gotFactory(KBOT|techlvl))
+					buildOrAssist(BUILD_FACTORY, KBOT|techlvl, *group);
 				if (group->busy) continue;
 			}
 			/* Otherwise just expand */
 			if ((mNow / mStorage) > (eNow / eStorage))
-				buildEprovider(*group);
+				buildOrAssist(BUILD_EPROVIDER, EMAKER|LAND, *group);
 			else
-				buildMprovider(*group);
+				buildOrAssist(BUILD_MPROVIDER, MEXTRACTOR|LAND, *group);
 		}
 	}
 
 	if (mexceeding || 
 		activeGroups.size() < 2 ||
-		int(0.3f*ai->metalmap->taken.size())
+		activeGroups.size() < int(0.3f*ai->metalmap->taken.size())
 		)
 		ai->wishlist->push(BUILDER, HIGH);
 }

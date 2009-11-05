@@ -113,8 +113,6 @@ class CEconomy: public ARegistrar {
 		/* Prevent stalling */
 		void preventStalling();
 
-		void buildMprovider(CGroup &group);
-		void buildEprovider(CGroup &group);
 		void buildOrAssist(buildType bt, unsigned c, CGroup &group);
 		bool taskInProgress(buildType bt);
 
