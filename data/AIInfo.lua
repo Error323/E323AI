@@ -21,16 +21,16 @@ local infos = {
 	},
 	{
 		key    = 'version',
-		value  = '2.13.5', -- AI version - !This comment is used for parsing!
+		value  = '3.0.0', -- AI version - !This comment is used for parsing!
 	},
 	{
 		key    = 'name',
-		value  = 'Error323\'s AI (E323AI)',
+		value  = 'E323AI - High Templar',
 		desc   = 'Optimized for XTA and BA.',
 	},
 	{
 		key    = 'description',
-		value  = 'Competetive AI that supports most TA based Mods and plays decently.',
+		value  = 'Configurable Guerilla AI',
 		desc   = 'tooltip.',
 	},
 	{
