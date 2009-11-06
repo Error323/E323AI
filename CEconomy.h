@@ -46,7 +46,7 @@ class CEconomy: public ARegistrar {
 		float eStorage;
 		
 		/* State, a sort of measurement how far advanced we are */
-		State state, prevState;
+		int state;
 
 		/* stalling/exceeding vars, updated in updateIncomes() */
 		bool mstall, estall, mexceeding, eexceeding;
@@ -90,10 +90,6 @@ class CEconomy: public ARegistrar {
 		/* Active groups ingame */
 		std::map<int, CGroup*> activeGroups;
 
-		/* Min and Max workers per level */
-		std::map<State, int> minWorkers;
-		std::map<State, int> maxWorkers;
-
 		/* Altered by canAfford() */
 		bool eRequest, mRequest;
 
@@ -115,7 +111,10 @@ class CEconomy: public ARegistrar {
 		/* Prevent stalling */
 		void preventStalling();
 
+		/* build or assist on a certain task */
 		void buildOrAssist(buildType bt, unsigned c, CGroup &group);
+
+		/* See if a buildtask is in progress */
 		bool taskInProgress(buildType bt);
 
 };

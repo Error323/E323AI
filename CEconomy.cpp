@@ -12,6 +12,7 @@
 #include "CUnit.h"
 #include "CRNG.h"
 #include "CPathfinder.h"
+#include "CConfigParser.h"
 
 CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	this->ai = ai;
@@ -22,12 +23,6 @@ CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	mUsage   = mUsageSummed   = eUsage   = eUsageSummed   = 0.0f;
 	mStorage = eStorage                                   = 0.0f;
 	mstall = estall = mexceeding = eexceeding = mRequest = eRequest = false;
-	minWorkers[S0] = 2;   maxWorkers[S0] = 3;
-	minWorkers[S1] = 3;   maxWorkers[S1] = 5;
-	minWorkers[S2] = 6;   maxWorkers[S2] = 10;
-	minWorkers[S3] = 8;   maxWorkers[S3] = 20;
-	minWorkers[S4] = 10;  maxWorkers[S4] = 30;
-	minWorkers[S5] = 15;  maxWorkers[S5] = 50;
 }
 
 void CEconomy::init(CUnit &unit) {
@@ -39,7 +34,6 @@ void CEconomy::init(CUnit &unit) {
 	//float solarProf = utSolar->energyMake / utSolar->cost;
 	mStart = utCommander->def->metalMake;
 	eStart = utCommander->def->energyMake;
-	state = prevState = S0;
 }
 		
 bool CEconomy::hasBegunBuilding(CGroup &group) {
@@ -137,7 +131,7 @@ void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 
 		/* Determine which of these we can afford */
 		std::multimap<float, UnitType*>::iterator i = candidates.begin();
-		int iterations = candidates.size() / (6-state);
+		int iterations = candidates.size() / (ai->cfgparser->getTotalStates()+1-state);
 		bool affordable = false;
 		while(iterations >= 0) {
 			if (canAffordToBuild(group, i->second))
@@ -312,12 +306,10 @@ void CEconomy::update(int frame) {
 				if (group->busy) continue;
 			}
 			/* See if we can build a new factory */
-			if (!mRequest && !eRequest && state >= S3) {
-				unsigned techlvl = TECH2;
-				if (state >= S5)
-					techlvl = TECH3;
-				if (!ai->unittable->gotFactory(KBOT|techlvl))
-					buildOrAssist(BUILD_FACTORY, KBOT|techlvl, *group);
+			if (!mRequest && !eRequest) {
+				int allowedTechlvl = ai->cfgparser->getMaxTechLevel();
+				if (!ai->unittable->gotFactory(KBOT|allowedTechlvl))
+					buildOrAssist(BUILD_FACTORY, KBOT|allowedTechlvl, *group);
 				if (group->busy) continue;
 			}
 			/* Otherwise just expand */
@@ -328,9 +320,9 @@ void CEconomy::update(int frame) {
 		}
 	}
 
-	if (mexceeding || activeGroups.size() < minWorkers[state])
+	if (mexceeding || activeGroups.size() < ai->cfgparser->getMinWorkers())
 		ai->wishlist->push(BUILDER, HIGH);
-	else if (activeGroups.size() < maxWorkers[state])
+	else if (activeGroups.size() < ai->cfgparser->getMaxWorkers())
 		ai->wishlist->push(BUILDER, NORMAL);
 }
 
@@ -460,14 +452,7 @@ void CEconomy::updateIncomes(int frame) {
 	mRequest   = (mNow < (mStorage*0.5f));
 	eRequest   = (eNow < (eStorage*0.5f));
 
-	prevState = state;
-	if (mIncome >= 5)   state = S1;
-	if (mIncome >= 10)  state = S2;
-	if (mIncome >= 20)  state = S3;
-	if (mIncome >= 40)  state = S4;
-	if (mIncome >= 100) state = S5;
-	if (state != prevState)
-		LOG_II("CEconomy::updateIncomes State changed to " << state)
+	state = ai->cfgparser->determineState(mIncome, eIncome);
 }
 
 ATask* CEconomy::canAssist(buildType t, CGroup &group) {

@@ -37,12 +37,6 @@ class CMilitary: public ARegistrar {
 
 		void prepareTargets(std::vector<int> &all, std::vector<int> &harras);
 
-		/* Minimal group sizes */
-		std::map<State, int> minGroupSize;
-
-		/* Minimal simultanious scouts */
-		std::map<State, int> minScouts;
-
 		/* Current group per factory <factory, CGroup*> */
 		std::map<int, CGroup*> currentGroups;
 

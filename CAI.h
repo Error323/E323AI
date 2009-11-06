@@ -5,6 +5,7 @@
 #include "headers/Defines.h"
 #include "CLogger.h"
 
+class CConfigParser;
 class CMetalMap;
 class CUnitTable;
 class CEconomy;
@@ -20,6 +21,7 @@ class CDefenseMatrix;
 struct AIClasses {
 	IAICallback    *cb;
 	IAICheats      *cbc;
+	CConfigParser  *cfgparser;
 	CMetalMap      *metalmap;
 	CUnitTable     *unittable;
 	CEconomy       *economy;

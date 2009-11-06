@@ -1,6 +1,7 @@
 #include "CE323AI.h"
 
 #include "CAI.h"
+#include "CConfigParser.h"
 #include "CMetalMap.h"
 #include "CUnitTable.h"
 #include "CEconomy.h"
@@ -20,6 +21,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->cbc           = callback->GetCheatInterface();
 	ai->team          = team;
 	ai->logger        = new CLogger(ai, CLogger::LOG_SCREEN | CLogger::LOG_FILE);
+	ai->cfgparser     = new CConfigParser(ai);
 	ai->metalmap      = new CMetalMap(ai);
 	ai->unittable     = new CUnitTable(ai);
 	ai->economy       = new CEconomy(ai);
@@ -30,6 +32,8 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->intel         = new CIntel(ai);
 	ai->military      = new CMilitary(ai);
 	ai->defensematrix = new CDefenseMatrix(ai);
+
+	ai->cfgparser->parseConfig("config.cfg");
 }
 
 
@@ -46,6 +50,7 @@ CE323AI::~CE323AI() {
 	delete ai->economy;
 	delete ai->unittable;
 	delete ai->metalmap;
+	delete ai->cfgparser;
 	delete ai->logger;
 	delete ai;
 }

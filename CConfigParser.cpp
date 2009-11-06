@@ -2,6 +2,9 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "CAI.h"
 
@@ -16,88 +19,87 @@ CConfigParser::CConfigParser(AIClasses *ai) {
 	stateVariables["minGroupSizeTech1"] = 0;
 	stateVariables["minGroupSizeTech2"] = 0;
 	stateVariables["minGroupSizeTech3"] = 0;
+	state = -1;
 }
 
-/*
-int CConfigParser::determineState(int metalIncome, int energyIncome);
-int CConfigParser::getMinWorkers();
-int CConfigParser::getMaxWorkers();
-int CConfigParser::getMinScouts();
-int CConfigParser::getMaxTechLevel();
-int CConfigParser::getMinGroupSize(int techLevel);
-*/
+int CConfigParser::determineState(int metalIncome, int energyIncome) {
+	int previous = state;
+	std::map<int, std::map<std::string, int> >::iterator i;
+	for (i = states.begin(); i != states.end(); i++) {
+		if (
+			metalIncome >= i->second["metalIncome"] &&
+			energyIncome >= i->second["energyIncome"]
+		) state = i->first;
+	}
+	if (state != previous)
+		LOG_II("CConfigParser::determineState activated state(" << state << ")")
+	return state;
+}
+
+int CConfigParser::getTotalStates()  { return states.size(); }
+int CConfigParser::getMinWorkers()   { return states[state]["minWorkers"]; }
+int CConfigParser::getMaxWorkers()   { return states[state]["maxWorkers"]; }
+int CConfigParser::getMinScouts()    { return states[state]["minScouts"]; }
+int CConfigParser::getMaxTechLevel() { return states[state]["maxTechLevel"]; }
+
+int CConfigParser::getMinGroupSize(int techLevel) {
+	switch (techLevel) {
+		case 1: return states[state]["minGroupSizeTech1"];
+		case 2: return states[state]["minGroupSizeTech2"];
+		case 3: return states[state]["minGroupSizeTech3"];
+		default: return 0;
+	}
+}
 
 void CConfigParser::parseConfig(std::string filename) {
 	filename = getAbsoluteFileName(filename);
-	std::ifstream file(fileName.c_str());
+	std::ifstream file(filename.c_str());
 	unsigned linenr = 0;
 
 	if (file.good() && file.is_open()) {
+		std::vector<std::string> splitted;
 		while(!file.eof()) {
 			linenr++;
 			std::string line;
-			std::vector<std::string> splitted;
 
 			std::getline(file, line);
 			line = line.substr(0, line.find('#')-1);
 			removeWhiteSpace(line);
 
-			if (line.empty() || !contains(line, '{') || line.size() < 2)
+			if (line[0] == '#' || line.empty())
 				continue;
 
-			/* Entered new state block */
-			State *state = new State();
-			line.substr(0, line.size()-2);
-			split(line, ':', splitted);
-			state->state = atoi(line[1]);
-			
-			std::getline(file, line);
-			linenr++;
-			int statevars = 0;
-			while(!contains(line, '}') && !file.eof()) {
-				removeWhiteSpace(line);
+			/* New state block */
+			if (contains(line, '{')) {
+				line.substr(0, line.size()-1);
 				split(line, ':', splitted);
-				if (stateVariables.find(splitted[0]) == stateVariables.end()) {
-					/* Something went wrong */
-					continue;
-				}
-				
-				stateVariables[splitted[0]] = atoi(splitted[1]);
-				std::getline(file, line);
-				linenr++;
-				statevars++;
+				state = atoi(splitted[1].c_str());
+				std::map<std::string, int> curstate;
+				states[state] = curstate;
 			}
-			if (statevars == stateVariables.size()) {
-				parseState(state);
-				states[state->state] = state;
+			/* Close state block */
+			else if (contains(line, '}')) {
+				if (states[state].size() == stateVariables.size())
+					LOG_II("CConfigParser::parseConfig State("<<state<<") parsed successfully")
+				else
+					LOG_EE("CConfigParser::parseConfig State("<<state<<") parsed unsuccessfully")
 			}
+			/* Add var to curState */
 			else {
-				/* Something went wrong */
+				split(line, ':', splitted);
+				states[state][splitted[0]] = atoi(splitted[1].c_str());
 			}
 		}
+	}
+	else {
 	}
 }
 //void CConfigParser::parseCategories(std::string filename, std::map<int, UnitType*> &units);
 
-void CConfigParser::parseState(State state) {
-	std::map<std::string, int>::iterator i;
-	for (i = stateVariables.begin(); i != stateVariables.end(); i++) {
-		if (i->first == "metalIncome") state->metalIncome = i->second;
-		if (i->first == "energyIncome") state->energyIncome = i->second;
-		if (i->first == "minWorkers") state->minWorkers = i->second;
-		if (i->first == "maxWorkers") state->maxWorkers = i->second;
-		if (i->first == "minScouts") state->minScouts = i->second;
-		if (i->first == "maxTechLevel") state->maxTechLevel = i->second;
-		if (i->first == "minGroupSizeTech1") state->minGroupSizeTech1 = i->second;
-		if (i->first == "minGroupSizeTech2") state->minGroupSizeTech2 = i->second;
-		if (i->first == "minGroupSizeTech3") state->minGroupSizeTech3 = i->second;
-	}
-}
-
 void CConfigParser::split(std::string &line, char c, std::vector<std::string> &splitted) {
 	size_t begin = 0, end = 0;
 	std::string substr;
-
+	splitted.clear();
 	while (true) {
 		end = line.find(c, begin);
 		if (end == std::string::npos)
@@ -120,39 +122,41 @@ std::string CConfigParser::getAbsoluteFileName(std::string filename) {
 		filename.c_str()
 	);
 	ai->cb->GetValue(AIVAL_LOCATE_FILE_R, buf);
-	filename(buf);
+	filename = std::string(buf);
 	return filename;
 }
 
 bool CConfigParser::contains(std::string &line, char c) {
-	if (line.empty()) return false;
-	if (line[0] == c) return true;
-	if (line.find(c) > 0) return true;
+	bool found = false;
+	for ( int i = 0; i < line.length(); i++ ) {
+		if (line[i] == c)
+			return true;
+	}
 	return false;
 }
 
 void CConfigParser::removeWhiteSpace(std::string &line) {
-	/* First remove frontal whitespaces */
-	while(true) {
-		if (line[0] != ' ' && line[0] != '\t')
-			break;
-		line = line.substr(1,line.size()-1);
+	for ( int i = 0, j ; i < line.length( ) ; ++ i ) {
+		if ( line [i] == ' ' || line[i] == '\t') {
+			for ( j = i + 1; j < line.length ( ) ; ++j )
+			{
+				if ( line [j] != ' ' || line[i] == '\t')
+				break ;
+			}
+			line = line.erase ( i, (j - i) );
+		}
 	}
-	
-	/* Now remove other whitespaces */
-	while(true) {
-		bool b1 = false, b2 = false;
-		int pos;
+}
 
-		pos = line.find(' ');
-		b1 = pos == 0;
-		if (b1) line.replace(pos, pos+1, "");
-
-		pos = line.find('\t');
-		b2 = pos == 0;
-		if (b2) line.replace(pos, pos+1, "");
-
-		if (b1 && b2)
-			break;
+void CConfigParser::debugConfig() {
+	std::stringstream ss;
+	std::map<int, std::map<std::string, int> >::iterator i;
+	std::map<std::string, int>::iterator j;
+	ss << "found " << states.size() << " states\n";
+	for (i = states.begin(); i != states.end(); i++) {
+		ss << "\tState("<<i->first<<"):\n";
+		for (j = i->second.begin(); j != i->second.end(); j++)
+			ss << "\t\t" << j->first << " = " << j->second << "\n";
 	}
+	LOG_II("CConfigParser::debugConfig " << ss.str())
 }

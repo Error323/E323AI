@@ -11,22 +11,10 @@
 #include "CIntel.h"
 #include "CWishList.h"
 #include "CUnitTable.h"
-#include "CEconomy.h"
+#include "CConfigParser.h"
 
 CMilitary::CMilitary(AIClasses *ai): ARegistrar(200, std::string("military")) {
 	this->ai = ai;
-	minGroupSize[S0] = 3;
-	minGroupSize[S1] = 4;
-	minGroupSize[S2] = 5;
-	minGroupSize[S3] = 6;
-	minGroupSize[S4] = 12;
-	minGroupSize[S5] = 15;
-	minScouts[S0]    = 3;
-	minScouts[S1]    = 5;
-	minScouts[S2]    = 10;
-	minScouts[S3]    = 6;
-	minScouts[S4]    = 5;
-	minScouts[S5]    = 4;
 }
 
 void CMilitary::remove(ARegistrar &group) {
@@ -250,7 +238,7 @@ void CMilitary::update(int frame) {
 		if (
 			isCurrent && 
 			(group->strength < ai->threatmap->getThreat(targetpos) || 
-			group->units.size() < minGroupSize[ai->economy->state]/(pow(group->techlvl,group->techlvl)))
+			group->units.size() < ai->cfgparser->getMinGroupSize(group->techlvl))
 		) continue;
 
 		ai->tasks->addAttackTask(target, *group);
@@ -258,7 +246,7 @@ void CMilitary::update(int frame) {
 	}
 
 	/* Always have enough scouts */
-	if (activeScoutGroups.size() < minScouts[ai->economy->state])
+	if (activeScoutGroups.size() < ai->cfgparser->getMinScouts())
 		ai->wishlist->push(SCOUTER, HIGH);
 
 	/* Always build some unit */
