@@ -22,7 +22,7 @@ class CDefenseMatrix {
 		float3 getDefenseBuildSite(UnitType *tower);
 
 		/* Get clusters >= 2 */
-		int getBigClusters();
+		int getClusters();
 
 
 	private:

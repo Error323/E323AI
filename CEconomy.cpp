@@ -267,6 +267,11 @@ void CEconomy::update(int frame) {
 				buildOrAssist(BUILD_FACTORY, KBOT|TECH1, *group);
 				if (group->busy) continue;
 			}
+			/* See if we can build defense */
+			if (ai->defensematrix->getClusters()+state > ai->unittable->defenses.size()) {
+				buildOrAssist(BUILD_AG_DEFENSE, DEFENSE, *group);
+				if (group->busy) continue;
+			}
 			/* If we are overflowing energy build a estorage */
 			if (eexceeding) {
 				buildOrAssist(BUILD_ESTORAGE, LAND|ESTORAGE, *group);
@@ -275,11 +280,6 @@ void CEconomy::update(int frame) {
 			/* If we are overflowing metal build an mstorage */
 			if (mexceeding) {
 				buildOrAssist(BUILD_MSTORAGE, LAND|MSTORAGE, *group);
-				if (group->busy) continue;
-			}
-			/* See if we can build defense */
-			if (ai->defensematrix->getBigClusters() > ai->unittable->defenses.size()) {
-				buildOrAssist(BUILD_AG_DEFENSE, DEFENSE, *group);
 				if (group->busy) continue;
 			}
 			/* If both requested, see what is required most */

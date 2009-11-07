@@ -15,12 +15,17 @@ float3 CDefenseMatrix::getDefenseBuildSite(UnitType *tower) {
 	float3 dir = ai->intel->getEnemyVector() - c->center;
 	dir.Normalize();
 	dir *= (tower->def->maxWeaponRange*0.5f);
-	// angle code here
+	if (c->defenses > 1) {
+		float alpha = (M_PI/3.0f)*ceil(c->defenses/2);
+		alpha = c->defenses % 2 ? -alpha : alpha;
+		dir.x = dir.x*cos(alpha)+dir.z*sin(alpha);
+		dir.z = dir.x*-sin(alpha)+dir.z*cos(alpha);
+	}
 	float3 pos = dir + c->center;
 	return pos;
 }
 
-int CDefenseMatrix::getBigClusters() {
+int CDefenseMatrix::getClusters() {
 	int bigClusters = 0;
 	std::multimap<float, Cluster*>::iterator i;
 	for (i = clusters.begin(); i != clusters.end(); i++) {
