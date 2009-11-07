@@ -6,6 +6,10 @@
 
 #include "CAI.h"
 #include "CUnit.h"
+#include "CConfigParser.h"
+
+std::map<std::string, unitCategory> CUnitTable::str2cat;
+std::map<unitCategory, std::string> CUnitTable::cat2str;
 
 CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	this->ai = ai;
@@ -64,26 +68,10 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 
 	/* Determine the modname */
 	std::string modName(ai->cb->GetModName());
-	modName = modName.substr(0, modName.size()-4);
-	sprintf(
-		buf, "%s%s-categorization.cfg", 
-		CFG_FOLDER,
-		modName.c_str()
-	);
-	ai->cb->GetValue(AIVAL_LOCATE_FILE_R, buf);
-	std::string fileName(buf);
+	modName = modName.substr(0, modName.size()-4) + "-categorization.cfg";
 
-	/* Determine if we should generate the config or parse the config */
-	std::ifstream modfile(fileName.c_str());
-	if (modfile.good()) {
-		parseCategorizations(fileName.c_str());
-		modfile.close();
-	}
-	else {
-		sprintf(buf, "%s", CFG_FOLDER);
-		ai->cb->GetValue(AIVAL_LOCATE_FILE_W, buf);
-		generateCategorizationFile(fileName.c_str());
-	}
+	/* Parse categories */
+	ai->cfgparser->parseCategories(modName, units);
 
 	/* Generate the buildBy and canBuild lists per UnitType */
 	std::map<int, UnitType>::iterator j;
@@ -140,72 +128,6 @@ void CUnitTable::generateCategorizationFile(const char *fileName) {
 		file << "\n\n";
 	}
 	file.close();
-}
-
-void CUnitTable::parseCategorizations(const char *fileName) {
-	std::ifstream file(fileName);
-	unsigned linenr = 0;
-
-	if (file.good() && file.is_open()) {
-		while(!file.eof()) {
-			linenr++;
-			std::string line;
-			std::vector<std::string> splitted;
-
-			std::getline(file, line);
-
-			if (line.empty() || line[0] == '#')
-				continue;
-
-			line = line.substr(0, line.find('#')-1);
-			split(line, ',', splitted);
-			const UnitDef *ud = ai->cb->GetUnitDef(splitted[0].c_str());
-			if (ud == NULL) {
-				LOG_EE("Parsing config line: " << linenr << "\tunit `" << splitted[0] << "' is invalid")
-				continue;
-			}
-			UnitType *ut = &units[ud->id];
-
-			unsigned categories = 0;
-			for (unsigned i = 1; i < splitted.size(); i++) {
-				if (str2cat.find(splitted[i]) == str2cat.end()) {
-					LOG_EE("Parsing config line: " << linenr << "\tcategory `" << splitted[i] << "' is invalid")
-					continue;
-				}
-				categories |= str2cat[splitted[i]];
-			}
-
-			if (categories == 0) {
-				LOG_EE("Parsing config line: " << linenr << "\t" << ut->def->humanName << " is uncategorized, falling back to standard")
-				continue;
-			}
-
-			ut->cats = categories;
-		}
-		file.close();
-	}
-	else {
-		LOG_EE("Could not open " << fileName << " for parsing")
-	}
-	LOG_II("Parsed " << linenr << " lines from " << fileName)
-}
-
-void CUnitTable::split(std::string &line, char c, std::vector<std::string> &splitted) {
-	size_t begin = 0, end = 0;
-	std::string substr;
-
-	while (true) {
-		end = line.find(c, begin);
-		if (end == std::string::npos)
-			break;
-
-		substr = line.substr(begin, end-begin);
-		splitted.push_back(substr);
-		begin  = end + 1;
-	}
-	/* Manually push the last */
-	substr = line.substr(begin, line.size()-1);
-	splitted.push_back(substr);
 }
 
 void CUnitTable::remove(ARegistrar &unit) {

@@ -61,6 +61,11 @@ class CUnitTable: public ARegistrar {
 		std::map<int, CUnit*>     defenses;
 		std::map<int, int>        unitsAliveTime;
 
+		/* unitCategories in string format, see Defines.h */
+		static std::map<unitCategory, std::string> cat2str;
+		static std::map<std::string, unitCategory> str2cat;
+
+
 		/* Special commander hook, since it's the first to spawn */
 		UnitType *comm;
 
@@ -97,21 +102,11 @@ class CUnitTable: public ARegistrar {
 		/* The free slots (CUnit instances that are zombie-ish) */
 		std::stack<int>    free;
 
-		/* unitCategories in string format, see Defines.h */
-		std::map<unitCategory, std::string> cat2str;
-		std::map<std::string, unitCategory> str2cat;
-
 		/* Build the lists buildby and canbuild per unit */
 		void buildTechTree();
 
 		/* Generate the categorizations config file */
 		void generateCategorizationFile(const char *fileName);
-
-		/* Parse the saved unit categorizations */
-		void parseCategorizations(const char *fileName);
-
-		/* Split a string on a certain character */
-		void split(std::string &line, char c, std::vector<std::string> &splitted);
 
 		/* Categorize the units, see defines.h for categories */
 		unsigned int categorizeUnit(UnitType *ut);
