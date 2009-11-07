@@ -42,13 +42,21 @@ int CConfigParser::getTotalStates()  { return states.size(); }
 int CConfigParser::getMinWorkers()   { return states[state]["minWorkers"]; }
 int CConfigParser::getMaxWorkers()   { return states[state]["maxWorkers"]; }
 int CConfigParser::getMinScouts()    { return states[state]["minScouts"]; }
-int CConfigParser::getMaxTechLevel() { return states[state]["maxTechLevel"]; }
+
+int CConfigParser::getMaxTechLevel() { 
+	switch(states[state]["maxTechLevel"]) {
+		case 1: return TECH1;
+		case 2: return TECH2;
+		case 3: return TECH3;
+		default: return TECH1;
+	}
+}
 
 int CConfigParser::getMinGroupSize(int techLevel) {
 	switch (techLevel) {
-		case 1: return states[state]["minGroupSizeTech1"];
-		case 2: return states[state]["minGroupSizeTech2"];
-		case 3: return states[state]["minGroupSizeTech3"];
+		case TECH1: return states[state]["minGroupSizeTech1"];
+		case TECH2: return states[state]["minGroupSizeTech2"];
+		case TECH3: return states[state]["minGroupSizeTech3"];
 		default: return 0;
 	}
 }
