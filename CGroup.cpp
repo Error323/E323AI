@@ -17,9 +17,9 @@ void CGroup::addUnit(CUnit &unit) {
 
 	if (unit.builder > 0) {
 		unsigned c = ai->unittable->activeUnits[unit.builder]->type->cats;
-		if (c&TECH1) techlvl = 1;
-		if (c&TECH2) techlvl = 2;
-		if (c&TECH3) techlvl = 3;
+		if (c&TECH1) techlvl = TECH1;
+		if (c&TECH2) techlvl = TECH2;
+		if (c&TECH3) techlvl = TECH3;
 	}
 
 	if (md->maxSlope <= maxSlope) {
