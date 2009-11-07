@@ -24,7 +24,7 @@ class CConfigParser {
 		int getMinGroupSize(int techLevel);
 
 		void parseConfig(std::string filename);
-		void parseCategories(std::string filename, std::map<int, UnitType*> &units);
+		void parseCategories(std::string filename, std::map<int, UnitType> &units);
 		void debugConfig();
 
 	private:

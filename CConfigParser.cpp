@@ -7,6 +7,8 @@
 #include <stdlib.h>
 
 #include "CAI.h"
+#include "CUnit.h"
+#include "CUnitTable.h"
 
 CConfigParser::CConfigParser(AIClasses *ai) {
 	this->ai = ai;
@@ -90,11 +92,62 @@ void CConfigParser::parseConfig(std::string filename) {
 				states[state][splitted[0]] = atoi(splitted[1].c_str());
 			}
 		}
+		LOG_II("CConfigParser::parseConfig parsed "<<linenr<<" lines from " << filename)
+		file.close();
 	}
 	else {
+		LOG_EE("CConfigParser::parseConfig could not parse " << filename)
 	}
 }
-//void CConfigParser::parseCategories(std::string filename, std::map<int, UnitType*> &units);
+
+void CConfigParser::parseCategories(std::string filename, std::map<int, UnitType> &units) {
+	filename = getAbsoluteFileName(filename);
+	std::ifstream file(filename.c_str());
+	unsigned linenr = 0;
+
+	if (file.good() && file.is_open()) {
+		while(!file.eof()) {
+			linenr++;
+			std::string line;
+			std::vector<std::string> splitted;
+
+			std::getline(file, line);
+
+			if (line.empty() || line[0] == '#')
+				continue;
+
+			line = line.substr(0, line.find('#')-1);
+			split(line, ',', splitted);
+			const UnitDef *ud = ai->cb->GetUnitDef(splitted[0].c_str());
+			if (ud == NULL) {
+				LOG_EE("Parsing config line: " << linenr << "\tunit `" << splitted[0] << "' is invalid")
+				continue;
+			}
+			UnitType *ut = &units[ud->id];
+
+			unsigned categories = 0;
+			for (unsigned i = 1; i < splitted.size(); i++) {
+				if (CUnitTable::str2cat.find(splitted[i]) == CUnitTable::str2cat.end()) {
+					LOG_EE("Parsing config line: " << linenr << "\tcategory `" << splitted[i] << "' is invalid")
+					continue;
+				}
+				categories |= CUnitTable::str2cat[splitted[i]];
+			}
+
+			if (categories == 0) {
+				LOG_EE("Parsing config line: " << linenr << "\t" << ut->def->humanName << " is uncategorized, falling back to standard")
+				continue;
+			}
+
+			ut->cats = categories;
+		}
+		file.close();
+	}
+	else {
+		LOG_EE("Could not open " << filename << " for parsing")
+	}
+	LOG_II("Parsed " << linenr << " lines from " << filename)
+}
 
 void CConfigParser::split(std::string &line, char c, std::vector<std::string> &splitted) {
 	size_t begin = 0, end = 0;
@@ -127,7 +180,6 @@ std::string CConfigParser::getAbsoluteFileName(std::string filename) {
 }
 
 bool CConfigParser::contains(std::string &line, char c) {
-	bool found = false;
 	for ( int i = 0; i < line.length(); i++ ) {
 		if (line[i] == c)
 			return true;
