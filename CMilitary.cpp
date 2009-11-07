@@ -237,8 +237,8 @@ void CMilitary::update(int frame) {
 		float3 targetpos = ai->cbc->GetUnitPos(target);
 		if (
 			isCurrent && 
-			group->units.size() < ai->cfgparser->getMinGroupSize(group->techlvl) ||
-			group->strength < ai->threatmap->getThreat(targetpos)
+			(group->units.size() < ai->cfgparser->getMinGroupSize(group->techlvl) ||
+			group->strength < ai->threatmap->getThreat(targetpos))
 		) continue;
 
 		ai->tasks->addAttackTask(target, *group);
