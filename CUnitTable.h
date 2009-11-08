@@ -59,6 +59,7 @@ class CUnitTable: public ARegistrar {
 		std::map<int, CUnit*>     activeUnits;
 		std::map<int, bool>       factories;
 		std::map<int, CUnit*>     defenses;
+		std::map<int, CUnit*>     energyStorages;
 		std::map<int, int>        unitsAliveTime;
 
 		/* unitCategories in string format, see Defines.h */
@@ -79,7 +80,7 @@ class CUnitTable: public ARegistrar {
 
 		/* Returns a unittype with categories that ut can build */
 		UnitType* canBuild(UnitType *ut, unsigned int categories);
-		void getBuildables(UnitType *ut, unsigned int c, std::multimap<float, UnitType*> &candidates);
+		void getBuildables(UnitType *ut, unsigned i, unsigned e, std::multimap<float, UnitType*> &candidates);
 		bool gotFactory(unsigned c);
 
 		/* Debugging functions */

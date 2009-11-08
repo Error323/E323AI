@@ -15,7 +15,7 @@ void CWishList::push(unsigned categories, buildPriority p) {
 	for (;itFac != ai->unittable->factories.end(); itFac++) {
 		fac = UT(ai->cb->GetUnitDef(itFac->first)->id);
 		std::multimap<float, UnitType*> candidates;
-		ai->unittable->getBuildables(fac, categories, candidates);
+		ai->unittable->getBuildables(fac, categories, 0, candidates);
 		if (!candidates.empty()) { 
 			/* Initialize new std::vector */
 			if (wishlist.find(fac->id) == wishlist.end()) {

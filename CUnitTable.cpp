@@ -142,6 +142,7 @@ void CUnitTable::remove(ARegistrar &unit) {
 	factories.erase(unit.key);
 	defenses.erase(unit.key);
 	unitsAliveTime.erase(unit.key);
+	energyStorages.erase(unit.key);
 }
 
 CUnit* CUnitTable::getUnit(int uid) {
@@ -176,6 +177,8 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	idle[uid] = false;
 	if ((unit->type->cats&STATIC) && (unit->type->cats&ATTACKER))
 		defenses[unit->key] = unit;
+	if (unit->type->cats&ESTORAGE)
+		energyStorages[unit->key] = unit;
 	return unit;
 }
 
@@ -396,9 +399,9 @@ bool CUnitTable::gotFactory(unsigned c) {
 	std::map<int, bool>::iterator i;
 	for (i = factories.begin(); i != factories.end(); i++) {
 		bool qualifies = true;
-		unsigned int ccb = activeUnits[i->first]->type->cats;
+		unsigned int cat = activeUnits[i->first]->type->cats;
 		for (unsigned int i = 0; i < utcats.size(); i++)
-			if (!(utcats[i]&ccb))
+			if (!(utcats[i]&cat))
 				qualifies = false;
 		if (qualifies)
 			return true;
@@ -406,26 +409,43 @@ bool CUnitTable::gotFactory(unsigned c) {
 	return false;
 }
 
-void CUnitTable::getBuildables(UnitType *ut, unsigned int c, std::multimap<float, UnitType*> &candidates) {
-	std::vector<unitCategory> utcats;
-	for (unsigned int i = 0; i < cats.size(); i++)
-		if (c&cats[i])
-			utcats.push_back(cats[i]);
+void CUnitTable::getBuildables(UnitType *ut, unsigned include, unsigned exclude, std::multimap<float, UnitType*> &candidates) {
+	std::vector<unitCategory> incCats, excCats;
+	for (unsigned int i = 0; i < cats.size(); i++) {
+		if (include&cats[i])
+			incCats.push_back(cats[i]);
+		else if (exclude&cats[i])
+			excCats.push_back(cats[i]);
+	}
 
 	std::map<int, UnitType*>::iterator j;
 	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); j++) {
 		bool qualifies = true;
-		unsigned int ccb = j->second->cats;
-		for (unsigned int i = 0; i < utcats.size(); i++)
-			if (!(utcats[i]&ccb))
+		unsigned int cat = j->second->cats;
+		for (unsigned int i = 0; i < incCats.size(); i++) {
+			if (!(incCats[i]&cat)) {
 				qualifies = false;
+				break;
+			}
+		}
+
 		if (qualifies) {
-			float cost = j->second->cost;
-			candidates.insert(std::pair<float,UnitType*>(cost, j->second));
+			/* Filter out excludes */
+			for (unsigned int i = 0; i < excCats.size(); i++) {
+				if ((excCats[i]&cat)) {
+					qualifies = false;
+					break;
+				}
+			}
+			
+			if (qualifies) {
+				float cost = j->second->cost;
+				candidates.insert(std::pair<float,UnitType*>(cost, j->second));
+			}
 		}
 	}
 	if (candidates.empty())
-		LOG_EE("CUnitTable::getBuildables no candidates found " << debugCategories(c))
+		LOG_EE("CUnitTable::getBuildables no candidates found INCLUDE("<<debugCategories(include)<<") EXCLUDE("<<debugCategories(exclude)<<")")
 }
 
 UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
@@ -436,9 +456,9 @@ UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
 	std::map<int, UnitType*>::iterator j;
 	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); j++) {
 		bool qualifies = true;
-		unsigned int ccb = j->second->cats;
+		unsigned int cat = j->second->cats;
 		for (unsigned int i = 0; i < utcats.size(); i++)
-			if (!(utcats[i]&ccb))
+			if (!(utcats[i]&cat))
 				qualifies = false;
 		if (qualifies)
 			return j->second;

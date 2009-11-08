@@ -104,7 +104,9 @@ void CConfigParser::parseConfig(std::string filename) {
 		file.close();
 	}
 	else {
-		LOG_EE("CConfigParser::parseConfig could not parse " << filename)
+		LOG_EE("Could not open " << filename << " for parsing")
+		ai->cb->SendTextMsg(std::string("Could not parse"+filename).c_str(), 0);
+		throw(2);
 	}
 }
 
@@ -153,6 +155,8 @@ void CConfigParser::parseCategories(std::string filename, std::map<int, UnitType
 	}
 	else {
 		LOG_EE("Could not open " << filename << " for parsing")
+		ai->cb->SendTextMsg(std::string("Could not parse"+filename).c_str(), 0);
+		throw(2);
 	}
 	LOG_II("Parsed " << linenr << " lines from " << filename)
 }

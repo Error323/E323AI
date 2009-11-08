@@ -116,7 +116,7 @@ void CEconomy::addUnit(CUnit &unit) {
 	}
 }
 
-void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
+void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsigned exclude) {
 	ATask *task = canAssist(bt, group);
 	if (task != NULL)
 		ai->tasks->addAssistTask(*task, group);
@@ -124,7 +124,7 @@ void CEconomy::buildOrAssist(buildType bt, unsigned c, CGroup &group) {
 		/* Retrieve the allowed buildable units */
 		CUnit *unit = group.units.begin()->second;
 		std::multimap<float, UnitType*> candidates;
-		ai->unittable->getBuildables(unit->type, c, candidates);
+		ai->unittable->getBuildables(unit->type, include, exclude, candidates);
 
 		if (candidates.empty()) 
 			return;
@@ -231,17 +231,17 @@ void CEconomy::update(int frame) {
 		if (unit->def->isCommander) {
 			/* If we are mstalling deal with it */
 			if (mstall) {
-				buildOrAssist(BUILD_MPROVIDER, MEXTRACTOR|LAND, *group);
+				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
 				if (group->busy) continue;
 			}
 			/* If we are estalling deal with it */
 			if (estall) {
-				buildOrAssist(BUILD_EPROVIDER, EMAKER|LAND, *group);
+				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
 				if (group->busy) continue;
 			}
 			/* If we don't have a factory, build one */
 			if (ai->unittable->factories.empty()) {
-				buildOrAssist(BUILD_FACTORY, KBOT|TECH1, *group);
+				buildOrAssist(*group, BUILD_FACTORY, KBOT|TECH1);
 				if (group->busy) continue;
 			}
 			ATask *task = NULL;
@@ -254,49 +254,52 @@ void CEconomy::update(int frame) {
 		else {
 			/* If we are estalling deal with it */
 			if (estall) {
-				buildOrAssist(BUILD_EPROVIDER, EMAKER|LAND, *group);
+				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
 				if (group->busy) continue;
 			}
 			/* If we are mstalling deal with it */
 			if (mstall) {
-				buildOrAssist(BUILD_MPROVIDER, MEXTRACTOR|LAND, *group);
+				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
 				if (group->busy) continue;
 			}
 			/* If we don't have a factory, build one */
 			if (ai->unittable->factories.empty()) {
-				buildOrAssist(BUILD_FACTORY, KBOT|TECH1, *group);
+				buildOrAssist(*group, BUILD_FACTORY, KBOT|TECH1);
 				if (group->busy) continue;
 			}
 			/* See if we can build defense */
-			if (ai->defensematrix->getClusters()+state > ai->unittable->defenses.size()) {
-				buildOrAssist(BUILD_AG_DEFENSE, DEFENSE, *group);
+			if (ai->defensematrix->getClusters() > ai->unittable->defenses.size()) {
+				buildOrAssist(*group, BUILD_AG_DEFENSE, DEFENSE, ANTIAIR);
 				if (group->busy) continue;
 			}
 			/* If we are overflowing energy build a estorage */
 			if (eexceeding) {
-				buildOrAssist(BUILD_ESTORAGE, LAND|ESTORAGE, *group);
+				if (ai->unittable->energyStorages.size() >= ai->cfgparser->getMaxTechLevel())
+					buildOrAssist(*group, BUILD_ESTORAGE, LAND|ESTORAGE);
+				else
+					buildOrAssist(*group, BUILD_ESTORAGE, LAND|MMAKER);
 				if (group->busy) continue;
 			}
 			/* If we are overflowing metal build an mstorage */
 			if (mexceeding) {
-				buildOrAssist(BUILD_MSTORAGE, LAND|MSTORAGE, *group);
+				buildOrAssist(*group, BUILD_MSTORAGE, LAND|MSTORAGE);
 				if (group->busy) continue;
 			}
 			/* If both requested, see what is required most */
 			if (eRequest && mRequest) {
 				if ((mNow / mStorage) > (eNow / eStorage))
-					buildOrAssist(BUILD_EPROVIDER, EMAKER|LAND, *group);
+					buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
 				else
-					buildOrAssist(BUILD_MPROVIDER, MEXTRACTOR|LAND, *group);
+					buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
 				if (group->busy) continue;
 			}
 			/* Else just provide that which is requested */
 			if (eRequest) {
-				buildOrAssist(BUILD_EPROVIDER, EMAKER|LAND, *group);
+				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
 				if (group->busy) continue;
 			}
 			if (mRequest) {
-				buildOrAssist(BUILD_MPROVIDER, MEXTRACTOR|LAND, *group);
+				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
 				if (group->busy) continue;
 			}
 			ATask *task = NULL;
@@ -308,15 +311,16 @@ void CEconomy::update(int frame) {
 			/* See if we can build a new factory */
 			if (!mRequest && !eRequest) {
 				int allowedTechlvl = ai->cfgparser->getMaxTechLevel();
-				if (!ai->unittable->gotFactory(KBOT|allowedTechlvl))
-					buildOrAssist(BUILD_FACTORY, KBOT|allowedTechlvl, *group);
+				int type = rng.RandInt(2) == 1 ? KBOT : VEHICLE;
+				if (!ai->unittable->gotFactory(type|allowedTechlvl))
+					buildOrAssist(*group, BUILD_FACTORY, type|allowedTechlvl);
 				if (group->busy) continue;
 			}
 			/* Otherwise just expand */
 			if ((mNow / mStorage) > (eNow / eStorage))
-				buildOrAssist(BUILD_EPROVIDER, EMAKER|LAND, *group);
+				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
 			else
-				buildOrAssist(BUILD_MPROVIDER, MEXTRACTOR|LAND, *group);
+				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
 		}
 	}
 
