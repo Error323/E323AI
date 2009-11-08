@@ -33,7 +33,10 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->military      = new CMilitary(ai);
 	ai->defensematrix = new CDefenseMatrix(ai);
 
-	ai->cfgparser->parseConfig("config.cfg");
+	std::string configfile(ai->cb->GetModName());
+	configfile = configfile.substr(0, configfile.size()-4);
+	configfile += "-config.cfg";
+	ai->cfgparser->parseConfig(configfile);
 }
 
 

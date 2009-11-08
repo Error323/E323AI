@@ -67,11 +67,11 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	buildTechTree();
 
 	/* Determine the modname */
-	std::string modName(ai->cb->GetModName());
-	modName = modName.substr(0, modName.size()-4) + "-categorization.cfg";
+	std::string modname(ai->cb->GetModName());
+	modname = modname.substr(0, modname.size()-4) + "-categorization.cfg";
 
 	/* Parse categories */
-	ai->cfgparser->parseCategories(modName, units);
+	ai->cfgparser->parseCategories(modname, units);
 
 	/* Generate the buildBy and canBuild lists per UnitType */
 	std::map<int, UnitType>::iterator j;
