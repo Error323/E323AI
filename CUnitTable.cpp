@@ -445,7 +445,7 @@ void CUnitTable::getBuildables(UnitType *ut, unsigned include, unsigned exclude,
 		}
 	}
 	if (candidates.empty())
-		LOG_EE("CUnitTable::getBuildables no candidates found INCLUDE("<<debugCategories(include)<<") EXCLUDE("<<debugCategories(exclude)<<")")
+		LOG_WW("CUnitTable::getBuildables no candidates found INCLUDE("<<debugCategories(include)<<") EXCLUDE("<<debugCategories(exclude)<<")")
 }
 
 UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
@@ -463,7 +463,7 @@ UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
 		if (qualifies)
 			return j->second;
 	}
-	LOG_EE("CUnitTable::canBuild failed to build " << debugCategories(c))
+	LOG_WW("CUnitTable::canBuild failed to build " << debugCategories(c))
 	return NULL;
 }
 
