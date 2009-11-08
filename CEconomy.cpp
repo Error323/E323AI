@@ -28,7 +28,7 @@ CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 void CEconomy::init(CUnit &unit) {
 	const UnitDef *ud = ai->cb->GetUnitDef(unit.key);
 	UnitType *utCommander = UT(ud->id);
-	windmap = ai->cb->GetMaxWind() > 1;
+	windmap = (ai->cb->GetMaxWind() + ai->cb->GetMinWind())/2.0f >= 10.0f;
 	//float avgWind   = (ai->cb->GetMinWind() + ai->cb->GetMaxWind()) / 2.0f;
 	//float windProf  = avgWind / utWind->cost;
 	//float solarProf = utSolar->energyMake / utSolar->cost;

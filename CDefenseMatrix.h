@@ -42,6 +42,9 @@ class CDefenseMatrix {
 			std::multimap<float, CUnit*> members;
 		};
 
+		int X, Z;
+		const float *hm;
+
 		/* Total clustervalue */
 		float totalValue;
 
