@@ -275,9 +275,9 @@ void CEconomy::update(int frame) {
 			/* If we are overflowing energy build a estorage */
 			if (eexceeding) {
 				if (ai->unittable->energyStorages.size() >= ai->cfgparser->getMaxTechLevel())
-					buildOrAssist(*group, BUILD_ESTORAGE, LAND|ESTORAGE);
-				else
 					buildOrAssist(*group, BUILD_ESTORAGE, LAND|MMAKER);
+				else
+					buildOrAssist(*group, BUILD_ESTORAGE, LAND|ESTORAGE);
 				if (group->busy) continue;
 			}
 			/* If we are overflowing metal build an mstorage */

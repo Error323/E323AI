@@ -131,7 +131,7 @@ void CDefenseMatrix::update() {
 				const float3 pos2 = k->second->pos();
 				float dist = (pos1 - pos2).Length2D();
 				if (dist < range) {
-					c->value -= ((power+k->first)*(range-dist)) / c->members.size();
+					c->value -= k->first*(range-dist) / c->members.size();
 					hasDefense = true;
 				}
 			}
