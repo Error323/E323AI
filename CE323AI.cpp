@@ -34,8 +34,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->defensematrix = new CDefenseMatrix(ai);
 
 	std::string configfile(ai->cb->GetModName());
-	configfile = configfile.substr(0, configfile.size()-4);
-	configfile += "-config.cfg";
+	configfile = configfile.substr(0, configfile.size()-4) + "-config.cfg";
 	ai->cfgparser->parseConfig(configfile);
 }
 
