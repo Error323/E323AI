@@ -184,8 +184,14 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 
 void CUnitTable::update() {
 	std::map<int,int>::iterator i;
-	for (i = unitsAliveTime.begin(); i != unitsAliveTime.end(); i++)
-		i->second+=MULTIPLEXER;
+	for (i = unitsAliveTime.begin(); i != unitsAliveTime.end(); i++) {
+		/* Ignore the commander so we start early */
+		if (activeUnits[i->first]->builder == -1) 
+			i->second = 500;
+		/* Makes sure new units are not instantly assigned tasks */
+		else
+			i->second+=MULTIPLEXER;
+	}
 }
 
 bool CUnitTable::canPerformTask(CUnit &unit) {

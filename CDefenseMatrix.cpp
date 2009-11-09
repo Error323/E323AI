@@ -125,7 +125,7 @@ void CDefenseMatrix::update() {
 		for (l = ai->unittable->defenses.begin(); l != ai->unittable->defenses.end(); l++) {
 			const float3 pos1 = l->second->pos();
 			float range = l->second->def->maxWeaponRange*0.8f;
-			float power = ai->cb->GetUnitPower(l->first);
+			//float power = ai->cb->GetUnitPower(l->first);
 			bool hasDefense = false;
 			for (k = c->members.begin(); k != c->members.end(); k++) {
 				const float3 pos2 = k->second->pos();
