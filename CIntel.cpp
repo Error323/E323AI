@@ -32,7 +32,7 @@ void CIntel::init() {
 }
 
 void CIntel::update(int frame) {
-	if (frame >= 100 && frame <= 100+MULTIPLEXER)
+	if (frame >= 0 && frame <= 30)
 		init();
 	mobileBuilders.clear();
 	factories.clear();

@@ -22,22 +22,23 @@ CThreatMap::~CThreatMap() {
 	delete[] units;
 }
 
-float CThreatMap::getThreat(float3 &center) {
+float CThreatMap::getThreat(float3 &center, float radius) {
+	int i = center.z / REAL;
+	int j = center.x / REAL;
+	if (radius == 0.0f)
+		return map[ID(j,i)];
+	int R = ceil(radius / REAL);
 	float power = 0.0f;
-	for (size_t i = 0; i < ai->intel->attackers.size(); i++) {
-		int enemy = ai->intel->attackers[i];
-		float health = ai->cbc->GetUnitHealth(enemy);
-		if (health <= 0.0f) 
+	for (int z = -R; z <= R; z++) {
+		int zz = z+i;
+		if (zz > Z-1 || zz < 0)
 			continue;
-
-		float3 pos = ai->cbc->GetUnitPos(enemy);
-		const UnitDef *ud = ai->cbc->GetUnitDef(enemy);
-		float range = ud->maxWeaponRange;
-		if ((pos - center).Length2D() < range) {
-			power += ai->cbc->GetUnitPower(enemy);
+		for (int x = -R; x <= R; x++) {
+			int xx = x+j;
+			if (xx < X-1 && xx >= 0)
+				power += map[ID(xx,zz)];
 		}
 	}
-
 	return power;
 }
 

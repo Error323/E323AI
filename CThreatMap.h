@@ -11,7 +11,7 @@ class CThreatMap {
 		~CThreatMap();
 
 		void update(int frame);
-		float getThreat(float3 &center);
+		float getThreat(float3 &center, float radius);
 		int X, Z;
 		float *map;
 		int RES;

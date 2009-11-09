@@ -149,7 +149,7 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 
 	float lowestThreat = MAX_FLOAT;
 	for (unsigned i = 0; i < sorted.size(); i++) {
-		float threat = ai->threatmap->getThreat(sorted[i].f);
+		float threat = ai->threatmap->getThreat(sorted[i].f, 0.0f);
 		if (threat < lowestThreat) {
 			bestMs = &sorted[i];
 			lowestThreat = threat;
