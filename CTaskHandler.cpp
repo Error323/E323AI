@@ -12,6 +12,7 @@
 #include "CUnit.h"
 #include "CGroup.h"
 #include "CEconomy.h"
+#include "CConfigParser.h"
 
 /**************************************************************/
 /************************* ATASK ******************************/
@@ -248,22 +249,24 @@ void CTaskHandler::addFactoryTask(CUnit &factory) {
 }
 
 bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
-	if (assisters.size() >= 10) 
+	if (assisters.size() >= ai->cfgparser->getState()*2 || 
+		!factory->def->canBeAssisted) {
 		return false;
-	UnitType *toBuild = ai->unittable->factoriesBuilding[factory->key];
-	if (toBuild == NULL) 
+	}
+	else {
+		ai->wishlist->push(BUILDER, HIGH);
 		return true;
+	}
 
-	float buildSpeed = factory->def->buildSpeed;
-	std::list<ATask*>::iterator i;
-	for (i = assisters.begin(); i != assisters.end(); i++)
-		buildSpeed += (*i)->group->buildSpeed;
-
+/*
 	float3 gpos = factory->pos();
-	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
 	float travelTime = ai->pathfinder->getETA(assister, gpos);
 
-	return (buildTime > travelTime);
+	bool canAssist = (travelTime < FACTORY_ASSISTERS-assisters.size());
+	if (canAssist)
+		ai->wishlist->push(BUILDER, HIGH);
+	return canAssist;
+*/
 }
 
 void CTaskHandler::FactoryTask::update() {

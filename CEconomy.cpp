@@ -324,8 +324,9 @@ void CEconomy::update(int frame) {
 		}
 	}
 
-	if (mexceeding || activeGroups.size() < ai->cfgparser->getMinWorkers())
-		ai->wishlist->push(BUILDER, HIGH);
+	if (activeGroups.size() < ai->cfgparser->getMaxWorkers() && 
+	   (mexceeding || activeGroups.size() < ai->cfgparser->getMinWorkers())
+	) ai->wishlist->push(BUILDER, HIGH);
 	else if (activeGroups.size() < ai->cfgparser->getMaxWorkers())
 		ai->wishlist->push(BUILDER, NORMAL);
 }

@@ -22,6 +22,7 @@ class CConfigParser {
 		int getMaxTechLevel();
 		int getTotalStates();
 		int getMinGroupSize(int techLevel);
+		int getState();
 
 		void parseConfig(std::string filename);
 		void parseCategories(std::string filename, std::map<int, UnitType> &units);

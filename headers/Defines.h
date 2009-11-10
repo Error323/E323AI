@@ -40,8 +40,8 @@
 #define I_MAP_RES 8 /* Inverse map resolution (must be even) */
 #define HEIGHT2SLOPE 2
 
-/* Group vars */
-#define GROUP_SIZE 3
+/* Max factory Assisters */
+#define FACTORY_ASSISTERS 10
 
 /* Number of multiplex iterations */
 #define MULTIPLEXER 10 

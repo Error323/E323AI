@@ -38,6 +38,7 @@ int CConfigParser::determineState(int metalIncome, int energyIncome) {
 	return state;
 }
 
+int CConfigParser::getState() { return state; }
 int CConfigParser::getTotalStates()  { return states.size(); }
 int CConfigParser::getMinWorkers()   { return states[state]["minWorkers"]; }
 int CConfigParser::getMaxWorkers()   { return states[state]["maxWorkers"]; }

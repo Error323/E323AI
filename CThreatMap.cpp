@@ -60,6 +60,10 @@ void CThreatMap::update(int frame) {
 		if (ut->cats&ATTACKER && ut->cats&AIR && ut->cats&MOBILE)
 			continue;
 
+		/* Ignore paralyzed units */
+		if (ai->cbc->IsUnitParalyzed(units[i]))
+			continue;
+
 		if (ut->cats&ATTACKER && !ai->cbc->UnitBeingBuilt(units[i])) {
 			const float3  upos = ai->cbc->GetUnitPos(units[i]);
 			const float uRealX = upos.x/REAL;
