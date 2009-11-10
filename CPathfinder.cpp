@@ -243,7 +243,10 @@ void CPathfinder::updateFollowers() {
 			/* A map sorts on key (low to high) by default */
 			M[uposonpath] = unit;
 		}
-		group->move(path->second[segment+waypoint]);
+
+		/* If not under fine control, advance on the path */
+		if (!group->isMicroing())
+			group->move(path->second[segment+waypoint]);
 
 		/* Set a wait cmd on units that are going to fast, (They can still
 		 * attack during a wait) 

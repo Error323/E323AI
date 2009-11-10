@@ -64,6 +64,12 @@ class CGroup: public ARegistrar {
 		/* The units <id, CUnit*> */
 		std::map<int, CUnit*> units;
 
+		/* Reclaim a feature */
+		void reclaim(int feature);
+
+		/* Set this group to micro mode true/false */
+		void micro(bool on);
+
 		/* Add a unit to the group */
 		void addUnit(CUnit &unit);
 
@@ -72,6 +78,9 @@ class CGroup: public ARegistrar {
 
 		/* See if the entire group is idle */
 		bool isIdle();
+
+		/* See if the group is microing */
+		bool isMicroing();
 
 		/* Get the position of the group */
 		float3 pos();

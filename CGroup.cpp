@@ -81,6 +81,27 @@ void CGroup::remove(ARegistrar &unit) {
 	}
 }
 
+void CGroup::reclaim(int feature) {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++)
+		i->second->reclaim(ai->cb->GetFeaturePos(feature), 128.0f);
+}
+
+void CGroup::micro(bool on) {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++)
+		i->second->micro(on);
+}
+
+bool CGroup::isMicroing() {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++) {
+		if (i->second->isMicroing())
+			return true;
+	}
+	return false;
+}
+
 bool CGroup::isIdle() {
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++) {

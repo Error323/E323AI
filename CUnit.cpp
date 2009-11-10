@@ -27,6 +27,17 @@ void CUnit::reset(int uid, int bid) {
 	this->type    = UT(def->id);
 	this->builder = bid;
 	this->waiting = false;
+	this->microing= false;
+}
+
+bool CUnit::reclaim(float3 pos, float radius) {
+	Command c = createPosCommand(CMD_RECLAIM, pos, radius);
+	if (c.id != 0) {
+		ai->cb->GiveOrder(key, &c);
+		ai->unittable->idle[key] = false;
+		return true;
+	}
+	return false;
 }
 
 int CUnit::queueSize() {
@@ -126,9 +137,9 @@ bool CUnit::repair(int target) {
 }
 
 bool CUnit::build(UnitType *toBuild, float3 &pos) {
-	int mindist = 5;
+	int mindist = 10;
 	if (toBuild->cats&FACTORY || toBuild->cats&EMAKER)
-		mindist = 10;
+		mindist = 15;
 	else if(toBuild->cats&MEXTRACTOR)
 		mindist = 0;
 	else if(toBuild->cats&ATTACKER)
@@ -167,6 +178,15 @@ bool CUnit::stop() {
 	return true;
 }
 
+bool CUnit::micro(bool on) {
+	microing = on;
+	return microing;
+}
+
+bool CUnit::isMicroing() {
+	return microing;
+}
+
 bool CUnit::wait() {
 	if (!waiting) {
 		Command c;
@@ -183,6 +203,7 @@ bool CUnit::unwait() {
 		c.id = CMD_WAIT;
 		ai->cb->GiveOrder(key, &c);
 		waiting = false;
+		ai->unittable->idle[key] = false;
 	}
 	return waiting;
 }

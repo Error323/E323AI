@@ -189,7 +189,7 @@ void CUnitTable::update() {
 		if (activeUnits[i->first]->builder == -1) 
 			i->second = 500;
 		/* Makes sure new units are not instantly assigned tasks */
-		else
+		else if(!activeUnits[i->first]->isMicroing())
 			i->second+=MULTIPLEXER;
 	}
 }

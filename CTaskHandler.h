@@ -18,11 +18,12 @@ enum task{BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD};
 
 class ATask: public ARegistrar {
 	public:
-		ATask(): 
+		ATask(AIClasses *ai): 
 			ARegistrar(counter, std::string("task")) {
 			counter++;
 			isMoving = true;
 			pos = ZEROVECTOR;
+			this->ai = ai;
 		}
 		~ATask(){}
 
@@ -55,6 +56,9 @@ class ATask: public ARegistrar {
 		/* Add a group to this task */
 		void addGroup(CGroup &group);
 
+		/* Scan and micro for resources */
+		void resourceScan();
+
 		/* Update this task */
 		virtual void update() = 0;
 
@@ -69,7 +73,7 @@ class CTaskHandler: public ARegistrar {
 		~CTaskHandler(){};
 
 		struct BuildTask: public ATask {
-			BuildTask(AIClasses *_ai){t = BUILD; ai = _ai; timer = 0;}
+			BuildTask(AIClasses *_ai): ATask(_ai){t = BUILD; timer = 0;}
 
 			/* The build task */
 			buildType bt;
@@ -92,7 +96,7 @@ class CTaskHandler: public ARegistrar {
 		};
 
 		struct FactoryTask: public ATask {
-			FactoryTask(AIClasses *_ai){t = FACTORY_BUILD; ai = _ai;}
+			FactoryTask(AIClasses *_ai): ATask(_ai){t = FACTORY_BUILD;}
 
 			CUnit *factory;
 
@@ -108,7 +112,7 @@ class CTaskHandler: public ARegistrar {
 		};
 
 		struct AssistTask: public ATask {
-			AssistTask(AIClasses *_ai){t = ASSIST; ai = _ai;}
+			AssistTask(AIClasses *_ai): ATask(_ai) {t = ASSIST;}
 
 			/* The (build)task to assist */
 			ATask *assist;
@@ -126,7 +130,7 @@ class CTaskHandler: public ARegistrar {
 		};
 
 		struct AttackTask: public ATask {
-			AttackTask(AIClasses *_ai){t = ATTACK; ai = _ai;}
+			AttackTask(AIClasses *_ai): ATask(_ai) {t = ATTACK;}
 
 			/* The target to attack */
 			int target;
@@ -140,7 +144,7 @@ class CTaskHandler: public ARegistrar {
 		};
 
 		struct MergeTask: public ATask {
-			MergeTask(AIClasses *_ai){t = MERGE; ai = _ai;}
+			MergeTask(AIClasses *_ai): ATask(_ai) {t = MERGE;}
 
 			/* The maximal range from the target when attacking */
 			float range;

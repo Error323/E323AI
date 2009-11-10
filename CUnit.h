@@ -75,10 +75,16 @@ class CUnit: public ARegistrar {
 		/* Wait with what you are doing */
 		bool wait();
 
+		bool reclaim(float3 pos, float radius);
+
 		/* Undo wait command */
 		bool unwait();
 
 		bool waiting;
+
+		bool micro(bool on);
+
+		bool isMicroing();
 
 		float3 pos();
 
@@ -93,6 +99,8 @@ class CUnit: public ARegistrar {
 
 	private:
 		AIClasses *ai;
+
+		bool microing;
 
 		Command createPosCommand(int cmd, float3 pos, float radius = -1.0f, facing f = NONE);
 		Command createTargetCommand(int cmd, int target);

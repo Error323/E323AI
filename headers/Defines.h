@@ -28,7 +28,10 @@
 #define ID(x,z) (z*X+x)
 
 /* Metal to Energy ratio */
-#define METAL2ENERGY 45
+#define METAL2ENERGY 60
+
+/* Max features */
+#define MAX_FEATURES 10
 
 /* Max enemy units */
 #define MAX_UNITS_AI 500

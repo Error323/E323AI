@@ -51,6 +51,29 @@ void ATask::addGroup(CGroup &g) {
 	group->busy = true;
 }
 
+void ATask::resourceScan() {
+	std::map<float, int> candidates;
+	float3 pos = group->pos();
+	float radius = group->buildRange;
+	int featureids[MAX_FEATURES];
+	const int numFeatures = ai->cb->GetFeatures(&featureids[0], MAX_FEATURES, pos, radius);
+	for (int i = 0; i < numFeatures; i++) {
+		const FeatureDef *fd = ai->cb->GetFeatureDef(featureids[i]);
+		if (fd->metal > 0.0f) {
+			float3 fpos = ai->cb->GetFeaturePos(featureids[i]);
+			float dist = (fpos - pos).Length2D();
+			candidates[dist] = featureids[i];
+		}
+	}
+
+	if (!candidates.empty()) {
+		int f = candidates.begin()->second;
+		group->reclaim(f);
+		group->micro(true);
+		LOG_II("ATask::resourceScan group " << (*group) << " is reclaiming")
+	}
+}
+
 std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 	std::stringstream ss;
 	switch(atask.t) {
@@ -198,12 +221,20 @@ void CTaskHandler::BuildTask::update() {
 	float3 dist = grouppos - pos;
 	timer += MULTIPLEXER;
 
+	/* If idle, our micro is done */
+	if (group->isMicroing() && group->isIdle())
+		group->micro(false);
+
 	/* See if we can build yet */
 	if (isMoving && dist.Length2D() <= group->buildRange) {
 		group->build(pos, toBuild);
 		ai->pathfinder->remove(*this);
 		unreg(*(ai->pathfinder));
 		isMoving = false;
+	}
+	/* See if we can suck wreckages */
+	else if (isMoving && !group->isMicroing()) {
+		resourceScan();
 	}
 
 	/* We are building or blocked */
@@ -343,11 +374,18 @@ void CTaskHandler::AssistTask::update() {
 	float3 grouppos = group->pos();
 	float3 dist = grouppos - pos;
 	float range = (assist->t == ATTACK) ? group->range : group->buildRange;
+	if (group->isMicroing() && group->isIdle())
+		group->micro(false);
+
 	if (isMoving && dist.Length2D() <= range) {
 		group->assist(*assist);
 		ai->pathfinder->remove(*this);
 		unreg(*(ai->pathfinder));
 		isMoving = false;
+	}
+	/* See if we can suck wreckages */
+	else if (isMoving && assist->t == BUILD && !group->isMicroing()) {
+		resourceScan();
 	}
 }
 
