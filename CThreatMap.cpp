@@ -56,6 +56,10 @@ void CThreatMap::update(int frame) {
 		const UnitDef  *ud = ai->cbc->GetUnitDef(units[i]);
 		const UnitType *ut = UT(ud->id);
 		
+		/* Don't let air be part of the threatmap */
+		if (ut->cats&ATTACKER && ut->cats&AIR && ut->cats&MOBILE)
+			continue;
+
 		if (ut->cats&ATTACKER && !ai->cbc->UnitBeingBuilt(units[i])) {
 			const float3  upos = ai->cbc->GetUnitPos(units[i]);
 			const float uRealX = upos.x/REAL;
