@@ -400,12 +400,19 @@ void CEconomy::preventStalling() {
 				continue;
 		}
 
-		if (mstall && i->second->group->units.begin()->second->def->isCommander)
-			continue;
-
-		if (i->second->assist->t == BUILD || i->second->assist->t == FACTORY_BUILD)
+		/* Don't stop factory assisters, they will be dealt with later */
+		if (i->second->assist->t == BUILD && i->second->assist->t != FACTORY_BUILD) {
 			i->second->remove();
-		return;
+			return;
+		}
+
+		/* Unless it is the commander, he should be fixing the problem */
+		if (i->second->group->units.begin()->second->def->isCommander) {
+			if ((mstall && !eRequest) || (estall && !mstall)) {
+				i->second->remove();
+				return;
+			}
+		}
 	}
 
 	/* Wait all factories and their assisters */

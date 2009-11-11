@@ -125,7 +125,7 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 /* Called on move fail e.g. can't reach point */
 void CE323AI::UnitMoveFailed(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
-	LOG_WW("CE323AI::UnitMoveFailed " << (*unit))
+	unit->moveRandom(50.0f);
 }
 
 
@@ -134,7 +134,8 @@ void CE323AI::UnitMoveFailed(int uid) {
  * Enemy related callins *
  ***********************/
 
-void CE323AI::EnemyEnterLOS(int enemy) { }
+void CE323AI::EnemyEnterLOS(int enemy) {
+}
 
 void CE323AI::EnemyLeaveLOS(int enemy) {
 }
@@ -146,9 +147,6 @@ void CE323AI::EnemyLeaveRadar(int enemy) {
 }
 
 void CE323AI::EnemyDestroyed(int enemy, int attacker) {
-	CUnit *unit = ai->unittable->getUnit(attacker);
-	//const UnitDef *enem = ai->cb->GetUnitDef(enemy);
-	LOG_II("CE323AI::EnemyDestroyed destroyed by " << (*unit))
 }
 
 void CE323AI::EnemyDamaged(int damaged, int attacker, float damage, float3 dir) {
