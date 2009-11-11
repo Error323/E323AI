@@ -59,6 +59,9 @@ class ATask: public ARegistrar {
 		/* Scan and micro for resources */
 		void resourceScan();
 
+		/* Scan and micro for enemy targets */
+		void enemyScan(bool scout);
+
 		/* Update this task */
 		virtual void update() = 0;
 

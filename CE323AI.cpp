@@ -120,6 +120,7 @@ void CE323AI::UnitIdle(int uid) {
 
 /* Called when unit is damaged */
 void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
+
 }
 
 /* Called on move fail e.g. can't reach point */

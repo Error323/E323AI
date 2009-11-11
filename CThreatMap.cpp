@@ -70,9 +70,7 @@ void CThreatMap::update(int frame) {
 			const float uRealZ = upos.z/REAL;
 			const float  range = (ud->maxWeaponRange+100.0f)/REAL;
 			float       powerT = ai->cbc->GetUnitPower(units[i]);
-			if (ut->cats&COMMANDER)
-				powerT /= 100.0f; /* dgun gives overpowered dps */
-			const float  power = powerT;
+			const float  power = ut->cats&COMMANDER ? powerT/20.0f : powerT;
 			float3 pos(0.0f, 0.0f, 0.0f);
 
 			const int        R = (int) ceil(range);

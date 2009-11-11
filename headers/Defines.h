@@ -33,6 +33,9 @@
 /* Max features */
 #define MAX_FEATURES 10
 
+/* Max enemies */
+#define MAX_ENEMIES 20
+
 /* Max enemy units */
 #define MAX_UNITS_AI 500
 

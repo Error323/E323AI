@@ -13,6 +13,10 @@ CDefenseMatrix::CDefenseMatrix(AIClasses *ai) {
 	this->Z  = ai->cb->GetMapHeight();
 }
 
+float3 CDefenseMatrix::getBestDefendedPos() {
+	return clusters.begin()->second->center;
+}
+
 float3 CDefenseMatrix::getDefenseBuildSite(UnitType *tower) {
 	Cluster *c = (--clusters.end())->second;
 	float3 dir = ai->intel->getEnemyVector() - c->center;

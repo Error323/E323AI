@@ -86,7 +86,7 @@ class CGroup: public ARegistrar {
 		float3 pos();
 
 		void assist(ATask &task);
-		void attack(int target);
+		void attack(int target, bool enqueue = false);
 		void build(float3 &pos, UnitType *ut);
 		void stop();
 		void move(float3 &pos, bool enqueue = false);

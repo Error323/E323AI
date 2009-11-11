@@ -24,6 +24,8 @@ class CDefenseMatrix {
 		/* Get clusters >= 2 */
 		int getClusters();
 
+		float3 getBestDefendedPos();
+
 
 	private:
 		/* A group with spacing s between each building such that s < n */

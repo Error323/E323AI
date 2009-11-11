@@ -192,6 +192,14 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				}
 				break;
 			}
+
+			case FACTORY_BUILD: {
+				if (affordable && !taskInProgress(bt)) {
+					pos = ai->defensematrix->getBestDefendedPos();
+					ai->tasks->addBuildTask(bt, i->second, group, pos);
+				}
+				break;
+			}
 			
 			case BUILD_AG_DEFENSE: case BUILD_AA_DEFENSE: {
 				if (!taskInProgress(bt)) {

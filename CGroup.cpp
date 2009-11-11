@@ -194,10 +194,10 @@ void CGroup::unwait() {
 		i->second->unwait();
 }
 
-void CGroup::attack(int target) {
+void CGroup::attack(int target, bool enqueue) {
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++)
-		i->second->attack(target);
+		i->second->attack(target, enqueue);
 }
 
 void CGroup::build(float3 &pos, UnitType *ut) {

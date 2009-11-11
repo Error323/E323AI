@@ -44,9 +44,11 @@ int CUnit::queueSize() {
 	return ai->cb->GetCurrentUnitCommands(key)->size();
 }
 
-bool CUnit::attack(int target) {
+bool CUnit::attack(int target, bool enqueue) {
 	Command c = createTargetCommand(CMD_ATTACK, target);
 	if (c.id != 0) {
+		if (enqueue)
+			c.options |= SHIFT_KEY;
 		ai->cb->GiveOrder(key, &c);
 		ai->unittable->idle[key] = false;
 		return true;

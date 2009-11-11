@@ -24,6 +24,7 @@ void ATask::remove() {
 	group->unreg(*this);
 	group->busy = false;
 	group->unwait();
+	group->micro(false);
 
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
@@ -49,6 +50,47 @@ void ATask::addGroup(CGroup &g) {
 	this->group = &g;
 	group->reg(*this);
 	group->busy = true;
+}
+
+void ATask::enemyScan(bool scout) {
+	std::multimap<float, int> candidates;
+	float3 pos = group->pos();
+	float radius = group->range;
+	float strength = 0.0f;
+	int enemyids[MAX_ENEMIES];
+	int numEnemies = ai->cbc->GetEnemyUnits(&enemyids[0], pos, radius, MAX_ENEMIES);
+	bool offensive = false;
+	for (int i = 0; i < numEnemies; i++) {
+		const UnitDef *ud = ai->cbc->GetUnitDef(enemyids[i]);
+		UnitType *ut = UT(ud->id);
+		float3 epos = ai->cbc->GetUnitPos(enemyids[i]);
+		float health = ai->cbc->GetUnitHealth(enemyids[i]);
+		float dist = (epos-pos).Length2D();
+		health *= dist;
+		if (!ut->cats&AIR) {
+			candidates.insert(std::pair<float,int>(health, enemyids[i]));
+			strength += ai->cbc->GetUnitPower(enemyids[i]);
+		}
+		if (ut->cats&ATTACKER && !ut->cats&AIR)
+			offensive = true;
+	}
+
+	if (!candidates.empty()) {
+		std::multimap<float,int>::iterator i = candidates.begin();
+		if (scout && !offensive) {
+			group->attack(i->second);
+			for (++i; i != candidates.end(); i++)
+				group->attack(i->second,true);
+			group->micro(true);
+			LOG_II("ATask::enemyScan group " << (*group) << " is microing enemy targets")
+		}
+		else if (strength < group->strength && offensive) {
+			group->attack(i->second);
+			for (++i; i != candidates.end(); i++)
+				group->attack(i->second,true);
+			group->micro(true);
+		}
+	}
 }
 
 void ATask::resourceScan() {
@@ -375,7 +417,7 @@ void CTaskHandler::AssistTask::update() {
 	float3 grouppos = group->pos();
 	float3 dist = grouppos - pos;
 	float range = (assist->t == ATTACK) ? group->range : group->buildRange;
-	if (group->isMicroing() && group->isIdle())
+	if (assist->t == BUILD && group->isMicroing() && group->isIdle())
 		group->micro(false);
 
 	if (isMoving && dist.Length2D() <= range) {
@@ -413,6 +455,9 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 }
 
 void CTaskHandler::AttackTask::update() {
+	if (group->isMicroing() && group->isIdle())
+		group->micro(false);
+
 	/* If the target is destroyed, remove the task, unreg groups */
 	if (ai->cbc->GetUnitHealth(target) <= 0.0f) {
 		remove();
@@ -428,8 +473,17 @@ void CTaskHandler::AttackTask::update() {
 		ai->pathfinder->remove(*this);
 		unreg(*(ai->pathfinder));
 	}
-	/* Keep tracking it */
-	else pos = ai->cbc->GetUnitPos(target);
+	/* See if we can attack a target we found on our path */
+	else if (isMoving && !group->isMicroing()) {
+/*
+		if (group->units.begin()->second->type->cats&SCOUTER)
+			enemyScan(true);
+		else
+			enemyScan(false);
+*/
+	}
+	/* Keep tracking the target */
+	pos = ai->cbc->GetUnitPos(target);
 }
 
 /**************************************************************/

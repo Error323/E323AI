@@ -41,7 +41,7 @@ class CUnit: public ARegistrar {
 		int queueSize();
 
 		/* Attack a unit */
-		bool attack(int target);
+		bool attack(int target, bool enqueue = false);
 
 		/* Move a unit forward by dist */
 		bool moveForward(float dist, bool enqueue = true);
