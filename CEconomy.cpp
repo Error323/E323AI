@@ -354,10 +354,6 @@ void CEconomy::preventStalling() {
 	for (k = ai->tasks->activeFactoryTasks.begin(); k != ai->tasks->activeFactoryTasks.end(); k++)
 		k->second->setWait(false);
 
-	/* If we aren't stalling, return */
-	if (!mstall && !estall)
-		return;
-
 	/* If we are only stalling energy, see if we can turn metalmakers off */
 	std::map<int, bool>::iterator j;
 	if ((estall && !mstall) || (eRequest && !mRequest)) {

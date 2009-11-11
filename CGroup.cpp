@@ -79,6 +79,9 @@ void CGroup::remove(ARegistrar &unit) {
 		for (i = records.begin(); i != records.end(); i++)
 			(*i)->remove(*this);
 	}
+	else {
+		unwait();
+	}
 }
 
 void CGroup::reclaim(int feature) {

@@ -90,6 +90,12 @@ void CDefenseMatrix::update() {
 			buildings[i->first] = i->second;
 	}
 
+	/* Calculate cumulative defensive power */
+	float  sumDefPower = 0.0f;
+	std::map<int, CUnit*>::iterator l;
+	for (l = ai->unittable->defenses.begin(); l != ai->unittable->defenses.end(); l++)
+		sumDefPower += ai->cb->GetUnitPower(l->first);
+
 	/* Determine clusters */
 	for (i = buildings.begin(); i != buildings.end(); i++) {
 		/* Continue if the building is already contained in a cluster */
@@ -125,17 +131,16 @@ void CDefenseMatrix::update() {
 
 		/* Calculate coverage of current defense for this cluster */
 		c->center = (summedCenter / c->members.size());
-		std::map<int, CUnit*>::iterator l;
 		for (l = ai->unittable->defenses.begin(); l != ai->unittable->defenses.end(); l++) {
 			const float3 pos1 = l->second->pos();
 			float range = l->second->def->maxWeaponRange*0.8f;
-			//float power = ai->cb->GetUnitPower(l->first);
+			float power = ai->cb->GetUnitPower(l->first)/sumDefPower;
 			bool hasDefense = false;
 			for (k = c->members.begin(); k != c->members.end(); k++) {
 				const float3 pos2 = k->second->pos();
 				float dist = (pos1 - pos2).Length2D();
 				if (dist < range) {
-					c->value -= k->first*(range-dist) / c->members.size();
+					c->value -= (power*(k->first*(range-dist))) / c->members.size();
 					hasDefense = true;
 				}
 			}

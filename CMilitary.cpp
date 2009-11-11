@@ -87,8 +87,9 @@ CGroup* CMilitary::requestGroup(groupType type) {
 	return group;
 }
 
-int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets) {
+int CMilitary::selectTarget(float3 &ourPos, float radius, bool scout, std::vector<int> &targets) {
 	std::multimap<float, int> candidates;
+	float factor = scout ? 10000 : 1;
 
 	/* First sort the targets on distance */
 	for (unsigned i = 0; i < targets.size(); i++) {
@@ -96,25 +97,11 @@ int CMilitary::selectTarget(float3 &ourPos, std::vector<int> &targets) {
 
 		float3 epos = ai->cbc->GetUnitPos(target);
 		float dist = (epos-ourPos).Length2D();
+		dist *= factor*ai->threatmap->getThreat(epos, radius);
 		candidates.insert(std::pair<float,int>(dist, target));
 	}
 
-	int cur = 0;
-	int target = -1;
-	int max = ai->intel->numUnits < MAX_UNITS_MILITARY ? ai->intel->numUnits : MAX_UNITS_MILITARY;
-	float closest = MAX_FLOAT;
-	std::multimap<float, int>::iterator i;
-	for (i = candidates.begin(); i != candidates.end(); i++) {
-		float3 epos = ai->cbc->GetUnitPos(i->second);
-		if (i->first*(100*ai->threatmap->getThreat(epos,300.0f)) < closest) {
-			target = i->second;
-			closest = i->first;
-		}
-		if (cur++ > max)
-			break;
-	}
-
-	return target;
+	return candidates.begin()->second;
 }
 
 void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &targets2) {
@@ -185,11 +172,11 @@ void CMilitary::update(int frame) {
 
 		float3 pos = group->pos();
 
-		int target = selectTarget(pos, harras);
+		int target = selectTarget(pos, 200.0f, true, harras);
 
 		/* There are no harras targets available */
 		if (target == -1)
-			target = selectTarget(pos, all);
+			target = selectTarget(pos, 200.0f, true, all);
 
 		/* Nothing available */
 		if (target == -1)
@@ -215,7 +202,7 @@ void CMilitary::update(int frame) {
 
 		/* Select a target */
 		float3 pos = group->pos();
-		int target = selectTarget(pos, all);
+		int target = selectTarget(pos, 300.0f, false, all);
 
 		/* There are no targets available, assist an attack */
 		if (target == -1) {

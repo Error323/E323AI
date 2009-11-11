@@ -39,7 +39,7 @@ float CThreatMap::getThreat(float3 &center, float radius) {
 				power += map[ID(xx,zz)];
 		}
 	}
-	return power;
+	return power/(2.0f*R*M_PI);
 }
 
 void CThreatMap::update(int frame) {

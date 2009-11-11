@@ -59,7 +59,7 @@ class CMilitary: public ARegistrar {
 		std::vector<int> occupiedTargets;
 
 		/* Select a target */
-		int selectTarget(float3 &ourPos, std::vector<int> &targets);
+		int selectTarget(float3 &ourPos, float radius, bool scout, std::vector<int> &targets);
 
 		/* Request a unit for building using a roulette wheel system */
 		unsigned requestUnit();

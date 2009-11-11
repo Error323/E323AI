@@ -50,15 +50,14 @@ void ATask::addGroup(CGroup &g) {
 	this->group = &g;
 	group->reg(*this);
 	group->busy = true;
+	group->micro(false);
 }
 
 void ATask::enemyScan(bool scout) {
 	std::multimap<float, int> candidates;
 	float3 pos = group->pos();
-	float radius = group->range;
-	float strength = 0.0f;
 	int enemyids[MAX_ENEMIES];
-	int numEnemies = ai->cbc->GetEnemyUnits(&enemyids[0], pos, radius, MAX_ENEMIES);
+	int numEnemies = ai->cbc->GetEnemyUnits(&enemyids[0], pos, group->range, MAX_ENEMIES);
 	bool offensive = false;
 	for (int i = 0; i < numEnemies; i++) {
 		const UnitDef *ud = ai->cbc->GetUnitDef(enemyids[i]);
@@ -67,11 +66,10 @@ void ATask::enemyScan(bool scout) {
 		float health = ai->cbc->GetUnitHealth(enemyids[i]);
 		float dist = (epos-pos).Length2D();
 		health *= dist;
-		if (!ut->cats&AIR) {
+		if (!(ut->cats&AIR))
 			candidates.insert(std::pair<float,int>(health, enemyids[i]));
-			strength += ai->cbc->GetUnitPower(enemyids[i]);
-		}
-		if (ut->cats&ATTACKER && !ut->cats&AIR)
+
+		if (ut->cats&ATTACKER && !(ut->cats&AIR))
 			offensive = true;
 	}
 
@@ -82,13 +80,14 @@ void ATask::enemyScan(bool scout) {
 			for (++i; i != candidates.end(); i++)
 				group->attack(i->second,true);
 			group->micro(true);
-			LOG_II("ATask::enemyScan group " << (*group) << " is microing enemy targets")
+			LOG_II("ATask::enemyScan scout " << (*group) << " is microing enemy targets")
 		}
-		else if (strength < group->strength && offensive) {
+		else if (!scout) {
 			group->attack(i->second);
 			for (++i; i != candidates.end(); i++)
 				group->attack(i->second,true);
 			group->micro(true);
+			LOG_II("ATask::enemyScan group " << (*group) << " is microing enemy targets")
 		}
 	}
 }
@@ -474,13 +473,11 @@ void CTaskHandler::AttackTask::update() {
 		unreg(*(ai->pathfinder));
 	}
 	/* See if we can attack a target we found on our path */
-	else if (isMoving && !group->isMicroing()) {
-/*
+	else if (!group->isMicroing()) {
 		if (group->units.begin()->second->type->cats&SCOUTER)
 			enemyScan(true);
 		else
 			enemyScan(false);
-*/
 	}
 	/* Keep tracking the target */
 	pos = ai->cbc->GetUnitPos(target);
