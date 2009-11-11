@@ -260,7 +260,7 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister, float &travelTime) {
 	travelTime = ai->pathfinder->getETA(assister, gpos);
 
 	/* If a build takes more then 5 seconds after arrival, we can assist it */
-	return ((buildTime+30*5) > travelTime);
+	return (buildTime > (travelTime+30*5));
 }
 
 /**************************************************************/
