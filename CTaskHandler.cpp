@@ -66,7 +66,7 @@ void ATask::enemyScan(bool scout) {
 		UnitType *ut = UT(ud->id);
 		float3 epos = ai->cbc->GetUnitPos(enemyids[i]);
 		float dist = (epos-pos).Length2D();
-		if (!(ut->cats&AIR) && !(ut->cats&SCOUTER))
+		if (!(ut->cats&AIR) && !(ut->cats&SCOUTER) && !(ai->cbc->IsUnitCloaked(enemyids[i])))
 			candidates.insert(std::pair<float,int>(dist, enemyids[i]));
 	}
 
