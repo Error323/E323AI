@@ -26,6 +26,7 @@ void ATask::remove() {
 	group->busy = false;
 	group->unwait();
 	group->micro(false);
+	group->abilities(false);
 
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
@@ -52,6 +53,7 @@ void ATask::addGroup(CGroup &g) {
 	group->reg(*this);
 	group->busy = true;
 	group->micro(false);
+	group->abilities(true);
 }
 
 void ATask::enemyScan(bool scout) {

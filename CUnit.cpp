@@ -127,6 +127,16 @@ bool CUnit::guard(int target, bool enqueue) {
 	return false;
 }
 
+bool CUnit::cloak(bool on) {
+	Command c = createTargetCommand(CMD_CLOAK, on);
+
+	if (c.id != 0) {
+		ai->cb->GiveOrder(key, &c);
+		return true;
+	}
+	return false;
+}
+
 bool CUnit::repair(int target) {
 	Command c = createTargetCommand(CMD_REPAIR, target);
 
@@ -139,7 +149,7 @@ bool CUnit::repair(int target) {
 }
 
 bool CUnit::build(UnitType *toBuild, float3 &pos) {
-	int mindist = 7;
+	int mindist = 6;
 	if (toBuild->cats&FACTORY || toBuild->cats&EMAKER)
 		mindist = 10;
 	else if(toBuild->cats&MEXTRACTOR)

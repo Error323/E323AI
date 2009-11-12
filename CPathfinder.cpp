@@ -207,7 +207,6 @@ void CPathfinder::updateFollowers() {
 		/* Go through all the units in a group */
 		for (u = group->units.begin(); u != group->units.end(); u++) {
 			CUnit *unit = u->second;
-			unit->unwait();
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
 			float length = 0.0f;
 			int s1 = 0, s2 = 1;
@@ -244,13 +243,7 @@ void CPathfinder::updateFollowers() {
 			M[uposonpath] = unit;
 		}
 
-		/* If not under fine control, advance on the path */
-		if (!group->isMicroing())
-			group->move(path->second[segment+waypoint]);
-
-		/* Set a wait cmd on units that are going to fast, (They can still
-		 * attack during a wait) 
-		 */
+		/* Regroup when they are getting to much apart from eachother */
 		if (M.size() > 1) {
 			float rearval = M.begin()->first;
 			/*
@@ -267,13 +260,25 @@ void CPathfinder::updateFollowers() {
 			*/
 
 
-			for (std::map<float,CUnit*>::iterator i = --M.end(); i != M.begin(); i--) {
-				CUnit *unit = i->second;
-				if (i->first - rearval > maxGroupLength) {
-					unit->wait();
-				}
+			std::map<float,CUnit*>::iterator i = --M.end();
+			float lateralDisp = i->first - rearval;
+			if (lateralDisp > maxGroupLength) {
+				regrouping[group->key] = true;
 			}
+			else if (lateralDisp < maxGroupLength*0.7f) {
+				regrouping[group->key] = false;
+			}
+		} else regrouping[group->key] = false;
+
+		/* If not under fine control, advance on the path */
+		if (!group->isMicroing() && !regrouping[group->key])
+			group->move(path->second[segment+waypoint]);
+		/* If regrouping, finish that first */
+		else if (!group->isMicroing() && regrouping[group->key]) {
+			float3 gpos = group->pos();
+			group->move(gpos);
 		}
+
 		/* See who will get their path updated by updatePaths() */
 		if (update % paths.size() == groupnr)
 			repathGroup = path->first;
@@ -301,11 +306,13 @@ void CPathfinder::remove(ARegistrar &obj) {
 	LOG_II("CPathfinder::remove " << (*task))
 	paths.erase(task->group->key);
 	groups.erase(task->group->key);
+	regrouping.erase(task->group->key);
 }
 
 bool CPathfinder::addTask(ATask &task) {
 	LOG_II("CPathfinder::addTask " << task)
 	groups[task.group->key] = task.group;
+	regrouping[task.group->key] = true;
 	task.reg(*this);
 	float3 start = task.group->pos();
 	float3 goal = task.pos;

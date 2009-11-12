@@ -29,7 +29,7 @@ void CGroup::addUnit(CUnit &unit) {
 		
 	strength   += ai->cb->GetUnitPower(unit.key);
 	buildSpeed += unit.def->buildSpeed;
-	range = std::max<float>(ai->cb->GetUnitMaxRange(unit.key)*0.8f, range);
+	range = std::max<float>(ai->cb->GetUnitMaxRange(unit.key)*0.7f, range);
 	buildRange = std::max<float>(unit.def->buildDistance*1.5f, buildRange);
 	speed = std::min<float>(ai->cb->GetUnitSpeed(unit.key), speed);
 	los = std::max<float>(unit.def->losRadius, los);
@@ -63,7 +63,7 @@ void CGroup::remove(ARegistrar &unit) {
 	maxSlope = 1.0f;
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++) {
-		range       = std::max<float>(ai->cb->GetUnitMaxRange(i->first)*0.9f, range);
+		range       = std::max<float>(ai->cb->GetUnitMaxRange(i->first)*0.7f, range);
 		speed       = std::min<float>(ai->cb->GetUnitSpeed(i->first), speed);
 		los         = std::max<float>(i->second->def->losRadius, los);
 		strength   += ai->cb->GetUnitPower(i->first);
@@ -90,6 +90,14 @@ void CGroup::reclaim(int feature) {
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++)
 		i->second->reclaim(ai->cb->GetFeaturePos(feature), 128.0f);
+}
+
+void CGroup::abilities(bool on) {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++) {
+		if (i->second->def->canCloak)
+			i->second->cloak(on);
+	}
 }
 
 void CGroup::micro(bool on) {
@@ -153,7 +161,7 @@ float3 CGroup::pos() {
 }
 
 int CGroup::maxLength() {
-	return units.size()*40 + techlvl*40;
+	return units.size()*(50*techlvl);
 }
 
 void CGroup::assist(ATask &t) {

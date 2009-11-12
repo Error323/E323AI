@@ -102,6 +102,9 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* The groups */
 		std::map<int, CGroup*> groups;
 
+		/* Regrouping */
+		std::map<int, bool> regrouping;
+
 		/* draw the path ? */
 		bool draw;
 

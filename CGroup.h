@@ -76,6 +76,9 @@ class CGroup: public ARegistrar {
 		/* Merge another group with this group */
 		void merge(CGroup &group);
 
+		/* Enable abilities on units like cloaking */
+		void abilities(bool on);
+
 		/* See if the entire group is idle */
 		bool isIdle();
 

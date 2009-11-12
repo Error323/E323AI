@@ -23,9 +23,9 @@ float3 CDefenseMatrix::getDefenseBuildSite(UnitType *tower) {
 	dir.SafeNormalize();
 	float alpha = 0.0f;
 	switch(c->defenses) {
-		case 1:  alpha = M_PI/3.0f;  break;
-		case 2:  alpha = -M_PI/3.0f; break;
-		case 3:  alpha = M_PI;       break;
+		case 1:  alpha = M_PI;       break;
+		case 2:  alpha = -M_PI/2.0f; break;
+		case 3:  alpha = M_PI/2.0f;  break;
 		default: alpha = 0.0f;       break;
 	}
 	dir.x = dir.x*cos(alpha)-dir.z*sin(alpha);

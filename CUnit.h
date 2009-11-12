@@ -66,6 +66,9 @@ class CUnit: public ARegistrar {
 		/* Repair (or assist) a certain unit */
 		bool repair(int target);
 
+		/* Cloak a unit */
+		bool cloak(bool on);
+
 		/* Guard a certain unit */
 		bool guard(int target, bool enqueue = true);
 
