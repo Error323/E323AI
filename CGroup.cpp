@@ -161,7 +161,14 @@ float3 CGroup::pos() {
 }
 
 int CGroup::maxLength() {
-	return units.size()*(50*techlvl);
+	switch (units.size()) {
+		case 1: case 2: 
+			return 200;
+		case 3: case 4:
+			return 400;
+		default:
+			return 600;
+	}
 }
 
 void CGroup::assist(ATask &t) {

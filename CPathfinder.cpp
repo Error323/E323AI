@@ -246,33 +246,21 @@ void CPathfinder::updateFollowers() {
 		/* Regroup when they are getting to much apart from eachother */
 		if (M.size() > 1) {
 			float rearval = M.begin()->first;
-			/*
-			// REAR/FRONT unit debug
-			float3 rupos = M.begin()->second->pos();
-			float3 rhigh(rupos); rhigh.y += 100.0f;
-			ai->cb->CreateLineFigure(rupos, rhigh, 8.0f, 0, DRAW_TIME 2);
-			ai->cb->SetFigureColor(2, 1.0f, 0.0f, 0.0f, 1.0f);
-
-			float3 fupos = (--M.end())->second->pos();
-			float3 fhigh(fupos); fhigh.y += 100.0f;
-			ai->cb->CreateLineFigure(fupos, fhigh, 8.0f, 0, DRAW_TIME 3);
-			ai->cb->SetFigureColor(3, 0.0f, 1.0f, 0.0f, 1.0f);
-			*/
-
 
 			std::map<float,CUnit*>::iterator i = --M.end();
 			float lateralDisp = i->first - rearval;
 			if (lateralDisp > maxGroupLength) {
 				regrouping[group->key] = true;
 			}
-			else if (lateralDisp < maxGroupLength*0.7f) {
+			else if (lateralDisp < maxGroupLength*0.4f) {
 				regrouping[group->key] = false;
 			}
 		} else regrouping[group->key] = false;
 
 		/* If not under fine control, advance on the path */
-		if (!group->isMicroing() && !regrouping[group->key])
+		if (!group->isMicroing() && !regrouping[group->key]) {
 			group->move(path->second[segment+waypoint]);
+		}
 		/* If regrouping, finish that first */
 		else if (!group->isMicroing() && regrouping[group->key]) {
 			float3 gpos = group->pos();
@@ -394,7 +382,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 	bool success = (sid != -1 && gid != -1 && (findPath(nodepath)));
 	if (success) {
 		/* Insert a pre-waypoint at the startning of the path */
-		int waypoint = std::min<int>(3, nodepath.size()-1);
+		int waypoint = std::min<int>(4, nodepath.size()-1);
 		std::list<ANode*>::iterator wp;
 		int x = 0;
 		for (wp = nodepath.begin(); wp != nodepath.end(); wp++) {
