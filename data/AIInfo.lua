@@ -30,7 +30,7 @@ local infos = {
 	},
 	{
 		key    = 'description',
-		value  = 'Configurable Guerilla AI',
+		value  = 'Configurable Guerilla AI - Not supporting watermaps yet. Beats all other AIs',
 		desc   = 'tooltip.',
 	},
 	{
