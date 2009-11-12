@@ -26,7 +26,7 @@ local infos = {
 	{
 		key    = 'name',
 		value  = 'E323AI - High Templar',
-		desc   = 'Optimized for XTA and BA.',
+		desc   = 'Human readable name',
 	},
 	{
 		key    = 'description',
@@ -34,9 +34,14 @@ local infos = {
 		desc   = 'tooltip.',
 	},
 	{
+		key    = 'url',
+		value  = 'http://springrts.com/phpbb/viewtopic.php?f=15&t=19450',
+		desc   = 'URL with info on the AI in spring forum',
+	},
+	{
 		key    = 'loadSupported',
 		value  = 'no',
-		desc   = 'whether this AI supports loading or not.',
+		desc   = 'whether this AI supports loading or not',
 	},
 	{
 		key    = 'interfaceShortName',
