@@ -20,31 +20,33 @@ float3 CDefenseMatrix::getBestDefendedPos() {
 float3 CDefenseMatrix::getDefenseBuildSite(UnitType *tower) {
 	Cluster *c = (--clusters.end())->second;
 	float3 dir = ai->intel->getEnemyVector() - c->center;
-	dir.Normalize();
+	dir.SafeNormalize();
 	float alpha = 0.0f;
 	switch(c->defenses) {
-		case 1:  alpha = M_PI;       break;
-		case 2:  alpha = M_PI/2.0f;  break;
-		case 3:  alpha = -M_PI/2.0f; break;
+		case 1:  alpha = M_PI/3.0f;  break;
+		case 2:  alpha = -M_PI/3.0f; break;
+		case 3:  alpha = M_PI;       break;
 		default: alpha = 0.0f;       break;
 	}
-	dir.x = dir.x*cos(alpha)+dir.z*sin(alpha);
-	dir.z = dir.x*-sin(alpha)+dir.z*cos(alpha);
+	dir.x = dir.x*cos(alpha)-dir.z*sin(alpha);
+	dir.z = dir.x*sin(alpha)+dir.z*cos(alpha);
 
-	dir *= tower->def->maxWeaponRange*0.4f;
+	dir *= tower->def->maxWeaponRange*0.5f;
 	float3 pos = dir + c->center;
 	float3 best = pos;
-	float radius = tower->def->maxWeaponRange*0.2f;
+	float radius = tower->def->maxWeaponRange*0.3f;
 	float min = MAX_FLOAT, max = -MAX_FLOAT, maxHeight = -MAX_FLOAT;
-	for (int i = -radius; i <= radius; i++) {
-		for (int j = -radius; j <= radius; j++) {
+	float D = ((ai->intel->getEnemyVector() - pos).Length2D() + radius)/HEIGHT2REAL;
+	int R = ceil(radius);
+	for (int i = -R; i <= R; i++) {
+		for (int j = -R; j <= R; j++) {
 			int x = round((pos.x+j)/HEIGHT2REAL);
 			int z = round((pos.z+i)/HEIGHT2REAL);
 			if (x < 0 || z < 0 || x > X-1 || z > Z-1)
 				continue;
 			float3 dist = ai->intel->getEnemyVector() - float3(pos.x+j,pos.y,pos.z+i);
 			dist /= HEIGHT2REAL;
-			float height = (hm[ID(x,z)]*(radius/HEIGHT2REAL)*2)-dist.Length2D();
+			float height = hm[ID(x,z)]*(D - dist.Length2D());
 			if (height > maxHeight) {
 				best = float3(pos);
 				best.x += j;
@@ -58,7 +60,7 @@ float3 CDefenseMatrix::getDefenseBuildSite(UnitType *tower) {
 		}
 	}
 	best.y = ai->cb->GetElevation(best.x, best.z);
-	return (max - min) > 5.0f ? best : pos;
+	return (max - min) > 20.0f ? best : pos;
 }
 
 int CDefenseMatrix::getClusters() {

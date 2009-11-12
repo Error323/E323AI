@@ -30,11 +30,10 @@ void CIntel::init() {
 		enemyvector += ai->cbc->GetUnitPos(units[i]);
 	}
 	enemyvector /= numUnits;
+	LOG_II("Number of enemies: " << numUnits)
 }
 
 void CIntel::update(int frame) {
-	if (frame >= 0 && frame <= 30)
-		init();
 	mobileBuilders.clear();
 	factories.clear();
 	attackers.clear();

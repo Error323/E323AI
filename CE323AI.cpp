@@ -125,7 +125,7 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 
 /* Called on move fail e.g. can't reach point */
 void CE323AI::UnitMoveFailed(int uid) {
-	CUnit *unit = ai->unittable->getUnit(uid);
+	//CUnit *unit = ai->unittable->getUnit(uid);
 	//unit->moveRandom(50.0f);
 }
 
@@ -191,17 +191,23 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 /* Update AI per logical frame = 1/30 sec on gamespeed 1.0 */
 void CE323AI::Update() {
 	/* Make sure we shift the multiplexer for each instance of E323AI */
-	int frame = ai->cb->GetCurrentFrame()+ai->team;
+	int frame = ai->cb->GetCurrentFrame();
 
 	/* Don't act before the 100th frame, messed up eco stuff -_- */
-	if (frame < 100) return;
-	else if (frame == (800+(ai->team*100))) {
+	if (frame < 100) {
+		if (frame == 1)
+			ai->intel->init();
+		return;
+	}
+
+	else if (frame == (800+(ai->team*200))) {
 		LOG_SS("*** " << AI_VERSION << " ***");
 		LOG_SS("*** " << AI_CREDITS << " ***");
 		LOG_SS("*** " <<  AI_NOTES  << " ***");
 	}
 
 	/* Rotate through the different update events to distribute computations */
+	frame += ai->team;
 	switch(frame % MULTIPLEXER) {
 		case 0: { /* update incomes */
 			CScopedTimer t(std::string("eco-incomes"));
