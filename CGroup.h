@@ -47,7 +47,7 @@ class CGroup: public ARegistrar {
 		float buildSpeed;
 
 		/* The group maxrange */
-		float range, buildRange;
+		float range, buildRange, los;
 
 		/* Is this group busy? */
 		bool busy;

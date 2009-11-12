@@ -223,6 +223,9 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 }
 
 void CEconomy::update(int frame) {
+	/* See if we can improve our eco by controlling metalmakers */
+	controlMetalMakers();
+
 	/* If we are stalling, do something about it */
 	preventStalling();
 
@@ -348,12 +351,7 @@ bool CEconomy::taskInProgress(buildType bt) {
 	return false;
 }
 
-void CEconomy::preventStalling() {
-	/* If factorytask is on wait, unwait him */
-	std::map<int, CTaskHandler::FactoryTask*>::iterator k;
-	for (k = ai->tasks->activeFactoryTasks.begin(); k != ai->tasks->activeFactoryTasks.end(); k++)
-		k->second->setWait(false);
-
+void CEconomy::controlMetalMakers() {
 	/* If we are only stalling energy, see if we can turn metalmakers off */
 	std::map<int, bool>::iterator j;
 	if ((estall && !mstall) || (eRequest && !mRequest)) {
@@ -367,6 +365,7 @@ void CEconomy::preventStalling() {
 			}
 		}
 		if (success > 0) {
+			estall = false;
 			return;
 		}
 	}
@@ -383,9 +382,21 @@ void CEconomy::preventStalling() {
 			}
 		}
 		if (success > 0) {
+			mstall = false;
 			return;
 		}
 	}
+}
+
+void CEconomy::preventStalling() {
+	/* If factorytask is on wait, unwait him */
+	std::map<int, CTaskHandler::FactoryTask*>::iterator k;
+	for (k = ai->tasks->activeFactoryTasks.begin(); k != ai->tasks->activeFactoryTasks.end(); k++)
+		k->second->setWait(false);
+
+	/* If we're not stalling, return */
+	if (!mstall && !estall)
+		return;
 
 	/* Stop all guarding workers */
 	std::map<int,CTaskHandler::AssistTask*>::iterator i;

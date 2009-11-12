@@ -111,6 +111,9 @@ class CEconomy: public ARegistrar {
 		/* Prevent stalling */
 		void preventStalling();
 
+		/* See what is best for our economy */
+		void controlMetalMakers();
+
 		/* build or assist on a certain task */
 		void buildOrAssist(CGroup &group, buildType bt, unsigned include, unsigned exclude = 0);
 

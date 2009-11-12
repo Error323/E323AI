@@ -32,6 +32,7 @@ void CGroup::addUnit(CUnit &unit) {
 	range = std::max<float>(ai->cb->GetUnitMaxRange(unit.key)*0.8f, range);
 	buildRange = std::max<float>(unit.def->buildDistance*1.5f, buildRange);
 	speed = std::min<float>(ai->cb->GetUnitSpeed(unit.key), speed);
+	los = std::max<float>(unit.def->losRadius, los);
 
 	units[unit.key]   = &unit;
 	unit.reg(*this);
@@ -64,6 +65,7 @@ void CGroup::remove(ARegistrar &unit) {
 	for (i = units.begin(); i != units.end(); i++) {
 		range       = std::max<float>(ai->cb->GetUnitMaxRange(i->first)*0.9f, range);
 		speed       = std::min<float>(ai->cb->GetUnitSpeed(i->first), speed);
+		los         = std::max<float>(i->second->def->losRadius, los);
 		strength   += ai->cb->GetUnitPower(i->first);
 		buildSpeed += i->second->def->buildSpeed;
 		md          = ai->cb->GetUnitDef(i->first)->movedata;
@@ -120,6 +122,7 @@ void CGroup::reset() {
 	buildSpeed = 0.0f;
 	range      = 0.0f;
 	buildRange = 0.0f;
+	los        = 0.0f;
 	busy       = false;
 	maxSlope   = 1.0f;
 	techlvl    = 1;

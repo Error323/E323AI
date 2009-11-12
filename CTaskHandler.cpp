@@ -13,6 +13,7 @@
 #include "CGroup.h"
 #include "CEconomy.h"
 #include "CConfigParser.h"
+#include "CThreatMap.h"
 
 /**************************************************************/
 /************************* ATASK ******************************/
@@ -58,34 +59,26 @@ void ATask::enemyScan(bool scout) {
 	float3 pos = group->pos();
 	int enemyids[MAX_ENEMIES];
 	int numEnemies = ai->cbc->GetEnemyUnits(&enemyids[0], pos, group->range, MAX_ENEMIES);
-	bool offensive = false;
 	for (int i = 0; i < numEnemies; i++) {
 		const UnitDef *ud = ai->cbc->GetUnitDef(enemyids[i]);
 		UnitType *ut = UT(ud->id);
 		float3 epos = ai->cbc->GetUnitPos(enemyids[i]);
-		float health = ai->cbc->GetUnitHealth(enemyids[i]);
 		float dist = (epos-pos).Length2D();
-		health *= dist;
-		if (!(ut->cats&AIR))
-			candidates.insert(std::pair<float,int>(health, enemyids[i]));
-
-		if (ut->cats&ATTACKER && !(ut->cats&AIR))
-			offensive = true;
+		if (!(ut->cats&AIR) && !(ut->cats&SCOUTER))
+			candidates.insert(std::pair<float,int>(dist, enemyids[i]));
 	}
 
 	if (!candidates.empty()) {
 		std::multimap<float,int>::iterator i = candidates.begin();
+		float3 epos = ai->cbc->GetUnitPos(i->second);
+		bool offensive = ai->threatmap->getThreat(epos, 0.0f) > 10.0f;
 		if (scout && !offensive) {
 			group->attack(i->second);
-			for (++i; i != candidates.end(); i++)
-				group->attack(i->second,true);
 			group->micro(true);
 			LOG_II("ATask::enemyScan scout " << (*group) << " is microing enemy targets")
 		}
 		else if (!scout) {
 			group->attack(i->second);
-			for (++i; i != candidates.end(); i++)
-				group->attack(i->second,true);
 			group->micro(true);
 			LOG_II("ATask::enemyScan group " << (*group) << " is microing enemy targets")
 		}
