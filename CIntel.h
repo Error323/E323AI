@@ -36,9 +36,9 @@ class CIntel {
 		AIClasses *ai;
 
 		int *units;
-		std::map<unitCategory,int> counts;
+		std::map<unitCategory,unsigned> counts;
 		std::vector<unitCategory> selector;
-		int totalCount;
+		unsigned totalCount;
 		float3 enemyvector;
 
 		/* Reset enemy unit counters */
@@ -46,6 +46,8 @@ class CIntel {
 
 		/* Count enemy units */
 		void updateCounts(unsigned c);
+
+		unitCategory counter(unitCategory c);
 
 };
 

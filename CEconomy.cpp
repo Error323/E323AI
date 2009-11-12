@@ -147,20 +147,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 		
 		/* Determine the location where to build */
 		float3 pos = group.pos();
-		facing f = unit->getBestFacing(pos);
-		int mindist = 5;
-		float startRadius = unit->def->buildDistance;
-		float3 goal = ai->cb->ClosestBuildSite(i->second->def, pos, startRadius, mindist, f);
-		int tries = 0;
-		while (goal == ERRORVECTOR) {
-			startRadius += i->second->def->buildDistance;
-			goal = ai->cb->ClosestBuildSite(i->second->def, pos, startRadius, mindist, f);
-			tries++;
-			if (tries > 10) {
-				goal = pos;
-				break;
-			}
-		}
+		float3 goal = pos;
 
 		/* Perform the build */
 		switch(bt) {
@@ -193,7 +180,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				break;
 			}
 
-			case FACTORY_BUILD: {
+			case FACTORY_BUILD: case BUILD_MSTORAGE: case BUILD_ESTORAGE: {
 				if (affordable && !taskInProgress(bt)) {
 					pos = ai->defensematrix->getBestDefendedPos();
 					ai->tasks->addBuildTask(bt, i->second, group, pos);
@@ -204,11 +191,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 			case BUILD_AG_DEFENSE: case BUILD_AA_DEFENSE: {
 				if (!taskInProgress(bt)) {
 					pos = ai->defensematrix->getDefenseBuildSite(i->second);
-					facing f = unit->getBestFacing(pos);
-					int mindist = 5;
-					float startRadius = unit->def->buildDistance;
-					goal = ai->cb->ClosestBuildSite(i->second->def, pos, startRadius, mindist, f);
-					ai->tasks->addBuildTask(bt, i->second, group, goal);
+					ai->tasks->addBuildTask(bt, i->second, group, pos);
 				}
 				break;
 			}
@@ -352,9 +335,9 @@ bool CEconomy::taskInProgress(buildType bt) {
 }
 
 void CEconomy::controlMetalMakers() {
-	/* If we are only stalling energy, see if we can turn metalmakers off */
+	float eRatio = eNow / eStorage;
 	std::map<int, bool>::iterator j;
-	if ((estall && !mstall) || (eRequest && !mRequest)) {
+	if (eRatio < 0.4f) {
 		int success = 0;
 		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
 			if (j->second) {
@@ -370,8 +353,7 @@ void CEconomy::controlMetalMakers() {
 		}
 	}
 
-	/* If we are only stalling metal, see if we can turn metalmakers on */
-	if ((mstall && !estall) || (mRequest && !eRequest)) {
+	if (eRatio > 0.6f) {
 		int success = 0;
 		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
 			if (!j->second) {

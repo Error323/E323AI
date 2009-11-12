@@ -12,6 +12,7 @@ CIntel::CIntel(AIClasses *ai) {
 	selector.push_back(SNIPER);
 	selector.push_back(ARTILLERY);
 	selector.push_back(ANTIAIR);
+	selector.push_back(AIR);
 	for (size_t i = 0; i < selector.size(); i++)
 		counts[selector[i]] = 1;
 	numUnits = 1;
@@ -76,10 +77,23 @@ void CIntel::update(int frame) {
 	}
 }
 
+unitCategory CIntel::counter(unitCategory c) {
+	switch(c) {
+		case ASSAULT: return SNIPER;
+		case SCOUTER: return ASSAULT;
+		case SNIPER: return ARTILLERY;
+		case ARTILLERY: return ASSAULT;
+		case ANTIAIR: return ARTILLERY;
+		case AIR: return ANTIAIR;
+		default: return ARTILLERY;
+	}
+}
+
 void CIntel::updateCounts(unsigned c) {
 	for (size_t i = 0; i < selector.size(); i++) {
 		if (selector[i] & c) {
-			counts[selector[i]]++;
+			// TODO: counts[ai->cfgparser->counter(selector[i])]++
+			counts[counter(selector[i])]++;
 			totalCount++;
 		}
 	}
@@ -92,7 +106,9 @@ void CIntel::resetCounters() {
 		roulette.insert(std::pair<float,unitCategory>(counts[selector[i]]/float(totalCount), selector[i]));
 		counts[selector[i]] = 1;
 	}
-
+	counts[ANTIAIR] = 0;
+	counts[AIR] = 0;
+	counts[ASSAULT] = 3;
 	totalCount = selector.size();
 }
 
