@@ -304,8 +304,8 @@ void CEconomy::update(int frame) {
 			}
 			/* See if we can build a new factory */
 			if (!mRequest && !eRequest) {
-				int allowedTechlvl = ai->cfgparser->getMaxTechLevel();
-				int type = rng.RandInt(2) == 1 ? KBOT : VEHICLE;
+				unsigned allowedTechlvl = rng.RandInt(ai->cfgparser->getMaxTechLevel()-1)+1;
+				unsigned type = rng.RandInt(1) == 1 ? KBOT : VEHICLE;
 				if (!ai->unittable->gotFactory(type|allowedTechlvl))
 					buildOrAssist(*group, BUILD_FACTORY, type|allowedTechlvl);
 				if (group->busy) continue;
