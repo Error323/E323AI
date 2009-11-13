@@ -97,7 +97,7 @@ int CMilitary::selectTarget(float3 &ourPos, float radius, bool scout, std::vecto
 
 		float3 epos = ai->cbc->GetUnitPos(target);
 		float dist = (epos-ourPos).Length2D();
-		dist *= factor*ai->threatmap->getThreat(epos, radius);
+		dist *= (factor*ai->threatmap->getThreat(epos, radius));
 		candidates.insert(std::pair<float,int>(dist, target));
 	}
 
@@ -172,11 +172,11 @@ void CMilitary::update(int frame) {
 
 		float3 pos = group->pos();
 
-		int target = selectTarget(pos, 200.0f, true, harras);
+		int target = selectTarget(pos, 300.0f, true, harras);
 
 		/* There are no harras targets available */
 		if (target == -1)
-			target = selectTarget(pos, 200.0f, true, all);
+			target = selectTarget(pos, 300.0f, true, all);
 
 		/* Nothing available */
 		if (target == -1)
@@ -202,7 +202,7 @@ void CMilitary::update(int frame) {
 
 		/* Select a target */
 		float3 pos = group->pos();
-		int target = selectTarget(pos, 300.0f, false, all);
+		int target = selectTarget(pos, 0.0f, false, all);
 
 		/* There are no targets available, assist an attack */
 		if (target == -1) {
@@ -221,8 +221,8 @@ void CMilitary::update(int frame) {
 		/* Not strong enough */
 		float3 targetpos = ai->cbc->GetUnitPos(target);
 		if (
-			isCurrent && 
-			group->units.size() < ai->cfgparser->getMinGroupSize(group->techlvl)
+			(isCurrent && group->units.size() < ai->cfgparser->getMinGroupSize(group->techlvl)) ||
+			group->strength < ai->threatmap->getThreat(targetpos, 0.0f)
 		) continue;
 
 		ai->tasks->addAttackTask(target, *group);
