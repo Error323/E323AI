@@ -474,16 +474,16 @@ void CEconomy::updateIncomes(int frame) {
 		char buf[255];
 		switch(ai->cfgparser->getMaxTechLevel()) {
 			case TECH1:
-				sprintf(buf, "State changed to: %d, actived %s", tstate, "TECH1");
+				sprintf(buf, "State changed to: %d, activated %s", tstate, "TECH1");
 				break;
 			case TECH2:
-				sprintf(buf, "State changed to: %d, actived %s", tstate, "TECH2");
+				sprintf(buf, "State changed to: %d, activated %s", tstate, "TECH2");
 				break;
 			case TECH3:
-				sprintf(buf, "State changed to: %d, actived %s", tstate, "TECH3");
+				sprintf(buf, "State changed to: %d, activated %s", tstate, "TECH3");
 				break;
 			default:
-				sprintf(buf, "State changed to: %d, actived %s", tstate, "?????");
+				sprintf(buf, "State changed to: %d, activated %s", tstate, "?????");
 				break;
 		}
 		LOG_SS(buf);
