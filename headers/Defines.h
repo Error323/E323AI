@@ -22,6 +22,9 @@
 #define CFG_FOLDER   "configs/"
 #define CACHE_FOLDER "cache/"
 
+/* Templates */
+#define CONFIG_TEMPLATE "template-config.cfg"
+
 /* Misc macro's */
 #define UD(u) (ai->cb->GetUnitDef(u))
 #define UT(u) (&(ai->unittable->units[u]))

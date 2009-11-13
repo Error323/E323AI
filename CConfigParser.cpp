@@ -58,8 +58,8 @@ int CConfigParser::getMinGroupSize(int techLevel) {
 }
 
 void CConfigParser::parseConfig(std::string filename) {
-	filename = getAbsoluteFileName(filename);
-	std::ifstream file(filename.c_str());
+	std::string dirfilename = getAbsoluteFileName(filename);
+	std::ifstream file(dirfilename.c_str());
 	unsigned linenr = 0;
 
 	if (file.good() && file.is_open()) {
@@ -96,13 +96,17 @@ void CConfigParser::parseConfig(std::string filename) {
 				states[state][splitted[0]] = atoi(splitted[1].c_str());
 			}
 		}
-		LOG_II("CConfigParser::parseConfig parsed "<<linenr<<" lines from " << filename)
+		LOG_II("CConfigParser::parseConfig parsed "<<linenr<<" lines from " << dirfilename)
 		file.close();
 	}
 	else {
-		LOG_EE("Could not open " << filename << " for parsing")
-		ai->cb->SendTextMsg(std::string("Could not parse"+filename).c_str(), 0);
-		throw(2);
+		LOG_II("Could not open " << dirfilename << " for parsing")
+		std::string templatefile = getAbsoluteFileName(std::string(CONFIG_TEMPLATE));
+		std::ifstream ifs(templatefile.c_str(), std::ios::binary);
+		std::ofstream ofs(dirfilename.c_str(), std::ios::binary);
+		ofs << ifs.rdbuf();
+		LOG_II("New configfile created from " << templatefile)
+		parseConfig(filename);
 	}
 }
 
