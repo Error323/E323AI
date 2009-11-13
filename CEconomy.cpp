@@ -276,6 +276,8 @@ void CEconomy::update(int frame) {
 			}
 			/* If we are overflowing metal build an mstorage */
 			if (mexceeding) {
+				buildNewFactory(*group);
+				if (group->busy) continue;
 				buildOrAssist(*group, BUILD_MSTORAGE, LAND|MSTORAGE);
 				if (group->busy) continue;
 			}
@@ -304,10 +306,7 @@ void CEconomy::update(int frame) {
 			}
 			/* See if we can build a new factory */
 			if (!mRequest && !eRequest) {
-				unsigned allowedTechlvl = rng.RandInt(ai->cfgparser->getMaxTechLevel()-1)+1;
-				unsigned type = rng.RandInt(1) == 1 ? KBOT : VEHICLE;
-				if (!ai->unittable->gotFactory(type|allowedTechlvl))
-					buildOrAssist(*group, BUILD_FACTORY, type|allowedTechlvl);
+				buildNewFactory(*group);
 				if (group->busy) continue;
 			}
 			/* Otherwise just expand */
@@ -323,6 +322,15 @@ void CEconomy::update(int frame) {
 	) ai->wishlist->push(BUILDER, HIGH);
 	else if (activeGroups.size() < ai->cfgparser->getMaxWorkers())
 		ai->wishlist->push(BUILDER, NORMAL);
+}
+
+void CEconomy::buildNewFactory(CGroup &group) {
+	CUnit *unit = group.units.begin()->second;
+	unsigned type = (unit->type->cats&KBOT) ? KBOT : VEHICLE;
+	unsigned allowedTechlvl = rng.RandInt(ai->cfgparser->getMaxTechLevel()-1)+1;
+	allowedTechlvl = allowedTechlvl == 0 ? ai->cfgparser->getMaxTechLevel() : allowedTechlvl;
+	if (!ai->unittable->gotFactory(type|allowedTechlvl))
+		buildOrAssist(group, BUILD_FACTORY, type|allowedTechlvl);
 }
 
 bool CEconomy::taskInProgress(buildType bt) {
@@ -461,7 +469,26 @@ void CEconomy::updateIncomes(int frame) {
 	mRequest   = (mNow < (mStorage*0.5f));
 	eRequest   = (eNow < (eStorage*0.5f));
 
-	state = ai->cfgparser->determineState(mIncome, eIncome);
+	int tstate = ai->cfgparser->determineState(mIncome, eIncome);
+	if (tstate != state) {
+		char buf[255];
+		switch(ai->cfgparser->getMaxTechLevel()) {
+			case TECH1:
+				sprintf(buf, "State changed to: %d, actived %s", tstate, "TECH1");
+				break;
+			case TECH2:
+				sprintf(buf, "State changed to: %d, actived %s", tstate, "TECH2");
+				break;
+			case TECH3:
+				sprintf(buf, "State changed to: %d, actived %s", tstate, "TECH3");
+				break;
+			default:
+				sprintf(buf, "State changed to: %d, actived %s", tstate, "?????");
+				break;
+		}
+		LOG_SS(buf);
+		state = tstate;
+	}
 }
 
 ATask* CEconomy::canAssist(buildType t, CGroup &group) {
