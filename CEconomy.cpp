@@ -166,23 +166,26 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				if (canBuildMex) {
 					bool b1 = mIncome < 3.0f;
 					bool b2 = !unit->def->isCommander;
-					if (b1 || (b2 || ai->pathfinder->getETA(group, goal) < 32*20))
+					if (b1 || (b2 || ai->pathfinder->getETA(group, goal) < 32*10))
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, i->second, group, goal);
 					else if (!eRequest && !estall) {
 						UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
-						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
+						if (mmaker != NULL)
+							ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
 					}
 				}
 				else if (!eRequest) {
 					UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
-					ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
+					if (mmaker != NULL)
+						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
 				}
 				break;
 			}
 
 			case FACTORY_BUILD: case BUILD_MSTORAGE: case BUILD_ESTORAGE: {
-				if (affordable && !taskInProgress(bt)) {
-					pos = ai->defensematrix->getBestDefendedPos();
+				if (affordable && (mNow/mStorage > 0.6f) && !taskInProgress(bt)) {
+					if (ai->unittable->factories.size() > 1)
+						pos = ai->defensematrix->getBestDefendedPos();
 					ai->tasks->addBuildTask(bt, i->second, group, pos);
 				}
 				break;
@@ -211,6 +214,9 @@ void CEconomy::update(int frame) {
 
 	/* If we are stalling, do something about it */
 	preventStalling();
+
+	/* Determine the allowed factory not yet in our arsenal */
+	unsigned factory = getAllowedFactory();
 
 	/* Update idle worker groups */
 	std::map<int, CGroup*>::iterator i;
@@ -256,9 +262,9 @@ void CEconomy::update(int frame) {
 				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
 				if (group->busy) continue;
 			}
-			/* If we don't have a factory, build one */
-			if (ai->unittable->factories.empty()) {
-				buildOrAssist(*group, BUILD_FACTORY, KBOT|TECH1);
+			/* See if this unit can build our desired factory */
+			if (factory > 0) {
+				buildOrAssist(*group, BUILD_FACTORY, factory);
 				if (group->busy) continue;
 			}
 			/* See if we can build defense */
@@ -276,8 +282,6 @@ void CEconomy::update(int frame) {
 			}
 			/* If we are overflowing metal build an mstorage */
 			if (mexceeding) {
-				buildNewFactory(*group);
-				if (group->busy) continue;
 				buildOrAssist(*group, BUILD_MSTORAGE, LAND|MSTORAGE);
 				if (group->busy) continue;
 			}
@@ -304,11 +308,6 @@ void CEconomy::update(int frame) {
 				ai->tasks->addAssistTask(*task, *group);
 				if (group->busy) continue;
 			}
-			/* See if we can build a new factory */
-			if (!mRequest && !eRequest) {
-				buildNewFactory(*group);
-				if (group->busy) continue;
-			}
 			/* Otherwise just expand */
 			if ((mNow / mStorage) > (eNow / eStorage))
 				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
@@ -324,13 +323,19 @@ void CEconomy::update(int frame) {
 		ai->wishlist->push(BUILDER, NORMAL);
 }
 
-void CEconomy::buildNewFactory(CGroup &group) {
-	CUnit *unit = group.units.begin()->second;
-	unsigned type = (unit->type->cats&KBOT) ? KBOT : VEHICLE;
-	unsigned allowedTechlvl = rng.RandInt(ai->cfgparser->getMaxTechLevel()-1)+1;
-	allowedTechlvl = allowedTechlvl == 0 ? ai->cfgparser->getMaxTechLevel() : allowedTechlvl;
-	if (!ai->unittable->gotFactory(type|allowedTechlvl))
-		buildOrAssist(group, BUILD_FACTORY, type|allowedTechlvl);
+unsigned CEconomy::getAllowedFactory() {
+	int maxTech = ai->cfgparser->getMaxTechLevel();
+	for (int i = 0; i < maxTech; i++) {
+		// assuming TECH1 = 1, TECH2 = 2, TECH3 = 4
+		unsigned tech = 1 << i;
+
+		if (!ai->unittable->gotFactory(tech|KBOT))
+			return tech|KBOT;
+
+		if (!ai->unittable->gotFactory(tech|VEHICLE))
+			return tech|VEHICLE;
+	}
+	return 0;
 }
 
 bool CEconomy::taskInProgress(buildType bt) {
@@ -472,21 +477,11 @@ void CEconomy::updateIncomes(int frame) {
 	int tstate = ai->cfgparser->determineState(mIncome, eIncome);
 	if (tstate != state) {
 		char buf[255];
-		switch(ai->cfgparser->getMaxTechLevel()) {
-			case TECH1:
-				sprintf(buf, "State changed to: %d, activated %s", tstate, "TECH1");
-				break;
-			case TECH2:
-				sprintf(buf, "State changed to: %d, activated %s", tstate, "TECH2");
-				break;
-			case TECH3:
-				sprintf(buf, "State changed to: %d, activated %s", tstate, "TECH3");
-				break;
-			default:
-				sprintf(buf, "State changed to: %d, activated %s", tstate, "?????");
-				break;
-		}
+		sprintf(buf, "State changed to %d, activated techlevel %d", tstate, ai->cfgparser->getMaxTechLevel());
+		LOG_II(buf);
+		#if DEBUG
 		LOG_SS(buf);
+		#endif
 		state = tstate;
 	}
 }

@@ -89,7 +89,7 @@ void CGroup::remove(ARegistrar &unit) {
 void CGroup::reclaim(int feature) {
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++)
-		i->second->reclaim(ai->cb->GetFeaturePos(feature), 128.0f);
+		i->second->reclaim(ai->cb->GetFeaturePos(feature), 16.0f);
 }
 
 void CGroup::abilities(bool on) {

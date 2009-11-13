@@ -150,8 +150,11 @@ bool CUnit::repair(int target) {
 
 bool CUnit::build(UnitType *toBuild, float3 &pos) {
 	int mindist = 6;
-	if (toBuild->cats&FACTORY || toBuild->cats&EMAKER)
+	if (toBuild->cats&FACTORY || toBuild->cats&EMAKER) {
 		mindist = 10;
+		if (toBuild->cats&VEHICLE || toBuild->cats&TECH3)
+			mindist = 15;
+	}
 	else if(toBuild->cats&MEXTRACTOR)
 		mindist = 0;
 	else if(toBuild->cats&ATTACKER)

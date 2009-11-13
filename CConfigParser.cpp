@@ -45,12 +45,7 @@ int CConfigParser::getMaxWorkers()   { return states[state]["maxWorkers"]; }
 int CConfigParser::getMinScouts()    { return states[state]["minScouts"]; }
 
 int CConfigParser::getMaxTechLevel() { 
-	switch(states[state]["maxTechLevel"]) {
-		case 1: return TECH1;
-		case 2: return TECH2;
-		case 3: return TECH3;
-		default: return TECH1;
-	}
+	return states[state]["maxTechLevel"];
 }
 
 int CConfigParser::getMinGroupSize(int techLevel) {

@@ -73,7 +73,7 @@ void ATask::enemyScan(bool scout) {
 	if (!candidates.empty()) {
 		std::multimap<float,int>::iterator i = candidates.begin();
 		float3 epos = ai->cbc->GetUnitPos(i->second);
-		bool offensive = ai->threatmap->getThreat(epos, 0.0f) > 10.0f;
+		bool offensive = ai->threatmap->getThreat(epos, 400.0f) > 1.1f;
 		if (scout && !offensive) {
 			group->attack(i->second);
 			group->micro(true);
@@ -88,6 +88,10 @@ void ATask::enemyScan(bool scout) {
 }
 
 void ATask::resourceScan() {
+	/* Leave metal alone when we can't store it */
+	if (ai->economy->mexceeding)
+		return;
+
 	std::map<float, int> candidates;
 	float3 pos = group->pos();
 	float radius = group->buildRange;
