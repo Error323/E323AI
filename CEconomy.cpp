@@ -187,8 +187,10 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 			}
 
 			case BUILD_MSTORAGE: case BUILD_ESTORAGE: {
-				pos = ai->defensematrix->getBestDefendedPos();
-				ai->tasks->addBuildTask(bt, i->second, group, pos);
+				if (!taskInProgress(bt)) {
+					pos = ai->defensematrix->getBestDefendedPos();
+					ai->tasks->addBuildTask(bt, i->second, group, pos);
+				}
 				break;
 			}
 
@@ -207,6 +209,11 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 					}
 					case 4: {
 						if ((mNow/mStorage > 0.3) && !taskInProgress(bt))
+							ai->tasks->addBuildTask(bt, i->second, group, pos);
+						break;
+					}
+					case 5: {
+						if ((mNow/mStorage > 0.2) && !taskInProgress(bt))
 							ai->tasks->addBuildTask(bt, i->second, group, pos);
 						break;
 					}

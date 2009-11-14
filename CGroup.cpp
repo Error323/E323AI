@@ -165,9 +165,13 @@ int CGroup::maxLength() {
 		case 1: case 2: 
 			return 200;
 		case 3: case 4:
+			return 300;
+		case 5: case 6:
 			return 400;
+		case 7: case 8:
+			return 500;
 		default:
-			return 600;
+			return 800;
 	}
 }
 
