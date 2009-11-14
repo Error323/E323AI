@@ -223,7 +223,10 @@ void CMilitary::update(int frame) {
 		if (
 			(isCurrent && group->units.size() < ai->cfgparser->getMinGroupSize(group->techlvl)) ||
 			group->strength < ai->threatmap->getThreat(targetpos, 0.0f)
-		) continue;
+		) {
+			//merge.push_back(group);
+			continue;
+		}
 
 		ai->tasks->addAttackTask(target, *group);
 		break;

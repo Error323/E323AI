@@ -152,7 +152,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 		/* Perform the build */
 		switch(bt) {
 			case BUILD_EPROVIDER: {
-				if (windmap)
+				if (windmap && ai->cb->GetCurWind() >= 10.0f)
 					ai->tasks->addBuildTask(bt, i->second, group, goal);
 				else if (i->second->cats&WIND)
 					ai->tasks->addBuildTask(bt, (++candidates.begin())->second, group, goal);
