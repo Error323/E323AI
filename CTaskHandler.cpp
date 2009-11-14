@@ -154,7 +154,7 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 		default: return out;
 	}
 
-	if (atask.t != ASSIST) {
+	if (atask.t != ASSIST && atask.t != MERGE) {
 		ss << " Assisters: amount(" << atask.assisters.size() << ") [";
 		std::list<ATask*>::const_iterator i;
 		for (i = atask.assisters.begin(); i != atask.assisters.end(); i++)
@@ -543,16 +543,6 @@ void CTaskHandler::MergeTask::remove(ARegistrar &group) {
 	CGroup *g = dynamic_cast<CGroup*>(&group);
 	unreg(*g);
 	groups.remove(g);
-	if (groups.size() <= 1) {
-		LOG_II("MergeTask::remove " << (*this))
-		std::list<ATask*>::iterator i;
-		for (i = assisters.begin(); i != assisters.end(); i++)
-			(*i)->remove();
-		
-		std::list<ARegistrar*>::iterator j;
-		for (j = records.begin(); j != records.end(); j++)
-			(*j)->remove(*this);
-	}
 }
 		
 void CTaskHandler::MergeTask::update() {
