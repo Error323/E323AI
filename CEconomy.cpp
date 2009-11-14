@@ -208,17 +208,12 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 						break;
 					}
 					case 4: {
-						if ((mNow/mStorage > 0.3) && !taskInProgress(bt))
-							ai->tasks->addBuildTask(bt, i->second, group, pos);
-						break;
-					}
-					case 5: {
-						if ((mNow/mStorage > 0.2) && !taskInProgress(bt))
+						if ((mNow/mStorage > 0.4) && !taskInProgress(bt))
 							ai->tasks->addBuildTask(bt, i->second, group, pos);
 						break;
 					}
 					default: {
-						if (!taskInProgress(bt))
+						if ((mNow/mStorage > 0.3) && !taskInProgress(bt))
 							ai->tasks->addBuildTask(bt, i->second, group, pos);
 					}
 				}
