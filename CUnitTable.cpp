@@ -70,8 +70,11 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	std::string modname(ai->cb->GetModName());
 	modname = modname.substr(0, modname.size()-4) + "-categorization.cfg";
 
-	/* Parse categories */
-	ai->cfgparser->parseCategories(modname, units);
+	/* Parse or generate categories */
+	if (!ai->cfgparser->parseCategories(modname, units)) {
+		modname = ai->cfgparser->getAbsoluteFileName(modname);
+		generateCategorizationFile(modname.c_str());
+	}
 
 	/* Generate the buildBy and canBuild lists per UnitType */
 	std::map<int, UnitType>::iterator j;
@@ -128,6 +131,7 @@ void CUnitTable::generateCategorizationFile(const char *fileName) {
 		file << "\n\n";
 	}
 	file.close();
+	LOG_II("Generated categorizations " << fileName)
 }
 
 void CUnitTable::remove(ARegistrar &unit) {

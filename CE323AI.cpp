@@ -35,7 +35,8 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 
 	std::string configfile(ai->cb->GetModName());
 	configfile = configfile.substr(0, configfile.size()-4) + "-config.cfg";
-	ai->cfgparser->parseConfig(configfile);
+	if (!ai->cfgparser->parseConfig(configfile))
+		ai->cfgparser->parseConfig(configfile);
 }
 
 

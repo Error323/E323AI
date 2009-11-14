@@ -24,9 +24,10 @@ class CConfigParser {
 		int getMinGroupSize(int techLevel);
 		int getState();
 
-		void parseConfig(std::string filename);
-		void parseCategories(std::string filename, std::map<int, UnitType> &units);
+		bool parseConfig(std::string filename);
+		bool parseCategories(std::string filename, std::map<int, UnitType> &units);
 		void debugConfig();
+		std::string getAbsoluteFileName(std::string filename, bool readonly = true);
 
 	private:
 		std::map<int, std::map<std::string, int> > states;
@@ -36,7 +37,6 @@ class CConfigParser {
 		std::map<std::string, bool> stateVariables;
 		int state;
 
-		std::string getAbsoluteFileName(std::string filename);
 		void split(std::string &line, char c, std::vector<std::string> &splitted);
 		bool contains(std::string &line, char c);
 		void removeWhiteSpace(std::string &line);

@@ -183,7 +183,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 			}
 
 			case FACTORY_BUILD: case BUILD_MSTORAGE: case BUILD_ESTORAGE: {
-				if (affordable && (mNow/mStorage > 0.6f) && !taskInProgress(bt)) {
+				if (affordable && ((mNow/mStorage > 0.6f)||i->second->def->metalCost < mNow) && !taskInProgress(bt)) {
 					if (ai->unittable->factories.size() > 1)
 						pos = ai->defensematrix->getBestDefendedPos();
 					ai->tasks->addBuildTask(bt, i->second, group, pos);

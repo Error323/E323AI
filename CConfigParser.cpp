@@ -57,7 +57,7 @@ int CConfigParser::getMinGroupSize(int techLevel) {
 	}
 }
 
-void CConfigParser::parseConfig(std::string filename) {
+bool CConfigParser::parseConfig(std::string filename) {
 	std::string dirfilename = getAbsoluteFileName(filename);
 	std::ifstream file(dirfilename.c_str());
 	unsigned linenr = 0;
@@ -101,16 +101,21 @@ void CConfigParser::parseConfig(std::string filename) {
 	}
 	else {
 		LOG_II("Could not open " << dirfilename << " for parsing")
+
 		std::string templatefile = getAbsoluteFileName(std::string(CONFIG_TEMPLATE));
 		std::ifstream ifs(templatefile.c_str(), std::ios::binary);
-		std::ofstream ofs(dirfilename.c_str(), std::ios::binary);
+
+		std::string newfile = getAbsoluteFileName(filename, false);
+		std::ofstream ofs(newfile.c_str(), std::ios::binary);
+
 		ofs << ifs.rdbuf();
 		LOG_II("New configfile created from " << templatefile)
-		parseConfig(filename);
+		return false;
 	}
+	return true;
 }
 
-void CConfigParser::parseCategories(std::string filename, std::map<int, UnitType> &units) {
+bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType> &units) {
 	filename = getAbsoluteFileName(filename);
 	std::ifstream file(filename.c_str());
 	unsigned linenr = 0;
@@ -154,11 +159,11 @@ void CConfigParser::parseCategories(std::string filename, std::map<int, UnitType
 		file.close();
 	}
 	else {
-		LOG_EE("Could not open " << filename << " for parsing")
-		ai->cb->SendTextMsg(std::string("Could not parse"+filename).c_str(), 0);
-		throw(2);
+		LOG_II("Could not open " << filename << " for parsing")
+		return false;
 	}
 	LOG_II("Parsed " << linenr << " lines from " << filename)
+	return true;
 }
 
 void CConfigParser::split(std::string &line, char c, std::vector<std::string> &splitted) {
@@ -179,14 +184,17 @@ void CConfigParser::split(std::string &line, char c, std::vector<std::string> &s
 	splitted.push_back(substr);
 }
 
-std::string CConfigParser::getAbsoluteFileName(std::string filename) {
+std::string CConfigParser::getAbsoluteFileName(std::string filename, bool readonly) {
 	char buf[256];
 	sprintf(
 		buf, "%s%s", 
 		CFG_FOLDER,
 		filename.c_str()
 	);
-	ai->cb->GetValue(AIVAL_LOCATE_FILE_R, buf);
+	if (readonly)
+		ai->cb->GetValue(AIVAL_LOCATE_FILE_R, buf);
+	else
+		ai->cb->GetValue(AIVAL_LOCATE_FILE_W, buf);
 	filename = std::string(buf);
 	return filename;
 }
