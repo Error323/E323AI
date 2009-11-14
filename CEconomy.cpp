@@ -172,7 +172,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 					 */
 					if (b1 || (b2 || ai->pathfinder->getETA(group, goal) < 32*7))
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, i->second, group, goal);
-					else if (!eRequest && !estall) {
+					else if (!eRequest && !estall && state >= 3) {
 						UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 						if (mmaker != NULL)
 							ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
@@ -186,11 +186,34 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				break;
 			}
 
-			case FACTORY_BUILD: case BUILD_MSTORAGE: case BUILD_ESTORAGE: {
-				if (affordable && ((mNow/mStorage > 0.6f)||i->second->def->metalCost < mNow) && !taskInProgress(bt)) {
-					if (ai->unittable->factories.size() > 1)
-						pos = ai->defensematrix->getBestDefendedPos();
-					ai->tasks->addBuildTask(bt, i->second, group, pos);
+			case BUILD_MSTORAGE: case BUILD_ESTORAGE: {
+				pos = ai->defensematrix->getBestDefendedPos();
+				ai->tasks->addBuildTask(bt, i->second, group, pos);
+				break;
+			}
+
+			case FACTORY_BUILD: {
+				pos = ai->defensematrix->getBestDefendedPos();
+				switch(state) {
+					case 0: case 1: case 2: {
+						if (affordable && (mNow/mStorage > 0.6f) && !taskInProgress(bt))
+							ai->tasks->addBuildTask(bt, i->second, group, pos);
+						break;
+					}
+					case 3: {
+						if ((mNow/mStorage > 0.5) && !taskInProgress(bt))
+							ai->tasks->addBuildTask(bt, i->second, group, pos);
+						break;
+					}
+					case 4: {
+						if ((mNow/mStorage > 0.3) && !taskInProgress(bt))
+							ai->tasks->addBuildTask(bt, i->second, group, pos);
+						break;
+					}
+					default: {
+						if (!taskInProgress(bt))
+							ai->tasks->addBuildTask(bt, i->second, group, pos);
+					}
 				}
 				break;
 			}
