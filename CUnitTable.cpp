@@ -72,7 +72,7 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 
 	/* Parse or generate categories */
 	if (!ai->cfgparser->parseCategories(modname, units)) {
-		modname = ai->cfgparser->getAbsoluteFileName(modname);
+		modname = ai->cfgparser->getAbsoluteFileName(modname, false);
 		generateCategorizationFile(modname.c_str());
 	}
 
