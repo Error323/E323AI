@@ -142,7 +142,6 @@ void CGroup::merge(CGroup &group) {
 	std::map<int, CUnit*>::iterator i;
 	for (i = group.units.begin(); i != group.units.end(); i++) {
 		CUnit *unit = i->second;
-		unit->stop();
 		addUnit(*unit);
 	}
 	group.remove();
