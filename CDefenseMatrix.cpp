@@ -13,8 +13,16 @@ CDefenseMatrix::CDefenseMatrix(AIClasses *ai) {
 	this->Z  = ai->cb->GetMapHeight();
 }
 
-float3 CDefenseMatrix::getBestDefendedPos() {
-	return clusters.begin()->second->center;
+float3 CDefenseMatrix::getBestDefendedPos(int n) {
+	std::multimap<float, Cluster*>::iterator i;
+	int j = 0;
+	for (i = clusters.begin(); i != clusters.end(); i++) {
+		if (j == n)
+			break;
+		j++;
+	}
+	
+	return i->second->center;
 }
 
 float3 CDefenseMatrix::getDefenseBuildSite(UnitType *tower) {

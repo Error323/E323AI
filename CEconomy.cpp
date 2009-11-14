@@ -190,14 +190,16 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 
 			case BUILD_MSTORAGE: case BUILD_ESTORAGE: {
 				if (!taskInProgress(bt)) {
-					pos = ai->defensematrix->getBestDefendedPos();
+					pos = ai->defensematrix->getBestDefendedPos(0);
 					ai->tasks->addBuildTask(bt, i->second, group, pos);
 				}
 				break;
 			}
 
 			case FACTORY_BUILD: {
-				pos = ai->defensematrix->getBestDefendedPos();
+				int numFactories = ai->unittable->factories.size();
+				if (numFactories > 1)
+					pos = ai->defensematrix->getBestDefendedPos(numFactories);
 				float m = mNow/mStorage;
 				switch(state) {
 					case 0: case 1: case 2: {
@@ -206,12 +208,12 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 						break;
 					}
 					case 3: {
-						if (m > 0.6f && !taskInProgress(bt))
+						if (m > 0.6f && !taskInProgress(bt) && numFactories < 3)
 							ai->tasks->addBuildTask(bt, i->second, group, pos);
 						break;
 					}
 					case 4: {
-						if (m > 0.5f && !taskInProgress(bt))
+						if (m > 0.5f && !taskInProgress(bt) && numFactories < 4)
 							ai->tasks->addBuildTask(bt, i->second, group, pos);
 						break;
 					}
@@ -587,5 +589,5 @@ bool CEconomy::canAffordToBuild(CGroup &group, UnitType *utToBuild) {
 	float ePrediction = (eIncome - eUsage - eCost/buildTime)*buildTime - eCost + eNow;
 	mRequest          = mPrediction < 0.0f;
 	eRequest          = ePrediction < 0.0f;
-	return (mPrediction >= 0.0f && ePrediction >= 0.0f);
+	return (mPrediction >= 0.0f && ePrediction >= 0.0f && mNow/mStorage >= 0.1f);
 }

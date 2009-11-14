@@ -252,7 +252,7 @@ void CPathfinder::updateFollowers() {
 			if (lateralDisp > maxGroupLength) {
 				regrouping[group->key] = true;
 			}
-			else if (lateralDisp < maxGroupLength*0.4f) {
+			else if (lateralDisp < maxGroupLength*0.6f) {
 				regrouping[group->key] = false;
 			}
 		} else regrouping[group->key] = false;

@@ -24,7 +24,8 @@ class CDefenseMatrix {
 		/* Get clusters >= 2 */
 		int getClusters();
 
-		float3 getBestDefendedPos();
+		/* Get the nth best defended pos */
+		float3 getBestDefendedPos(int n);
 
 
 	private:
