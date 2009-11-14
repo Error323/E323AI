@@ -96,6 +96,9 @@ class CEconomy: public ARegistrar {
 		/* Is this a windmap ? */
 		bool windmap;
 
+		/* Primary unit category (KBOT or VEHICLE) */
+		unitCategory type;
+
 		/* updateIncomes counter */
 		unsigned int incomes;
 

@@ -16,6 +16,44 @@ CIntel::CIntel(AIClasses *ai) {
 	for (size_t i = 0; i < selector.size(); i++)
 		counts[selector[i]] = 1;
 	numUnits = 1;
+
+	/* Compute the variance of the heightmap in integers */
+	int X = int(ai->cb->GetMapWidth());
+	int Z = int(ai->cb->GetMapHeight());
+	const float *hm = ai->cb->GetHeightMap();
+
+	float fmin = MAX_FLOAT;
+	float fmax = -MAX_FLOAT;
+	float fsum = 0.0f;
+
+	unsigned count = 0;
+	/* Calculate the sum, min and max */
+	for (int z = 0; z < Z; z++) {
+		for (int x = 0; x < X; x++) {
+			float h = hm[ID(x,z)];
+			if (h >= 0.0f) {
+				fsum += h;
+				fmin = std::min<float>(fmin,h);
+				fmax = std::max<float>(fmax,h);
+				count++;
+			}
+		}
+	}
+
+	float fvar = 0.0f;
+	float favg = fsum / count;
+	/* Finally calculate the variance */
+	for (int z = 0; z < Z; z++) {
+		for (int x = 0; x < X; x++) {
+			float h = hm[ID(x,z)];
+			if (h >= 0.0f) {
+				fvar += (h/fsum) * pow((h - favg), 2);
+			}
+		}
+	}
+	LOG_II("Heightmap specs: avg("<<favg<<") sum("<<fsum<<") min("<<fmin<<") max("<<fmax<<") variance("<<fvar<<") sqrt(var) = "<<sqrt(fvar))
+	/* Taking sqrt(var) of altair crossing as baseline */
+	primaryType = sqrt(fvar) < 43.97 ? VEHICLE : KBOT;
 }
 
 float3 CIntel::getEnemyVector() {
@@ -31,6 +69,10 @@ void CIntel::init() {
 	}
 	enemyvector /= numUnits;
 	LOG_II("Number of enemies: " << numUnits)
+}
+
+unitCategory CIntel::getUnitType() {
+	return primaryType;
 }
 
 void CIntel::update(int frame) {

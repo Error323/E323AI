@@ -13,6 +13,7 @@
 #include "CRNG.h"
 #include "CPathfinder.h"
 #include "CConfigParser.h"
+#include "CIntel.h"
 
 CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	this->ai = ai;
@@ -34,6 +35,7 @@ void CEconomy::init(CUnit &unit) {
 	//float solarProf = utSolar->energyMake / utSolar->cost;
 	mStart = utCommander->def->metalMake;
 	eStart = utCommander->def->energyMake;
+	type   = ai->intel->getUnitType();
 }
 		
 bool CEconomy::hasBegunBuilding(CGroup &group) {
@@ -271,7 +273,7 @@ void CEconomy::update(int frame) {
 			}
 			/* If we don't have a factory, build one */
 			if (ai->unittable->factories.empty()) {
-				buildOrAssist(*group, BUILD_FACTORY, KBOT|TECH1);
+				buildOrAssist(*group, BUILD_FACTORY, type|TECH1);
 				if (group->busy) continue;
 			}
 			ATask *task = NULL;
@@ -359,11 +361,12 @@ unsigned CEconomy::getAllowedFactory() {
 		// assuming TECH1 = 1, TECH2 = 2, TECH3 = 4
 		unsigned tech = 1 << i;
 
-		if (!ai->unittable->gotFactory(tech|KBOT))
-			return tech|KBOT;
+		if (!ai->unittable->gotFactory(tech|type))
+			return tech|type;
 
-		if (!ai->unittable->gotFactory(tech|VEHICLE))
-			return tech|VEHICLE;
+		unitCategory secundary = (type == KBOT) ? VEHICLE : KBOT;
+		if (!ai->unittable->gotFactory(tech|secundary))
+			return tech|secundary;
 	}
 	return 0;
 }
