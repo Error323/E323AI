@@ -196,24 +196,25 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 
 			case FACTORY_BUILD: {
 				pos = ai->defensematrix->getBestDefendedPos();
+				float m = mNow/mStorage;
 				switch(state) {
 					case 0: case 1: case 2: {
-						if (affordable && (mNow/mStorage > 0.6f) && !taskInProgress(bt))
+						if (m > 0.7f && !taskInProgress(bt) && affordable)
 							ai->tasks->addBuildTask(bt, i->second, group, pos);
 						break;
 					}
 					case 3: {
-						if ((mNow/mStorage > 0.5) && !taskInProgress(bt))
+						if (m > 0.6f && !taskInProgress(bt))
 							ai->tasks->addBuildTask(bt, i->second, group, pos);
 						break;
 					}
 					case 4: {
-						if ((mNow/mStorage > 0.4) && !taskInProgress(bt))
+						if (m > 0.5f && !taskInProgress(bt))
 							ai->tasks->addBuildTask(bt, i->second, group, pos);
 						break;
 					}
 					default: {
-						if ((mNow/mStorage > 0.3) && !taskInProgress(bt))
+						if (m > 0.4f && !taskInProgress(bt))
 							ai->tasks->addBuildTask(bt, i->second, group, pos);
 					}
 				}
