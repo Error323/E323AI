@@ -166,7 +166,11 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				if (canBuildMex) {
 					bool b1 = mIncome < 3.0f;
 					bool b2 = !unit->def->isCommander;
-					if (b1 || (b2 || ai->pathfinder->getETA(group, goal) < 32*10))
+					/* If we are commander, only build if the metalincome is <
+					 * 3 or the eta to the next metalspot is smaller then 7
+					 * sec. TODO: make configurable?
+					 */
+					if (b1 || (b2 || ai->pathfinder->getETA(group, goal) < 32*7))
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, i->second, group, goal);
 					else if (!eRequest && !estall) {
 						UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
