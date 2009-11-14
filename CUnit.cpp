@@ -149,7 +149,7 @@ bool CUnit::repair(int target) {
 }
 
 bool CUnit::build(UnitType *toBuild, float3 &pos) {
-	int mindist = 6;
+	int mindist = 8;
 	if (toBuild->cats&FACTORY || toBuild->cats&EMAKER) {
 		mindist = 10;
 		if (toBuild->cats&VEHICLE || toBuild->cats&TECH3)
@@ -157,8 +157,6 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 	}
 	else if(toBuild->cats&MEXTRACTOR)
 		mindist = 0;
-	else if(toBuild->cats&ATTACKER)
-		mindist = 3;
 
 	float startRadius  = def->buildDistance;
 	facing f           = getBestFacing(pos);
