@@ -248,7 +248,6 @@ void CMilitary::update(int frame) {
 
 	/* Merge the groups that were not strong enough */
 	if (mergeGroups.size() >= 2) {
-		LOG_II("JAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 		ai->tasks->addMergeTask(mergeGroups);
 		mergeGroups.clear();
 	}

@@ -519,7 +519,7 @@ void CEconomy::updateIncomes(int frame) {
 		sprintf(buf, "State changed to %d, activated techlevel %d", tstate, ai->cfgparser->getMaxTechLevel());
 		LOG_II(buf);
 		#if DEBUG
-		LOG_SS(buf);
+		//LOG_SS(buf);
 		#endif
 		state = tstate;
 	}
