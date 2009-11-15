@@ -149,15 +149,19 @@ class CTaskHandler: public ARegistrar {
 		struct MergeTask: public ATask {
 			MergeTask(AIClasses *_ai): ATask(_ai) {t = MERGE;}
 
-			/* The maximal range from the target when attacking */
+			/* The minimal range at which groups can merge */
 			float range;
 
-			std::vector<CGroup*> groups;
+			std::list<CGroup*> groups;
 
 			/* Update the merge task */
 			void update();
 
-			void reset(std::vector<CGroup*> &groups);
+			/* overload */
+			void remove();
+
+			/* overload */
+			void remove(ARegistrar& group);
 		};
 
 		/* The -to be removed- tasks */
@@ -189,7 +193,7 @@ class CTaskHandler: public ARegistrar {
 		void addAttackTask(int target, CGroup &group);
 
 		/* Add a fresh merge task */
-		void addMergeTask(std::vector<CGroup*> &groups);
+		void addMergeTask(std::list<CGroup*> &groups);
 
 		/* Add a fresh factory task */
 		void addFactoryTask(CUnit &factory);

@@ -189,6 +189,9 @@ void CMilitary::update(int frame) {
 		}
 	}
 
+	/* Mergable groups */
+	std::list<CGroup*> merge;
+
 	/* Give idle, strong enough groups a new attack plan */
 	for (i = activeAttackGroups.begin(); i != activeAttackGroups.end(); i++) {
 		CGroup *group = i->second;
@@ -227,13 +230,17 @@ void CMilitary::update(int frame) {
 			(isCurrent && group->units.size() < ai->cfgparser->getMinGroupSize(group->techlvl)) ||
 			group->strength < ai->threatmap->getThreat(targetpos, 0.0f)
 		) {
-			//merge.push_back(group);
+			if (!isCurrent)
+				merge.push_back(group);
 			continue;
 		}
 
 		ai->tasks->addAttackTask(target, *group);
 		break;
 	}
+
+	/* Merge the groups that were not strong enough */
+	if (merge.size() >= 2) ai->tasks->addMergeTask(merge);
 
 	/* Always have enough scouts */
 	if (activeScoutGroups.size() < ai->cfgparser->getMinScouts())

@@ -133,7 +133,7 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 
 		case ATTACK: {
 			const CTaskHandler::AttackTask *task = dynamic_cast<const CTaskHandler::AttackTask*>(&atask);
-			ss << "AttackTask(" << task->key << ") target("; ss << task->enemy << ") ";
+			ss << "AttackTask(" << task->key << ") target(" << task->enemy << ") ";
 			ss << (*(task->group));
 		} break;
 
@@ -141,10 +141,20 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 			const CTaskHandler::FactoryTask *task = dynamic_cast<const CTaskHandler::FactoryTask*>(&atask);
 			ss << "FactoryTask(" << task->key << ") " << (*(task->factory));
 		} break;
+
+		case MERGE: {
+			const CTaskHandler::MergeTask *task = dynamic_cast<const CTaskHandler::MergeTask*>(&atask);
+			ss << "MergeTask(" << task->key << ") " << task->groups.size() << " groups [";
+			std::list<CGroup*>::const_iterator i;
+			for (i = task->groups.begin(); i != task->groups.end(); i++) {
+				ss << (*(*i));
+			}
+			ss << "]";
+		}
 		default: return out;
 	}
 
-	if (atask.t != ASSIST) {
+	if (atask.t != ASSIST && atask.t != MERGE) {
 		ss << " Assisters: amount(" << atask.assisters.size() << ") [";
 		std::list<ATask*>::const_iterator i;
 		for (i = atask.assisters.begin(); i != atask.assisters.end(); i++)
@@ -485,15 +495,63 @@ void CTaskHandler::AttackTask::update() {
 /**************************************************************/
 /************************* MERGE TASK *************************/
 /**************************************************************/
-void CTaskHandler::addMergeTask(std::vector<CGroup*> &groups) {
+void CTaskHandler::addMergeTask(std::list<CGroup*> &groups) {
+	MergeTask *mergeTask = new MergeTask(ai);
+	mergeTask->groups = groups;
+	mergeTask->pos = float3(0.0f, 0.0f, 0.0f);
+	std::list<CGroup*>::iterator j;
+	for (j = groups.begin(); j != groups.end(); j++) {
+		mergeTask->pos += (*j)->pos();
+		(*j)->reg(*this);
+		(*j)->busy = true;
+		(*j)->micro(false);
+		(*j)->abilities(true);
+	}
+	mergeTask->pos /= groups.size();
+	mergeTask->range = 500.0f;
+
+	activeMergeTasks[mergeTask->key] = mergeTask;
+	activeTasks[mergeTask->key] = mergeTask;
+	for (j = groups.begin(); j != groups.end(); j++) {
+		CGroup *group = (*j);
+		groupToTask[group->key] = mergeTask;
+		group->move(mergeTask->pos);
+	}
+	LOG_II((*mergeTask))
+}
+
+void CTaskHandler::MergeTask::remove() {
+	LOG_II("MergeTask::remove " << (*this))
+	std::list<CGroup*>::iterator g;
+	for (g = groups.begin(); g != groups.end(); g++) {
+		(*g)->unreg(*this);
+		(*g)->busy = false;
+		(*g)->micro(false);
+		(*g)->abilities(false);
+	}
+
+	std::list<ATask*>::iterator i;
+	for (i = assisters.begin(); i != assisters.end(); i++)
+		(*i)->remove();
+	
+	std::list<ARegistrar*>::iterator j;
+	for (j = records.begin(); j != records.end(); j++)
+		(*j)->remove(*this);
+}
+
+void CTaskHandler::MergeTask::remove(ARegistrar &group) {
+	CGroup *g = dynamic_cast<CGroup*>(&group);
+	unreg(*g);
+	groups.remove(g);
 }
 		
 void CTaskHandler::MergeTask::update() {
 	std::vector<CGroup*> mergable;
 
 	/* See which groups can be merged already */
-	for (unsigned i = 0; i < groups.size(); i++) {
-		CGroup *group = groups[i];
+	std::list<CGroup*>::iterator g;
+	for (g = groups.begin(); g != groups.end(); g++) {
+		CGroup *group = (*g);
 		float3 grouppos = group->pos();
 		float3 dist = grouppos - pos;
 		if (dist.Length2D() <= range)
@@ -503,8 +561,9 @@ void CTaskHandler::MergeTask::update() {
 	/* We have atleast two groups, now we can merge */
 	if (mergable.size() >= 2) {
 		CGroup *alpha = mergable[0];
-		for (unsigned j = 1; j < mergable.size(); j++)
+		for (unsigned j = 1; j < mergable.size(); j++) {
 			alpha->merge(*mergable[j]);
+		}
 	}
 
 	/* If only one (or none) group remains, merging is no longer possible,
