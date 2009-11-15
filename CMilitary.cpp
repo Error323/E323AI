@@ -23,6 +23,8 @@ void CMilitary::remove(ARegistrar &group) {
 	lookup.erase(group.key);
 	activeScoutGroups.erase(group.key);
 	activeAttackGroups.erase(group.key);
+	mergeScouts.erase(group.key);
+	mergeGroups.erase(group.key);
 
 	std::list<ARegistrar*>::iterator i;
 	for (i = records.begin(); i != records.end(); i++)
@@ -179,18 +181,28 @@ void CMilitary::update(int frame) {
 			target = selectTarget(pos, 300.0f, true, all);
 
 		/* Nothing available */
-		if (target == -1)
+		if (target == -1) {
+			mergeScouts[group->key] = group;
+			group->busy = true;
 			break;
+		}
 		else {
 			float3 tpos = ai->cbc->GetUnitPos(target);
 			if (ai->threatmap->getThreat(tpos,0.0f) < group->strength)
 				ai->tasks->addAttackTask(target, *group);
+			else {
+				mergeScouts[group->key] = group;
+				group->busy = true;
+			}
 			break;
 		}
 	}
 
-	/* Mergable groups */
-	std::list<CGroup*> merge;
+	/* Merge the scout groups that were not strong enough */
+	if (mergeScouts.size() >= 2) {
+		ai->tasks->addMergeTask(mergeScouts);
+		mergeScouts.clear();
+	}
 
 	/* Give idle, strong enough groups a new attack plan */
 	for (i = activeAttackGroups.begin(); i != activeAttackGroups.end(); i++) {
@@ -221,6 +233,8 @@ void CMilitary::update(int frame) {
 				}
 				j++;
 			}
+			mergeGroups[group->key] = group;
+			group->busy = true;
 			break;
 		}
 
@@ -230,9 +244,11 @@ void CMilitary::update(int frame) {
 			(isCurrent && group->units.size() < ai->cfgparser->getMinGroupSize(group->techlvl)) ||
 			group->strength < ai->threatmap->getThreat(targetpos, 0.0f)
 		) {
-			if (!isCurrent)
-				merge.push_back(group);
-			continue;
+			if (!isCurrent) {
+				mergeGroups[group->key] = group;
+				group->busy = true;
+			}
+			break;
 		}
 
 		ai->tasks->addAttackTask(target, *group);
@@ -240,7 +256,10 @@ void CMilitary::update(int frame) {
 	}
 
 	/* Merge the groups that were not strong enough */
-	if (merge.size() >= 2) ai->tasks->addMergeTask(merge);
+	if (mergeGroups.size() >= 2) {
+		ai->tasks->addMergeTask(mergeGroups);
+		mergeGroups.clear();
+	}
 
 	/* Always have enough scouts */
 	if (activeScoutGroups.size() < ai->cfgparser->getMinScouts())

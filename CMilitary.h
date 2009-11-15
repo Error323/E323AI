@@ -58,6 +58,9 @@ class CMilitary: public ARegistrar {
 		/* Occupied targets */
 		std::vector<int> occupiedTargets;
 
+		/* Mergable groups */
+		std::map<int,CGroup*> mergeScouts, mergeGroups;
+
 		/* Select a target */
 		int selectTarget(float3 &ourPos, float radius, bool scout, std::vector<int> &targets);
 

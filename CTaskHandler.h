@@ -152,7 +152,7 @@ class CTaskHandler: public ARegistrar {
 			/* The minimal range at which groups can merge */
 			float range;
 
-			std::list<CGroup*> groups;
+			std::map<int, CGroup*> groups;
 
 			/* Update the merge task */
 			void update();
@@ -193,7 +193,7 @@ class CTaskHandler: public ARegistrar {
 		void addAttackTask(int target, CGroup &group);
 
 		/* Add a fresh merge task */
-		void addMergeTask(std::list<CGroup*> &groups);
+		void addMergeTask(std::map<int,CGroup*> &groups);
 
 		/* Add a fresh factory task */
 		void addFactoryTask(CUnit &factory);
