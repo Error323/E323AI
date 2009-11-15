@@ -500,6 +500,7 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 	mergeTask->groups = groups;
 	mergeTask->pos = float3(0.0f, 0.0f, 0.0f);
 	mergeTask->reg(*this);
+	int range = 0;
 	std::map<int,CGroup*>::iterator j;
 	for (j = groups.begin(); j != groups.end(); j++) {
 		mergeTask->pos += j->second->pos();
@@ -507,9 +508,10 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 		j->second->busy = true;
 		j->second->micro(false);
 		j->second->abilities(true);
+		range += j->second->size;
 	}
 	mergeTask->pos /= groups.size();
-	mergeTask->range = 100.0f;
+	mergeTask->range = range;
 
 	activeMergeTasks[mergeTask->key] = mergeTask;
 	activeTasks[mergeTask->key] = mergeTask;

@@ -103,7 +103,7 @@ int CMilitary::selectTarget(float3 &ourPos, float radius, bool scout, std::vecto
 		candidates.insert(std::pair<float,int>(dist, target));
 	}
 
-	return candidates.begin()->second;
+	return (candidates.empty()) ? -1 : candidates.begin()->second;
 }
 
 void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &targets2) {
@@ -231,24 +231,24 @@ void CMilitary::update(int frame) {
 			}
 		}
 
-		/* Not strong enough */
+		/* Determine if the group has the strength */
 		float3 targetpos = ai->cbc->GetUnitPos(target);
-		if (
-			(isCurrent && group->units.size() < ai->cfgparser->getMinGroupSize(group->techlvl)) ||
-			group->strength < ai->threatmap->getThreat(targetpos, 0.0f)
-		) {
-			if (!isCurrent)
-				mergeGroups[group->key] = group;
+		bool enough = (group->strength >= ai->threatmap->getThreat(targetpos, 0.0f) && 
+		               group->units.size() >= ai->cfgparser->getMinGroupSize(group->techlvl));
+
+		if (!enough && !isCurrent)
+			mergeGroups[group->key] = group;
+
+		if (enough) {
+			mergeGroups.erase(group->key);
+			ai->tasks->addAttackTask(target, *group);
 			break;
 		}
-
-		mergeGroups.erase(group->key);
-		ai->tasks->addAttackTask(target, *group);
-		break;
 	}
 
 	/* Merge the groups that were not strong enough */
 	if (mergeGroups.size() >= 2) {
+		LOG_II("JAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 		ai->tasks->addMergeTask(mergeGroups);
 		mergeGroups.clear();
 	}

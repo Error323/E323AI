@@ -46,6 +46,9 @@ class CGroup: public ARegistrar {
 		/* The group's buildSpeed */
 		float buildSpeed;
 
+		/* The group's footprint */
+		int size;
+
 		/* The group maxrange */
 		float range, buildRange, los;
 

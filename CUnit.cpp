@@ -158,7 +158,7 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 	else if(toBuild->cats&MEXTRACTOR)
 		mindist = 0;
 
-	float startRadius  = def->buildDistance;
+	float startRadius  = def->buildDistance*2.0f;
 	facing f           = getBestFacing(pos);
 	float3 start       = ai->cb->GetUnitPos(key);
 	float3 goal        = ai->cb->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
@@ -168,7 +168,7 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 		startRadius += def->buildDistance;
 		goal = ai->cb->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
 		i++;
-		if (i > 10) {
+		if (i > 15) {
 			/* Building in this area seems impossible, relocate key */
 			moveRandom(startRadius);
 			return false;

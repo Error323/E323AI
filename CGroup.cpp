@@ -29,6 +29,7 @@ void CGroup::addUnit(CUnit &unit) {
 		
 	strength   += ai->cb->GetUnitPower(unit.key);
 	buildSpeed += unit.def->buildSpeed;
+	size       += 16*std::max<int>(unit.def->xsize, unit.def->zsize);
 	range = std::max<float>(ai->cb->GetUnitMaxRange(unit.key)*0.7f, range);
 	buildRange = std::max<float>(unit.def->buildDistance*1.5f, buildRange);
 	speed = std::min<float>(ai->cb->GetUnitSpeed(unit.key), speed);
@@ -59,13 +60,15 @@ void CGroup::remove(ARegistrar &unit) {
 	MoveData* md;
 
 	/* Recalculate range, strength and maxSlope of the group */
-	range = 0.0f;
 	maxSlope = 1.0f;
+	range    = 0.0f;
+	size     = 0;
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++) {
 		range       = std::max<float>(ai->cb->GetUnitMaxRange(i->first)*0.7f, range);
 		speed       = std::min<float>(ai->cb->GetUnitSpeed(i->first), speed);
 		los         = std::max<float>(i->second->def->losRadius, los);
+		size       += 16*std::max<int>(i->second->def->xsize, i->second->def->zsize);
 		strength   += ai->cb->GetUnitPower(i->first);
 		buildSpeed += i->second->def->buildSpeed;
 		md          = ai->cb->GetUnitDef(i->first)->movedata;
@@ -124,6 +127,7 @@ bool CGroup::isIdle() {
 void CGroup::reset() {
 	strength   = 0.0f;
 	speed      = MAX_FLOAT;
+	size       = 0;
 	buildSpeed = 0.0f;
 	range      = 0.0f;
 	buildRange = 0.0f;
@@ -159,18 +163,7 @@ float3 CGroup::pos() {
 }
 
 int CGroup::maxLength() {
-	switch (units.size()) {
-		case 1: case 2: 
-			return 200;
-		case 3: case 4:
-			return 300;
-		case 5: case 6:
-			return 400;
-		case 7: case 8:
-			return 500;
-		default:
-			return 800;
-	}
+	return size + 100;
 }
 
 void CGroup::assist(ATask &t) {
