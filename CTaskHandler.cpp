@@ -120,7 +120,6 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 		case BUILD: {
 			const CTaskHandler::BuildTask *task = dynamic_cast<const CTaskHandler::BuildTask*>(&atask);
 			ss << "BuildTask(" << task->key << ") " << CTaskHandler::buildStr[task->bt];
-			if (task->toBuild != NULL)
 			ss << "(" << task->toBuild->def->humanName << ") ETA(" << task->eta << ")";
 			ss << " timer("<<task->timer<<") "<<(*(task->group));
 		} break;
@@ -538,7 +537,6 @@ void CTaskHandler::MergeTask::remove() {
 }
 
 void CTaskHandler::MergeTask::remove(ARegistrar &group) {
-	unreg(group);
 	groups.erase(group.key);
 }
 		

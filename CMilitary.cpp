@@ -183,16 +183,16 @@ void CMilitary::update(int frame) {
 		/* Nothing available */
 		if (target == -1) {
 			mergeScouts[group->key] = group;
-			group->busy = true;
 			break;
 		}
 		else {
 			float3 tpos = ai->cbc->GetUnitPos(target);
-			if (ai->threatmap->getThreat(tpos,0.0f) < group->strength)
+			if (ai->threatmap->getThreat(tpos,0.0f) < group->strength) {
+				mergeScouts.erase(group->key);
 				ai->tasks->addAttackTask(target, *group);
+			}
 			else {
 				mergeScouts[group->key] = group;
-				group->busy = true;
 			}
 			break;
 		}
@@ -224,18 +224,11 @@ void CMilitary::update(int frame) {
 
 		/* There are no targets available, assist an attack */
 		if (target == -1) {
-			int j = 0, r = rng.RandInt(ai->tasks->activeAttackTasks.size()-1);
-			std::map<int,CTaskHandler::AttackTask*>::iterator i;
-			for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
-				if (j == r) {
-					ai->tasks->addAssistTask(*(i->second), *group);
-					break;
-				}
-				j++;
+			if (!ai->tasks->activeAttackTasks.empty()) {
+				mergeGroups.erase(group->key);
+				ai->tasks->addAssistTask(*(ai->tasks->activeAttackTasks.begin()->second), *group);
+				break;
 			}
-			mergeGroups[group->key] = group;
-			group->busy = true;
-			break;
 		}
 
 		/* Not strong enough */
@@ -244,13 +237,12 @@ void CMilitary::update(int frame) {
 			(isCurrent && group->units.size() < ai->cfgparser->getMinGroupSize(group->techlvl)) ||
 			group->strength < ai->threatmap->getThreat(targetpos, 0.0f)
 		) {
-			if (!isCurrent) {
+			if (!isCurrent)
 				mergeGroups[group->key] = group;
-				group->busy = true;
-			}
 			break;
 		}
 
+		mergeGroups.erase(group->key);
 		ai->tasks->addAttackTask(target, *group);
 		break;
 	}

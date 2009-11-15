@@ -131,6 +131,8 @@ void CGroup::reset() {
 	busy       = false;
 	maxSlope   = 1.0f;
 	techlvl    = 1;
+	micro(false);
+	abilities(false);
 	units.clear();
 	records.clear();
 }

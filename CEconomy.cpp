@@ -363,10 +363,14 @@ unsigned CEconomy::getAllowedFactory() {
 		// assuming TECH1 = 1, TECH2 = 2, TECH3 = 4
 		unsigned tech = 1 << i;
 
+		/* There is no tech3 vehicle */
+		unitCategory secundary = (type == KBOT) ? VEHICLE : KBOT;
+		if (secundary == KBOT && tech == TECH3 && !ai->unittable->gotFactory(KBOT|TECH3))
+			return KBOT|TECH3;
+
 		if (!ai->unittable->gotFactory(tech|type))
 			return tech|type;
 
-		unitCategory secundary = (type == KBOT) ? VEHICLE : KBOT;
 		if (!ai->unittable->gotFactory(tech|secundary))
 			return tech|secundary;
 	}
