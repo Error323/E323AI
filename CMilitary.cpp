@@ -212,12 +212,6 @@ void CMilitary::update(int frame) {
 		if (group->busy)
 			continue;
 
-		/* Determine if this group is the current group */
-		bool isCurrent = false;
-		for (k = currentGroups.begin(); k != currentGroups.end(); k++)
-			if (k->second->key == group->key)
-				isCurrent = true;
-
 		/* Select a target */
 		float3 pos = group->pos();
 		int target = selectTarget(pos, 0.0f, false, all);
@@ -236,7 +230,7 @@ void CMilitary::update(int frame) {
 		bool enough = (group->strength >= ai->threatmap->getThreat(targetpos, 0.0f) && 
 		               group->units.size() >= ai->cfgparser->getMinGroupSize(group->techlvl));
 
-		if (!enough && !isCurrent)
+		if (!enough)
 			mergeGroups[group->key] = group;
 
 		if (enough) {

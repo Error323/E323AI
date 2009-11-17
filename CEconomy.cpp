@@ -208,17 +208,27 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 						break;
 					}
 					case 3: {
-						if (m > 0.6f && !taskInProgress(bt) && numFactories < 3)
+						if (m > 0.6f && !taskInProgress(bt))
 							ai->tasks->addBuildTask(bt, i->second, group, pos);
 						break;
 					}
 					case 4: {
-						if (m > 0.5f && !taskInProgress(bt) && numFactories < 4)
+						if (m > 0.5f && !taskInProgress(bt))
+							ai->tasks->addBuildTask(bt, i->second, group, pos);
+						break;
+					}
+					case 5: {
+						if (m > 0.4f && !taskInProgress(bt))
+							ai->tasks->addBuildTask(bt, i->second, group, pos);
+						break;
+					}
+					case 6: {
+						if (m > 0.3f && !taskInProgress(bt))
 							ai->tasks->addBuildTask(bt, i->second, group, pos);
 						break;
 					}
 					default: {
-						if (m > 0.4f && !taskInProgress(bt))
+						if (m > 0.2f && !taskInProgress(bt))
 							ai->tasks->addBuildTask(bt, i->second, group, pos);
 					}
 				}
@@ -364,15 +374,11 @@ unsigned CEconomy::getAllowedFactory() {
 		unsigned tech = 1 << i;
 
 		/* There is no tech3 vehicle */
-		unitCategory secundary = (type == KBOT) ? VEHICLE : KBOT;
-		if (secundary == KBOT && tech == TECH3 && !ai->unittable->gotFactory(KBOT|TECH3))
+		if (tech == TECH3 && !ai->unittable->gotFactory(KBOT|TECH3))
 			return KBOT|TECH3;
 
 		if (!ai->unittable->gotFactory(tech|type))
 			return tech|type;
-
-		if (!ai->unittable->gotFactory(tech|secundary))
-			return tech|secundary;
 	}
 	return 0;
 }
