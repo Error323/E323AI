@@ -75,6 +75,9 @@ class CEconomy: public ARegistrar {
 		/* See if this group begun building */
 		bool hasBegunBuilding(CGroup &group);
 
+		/* Can we afford to build this ? */
+		bool canAffordToBuild(UnitType *builder, UnitType *utToBuild);
+
 	private:
 		AIClasses *ai;
 
@@ -101,9 +104,6 @@ class CEconomy: public ARegistrar {
 
 		/* updateIncomes counter */
 		unsigned int incomes;
-
-		/* Can we afford to build this ? */
-		bool canAffordToBuild(CGroup &group, UnitType *utToBuild);
 
 		/* Can we afford to assist a factory ? */
 		ATask* canAssistFactory(CGroup &group);

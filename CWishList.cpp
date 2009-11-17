@@ -4,6 +4,8 @@
 #include "CUnitTable.h"
 #include "CUnit.h"
 #include "CRNG.h"
+#include "CConfigParser.h"
+#include "CEconomy.h"
 
 CWishList::CWishList(AIClasses *ai) {
 	this->ai = ai;
@@ -12,6 +14,7 @@ CWishList::CWishList(AIClasses *ai) {
 void CWishList::push(unsigned categories, buildPriority p) {
 	std::map<int, bool>::iterator itFac = ai->unittable->factories.begin();
 	UnitType *fac;
+	int max = ai->cfgparser->getTotalStates()+1 - ai->cfgparser->getState();
 	for (;itFac != ai->unittable->factories.end(); itFac++) {
 		fac = UT(ai->cb->GetUnitDef(itFac->first)->id);
 		std::multimap<float, UnitType*> candidates;
@@ -23,12 +26,20 @@ void CWishList::push(unsigned categories, buildPriority p) {
 				wishlist[fac->id] = L;
 			}
 
-			/* pushback, uniqify, stable sort */
-			std::multimap<float, UnitType*>::iterator i = --candidates.end();
-			while(true) {
-				if (rng.RandInt(2) == 0 || i == candidates.begin())
+			/* Determine which buildables we can afford */
+			std::multimap<float, UnitType*>::iterator i = candidates.begin();
+			int iterations = candidates.size() / max;
+			bool affordable = false;
+			while(iterations >= 0) {
+				if (ai->economy->canAffordToBuild(fac, i->second))
+					affordable = true;
+				else
 					break;
-				i--;
+
+				if (i == --candidates.end())
+					break;
+				iterations--;
+				i++;
 			}
 			
 			wishlist[fac->id].push_back(Wish(i->second, p));
@@ -37,7 +48,7 @@ void CWishList::push(unsigned categories, buildPriority p) {
 		}
 		else {
 			CUnit *unit = ai->unittable->getUnit(itFac->first);
-			LOG_EE("CWishList::push failed for " << (*unit) << " categories: " << ai->unittable->debugCategories(categories))
+			LOG_WW("CWishList::push failed for " << (*unit) << " categories: " << ai->unittable->debugCategories(categories))
 		}
 	}
 }

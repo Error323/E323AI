@@ -87,8 +87,8 @@ void CE323AI::UnitCreated(int uid, int bid) {
 /* Called when units are finished in a factory and able to move */
 void CE323AI::UnitFinished(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
-	ai->unittable->idle[uid] = true;
 	ai->unittable->unitsAliveTime[uid] = 0;
+	ai->unittable->idle[uid] = true;
 
 	LOG_II("CE323AI::UnitFinished " << (*unit))
 

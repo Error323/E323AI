@@ -29,7 +29,7 @@ void CGroup::addUnit(CUnit &unit) {
 		
 	strength   += ai->cb->GetUnitPower(unit.key);
 	buildSpeed += unit.def->buildSpeed;
-	size       += 16*std::max<int>(unit.def->xsize, unit.def->zsize);
+	size       += 8*std::max<int>(unit.def->xsize, unit.def->zsize);
 	range = std::max<float>(ai->cb->GetUnitMaxRange(unit.key)*0.7f, range);
 	buildRange = std::max<float>(unit.def->buildDistance*1.5f, buildRange);
 	speed = std::min<float>(ai->cb->GetUnitSpeed(unit.key), speed);
@@ -68,7 +68,7 @@ void CGroup::remove(ARegistrar &unit) {
 		range       = std::max<float>(ai->cb->GetUnitMaxRange(i->first)*0.7f, range);
 		speed       = std::min<float>(ai->cb->GetUnitSpeed(i->first), speed);
 		los         = std::max<float>(i->second->def->losRadius, los);
-		size       += 16*std::max<int>(i->second->def->xsize, i->second->def->zsize);
+		size       += 8*std::max<int>(i->second->def->xsize, i->second->def->zsize);
 		strength   += ai->cb->GetUnitPower(i->first);
 		buildSpeed += i->second->def->buildSpeed;
 		md          = ai->cb->GetUnitDef(i->first)->movedata;
@@ -116,12 +116,15 @@ bool CGroup::isMicroing() {
 }
 
 bool CGroup::isIdle() {
+	bool idle = true;
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++) {
-		if (ai->unittable->idle[i->second->key])
-			return true;
+		if (!ai->unittable->idle[i->second->key]) {
+			idle = false;
+			break;
+		}
 	}
-	return false;
+	return idle;
 }
 
 void CGroup::reset() {
@@ -163,7 +166,7 @@ float3 CGroup::pos() {
 }
 
 int CGroup::maxLength() {
-	return size + 100;
+	return size + 200;
 }
 
 void CGroup::assist(ATask &t) {

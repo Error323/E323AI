@@ -136,7 +136,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 		int iterations = candidates.size() / (ai->cfgparser->getTotalStates()+1-state);
 		bool affordable = false;
 		while(iterations >= 0) {
-			if (canAffordToBuild(group, i->second))
+			if (canAffordToBuild(group.units.begin()->second->type, i->second))
 				affordable = true;
 			else
 				break;
@@ -590,9 +590,9 @@ ATask* CEconomy::canAssistFactory(CGroup &group) {
 	return NULL;
 }
 
-bool CEconomy::canAffordToBuild(CGroup &group, UnitType *utToBuild) {
+bool CEconomy::canAffordToBuild(UnitType *builder, UnitType *utToBuild) {
 	/* NOTE: "Salary" is provided every 32 logical frames */
-	float buildTime   = (utToBuild->def->buildTime / group.buildSpeed) * 32.0f;
+	float buildTime   = (utToBuild->def->buildTime / builder->def->buildSpeed) * 32.0f;
 	float mCost       = utToBuild->def->metalCost;
 	float eCost       = utToBuild->def->energyCost;
 	float mPrediction = (mIncome - mUsage - mCost/buildTime)*buildTime - mCost + mNow;

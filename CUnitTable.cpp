@@ -191,7 +191,7 @@ void CUnitTable::update() {
 	for (i = unitsAliveTime.begin(); i != unitsAliveTime.end(); i++) {
 		/* Ignore the commander so we start early */
 		if (activeUnits[i->first]->builder == -1) 
-			i->second = 500;
+			i->second += 500;
 		/* Makes sure new units are not instantly assigned tasks */
 		else if(!activeUnits[i->first]->isMicroing())
 			i->second+=MULTIPLEXER;

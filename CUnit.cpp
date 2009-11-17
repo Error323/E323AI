@@ -169,7 +169,7 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 		goal = ai->cb->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
 		i++;
 		if (i > 15) {
-			/* Building in this area seems impossible, relocate key */
+			/* Building in this area seems impossible, relocate unit */
 			moveRandom(startRadius);
 			return false;
 		}
@@ -216,7 +216,6 @@ bool CUnit::unwait() {
 		c.id = CMD_WAIT;
 		ai->cb->GiveOrder(key, &c);
 		waiting = false;
-		ai->unittable->idle[key] = false;
 	}
 	return waiting;
 }
@@ -228,6 +227,7 @@ bool CUnit::factoryBuild(UnitType *ut, bool enqueue) {
 		c.options |= SHIFT_KEY;
 	c.id = -(ut->def->id);
 	ai->cb->GiveOrder(key, &c);
+	ai->unittable->idle[key] = false;
 	return true;
 }
 
