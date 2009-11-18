@@ -29,36 +29,45 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 		maps[i->first]        = map;
 		activeNodes[i->first] = reset;
 		MoveData *md          = i->second;
+		LOG_II("CPathfinder::CPathfinder MoveType("<<i->first<<") name(" << md->name << ")")
 
 		for (int z = 0; z < Z; z++) {
 			for (int x = 0; x < X; x++) {
-				Node *node = new Node(ID(x,z), x, z, 1.0f);
-				int j = ID(x,z);
+				int smidx = ID(x,z);
+				int hmidx = (z*HEIGHT2SLOPE)*(X*HEIGHT2SLOPE)+(x*HEIGHT2SLOPE);
+				Node *node = new Node(smidx, x, z, 1.0f);
 
 				/* Block edges */
 				if (z == 0 || z == Z-1 || x == 0 || x == X-1) {
 					node->setType(BLOCKED);
-					maps[i->first][ID(x,z)] = node;
+					maps[i->first][smidx] = node;
 					continue;
 				}
 
 				/* Block too steep slopes */
-				if (sm[j] > md->maxSlope) {
+				if (sm[smidx] > md->maxSlope) {
 					node->setType(BLOCKED);
 				}
-				/* Block land */
-				if (md->moveType == MoveData::Ship_Move) {
-					if (hm[j] >= -md->depth)
-						node->setType(BLOCKED);
+
+				switch(md->moveType) {
+					case MoveData::Ship_Move: {
+						if (-hm[hmidx] < md->depth)
+							node->setType(BLOCKED);
+					} break;
+
+					case MoveData::Ground_Move: {
+						if (-hm[hmidx] > md->depth)
+							node->setType(BLOCKED);
+					} break;
+
+					case MoveData::Hover_Move: {
+						// can go everywhere
+					} break;
 				}
-				/* Block water */
-				else {
-					if (hm[j] <= -md->depth && md->moveType != MoveData::Hover_Move)
-						node->setType(BLOCKED);
-				}
+
 				/* Store the usefull nodes */
 				if ((x % I_MAP_RES == 0 && z % I_MAP_RES == 0) || node->blocked()) {
-					maps[i->first][ID(x,z)] = node;
+					maps[i->first][smidx] = node;
 
 					if (!node->blocked())
 						activeNodes[i->first].push_back(node);
@@ -93,7 +102,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	}
 	r[8] = -22.5f;
 
-	/* Define neighbours closest neighbours */
+	/* Define closest neighbours */
 	std::map<int, std::vector<Node*> >::iterator j;
 	for (j = activeNodes.begin(); j != activeNodes.end(); j++) {
 		LOG_II("CPathfinder::CPathfinder MoveType(" << j->first << ") has " << activeNodes[j->first].size() << " active nodes")
@@ -108,10 +117,10 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 				int zz = z + parent->z;
 				int xx = x + parent->x;
 
-				if (xx < 0)   {s[5] = s[6] = s[7] = true; continue;}
-				if (xx > X-1) {s[1] = s[2] = s[3] = true; continue;}
-				if (zz < 0)   {s[7] = s[0] = s[1] = true; continue;}
-				if (zz > Z-1) {s[5] = s[4] = s[3] = true; continue;}
+				//if (xx < 0)   {s[5] = s[6] = s[7] = true; continue;}
+				//if (xx > X-1) {s[1] = s[2] = s[3] = true; continue;}
+				//if (zz < 0)   {s[7] = s[0] = s[1] = true; continue;}
+				//if (zz > Z-1) {s[5] = s[4] = s[3] = true; continue;}
 
 				if (maps[j->first].find(ID(xx,zz)) == maps[j->first].end())
 					continue;
@@ -171,6 +180,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 */
 	nrThreads = 1;
 	threads.resize(nrThreads-1);
+
+	drawGraph(5);
 }
 
 void CPathfinder::resetMap(int thread) {
@@ -435,15 +446,14 @@ void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 void CPathfinder::drawGraph(int map) {
 	for (size_t i = 0; i < activeNodes[map].size(); i++) {
 		Node *p = activeNodes[map][i]; 
-		if (p->x < X/6 || p->x > (X/6)*3 || p->z > Z/2) continue;
-		if (p->x % 8 == 0 && p->z % 8 == 0) {
+		if (p->x % I_MAP_RES == 0 && p->z % I_MAP_RES == 0) {
 			float3 fp = p->toFloat3();
 			fp.y = ai->cb->GetElevation(fp.x, fp.z) + 20.0f;
 			for (size_t j = 0; j < p->neighbours.size(); j++) {
 				Node *n = p->neighbours[j];
 				float3 fn = n->toFloat3();
 				fn.y = ai->cb->GetElevation(fn.x, fn.z) + 20.0f;
-				ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, DRAW_TIME, 10);
+				ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, 10000, 10);
 				ai->cb->SetFigureColor(10, 0.0f, 0.0f, 1.0f, 0.5f);
 			}
 		}
