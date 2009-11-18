@@ -16,10 +16,7 @@ void CGroup::addUnit(CUnit &unit) {
 	MoveData* md = ai->cb->GetUnitDef(unit.key)->movedata;
 
 	if (unit.builder > 0) {
-		unsigned c = ai->unittable->activeUnits[unit.builder]->type->cats;
-		if (c&TECH1) techlvl = techlvl < TECH1 ? TECH1 : techlvl;
-		if (c&TECH2) techlvl = techlvl < TECH2 ? TECH2 : techlvl;
-		if (c&TECH3) techlvl = techlvl < TECH3 ? TECH3 : techlvl;
+		techlvl = std::max<int>(techlvl, unit.techlvl);
 	}
 
 	if (md->maxSlope <= maxSlope) {

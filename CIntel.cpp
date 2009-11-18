@@ -94,13 +94,13 @@ void CIntel::update(int frame) {
 			ai->cbc->IsUnitCloaked(units[i])     /* Ignore cloaked units */
 		) continue;
 		
-		if (c&ATTACKER) {
+		if (c&ATTACKER && !(c&AIR)) {
 			attackers.push_back(units[i]);
 		}
 		else if (c&FACTORY) {
 			factories.push_back(units[i]);
 		}
-		else if (c&BUILDER && c&MOBILE) {
+		else if (c&BUILDER && c&MOBILE && !(c&AIR)) {
 			mobileBuilders.push_back(units[i]);
 		}
 		else if (c&MEXTRACTOR || c&MMAKER) {

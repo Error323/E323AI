@@ -28,6 +28,7 @@ void CUnit::reset(int uid, int bid) {
 	this->builder = bid;
 	this->waiting = false;
 	this->microing= false;
+	this->techlvl = 0;
 }
 
 bool CUnit::reclaim(float3 pos, float radius) {

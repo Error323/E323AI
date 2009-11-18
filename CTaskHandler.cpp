@@ -280,6 +280,7 @@ void CTaskHandler::BuildTask::update() {
 	if (isMoving && dist.Length2D() <= group->buildRange) {
 		group->build(pos, toBuild);
 		ai->pathfinder->remove(*group);
+		group->unreg(*(ai->pathfinder));
 		isMoving = false;
 	}
 	/* See if we can suck wreckages */
@@ -430,6 +431,7 @@ void CTaskHandler::AssistTask::update() {
 	if (isMoving && dist.Length2D() <= range) {
 		group->assist(*assist);
 		ai->pathfinder->remove(*group);
+		group->unreg(*(ai->pathfinder));
 		isMoving = false;
 	}
 	/* See if we can suck wreckages */
@@ -477,6 +479,7 @@ void CTaskHandler::AttackTask::update() {
 		group->attack(target);
 		isMoving = false;
 		ai->pathfinder->remove(*group);
+		group->unreg(*(ai->pathfinder));
 	}
 	/* See if we can attack a target we found on our path */
 	else if (!group->isMicroing()) {
@@ -558,6 +561,7 @@ void CTaskHandler::MergeTask::update() {
 	if (mergable.size() >= 2) {
 		CGroup *alpha = mergable[0];
 		ai->pathfinder->remove(*alpha);
+		alpha->unreg(*(ai->pathfinder));
 		for (unsigned j = 1; j < mergable.size(); j++) {
 			LOG_II("MergeTask::update merging " << (*mergable[j]) << " with " << (*alpha))
 			alpha->merge(*mergable[j]);

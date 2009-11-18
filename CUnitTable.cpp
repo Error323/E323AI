@@ -179,6 +179,11 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	activeUnits[uid] = unit;
 	idle[bid] = false;
 	idle[uid] = false;
+	if (unit->type->cats&MOBILE && bid > 0) {
+		unit->techlvl = (activeUnits[bid]->type->cats&TECH1) ? TECH1 : unit->techlvl;
+		unit->techlvl = (activeUnits[bid]->type->cats&TECH2) ? TECH2 : unit->techlvl;
+		unit->techlvl = (activeUnits[bid]->type->cats&TECH3) ? TECH3 : unit->techlvl;
+	}
 	if ((unit->type->cats&STATIC) && (unit->type->cats&ATTACKER))
 		defenses[unit->key] = unit;
 	if (unit->type->cats&ESTORAGE)
