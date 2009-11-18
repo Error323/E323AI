@@ -117,10 +117,10 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 				int zz = z + parent->z;
 				int xx = x + parent->x;
 
-				//if (xx < 0)   {s[5] = s[6] = s[7] = true; continue;}
-				//if (xx > X-1) {s[1] = s[2] = s[3] = true; continue;}
-				//if (zz < 0)   {s[7] = s[0] = s[1] = true; continue;}
-				//if (zz > Z-1) {s[5] = s[4] = s[3] = true; continue;}
+				if (xx < 0)   {s[5] = s[6] = s[7] = true; continue;}
+				if (xx > X-1) {s[1] = s[2] = s[3] = true; continue;}
+				if (zz < 0)   {s[7] = s[0] = s[1] = true; continue;}
+				if (zz > Z-1) {s[5] = s[4] = s[3] = true; continue;}
 
 				if (maps[j->first].find(ID(xx,zz)) == maps[j->first].end())
 					continue;
@@ -180,8 +180,6 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 */
 	nrThreads = 1;
 	threads.resize(nrThreads-1);
-
-	drawGraph(5);
 }
 
 void CPathfinder::resetMap(int thread) {

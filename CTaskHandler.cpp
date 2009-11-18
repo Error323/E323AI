@@ -516,7 +516,9 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 	activeMergeTasks[mergeTask->key] = mergeTask;
 	activeTasks[mergeTask->key] = mergeTask;
 	for (j = groups.begin(); j != groups.end(); j++)
-		ai->pathfinder->addGroup(*(j->second));
+		if (!ai->pathfinder->addGroup(*(j->second)))
+			j->second->remove();
+
 	LOG_II(*mergeTask)
 }
 

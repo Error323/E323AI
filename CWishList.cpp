@@ -14,7 +14,6 @@ CWishList::CWishList(AIClasses *ai) {
 void CWishList::push(unsigned categories, buildPriority p) {
 	std::map<int, bool>::iterator itFac = ai->unittable->factories.begin();
 	UnitType *fac;
-	int max = ai->cfgparser->getTotalStates()+1 - ai->cfgparser->getState();
 	for (;itFac != ai->unittable->factories.end(); itFac++) {
 		fac = UT(ai->cb->GetUnitDef(itFac->first)->id);
 		std::multimap<float, UnitType*> candidates;
@@ -28,7 +27,7 @@ void CWishList::push(unsigned categories, buildPriority p) {
 
 			/* Determine which buildables we can afford */
 			std::multimap<float, UnitType*>::iterator i = candidates.begin();
-			int iterations = candidates.size() / max;
+			int iterations = candidates.size();
 			bool affordable = false;
 			while(iterations >= 0) {
 				if (ai->economy->canAffordToBuild(fac, i->second))
