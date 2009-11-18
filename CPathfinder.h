@@ -56,8 +56,8 @@ class CPathfinder: public AAStar, public ARegistrar {
 		 */
 		void updatePaths();
 
-		/* Add task */
-		bool addTask(ATask &task);
+		/* Add a group to the pathfinder */
+		bool addGroup(CGroup &group);
 
 		/* Overload */
 		void remove(ARegistrar &obj);

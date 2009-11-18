@@ -290,21 +290,21 @@ void CPathfinder::updatePaths() {
 }
 
 void CPathfinder::remove(ARegistrar &obj) {
-	ATask *task = dynamic_cast<ATask*>(&obj);
-	LOG_II("CPathfinder::remove " << (*task))
-	paths.erase(task->group->key);
-	groups.erase(task->group->key);
-	regrouping.erase(task->group->key);
+	CGroup *group = dynamic_cast<CGroup*>(&obj);
+	LOG_II("CPathfinder::remove " << (*group))
+	paths.erase(group->key);
+	groups.erase(group->key);
+	regrouping.erase(group->key);
 }
 
-bool CPathfinder::addTask(ATask &task) {
-	LOG_II("CPathfinder::addTask " << task)
-	groups[task.group->key] = task.group;
-	regrouping[task.group->key] = true;
-	task.reg(*this);
-	float3 start = task.group->pos();
-	float3 goal = task.pos;
-	return addPath(task.group->key, start, goal);
+bool CPathfinder::addGroup(CGroup &group) {
+	LOG_II("CPathfinder::addGroup " << group)
+	groups[group.key] = &group;
+	regrouping[group.key] = true;
+	group.reg(*this);
+	float3 s = group.pos();
+	float3 g = ai->tasks->getPos(group);
+	return addPath(group.key, s, g);
 }
 
 bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {

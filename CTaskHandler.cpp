@@ -263,7 +263,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 
 	groupToTask[group.key] = buildTask;
 	LOG_II((*buildTask))
-	if (!ai->pathfinder->addTask(*buildTask))
+	if (!ai->pathfinder->addGroup(group))
 		buildTask->remove();
 }
 
@@ -279,8 +279,7 @@ void CTaskHandler::BuildTask::update() {
 	/* See if we can build yet */
 	if (isMoving && dist.Length2D() <= group->buildRange) {
 		group->build(pos, toBuild);
-		ai->pathfinder->remove(*this);
-		unreg(*(ai->pathfinder));
+		ai->pathfinder->remove(*group);
 		isMoving = false;
 	}
 	/* See if we can suck wreckages */
@@ -394,7 +393,7 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 	activeTasks[assistTask->key] = assistTask;
 	groupToTask[group.key] = assistTask;
 	LOG_II((*assistTask))
-	if (!ai->pathfinder->addTask(*assistTask))
+	if (!ai->pathfinder->addGroup(group))
 		assistTask->remove();
 }
 
@@ -430,8 +429,7 @@ void CTaskHandler::AssistTask::update() {
 
 	if (isMoving && dist.Length2D() <= range) {
 		group->assist(*assist);
-		ai->pathfinder->remove(*this);
-		unreg(*(ai->pathfinder));
+		ai->pathfinder->remove(*group);
 		isMoving = false;
 	}
 	/* See if we can suck wreckages */
@@ -458,7 +456,7 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 	activeTasks[attackTask->key] = attackTask;
 	groupToTask[group.key] = attackTask;
 	LOG_II((*attackTask))
-	if (!ai->pathfinder->addTask(*attackTask))
+	if (!ai->pathfinder->addGroup(group))
 		attackTask->remove();
 }
 
@@ -478,15 +476,16 @@ void CTaskHandler::AttackTask::update() {
 	if (isMoving && dist.Length2D() <= group->range) {
 		group->attack(target);
 		isMoving = false;
-		ai->pathfinder->remove(*this);
-		unreg(*(ai->pathfinder));
+		ai->pathfinder->remove(*group);
 	}
 	/* See if we can attack a target we found on our path */
 	else if (!group->isMicroing()) {
 		if (group->units.begin()->second->type->cats&SCOUTER)
 			enemyScan(true);
+		/*
 		else
 			enemyScan(false);
+		*/
 	}
 	/* Keep tracking the target */
 	pos = ai->cbc->GetUnitPos(target);
@@ -508,6 +507,7 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 		j->second->busy = true;
 		j->second->micro(false);
 		j->second->abilities(true);
+		groupToTask[j->first] = mergeTask;
 		range += j->second->size;
 	}
 	mergeTask->pos /= groups.size();
@@ -515,11 +515,8 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 
 	activeMergeTasks[mergeTask->key] = mergeTask;
 	activeTasks[mergeTask->key] = mergeTask;
-	for (j = groups.begin(); j != groups.end(); j++) {
-		CGroup *group = j->second;
-		groupToTask[group->key] = mergeTask;
-		group->move(mergeTask->pos);
-	}
+	for (j = groups.begin(); j != groups.end(); j++)
+		ai->pathfinder->addGroup(*(j->second));
 	LOG_II(*mergeTask)
 }
 
@@ -558,6 +555,7 @@ void CTaskHandler::MergeTask::update() {
 	/* We have atleast two groups, now we can merge */
 	if (mergable.size() >= 2) {
 		CGroup *alpha = mergable[0];
+		ai->pathfinder->remove(*alpha);
 		for (unsigned j = 1; j < mergable.size(); j++) {
 			LOG_II("MergeTask::update merging " << (*mergable[j]) << " with " << (*alpha))
 			alpha->merge(*mergable[j]);
