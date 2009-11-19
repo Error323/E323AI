@@ -232,14 +232,14 @@ void CMilitary::update(int frame) {
 		}
 
 		/* Determine if the group has the strength */
-		float3 targetpos = ai->cbc->GetUnitPos(target);
-		bool canAttack = group->strength >= ai->threatmap->getThreat(targetpos, 0.0f) && !isCurrent;
-		bool isNew     = isCurrent && group->units.size() >= ai->cfgparser->getMinGroupSize(group->techlvl);
+		float3 targetpos    = ai->cbc->GetUnitPos(target);
+		bool isStrongEnough = group->strength >= ai->threatmap->getThreat(targetpos, 0.0f);
+		bool isSizeEnough   = group->units.size() >= ai->cfgparser->getMinGroupSize(group->techlvl);
 
-		if (!canAttack && !isNew)
+		if (!isCurrent && !isStrongEnough)
 			mergeGroups[group->key] = group;
 
-		if (canAttack || isNew) {
+		if ((isCurrent && isSizeEnough) || (!isCurrent && isStrongEnough)) {
 			mergeGroups.erase(group->key);
 			ai->tasks->addAttackTask(target, *group);
 			break;

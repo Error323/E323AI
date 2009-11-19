@@ -369,6 +369,7 @@ void CEconomy::update(int frame) {
 
 unsigned CEconomy::getAllowedFactory() {
 	int maxTech = ai->cfgparser->getMaxTechLevel();
+	int secundary = type == KBOT ? VEHICLE : KBOT;
 	for (int i = 0; i < maxTech; i++) {
 		// assuming TECH1 = 1, TECH2 = 2, TECH3 = 4
 		unsigned tech = 1 << i;
@@ -377,8 +378,12 @@ unsigned CEconomy::getAllowedFactory() {
 		if (tech == TECH3 && !ai->unittable->gotFactory(KBOT|TECH3))
 			return KBOT|TECH3;
 
-		if (!ai->unittable->gotFactory(tech|type))
-			return tech|type;
+		if (!ai->unittable->gotFactory(type|tech))
+			return type|tech;
+
+
+		if (!ai->unittable->gotFactory(secundary|tech))
+			return secundary|tech;
 	}
 	return 0;
 }

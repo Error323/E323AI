@@ -485,10 +485,8 @@ void CTaskHandler::AttackTask::update() {
 	else if (!group->isMicroing()) {
 		if (group->units.begin()->second->type->cats&SCOUTER)
 			enemyScan(true);
-		/*
 		else
 			enemyScan(false);
-		*/
 	}
 	/* Keep tracking the target */
 	pos = ai->cbc->GetUnitPos(target);
@@ -504,25 +502,31 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 	mergeTask->reg(*this);
 	int range = 0;
 	std::map<int,CGroup*>::iterator j;
+	float maxSlope = MAX_FLOAT;
 	for (j = groups.begin(); j != groups.end(); j++) {
-		mergeTask->pos += j->second->pos();
 		j->second->reg(*mergeTask);
 		j->second->busy = true;
 		j->second->micro(false);
 		j->second->abilities(true);
 		groupToTask[j->first] = mergeTask;
 		range += j->second->size;
+		if (j->second->maxSlope < maxSlope) {
+			maxSlope = j->second->maxSlope;
+			mergeTask->pos = j->second->pos();
+		}
 	}
-	mergeTask->pos /= groups.size();
 	mergeTask->range = range;
+
+	LOG_II(*mergeTask)
 
 	activeMergeTasks[mergeTask->key] = mergeTask;
 	activeTasks[mergeTask->key] = mergeTask;
-	for (j = groups.begin(); j != groups.end(); j++)
-		if (!ai->pathfinder->addGroup(*(j->second)))
-			j->second->remove();
-
-	LOG_II(*mergeTask)
+	for (j = groups.begin(); j != groups.end(); j++) {
+		if (!ai->pathfinder->addGroup(*(j->second))) {
+			mergeTask->remove();
+			break;
+		}
+	}
 }
 
 void CTaskHandler::MergeTask::remove() {
@@ -553,15 +557,16 @@ void CTaskHandler::MergeTask::update() {
 		CGroup *group = g->second;
 		float3 grouppos = group->pos();
 		float3 dist = grouppos - pos;
-		if (dist.Length2D() <= range)
+		if (dist.Length2D() <= range) {
 			mergable.push_back(group);
+			ai->pathfinder->remove(*group);
+			group->unreg(*(ai->pathfinder));
+		}
 	}
 
 	/* We have atleast two groups, now we can merge */
 	if (mergable.size() >= 2) {
 		CGroup *alpha = mergable[0];
-		ai->pathfinder->remove(*alpha);
-		alpha->unreg(*(ai->pathfinder));
 		for (unsigned j = 1; j < mergable.size(); j++) {
 			LOG_II("MergeTask::update merging " << (*mergable[j]) << " with " << (*alpha))
 			alpha->merge(*mergable[j]);

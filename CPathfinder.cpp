@@ -313,7 +313,12 @@ bool CPathfinder::addGroup(CGroup &group) {
 	group.reg(*this);
 	float3 s = group.pos();
 	float3 g = ai->tasks->getPos(group);
-	return addPath(group.key, s, g);
+	bool success = addPath(group.key, s, g);
+	if (!success) {
+		remove(group);
+		group.unreg(*this);
+	}
+	return success;
 }
 
 bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {
