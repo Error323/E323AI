@@ -42,7 +42,7 @@ bool CEconomy::hasBegunBuilding(CGroup &group) {
 	std::map<int, CUnit*>::iterator i;
 	for (i = group.units.begin(); i != group.units.end(); i++) {
 		CUnit *unit = i->second;
-		if (ai->unittable->idle.find(unit->key) == ai->unittable->builders.end()
+		if (ai->unittable->idle.find(unit->key) == ai->unittable->idle.end()
 			|| !ai->unittable->idle[unit->key])
 			return true;
 	}
