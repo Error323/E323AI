@@ -200,7 +200,7 @@ void CMilitary::update(int frame) {
 
 	/* Merge the scout groups that were not strong enough */
 	if (mergeScouts.size() >= 2) {
-		//ai->tasks->addMergeTask(mergeScouts);
+		ai->tasks->addMergeTask(mergeScouts);
 		mergeScouts.clear();
 	}
 
@@ -248,7 +248,7 @@ void CMilitary::update(int frame) {
 
 	/* Merge the groups that were not strong enough */
 	if (mergeGroups.size() >= 2) {
-		//ai->tasks->addMergeTask(mergeGroups);
+		ai->tasks->addMergeTask(mergeGroups);
 		mergeGroups.clear();
 	}
 
