@@ -292,10 +292,8 @@ void CPathfinder::updatePaths() {
 
 	float3 start = groups[repathGroup]->pos();
 	float3 goal  = ai->tasks->getPos(*groups[repathGroup]);
-	if (!addPath(repathGroup, start, goal)) {
-		LOG_EE("CPathfinder::updatePaths failed for " << (*groups[repathGroup]))
-		ai->tasks->removeTask(*groups[repathGroup]);
-	}
+	if (!addPath(repathGroup, start, goal))
+		LOG_WW("CPathfinder::updatePaths failed for " << (*groups[repathGroup]))
 }
 
 void CPathfinder::remove(ARegistrar &obj) {
