@@ -332,6 +332,7 @@ void CTaskHandler::addFactoryTask(CUnit &factory) {
 
 bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 	if (assisters.size() >= ai->cfgparser->getState()*2 || 
+		assisters.size() >= 6 ||
 		!factory->def->canBeAssisted) {
 		return false;
 	}
