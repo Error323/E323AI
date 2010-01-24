@@ -26,6 +26,11 @@ CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	mstall = estall = mexceeding = eexceeding = mRequest = eRequest = false;
 }
 
+CEconomy::~CEconomy() {
+	for (int i = 0; i < groups.size(); i++)
+		delete groups[i];
+}
+
 void CEconomy::init(CUnit &unit) {
 	const UnitDef *ud = ai->cb->GetUnitDef(unit.key);
 	UnitType *utCommander = UT(ud->id);

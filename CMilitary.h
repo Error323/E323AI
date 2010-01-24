@@ -18,7 +18,7 @@ enum groupType{SCOUT, ENGAGE};
 class CMilitary: public ARegistrar {
 	public:
 		CMilitary(AIClasses *ai);
-		~CMilitary(){};
+		~CMilitary();
 
 		/* Overload */
 		void remove(ARegistrar &group);

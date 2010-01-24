@@ -17,6 +17,11 @@ CMilitary::CMilitary(AIClasses *ai): ARegistrar(200, std::string("military")) {
 	this->ai = ai;
 }
 
+CMilitary::~CMilitary() {
+	for (int i = 0; i < groups.size(); i++)
+		delete groups[i];
+}
+
 void CMilitary::remove(ARegistrar &group) {
 	LOG_II("CMilitary::remove group(" << group.key << ")")
 	free.push(lookup[group.key]);

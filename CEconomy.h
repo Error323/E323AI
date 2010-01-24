@@ -22,7 +22,7 @@ const float beta = 0.05f;
 class CEconomy: public ARegistrar {
 	public:
 		CEconomy(AIClasses *ai);
-		~CEconomy(){};
+		~CEconomy();
 
 		/* overal mNow averaged over 5 logical frames */
 		float mNow, mNowSummed;
