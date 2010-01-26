@@ -37,9 +37,13 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 			logType -= CLogger::LOG_FILE;
 		}
 	}
+
+	#ifndef DEBUG
 	if (lt & CLogger::LOG_SCREEN) {
 		std::cout << "Logging to screen:\n";
 	}
+	#endif
+
 	if (lt & CLogger::LOG_SPRING) {
 		ai->cb->SendTextMsg("Logging to spring", 0);
 	}
@@ -67,9 +71,11 @@ void CLogger::log(logLevel level, std::string &msg) {
 		}
 	}
 
+	#ifndef DEBUG
 	if (logType & CLogger::LOG_SCREEN) {
 		std::cout << output;
 	}
+	#endif
 
 	if ((logType & CLogger::LOG_SPRING) && level == ERROR) {
 		ai->cb->SendTextMsg(msg.c_str(), 0);
