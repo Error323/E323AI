@@ -16,6 +16,7 @@ class CPathfinder;
 class CIntel;
 class CMilitary;
 class CDefenseMatrix;
+class CDataUploader;
 
 /* Ensures single instantiation of classes and good reachability */
 struct AIClasses {
@@ -33,6 +34,7 @@ struct AIClasses {
 	CMilitary      *military;
 	CDefenseMatrix *defensematrix;
 	CLogger        *logger;
+	CDataUploader  *uploader;
 	int            team;
 };
 

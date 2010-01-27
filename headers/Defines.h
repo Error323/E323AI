@@ -58,6 +58,9 @@
 /* Draw time */
 #define DRAW_TIME MULTIPLEXER*30
 
+/* Stats url */
+#define UPLOAD_URL "http://folkert.no-ip.org/e323ai.php"
+
 /* Unit categories */
 enum unitCategory {
 	TECH1        = (1<<0),
