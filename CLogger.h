@@ -31,7 +31,7 @@ class CLogger {
 	private:
 		enum logLevel{ERROR, WARNING, VERBOSE};
 
-		char fileName[255];
+		char fileName[2048];
 
 		AIClasses *ai;
 

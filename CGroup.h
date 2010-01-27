@@ -108,6 +108,8 @@ class CGroup: public ARegistrar {
 
 	private:
 		AIClasses *ai;
+
+		void recalcProperties(CUnit *unit, bool reset = false);
 };
 
 #endif

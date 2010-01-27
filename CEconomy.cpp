@@ -24,14 +24,17 @@ CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	mUsage   = mUsageSummed   = eUsage   = eUsageSummed   = 0.0f;
 	mStorage = eStorage                                   = 0.0f;
 	mstall = estall = mexceeding = eexceeding = mRequest = eRequest = false;
+	initialized = false;
 }
 
-CEconomy::~CEconomy() {
-	for (int i = 0; i < groups.size(); i++)
-		delete groups[i];
+CEconomy::~CEconomy()
+{
+	for(int i = 0; i < groups.size(); i++)
+		delete groups[i];	
 }
 
 void CEconomy::init(CUnit &unit) {
+	// NOTE: expecting "unit" is a commander unit
 	const UnitDef *ud = ai->cb->GetUnitDef(unit.key);
 	UnitType *utCommander = UT(ud->id);
 	windmap = (ai->cb->GetMaxWind() + ai->cb->GetMinWind())/2.0f >= 10.0f;
@@ -41,6 +44,7 @@ void CEconomy::init(CUnit &unit) {
 	mStart = utCommander->def->metalMake;
 	eStart = utCommander->def->energyMake;
 	type   = ai->intel->getUnitType();
+	initialized = true;
 }
 		
 bool CEconomy::hasBegunBuilding(CGroup &group) {
@@ -90,6 +94,7 @@ CGroup* CEconomy::requestGroup() {
 	lookup[group->key] = index;
 	group->reg(*this);
 	activeGroups[group->key] = group;
+
 	return group;
 }
 
@@ -99,6 +104,8 @@ void CEconomy::remove(ARegistrar &group) {
 	lookup.erase(group.key);
 	activeGroups.erase(group.key);
 
+	// NOTE: CEconomy is registered inside group, so the next lines 
+	// are senseless because records.size() = 0 always
 	std::list<ARegistrar*>::iterator i;
 	for (i = records.begin(); i != records.end(); i++)
 		(*i)->remove(group);
@@ -374,7 +381,7 @@ void CEconomy::update(int frame) {
 
 unsigned CEconomy::getAllowedFactory() {
 	int maxTech = ai->cfgparser->getMaxTechLevel();
-	int secundary = type == KBOT ? VEHICLE : KBOT;
+	int secondary = type == KBOT ? VEHICLE : KBOT;
 	for (int i = 0; i < maxTech; i++) {
 		// assuming TECH1 = 1, TECH2 = 2, TECH3 = 4
 		unsigned tech = 1 << i;
@@ -386,9 +393,8 @@ unsigned CEconomy::getAllowedFactory() {
 		if (!ai->unittable->gotFactory(type|tech))
 			return type|tech;
 
-
-		if (!ai->unittable->gotFactory(secundary|tech))
-			return secundary|tech;
+		if (!ai->unittable->gotFactory(secondary|tech))
+			return secondary|tech;
 	}
 	return 0;
 }
@@ -483,7 +489,6 @@ void CEconomy::preventStalling() {
 	/* Wait all factories and their assisters */
 	for (k = ai->tasks->activeFactoryTasks.begin(); k != ai->tasks->activeFactoryTasks.end(); k++)
 		k->second->setWait(true);
-
 }
 
 void CEconomy::updateIncomes(int frame) {
@@ -502,8 +507,8 @@ void CEconomy::updateIncomes(int frame) {
 	eNow     = ai->cb->GetEnergy();
 	mIncome  = ai->cb->GetMetalIncome();
 	eIncome  = ai->cb->GetEnergyIncome();
-	mUsage   = alpha*(mUsageSummed / incomes)  + (1.0f-alpha)*(ai->cb->GetMetalUsage());
-	eUsage   = beta *(eUsageSummed / incomes)  + (1.0f-beta) *(ai->cb->GetEnergyUsage());
+	mUsage   = alpha*(mUsageSummed / incomes) + (1.0f-alpha)*(ai->cb->GetMetalUsage());
+	eUsage   = beta *(eUsageSummed / incomes) + (1.0f-beta) *(ai->cb->GetEnergyUsage());
 
 	std::map<int, CUnit*>::iterator i;
 	float mU = 0.0f, eU = 0.0f;
@@ -534,9 +539,6 @@ void CEconomy::updateIncomes(int frame) {
 		char buf[255];
 		sprintf(buf, "State changed to %d, activated techlevel %d", tstate, ai->cfgparser->getMaxTechLevel());
 		LOG_II(buf);
-		#if DEBUG
-		//LOG_SS(buf);
-		#endif
 		state = tstate;
 	}
 }
@@ -544,6 +546,7 @@ void CEconomy::updateIncomes(int frame) {
 ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 	std::map<int, CTaskHandler::BuildTask*>::iterator i;
 	std::multimap<float, CTaskHandler::BuildTask*> suited;
+
 	for (i = ai->tasks->activeBuildTasks.begin(); i != ai->tasks->activeBuildTasks.end(); i++) {
 		CTaskHandler::BuildTask *buildtask = i->second;
 
@@ -556,7 +559,6 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 		float travelTime;
 		if (buildtask->bt != t || !buildtask->assistable(group, travelTime))
 			continue;
-
 		
 		suited.insert(std::pair<float, CTaskHandler::BuildTask*>(travelTime, buildtask));
 	}
@@ -578,6 +580,7 @@ ATask* CEconomy::canAssistFactory(CGroup &group) {
 	std::map<int, CTaskHandler::FactoryTask*>::iterator i;
 	std::map<float, CTaskHandler::FactoryTask*> candidates;
 	float3 pos = group.pos();
+
 	for (i = ai->tasks->activeFactoryTasks.begin(); i != ai->tasks->activeFactoryTasks.end(); i++) {
 		/* TODO: instead of euclid distance, use pathfinder distance */
 		float dist = (pos - i->second->pos).Length2D();

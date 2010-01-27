@@ -39,7 +39,6 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 		ai->cfgparser->parseConfig(configfile);
 }
 
-
 CE323AI::~CE323AI() {
 	LOG_II(CScopedTimer::profile())
 
@@ -102,7 +101,6 @@ void CE323AI::UnitFinished(int uid) {
 	/* Military unit */
 	else
 		ai->military->addUnit(*unit);
-
 }
 
 /* Called on a destroyed unit */
@@ -129,7 +127,6 @@ void CE323AI::UnitMoveFailed(int uid) {
 	//CUnit *unit = ai->unittable->getUnit(uid);
 	//unit->moveRandom(50.0f);
 }
-
 
 
 /***********************
@@ -164,6 +161,7 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 
 int CE323AI::HandleEvent(int msg, const void* data) {
 	const ChangeTeamEvent* cte = (const ChangeTeamEvent*) data;
+
 	switch(msg) {
 		case AI_EVENT_UNITGIVEN:
 			/* Unit gained */
@@ -185,31 +183,42 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 			}
 		break;
 	}
+
 	return 0;
 }
 
-
 /* Update AI per logical frame = 1/30 sec on gamespeed 1.0 */
 void CE323AI::Update() {
-	/* Make sure we shift the multiplexer for each instance of E323AI */
+	static bool running = false;
+	
 	int frame = ai->cb->GetCurrentFrame();
 
-	/* Don't act before the 100th frame, messed up eco stuff -_- */
-	if (frame < 100) {
-		if (frame == 1)
-			ai->intel->init();
+	if(frame == 1)
+		ai->intel->init();
+	
+	if(!ai->economy->getInitialized())
 		return;
-	}
 
-	else if (frame == (800+(ai->team*200))) {
+	// anyway show AI is loaded even if it is not playing actually...
+	if (frame == (800 + (ai->team*200))) {
 		LOG_SS("*** " << AI_VERSION << " ***");
 		LOG_SS("*** " << AI_CREDITS << " ***");
 		LOG_SS("*** " <<  AI_NOTES  << " ***");
 	}
 
+	/* Make sure we shift the multiplexer for each instance of E323AI */
+	int aiframe = frame + ai->team;
+	
+	// Make sure we start playing since "eco-incomes" update
+	if(!running) {
+		running = aiframe % MULTIPLEXER == 0;
+	}
+
+	if(!running)
+		return;
+
 	/* Rotate through the different update events to distribute computations */
-	frame += ai->team;
-	switch(frame % MULTIPLEXER) {
+	switch(aiframe % MULTIPLEXER) {
 		case 0: { /* update incomes */
 			CScopedTimer t(std::string("eco-incomes"));
 			ai->economy->updateIncomes();

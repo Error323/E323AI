@@ -13,27 +13,13 @@ int CGroup::counter = 0;
 
 void CGroup::addUnit(CUnit &unit) {
 	LOG_II("CGroup::add " << unit)
-	MoveData* md = ai->cb->GetUnitDef(unit.key)->movedata;
 
-	if (unit.builder > 0) {
-		techlvl = std::max<int>(techlvl, unit.techlvl);
-	}
+	recalcProperties(&unit);
 
-	if (md->maxSlope <= maxSlope) {
-		moveType = md->pathType;
-		maxSlope = md->maxSlope;
-	}
-		
-	strength   += ai->cb->GetUnitPower(unit.key);
-	buildSpeed += unit.def->buildSpeed;
-	size       += 8*std::max<int>(unit.def->xsize, unit.def->zsize);
-	range = std::max<float>(ai->cb->GetUnitMaxRange(unit.key)*0.7f, range);
-	buildRange = std::max<float>(unit.def->buildDistance*1.5f, buildRange);
-	speed = std::min<float>(ai->cb->GetUnitSpeed(unit.key), speed);
-	los = std::max<float>(unit.def->losRadius, los);
-
-	units[unit.key]   = &unit;
+	units[unit.key] = &unit;
 	unit.reg(*this);
+
+	// TODO: if group is busy invoke new unit to community process?
 }
 
 void CGroup::remove() {
@@ -45,41 +31,30 @@ void CGroup::remove() {
 	
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
+		// remove from CEconomy, CPathfinder, ATask
 		(*j)->remove(*this);
 }
 
 void CGroup::remove(ARegistrar &unit) {
+	// TODO: looks like "unit" can be a ATask instance
 	LOG_II("CGroup::remove unit(" << unit.key << ")")
+
 	units.erase(unit.key);
-
-	strength = buildSpeed = 0.0f;
-	speed = MAX_FLOAT;
-	MoveData* md;
-
-	/* Recalculate range, strength and maxSlope of the group */
-	maxSlope = 1.0f;
-	range    = 0.0f;
-	size     = 0;
-	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++) {
-		range       = std::max<float>(ai->cb->GetUnitMaxRange(i->first)*0.7f, range);
-		speed       = std::min<float>(ai->cb->GetUnitSpeed(i->first), speed);
-		los         = std::max<float>(i->second->def->losRadius, los);
-		size       += 8*std::max<int>(i->second->def->xsize, i->second->def->zsize);
-		strength   += ai->cb->GetUnitPower(i->first);
-		buildSpeed += i->second->def->buildSpeed;
-		md          = ai->cb->GetUnitDef(i->first)->movedata;
-		if (md->maxSlope <= maxSlope) {
-			moveType = md->pathType;
-			maxSlope = md->maxSlope;
-		}
-	}
 
 	/* If no more units remain in this group, remove the group */
 	if (units.empty()) {
 		std::list<ARegistrar*>::iterator i;
 		for (i = records.begin(); i != records.end(); i++)
-			(*i)->remove(*this);
+			// remove from CEconoy, CPathfinder, ATask
+  	        (*i)->remove(*this);
+	}
+	else {
+		/* Recalculate properties of the current group */
+		recalcProperties(NULL, true);
+		std::map<int, CUnit*>::iterator i;
+		for (i = units.begin(); i != units.end(); i++) {
+			recalcProperties(i->second);
+		}
 	}
 }
 
@@ -125,20 +100,51 @@ bool CGroup::isIdle() {
 }
 
 void CGroup::reset() {
-	strength   = 0.0f;
-	speed      = MAX_FLOAT;
-	size       = 0;
-	buildSpeed = 0.0f;
-	range      = 0.0f;
-	buildRange = 0.0f;
-	los        = 0.0f;
-	busy       = false;
-	maxSlope   = 1.0f;
-	techlvl    = 1;
+	recalcProperties(NULL, true);
+	busy = false;
 	micro(false);
 	abilities(false);
 	units.clear();
 	records.clear();
+}
+
+void CGroup::recalcProperties(CUnit *unit, bool reset)
+{
+	if(reset) {
+		strength   = 0.0f;
+		speed      = MAX_FLOAT;
+		size       = 0;
+		buildSpeed = 0.0f;
+		range      = 0.0f;
+		buildRange = 0.0f;
+		los        = 0.0f;
+		busy       = false;
+		maxSlope   = 1.0f;
+		//moveType = ?;
+		techlvl    = 1;
+    }
+
+	if(unit == NULL)
+		return;
+
+    if (unit->builder > 0) {
+		techlvl = std::max<int>(techlvl, unit->techlvl);
+	}
+
+	MoveData *md = ai->cb->GetUnitDef(unit->key)->movedata;
+    if (md->maxSlope <= maxSlope) {
+		moveType = md->pathType;
+		maxSlope = md->maxSlope;
+	}
+		
+	strength += ai->cb->GetUnitPower(unit->key);
+	buildSpeed += unit->def->buildSpeed;
+	// TODO: replace hardcoded constants with readable constants
+	size += 8*std::max<int>(unit->def->xsize, unit->def->zsize);
+	range = std::max<float>(ai->cb->GetUnitMaxRange(unit->key)*0.7f, range);
+	buildRange = std::max<float>(unit->def->buildDistance*1.5f, buildRange);
+	speed = std::min<float>(ai->cb->GetUnitSpeed(unit->key), speed);
+	los = std::max<float>(unit->def->losRadius, los);
 }
 
 void CGroup::merge(CGroup &group) {

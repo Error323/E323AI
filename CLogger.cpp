@@ -84,7 +84,7 @@ void CLogger::getFileName(char *fileName) {
 	time(&now1);
 	struct tm* now2 = localtime(&now1);
 
-	char buf[255];
+	char buf[2048];
 	sprintf(buf, "%s", LOG_FOLDER);
 	ai->cb->GetValue(AIVAL_LOCATE_FILE_W, buf);
 	std::sprintf(

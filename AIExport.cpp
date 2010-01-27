@@ -18,13 +18,15 @@
 	@author Robin Vobruba <hoijui.quaero@gmail.com>
 */
 
+#include <windows.h>
+#include <tchar.h>
 #include <map>
 
 // AI interface stuff
 #include "ExternalAI/Interface/SSkirmishAILibrary.h"
 #include "ExternalAI/Interface/SSkirmishAICallback.h"
-#include "../Wrappers/LegacyCpp/AIGlobalAI.h"
-#include "../Wrappers/CUtils/Util.h"
+#include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
+//#include "../AI/Wrappers/CUtils/Util.h"
 #include "Game/GameVersion.h"
 
 // E323AI stuff
@@ -47,7 +49,7 @@ static std::map<int, const struct SSkirmishAICallback*> teamId_callback;
 EXPORT(enum LevelOfSupport) getLevelOfSupportFor(int teamId,
 		const char* engineVersionString, int engineVersionNumber,
 		const char* aiInterfaceShortName, const char* aiInterfaceVersion) {
-
+	
 	if (strcmp(engineVersionString, SpringVersion::GetFull().c_str()) == 0 &&
 			engineVersionNumber <= ENGINE_VERSION_NUMBER) {
 		return LOS_Working;
@@ -110,6 +112,7 @@ EXPORT(int) handleEvent(int teamId, int topic, const void* data) {
 
 // methods from here on are for AI internal use only
 
+/*
 const char* aiexport_getDataDir(bool absoluteAndWriteable) {
 	static char* dd_ws_rel = NULL;
 	static char* dd_ws_abs_w = NULL;
@@ -133,6 +136,8 @@ const char* aiexport_getDataDir(bool absoluteAndWriteable) {
 
 	return NULL;
 }
+*/
+
 const char* aiexport_getVersion() {
 	return firstCallback->Clb_SkirmishAI_Info_getValueByKey(firstTeamId, SKIRMISH_AI_PROPERTY_VERSION);
 }

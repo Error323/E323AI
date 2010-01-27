@@ -1,10 +1,13 @@
 #include "CDefenseMatrix.h"
 
+#include <math.h>
+
 #include "CAI.h"
 #include "CUnit.h"
 #include "CUnitTable.h"
 #include "CThreatMap.h"
 #include "CIntel.h"
+#include "MathUtil.h"
 
 CDefenseMatrix::CDefenseMatrix(AIClasses *ai) {
 	this->ai = ai;

@@ -13,7 +13,6 @@
 
 #define MOVE_BUFFER 1
 
-class ATask;
 class CGroup;
 class AIClasses;
 
@@ -22,8 +21,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		enum nodeType{BLOCKED, START, GOAL, NORMAL};
 
 		CPathfinder(AIClasses *ai);
-		~CPathfinder(){};
-
+		~CPathfinder() {};
 
 		class Node : public ANode {
 			public:

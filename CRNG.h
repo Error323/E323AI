@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <ctime>
+
 #define FRAND_MAX float(RAND_MAX)
 
 struct RNG {

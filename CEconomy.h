@@ -78,7 +78,10 @@ class CEconomy: public ARegistrar {
 		/* Can we afford to build this ? */
 		bool canAffordToBuild(UnitType *builder, UnitType *utToBuild);
 
+		bool getInitialized() { return initialized; };
+
 	private:
+		bool initialized;
 		AIClasses *ai;
 
 		/* The group container */
@@ -125,7 +128,6 @@ class CEconomy: public ARegistrar {
 
 		/* See if a buildtask is in progress */
 		bool taskInProgress(buildType bt);
-
 };
 
 #endif

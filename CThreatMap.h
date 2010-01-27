@@ -1,6 +1,7 @@
 #ifndef THREATMAP_H
 #define THREATMAP_H
 
+#include "headers/Defines.h"
 #include "headers/HEngine.h"
 
 class AIClasses;

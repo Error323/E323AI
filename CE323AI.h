@@ -32,8 +32,8 @@ class CE323AI: public IGlobalAI {
 
 		void Update();
 
-		private:
-			AIClasses *ai;
+	private:
+		AIClasses *ai;
 };
 
 #endif

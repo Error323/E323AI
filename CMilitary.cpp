@@ -17,9 +17,10 @@ CMilitary::CMilitary(AIClasses *ai): ARegistrar(200, std::string("military")) {
 	this->ai = ai;
 }
 
-CMilitary::~CMilitary() {
-	for (int i = 0; i < groups.size(); i++)
-		delete groups[i];
+CMilitary::~CMilitary()
+{
+	for(int i = 0; i < groups.size(); i++)
+		delete groups[i];	
 }
 
 void CMilitary::remove(ARegistrar &group) {
@@ -169,6 +170,7 @@ void CMilitary::update(int frame) {
 	prepareTargets(all, harras);
 
 	std::map<int, CGroup*>::iterator i,k;
+	
 	/* Give idle scouting groups a new attack plan */
 	for (i = activeScoutGroups.begin(); i != activeScoutGroups.end(); i++) {
 		CGroup *group = i->second;
@@ -244,7 +246,7 @@ void CMilitary::update(int frame) {
 		if (!isCurrent && !isStrongEnough)
 			mergeGroups[group->key] = group;
 
-		if ((isCurrent && isSizeEnough) || (!isCurrent)) {
+		if ((isCurrent && isSizeEnough) || (!isCurrent && isStrongEnough)) {
 			mergeGroups.erase(group->key);
 			ai->tasks->addAttackTask(target, *group);
 			break;
