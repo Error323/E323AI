@@ -50,13 +50,16 @@
 #define HEIGHT2SLOPE 2
 
 /* Max factory Assisters */
-#define FACTORY_ASSISTERS 10
+#define FACTORY_ASSISTERS 6
 
 /* Number of multiplex iterations */
 #define MULTIPLEXER 10 
 
 /* Draw time */
 #define DRAW_TIME MULTIPLEXER*30
+
+/* We gonna use math.h constants */
+#define _USE_MATH_DEFINES
 
 /* Unit categories */
 enum unitCategory {
