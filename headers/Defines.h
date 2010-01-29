@@ -59,7 +59,7 @@
 #define DRAW_TIME MULTIPLEXER*30
 
 /* Stats url */
-#define UPLOAD_URL "http://folkert.no-ip.org/e323ai.php"
+#define UPLOAD_URL "http://fhuizing.pythonic.nl/ai-stats.php"
 
 /* Unit categories */
 enum unitCategory {
