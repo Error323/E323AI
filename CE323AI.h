@@ -8,7 +8,7 @@ class AIClasses;
 
 class CE323AI: public IGlobalAI {
 	public:
-		CE323AI(){}
+		CE323AI():isRunning(false) {}
 		~CE323AI(){};
 
 		void InitAI(IGlobalAICallback* callback, int team);
@@ -34,6 +34,7 @@ class CE323AI: public IGlobalAI {
 		void Update();
 
 	private:
+		bool isRunning;
 		AIClasses *ai;
 };
 
