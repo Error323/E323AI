@@ -33,13 +33,13 @@ class CPathfinder: public AAStar, public ARegistrar {
 				std::vector<Node*> neighbours;
 				CPathfinder::nodeType type;
 				int x, z;
-				bool blocked() {return type == CPathfinder::BLOCKED;}
+				bool blocked() const {return type == CPathfinder::BLOCKED;}
 				void setType(nodeType nt) {type = nt;}
-				float3 toFloat3() {
-					float fx = x*HEIGHT2REAL*HEIGHT2SLOPE;
+				float3 toFloat3() const {
+					float fx = x * HEIGHT2REAL * HEIGHT2SLOPE;
 					float fy = 0.0f;
-					float fz = z*HEIGHT2REAL*HEIGHT2SLOPE;
-					return float3(fx,fy,fz);
+					float fz = z * HEIGHT2REAL * HEIGHT2SLOPE;
+					return float3(fx, fy, fz);
 				}
 		};
 
