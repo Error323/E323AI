@@ -38,7 +38,7 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 		}
 	}
 
-	#ifndef DEBUG
+	#ifdef DEBUG
 	if (lt & CLogger::LOG_SCREEN) {
 		std::cout << "Logging to screen:\n";
 	}
@@ -71,7 +71,7 @@ void CLogger::log(logLevel level, std::string &msg) {
 		}
 	}
 
-	#ifndef DEBUG
+	#ifdef DEBUG
 	if (logType & CLogger::LOG_SCREEN) {
 		std::cout << output;
 	}

@@ -63,7 +63,9 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 
 void CE323AI::ReleaseAI() {
 	LOG_II(CScopedTimer::profile())
+	#ifndef DEBUG
 	ai->uploader->SendData();
+	#endif
 
 	delete ai->defensematrix;
 	delete ai->military;
