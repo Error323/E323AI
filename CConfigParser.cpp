@@ -12,6 +12,8 @@
 
 CConfigParser::CConfigParser(AIClasses *ai) {
 	this->ai = ai;
+	loaded = false;
+	templt = false;
 	stateVariables["metalIncome"]       = 0;
 	stateVariables["energyIncome"]      = 0;
 	stateVariables["minWorkers"]        = 0;
@@ -44,7 +46,7 @@ int CConfigParser::getMinWorkers()   { return states[state]["minWorkers"]; }
 int CConfigParser::getMaxWorkers()   { return states[state]["maxWorkers"]; }
 int CConfigParser::getMinScouts()    { return states[state]["minScouts"]; }
 
-int CConfigParser::getMaxTechLevel() { 
+int CConfigParser::getMaxTechLevel() {
 	return states[state]["maxTechLevel"];
 }
 
@@ -63,6 +65,7 @@ bool CConfigParser::parseConfig(std::string filename) {
 	unsigned linenr = 0;
 
 	if (file.good() && file.is_open()) {
+		templt = false;
 		std::vector<std::string> splitted;
 		while(!file.eof()) {
 			linenr++;
@@ -74,6 +77,11 @@ bool CConfigParser::parseConfig(std::string filename) {
 
 			if (line[0] == '#' || line.empty())
 				continue;
+
+			if (line == "TEMPLATE") {
+				templt = true;
+				continue;
+			}
 
 			/* New state block */
 			if (contains(line, '{')) {
@@ -98,6 +106,7 @@ bool CConfigParser::parseConfig(std::string filename) {
 		}
 		LOG_II("CConfigParser::parseConfig parsed "<<linenr<<" lines from " << dirfilename)
 		file.close();
+		loaded = true;
 	}
 	else {
 		LOG_II("Could not open " << dirfilename << " for parsing")
@@ -110,9 +119,19 @@ bool CConfigParser::parseConfig(std::string filename) {
 
 		ofs << ifs.rdbuf();
 		LOG_II("New configfile created from " << templatefile)
-		return false;
+		templt = true;
+		loaded = false;
 	}
-	return true;
+	return loaded;
+}
+
+bool CConfigParser::isUsable() const {
+
+#ifdef DEBUG
+	return loaded;
+#else
+	return loaded && !templt;
+#endif
 }
 
 bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType> &units) {
@@ -187,7 +206,7 @@ void CConfigParser::split(std::string &line, char c, std::vector<std::string> &s
 std::string CConfigParser::getAbsoluteFileName(std::string filename, bool readonly) {
 	char buf[256];
 	sprintf(
-		buf, "%s%s", 
+		buf, "%s%s",
 		CFG_FOLDER,
 		filename.c_str()
 	);
