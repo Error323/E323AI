@@ -1,9 +1,12 @@
 #include "CThreatMap.h"
 
+#include <math.h>
+
 #include "CAI.h"
 #include "CUnitTable.h"
 #include "CIntel.h"
 #include "CUnit.h"
+#include "MathUtil.h"
 
 CThreatMap::CThreatMap(AIClasses *ai) {
 	this->ai = ai;
@@ -73,7 +76,7 @@ void CThreatMap::update(int frame) {
 			const float  power = ut->cats&COMMANDER ? powerT/20.0f : powerT;
 			float3 pos(0.0f, 0.0f, 0.0f);
 
-			const int        R = (int) ceil(range);
+			const int R = (int) ceil(range);
 			for (int z = -R; z <= R; z++) {
 				for (int x = -R; x <= R; x++) {
 					pos.x = x;

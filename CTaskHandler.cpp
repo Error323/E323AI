@@ -22,29 +22,36 @@ int ATask::counter = 0;
 
 void ATask::remove() {
 	LOG_II("ATask::remove " << (*this))
+
 	group->unreg(*this);
 	group->busy = false;
 	group->unwait();
 	group->micro(false);
 	group->abilities(false);
 
+	// remove all assisting tasks...
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
 		(*i)->remove();
 	
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
+		// remove current task from CTaskHandler
 		(*j)->remove(*this);
 }
 
+// called on Group removing
 void ATask::remove(ARegistrar &group) {
 	LOG_II("ATask::remove " << (*this))
+
+	// remove all assisting tasks...
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
 		(*i)->remove();
 	
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
+		// remove current task from CTaskHandler
 		(*j)->remove(*this);
 }
 
@@ -175,11 +182,11 @@ std::map<buildType, std::string> CTaskHandler::buildStr;
 CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500, std::string("taskhandler")) {
 	this->ai = ai;
 
-	taskStr[ASSIST]       = std::string("ASSIST");
-	taskStr[BUILD]        = std::string("BUILD");
-	taskStr[ATTACK]       = std::string("ATTACK");
-	taskStr[MERGE]        = std::string("MERGE");
-	taskStr[FACTORY_BUILD]= std::string("FACTORY_BUILD");
+	taskStr[ASSIST]        = std::string("ASSIST");
+	taskStr[BUILD]         = std::string("BUILD");
+	taskStr[ATTACK]        = std::string("ATTACK");
+	taskStr[MERGE]         = std::string("MERGE");
+	taskStr[FACTORY_BUILD] = std::string("FACTORY_BUILD");
 
 	CTaskHandler::buildStr[BUILD_MPROVIDER] = std::string("MPROVIDER");
 	CTaskHandler::buildStr[BUILD_EPROVIDER] = std::string("EPROVIDER");
@@ -228,6 +235,10 @@ void CTaskHandler::update() {
 		ATask *t = obsoleteTasks.top();
 		obsoleteTasks.pop();
 		activeTasks.erase(t->key);
+		// slogic: begin
+		if(t->group)
+			groupToTask.erase(t->group->key);
+		// slogic: end
 		delete t;
 	}
 
@@ -239,11 +250,18 @@ void CTaskHandler::update() {
 }
 
 float3 CTaskHandler::getPos(CGroup &group) {
-	return groupToTask[group.key]->pos;
+	std::map<int, ATask*>::iterator it = groupToTask.find(group.key);
+	if(it == groupToTask.end())
+		return ERRORVECTOR;
+	return it->second->pos;
 }
 
 void CTaskHandler::removeTask(CGroup &group) {
-	groupToTask[group.key]->remove();
+	std::map<int, ATask*>::iterator it = groupToTask.find(group.key);
+	if(it == groupToTask.end())
+		LOG_EE("CTaskHandler::removeTask by group " << (group) << " failed")
+    else
+		it->second->remove();
 }
 
 /**************************************************************/
@@ -331,8 +349,7 @@ void CTaskHandler::addFactoryTask(CUnit &factory) {
 }
 
 bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
-	if (assisters.size() >= ai->cfgparser->getState()*2 || 
-		assisters.size() >= 6 ||
+	if (assisters.size() >= std::min(ai->cfgparser->getState() * 2, FACTORY_ASSISTERS) || 
 		!factory->def->canBeAssisted) {
 		return false;
 	}
@@ -394,7 +411,9 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 	activeAssistTasks[assistTask->key] = assistTask;
 	activeTasks[assistTask->key] = assistTask;
 	groupToTask[group.key] = assistTask;
+
 	LOG_II((*assistTask))
+	
 	if (!ai->pathfinder->addGroup(group))
 		assistTask->remove();
 }
@@ -497,13 +516,15 @@ void CTaskHandler::AttackTask::update() {
 /************************* MERGE TASK *************************/
 /**************************************************************/
 void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
+	int range = 0;
+	std::map<int,CGroup*>::iterator j;
+	float maxSlope = MAX_FLOAT;
+	
 	MergeTask *mergeTask = new MergeTask(ai);
 	mergeTask->groups = groups;
 	mergeTask->pos = float3(0.0f, 0.0f, 0.0f);
 	mergeTask->reg(*this);
-	int range = 0;
-	std::map<int,CGroup*>::iterator j;
-	float maxSlope = MAX_FLOAT;
+	
 	for (j = groups.begin(); j != groups.end(); j++) {
 		j->second->reg(*mergeTask);
 		j->second->busy = true;

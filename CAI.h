@@ -19,7 +19,9 @@ class CDefenseMatrix;
 class CDataUploader;
 
 /* Ensures single instantiation of classes and good reachability */
-struct AIClasses {
+class AIClasses {
+
+public:
 	IAICallback    *cb;
 	IAICheats      *cbc;
 	CConfigParser  *cfgparser;

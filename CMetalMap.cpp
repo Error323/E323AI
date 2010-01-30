@@ -5,6 +5,7 @@
 #include "CGroup.h"
 #include "CUnitTable.h"
 #include "CThreatMap.h"
+#include "MathUtil.h"
 
 CMetalMap::CMetalMap(AIClasses *ai): ARegistrar(300) {
 	this->ai = ai;
@@ -12,19 +13,24 @@ CMetalMap::CMetalMap(AIClasses *ai): ARegistrar(300) {
 
 	X = ai->cb->GetMapWidth() / 2;
 	Z = ai->cb->GetMapHeight() / 2;
-	N = 100;
+	N = 100; // spot count threshold to decide map is speedmetal
 
 	cbMap = ai->cb->GetMetalMap();
 	radius = (int) round( (ai->cb->GetExtractorRadius()) / SCALAR);
-	diameter = radius*2;
-	squareRadius=radius*radius;
+	diameter = radius * 2;
+	squareRadius = radius * radius;
 
 	map = new unsigned char[X*Z];
 	coverage = new unsigned int[diameter*diameter];
 	bestCoverage = new unsigned int[diameter*diameter];
 
-	for (int i = 0; i < X*Z; i++)
-		map[i] = cbMap[i];
+	//for (int i = 0; i < X*Z; i++)
+	//	map[i] = cbMap[i];
+	#if WIN32
+	memcpy_s(map, sizeof(unsigned char)*X*Z, cbMap, X*Z);
+	#else
+	memcpy(map, cbMap, sizeof(unsigned char)*X*Z);
+	#endif
 
 	findBestSpots();
 }
@@ -80,8 +86,10 @@ void CMetalMap::findBestSpots() {
 		
 		if (!metalSpots) break;
 
-		float3 pos = float3(bestX*SCALAR,ai->cb->GetElevation(bestX*SCALAR,bestZ*SCALAR), bestZ*SCALAR);
-		spots.push_back(MSpot(spots.size(), pos, highestSaturation));
+		float3 pos = float3(bestX*SCALAR, ai->cb->GetElevation(bestX*SCALAR,bestZ*SCALAR), bestZ*SCALAR);
+		// TODO: remove this when underwater MSpots will be supported
+		if(pos.y >= 0.0)
+			spots.push_back(MSpot(spots.size(), pos, highestSaturation));
 
 		if (counter >= N) {
 			LOG_SS("Speedmetal infects my skills... I won't play");
@@ -123,7 +131,10 @@ int CMetalMap::squareDist(int x, int z, int j, int i) {
 }
 
 bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
-	if (taken.size() == spots.size()) return false;
+	if (taken.size() == spots.size())
+		// all spots are taken
+		return false;
+
 	std::vector<MSpot> sorted;
 	float3 pos = group.pos();
 	float pathLength;
@@ -132,14 +143,19 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 	for (unsigned i = 0; i < spots.size(); i++) {
 		ms = &(spots[i]);
 		
+		// TODO: compare spot depth against group move type maxWater & minWater
+
 		std::map<int,float3>::iterator j;
 		bool skip = false;
 		for (j = taken.begin(); j != taken.end(); j++) {
 			float3 diff = (j->second - ms->f);
-			if (diff.Length2D() <= ai->cb->GetExtractorRadius()*1.5f)
+			if (diff.Length2D() <= ai->cb->GetExtractorRadius()*1.5f) {
 				skip = true;
+				break;
+			}
 		}
 		if (skip) continue;
+		// TODO: search among allied MM
 		pathLength = (pos - ms->f).Length2D() - ms->c*EPSILON;
 		ms->dist = pathLength;
 		sorted.push_back(*ms);
@@ -157,12 +173,14 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 		}
 	}
 		
-	if (lowestThreat > 1.0f) return false;
+	if (lowestThreat > 1.0f) 
+		return false;
 
 	CUnit *unit = group.units.begin()->second;
 	taken[unit->key] = bestMs->f;
 	unit->reg(*this);
 	spot = bestMs->f;
+	
 	return true;
 }
 

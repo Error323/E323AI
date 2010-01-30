@@ -119,7 +119,7 @@ void CUnitTable::generateCategorizationFile(const char *fileName) {
 		file << "# " << i->second << "\n";
 		str2cat[i->second] = i->first;
 	}
-	numUnits = ai->cb->GetNumUnitDefs();
+	
 	file << "\n\n# " << numUnits << " units in total\n\n";
 	for (j = units.begin(); j != units.end(); j++) {
 		utParent = &(j->second);
@@ -199,7 +199,7 @@ void CUnitTable::update() {
 			i->second += 500;
 		/* Makes sure new units are not instantly assigned tasks */
 		else if(!activeUnits[i->first]->isMicroing())
-			i->second+=MULTIPLEXER;
+			i->second += MULTIPLEXER;
 	}
 }
 
@@ -209,8 +209,9 @@ bool CUnitTable::canPerformTask(CUnit &unit) {
 }
 
 void CUnitTable::buildTechTree() {
-	const UnitDef *unitdefs[numUnits];
-	ai->cb->GetUnitDefList(unitdefs);
+	std::vector<const UnitDef*> unitdefs(numUnits);
+	//const UnitDef *unitdefs[numUnits];
+	ai->cb->GetUnitDefList(&unitdefs[0]);
 
 	std::map<int, std::string> buildOptions;
 	std::map<int, std::string>::iterator j;
@@ -241,6 +242,7 @@ void CUnitTable::buildTechTree() {
 			utParent->canBuild[utChild->id] = utChild;
 		}
 	}
+
 	for (int i = 0; i < numUnits; i++) {
 		const UnitDef *ud = unitdefs[i];
 		if (ud == NULL) continue;

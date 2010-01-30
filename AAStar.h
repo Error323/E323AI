@@ -73,7 +73,7 @@ class AAStar {
 		/* traces the path from the goal node through its parents */
 		void tracePath(ANode *x, std::list<ANode*> &path);
 
-		unsigned counter;
+		unsigned int counter;
 };
 
 #endif

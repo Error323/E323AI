@@ -16,6 +16,7 @@ void CUnit::remove(ARegistrar &reg) {
 	LOG_II("CUnit::remove " << (*this))
 	std::list<ARegistrar*>::iterator i;
 	for (i = records.begin(); i != records.end(); i++) {
+		// remove from CUnitTable, CGroup
 		(*i)->remove(reg);
 	}
 }

@@ -34,7 +34,7 @@ int CConfigParser::determineState(int metalIncome, int energyIncome) {
 		) state = i->first;
 	}
 	if (state != previous)
-		LOG_II("CConfigParser::determineState activated state(" << state << ")")
+		LOG_II("CConfigParser::determineState(mIncome=" << metalIncome << ", eIncome=" << energyIncome << ") activated state(" << state << ")")
 	return state;
 }
 
@@ -185,7 +185,7 @@ void CConfigParser::split(std::string &line, char c, std::vector<std::string> &s
 }
 
 std::string CConfigParser::getAbsoluteFileName(std::string filename, bool readonly) {
-	char buf[256];
+	char buf[2048];
 	sprintf(
 		buf, "%s%s", 
 		CFG_FOLDER,

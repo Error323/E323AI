@@ -10,6 +10,7 @@
 #include "CUnit.h"
 #include "CUnitTable.h"
 #include "CThreatMap.h"
+#include "MathUtil.h"
 
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder")) {
 	this->ai   = ai;
@@ -85,7 +86,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 		for (int z = -radius; z <= radius; z++) {
 			for (int x = -radius; x <= radius; x++) {
 				if (x == 0 && z == 0) continue;
-				float length = sqrt(x*x + z*z);
+				float length = sqrt(float(x*x + z*z));
 				if (length > radius-0.5f && length < radius+0.5f) {
 					surrounding.push_back(z);
 					surrounding.push_back(x);
@@ -134,12 +135,12 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 				}
 				else if (x > 0) {
 					if (z < 0)
-						a = 2.0f * M_PI + atan(z/x);
+						a = 2.0f * M_PI + atan(float(z/x));
 					else
-						a = atan(z/x);
+						a = atan(float(z/x));
 				}
 				else
-					a = M_PI + atan(z/x);
+					a = M_PI + atan(float(z/x));
 
 				a = int((2.5 * M_PI - a) / M_PI * 180) % 360;
 
@@ -237,7 +238,6 @@ void CPathfinder::updateFollowers() {
 				sl1      = l1; 
 				sl2      = l2; 
 			}
-
 			/* Now calculate the projection of upos onto the line spanned by
 			 * s2-s1 
 			 */
@@ -269,8 +269,11 @@ void CPathfinder::updateFollowers() {
 
 		/* If not under fine control, advance on the path */
 		if (!group->isMicroing() && !regrouping[group->key]) {
-			int i = std::min<int>(path->second.size()-1, segment+waypoint);
-			group->move(path->second[i]);
+			segment += waypoint;
+			if(segment >= path->second.size())
+				segment = path->second.size() - 1;
+			group->move(path->second[segment]);
+			//group->move(path->second[segment+waypoint]);
 		}
 		/* If regrouping, finish that first */
 		else if (!group->isMicroing() && regrouping[group->key]) {
@@ -292,10 +295,18 @@ void CPathfinder::updatePaths() {
 	if (groups.find(repathGroup) == groups.end())
 		return;
 
+	/* group has no real task */
+	if (!groups[repathGroup]->busy)
+		return;
+
 	float3 start = groups[repathGroup]->pos();
-	float3 goal  = ai->tasks->getPos(*groups[repathGroup]);
-	if (!addPath(repathGroup, start, goal))
-		LOG_WW("CPathfinder::updatePaths failed for " << (*groups[repathGroup]))
+    float3 goal  = ai->tasks->getPos(*groups[repathGroup]);
+
+    if (!addPath(repathGroup, start, goal)) {
+		LOG_EE("CPathfinder::updatePaths failed for " << (*groups[repathGroup]))
+		// synced with http://github.com/Error323/E323AI/commit/3154ad6eab48c962a55bbd9a01381e938fc6247d
+		//ai->tasks->removeTask(*groups[repathGroup]);
+	}
 }
 
 void CPathfinder::remove(ARegistrar &obj) {
@@ -358,6 +369,9 @@ bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 }
 
 int CPathfinder::getClosestNodeId(float3 &f) {
+	if(f == ERRORVECTOR)
+		return -1;
+   
 	int fz = int(round(f.z/REAL));
 	int fx = int(round(f.x/REAL));
 	if (maps[activeMap].find(ID(fx,fz)) != maps[activeMap].end()) {
@@ -381,21 +395,24 @@ int CPathfinder::getClosestNodeId(float3 &f) {
 	}
 
 	LOG_EE("CPathfinder::getClosestNode failed to lock node")
+
 	return -1;
 }
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius) {
+	int sid, gid;
 
-	int sid = getClosestNodeId(s);
-	start = maps[activeMap][sid];
-
-	int gid = getClosestNodeId(g);
-	goal = maps[activeMap][gid];
+	if((sid = getClosestNodeId(s)) >= 0)
+		start = maps[activeMap][sid];
+	
+	if((gid = getClosestNodeId(g)) >= 0)
+		goal = maps[activeMap][gid];
 
 	std::list<ANode*> nodepath;
+	
 	bool success = (sid != -1 && gid != -1 && (findPath(nodepath)));
 	if (success) {
-		/* Insert a pre-waypoint at the startning of the path */
+		/* Insert a pre-waypoint at the starting of the path */
 		int waypoint = std::min<int>(4, nodepath.size()-1);
 		std::list<ANode*>::iterator wp;
 		int x = 0;
@@ -437,7 +454,7 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 	Node *n2 = dynamic_cast<Node*>(an2);
 	int dx1 = n1->x - n2->x;
 	int dz1 = n1->z - n2->z;
-	return sqrt(dx1*dx1 + dz1*dz1)*1.000001f;
+	return sqrt(float(dx1*dx1 + dz1*dz1))*1.000001f;
 }
 
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {

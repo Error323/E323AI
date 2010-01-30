@@ -27,7 +27,7 @@ class CUnit: public ARegistrar {
 
 		const UnitDef *def;
 		UnitType *type;
-		int   builder;
+		int builder;
 		int techlvl;
 
 		/* Remove the unit from everywhere registered */

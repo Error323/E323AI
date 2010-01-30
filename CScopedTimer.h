@@ -6,7 +6,7 @@
 #include <iomanip>
 #include <map>
 
-#include <SDL/SDL_timer.h>
+#include <SDL_timer.h>
 
 #define MAX_STR_LENGTH 21
 

@@ -14,7 +14,7 @@ class AIClasses;
 class CGroup;
 class CUnit;
 
-enum task{BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD};
+enum task{BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD, REPAIR};
 
 class ATask: public ARegistrar {
 	public:
@@ -23,7 +23,8 @@ class ATask: public ARegistrar {
 			counter++;
 			isMoving = true;
 			pos = ZEROVECTOR;
-			this->ai = ai;
+			group = NULL;
+  	        this->ai = ai;
 		}
 		~ATask(){}
 
