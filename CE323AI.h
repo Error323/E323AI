@@ -9,9 +9,10 @@ class AIClasses;
 class CE323AI: public IGlobalAI {
 	public:
 		CE323AI():isRunning(false) {}
-		~CE323AI();
+		~CE323AI(){};
 
 		void InitAI(IGlobalAICallback* callback, int team);
+		void ReleaseAI();
 
 		void UnitCreated(int unit, int builder);
 		void UnitFinished(int unit);
