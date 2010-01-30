@@ -257,11 +257,7 @@ float3 CTaskHandler::getPos(CGroup &group) {
 }
 
 void CTaskHandler::removeTask(CGroup &group) {
-	std::map<int, ATask*>::iterator it = groupToTask.find(group.key);
-	if(it == groupToTask.end())
-		LOG_EE("CTaskHandler::removeTask by group " << (group) << " failed")
-    else
-		it->second->remove();
+	groupToTask[group.key]->remove();
 }
 
 /**************************************************************/
