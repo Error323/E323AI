@@ -40,7 +40,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 }
 
 
-CE323AI::~CE323AI() {
+void CE323AI::ReleaseAI() {
 	LOG_II(CScopedTimer::profile())
 
 	delete ai->defensematrix;
@@ -261,7 +261,7 @@ void CE323AI::Update() {
 			CScopedTimer t(std::string("tasks"));
 			ai->tasks->update();
 		}
-		
+
 		case 9: { /* update unit table */
 			CScopedTimer t(std::string("unittable"));
 			ai->unittable->update();
