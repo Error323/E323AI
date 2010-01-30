@@ -40,9 +40,10 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	if (!ai->cfgparser->parseConfig(configfile))
 		ai->cfgparser->parseConfig(configfile);
 
-	ai->uploader->AddString("version", AI_VERSION);
-	ai->uploader->AddString("modname", ai->cb->GetModName());
-	ai->uploader->AddString("mapname", ai->cb->GetMapName());
+	ai->uploader->AddString("aiversion", AI_VERSION_NR);
+	ai->uploader->AddString("ainame",    AI_NAME);
+	ai->uploader->AddString("modname",   ai->cb->GetModName());
+	ai->uploader->AddString("mapname",   ai->cb->GetMapName());
 }
 
 CE323AI::~CE323AI() {

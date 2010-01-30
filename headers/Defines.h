@@ -13,7 +13,8 @@
 
 /* AI meta data */
 #define AI_VERSION_NR  aiexport_getVersion()
-#define AI_VERSION     std::string("E323AI ") + AI_VERSION_NR + " - High Templar"
+#define AI_NAME        std::string("E323AI")
+#define AI_VERSION     AI_NAME + AI_VERSION_NR + " - High Templar"
 #define AI_CREDITS     "Error323 - folkerthuizinga@gmail.com"
 #define AI_NOTES       "This A.I. mainly focusses on the XTA and BA mods"
 
