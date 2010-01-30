@@ -24,13 +24,11 @@ CMetalMap::CMetalMap(AIClasses *ai): ARegistrar(300) {
 	coverage = new unsigned int[diameter*diameter];
 	bestCoverage = new unsigned int[diameter*diameter];
 
-	//for (int i = 0; i < X*Z; i++)
-	//	map[i] = cbMap[i];
-	#if WIN32
+#if _MSC_VER > 1310 // >= Visual Studio 2005
 	memcpy_s(map, sizeof(unsigned char)*X*Z, cbMap, X*Z);
-	#else
+#else
 	memcpy(map, cbMap, sizeof(unsigned char)*X*Z);
-	#endif
+#endif
 
 	findBestSpots();
 }
