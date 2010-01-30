@@ -197,8 +197,6 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 
 /* Update AI per logical frame = 1/30 sec on gamespeed 1.0 */
 void CE323AI::Update() {
-	static bool running = false;
-	
 	int frame = ai->cb->GetCurrentFrame();
 
 	if(frame == 1)
@@ -218,11 +216,11 @@ void CE323AI::Update() {
 	int aiframe = frame + ai->team;
 	
 	// Make sure we start playing since "eco-incomes" update
-	if(!running) {
-		running = aiframe % MULTIPLEXER == 0;
+	if(!isRunning) {
+		isRunning = aiframe % MULTIPLEXER == 0;
 	}
 
-	if(!running)
+	if(!isRunning)
 		return;
 
 	/* Rotate through the different update events to distribute computations */
