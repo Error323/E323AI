@@ -24,13 +24,25 @@ class CConfigParser {
 		int getMinGroupSize(int techLevel);
 		int getState();
 
+		/**
+		 * Tries to load the config file from filename.
+		 * @return true if file was loaded, false otherwise
+		 */
 		bool parseConfig(std::string filename);
+		/**
+		 * Indicates whether a config file was loaded
+		 * and whether it is valid to be used.
+		 * @return true if (loaded && (!template || DEBUG)), false otherwise
+		 */
+		bool isUsable() const;
 		bool parseCategories(std::string filename, std::map<int, UnitType> &units);
 		void debugConfig();
 		std::string getAbsoluteFileName(std::string filename, bool readonly = true);
 
 	private:
 		std::map<int, std::map<std::string, int> > states;
+		bool loaded;
+		bool templt; // cause template is a reserved word
 
 		AIClasses *ai;
 
@@ -40,7 +52,7 @@ class CConfigParser {
 		void split(std::string &line, char c, std::vector<std::string> &splitted);
 		bool contains(std::string &line, char c);
 		void removeWhiteSpace(std::string &line);
-		
+
 };
 
 #endif

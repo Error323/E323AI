@@ -23,6 +23,25 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->team          = team;
 	ai->logger        = new CLogger(ai, CLogger::LOG_SCREEN | CLogger::LOG_FILE);
 	ai->cfgparser     = new CConfigParser(ai);
+
+	std::string configfile(ai->cb->GetModName());
+	configfile = configfile.substr(0, configfile.size()-4) + "-config.cfg";
+	ai->cfgparser->parseConfig(configfile);
+	if (!ai->cfgparser->isUsable()) {
+		ai->cb->SendTextMsg("No usable config file available for this Mod/Game.", 0);
+		const std::string confFileLine = "A template can be found at: " + configfile;
+		ai->cb->SendTextMsg(confFileLine.c_str(), 0);
+		ai->cb->SendTextMsg("Shutting Down ...", 0);
+
+		// we have to cleanup here, as ReleaseAI() will not be called
+		// in case of an error in InitAI().
+		delete ai->cfgparser;
+		delete ai->logger;
+		delete ai;
+		// this will kill this AI instance gracefully
+		throw 33;
+	}
+
 	ai->metalmap      = new CMetalMap(ai);
 	ai->unittable     = new CUnitTable(ai);
 	ai->economy       = new CEconomy(ai);
@@ -35,10 +54,6 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->defensematrix = new CDefenseMatrix(ai);
 	ai->uploader      = new CDataUploader(UPLOAD_URL);
 
-	std::string configfile(ai->cb->GetModName());
-	configfile = configfile.substr(0, configfile.size()-4) + "-config.cfg";
-	if (!ai->cfgparser->parseConfig(configfile))
-		ai->cfgparser->parseConfig(configfile);
 
 	ai->uploader->AddString("aiversion", AI_VERSION_NR);
 	ai->uploader->AddString("ainame",    AI_NAME);
@@ -46,7 +61,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->uploader->AddString("mapname",   ai->cb->GetMapName());
 }
 
-CE323AI::~CE323AI() {
+void CE323AI::ReleaseAI() {
 	LOG_II(CScopedTimer::profile())
 	ai->uploader->SendData();
 
@@ -279,7 +294,7 @@ void CE323AI::Update() {
 			CScopedTimer t(std::string("tasks"));
 			ai->tasks->update();
 		}
-		
+
 		case 9: { /* update unit table */
 			CScopedTimer t(std::string("unittable"));
 			ai->unittable->update();
