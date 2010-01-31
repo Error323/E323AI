@@ -150,7 +150,7 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 
 		case MERGE: {
 			const CTaskHandler::MergeTask *task = dynamic_cast<const CTaskHandler::MergeTask*>(&atask);
-			ss << "MergeTask(" << task->key << ") " << task->groups.size() << " groups { ";
+			ss << "MergeTask(" << task->key << ") " << task->groups.size() << " range("<<task->range<<") pos("<<task->pos.x<<", "<<task->pos.z<<") groups { ";
 			std::map<int,CGroup*>::const_iterator i;
 			for (i = task->groups.begin(); i != task->groups.end(); i++) {
 				ss << (*(i->second)) << " ";
@@ -533,7 +533,7 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 			mergeTask->pos = j->second->pos();
 		}
 	}
-	mergeTask->range = range;
+	mergeTask->range = 200.0f;
 
 	LOG_II(*mergeTask)
 

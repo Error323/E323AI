@@ -3,6 +3,7 @@
 
 #include <map>
 #include <vector>
+#include <iostream>
 #include <boost/thread.hpp>
 
 #include "headers/HEngine.h"
@@ -11,7 +12,7 @@
 #include "ARegistrar.h"
 #include "AAStar.h"
 
-#define MOVE_BUFFER 1
+#define MOVE_BUFFER 2
 
 class CGroup;
 class AIClasses;
@@ -30,7 +31,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 					this->z = z;
 					this->type = CPathfinder::NORMAL;
 				}
-				std::vector<Node*> neighbours;
+				std::vector<int> neighbours;
 				CPathfinder::nodeType type;
 				int x, z;
 				bool blocked() const {return type == CPathfinder::BLOCKED;}
@@ -41,6 +42,9 @@ class CPathfinder: public AAStar, public ARegistrar {
 					float fz = z * HEIGHT2REAL * HEIGHT2SLOPE;
 					return float3(fx, fy, fz);
 				}
+
+				friend std::ostream& operator<< (std::ostream &out, const CPathfinder::Node &n);
+				friend std::istream& operator>> (std::istream &in, CPathfinder::Node &n);
 		};
 
 		/* Get estimated time of arrival */
@@ -66,7 +70,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 		int X,Z;
 		float REAL;
 
-		std::map<int, std::map<int, Node*> > maps;
 
 	private:
 		AIClasses *ai;
@@ -74,7 +77,13 @@ class CPathfinder: public AAStar, public ARegistrar {
 		char buf[1024];
 
 		/* Nodes to be resetted */
-		std::map<int, std::vector<Node*> > activeNodes;
+		std::map<int, std::vector<int> > activeNodes;
+
+		/* Graphs <movetype, node id, vector id> */
+		std::map<int, std::map<int, int> > maps;
+
+		/* Flat vector of nodes */
+		std::vector<Node*> nodes;
 
 		/* The threads */
 		std::vector<boost::thread*> threads;
@@ -106,6 +115,9 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* draw the path ? */
 		bool draw;
 
+		const float *sm;
+		const float *hm;
+
 		/* overload */
 		void successors(ANode *an, std::queue<ANode*> &succ);
 
@@ -122,12 +134,10 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 		/* Start pathfinding */
 		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius = EPSILON);
+
 		/* Draw the map */
 		void drawMap(int map);
 		void drawGraph(int map);
-
-		const float *sm;
-		const float *hm;
 };
 
 #endif

@@ -181,7 +181,7 @@ bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType
 		LOG_II("Could not open " << filename << " for parsing")
 		return false;
 	}
-	LOG_II("Parsed " << linenr << " lines from " << filename)
+	LOG_II("CConfigParser::parseCategories parsed "<<linenr<<" lines from " << filename)
 	return true;
 }
 
