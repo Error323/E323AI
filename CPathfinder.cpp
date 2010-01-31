@@ -237,6 +237,7 @@ void CPathfinder::updateFollowers() {
 				sl1      = l1; 
 				sl2      = l2; 
 			}
+			segment--;
 
 			/* Now calculate the projection of upos onto the line spanned by
 			 * s2-s1 
@@ -268,10 +269,9 @@ void CPathfinder::updateFollowers() {
 		} else regrouping[group->key] = false;
 
 		/* If not under fine control, advance on the path */
-		if (!group->isMicroing() && !regrouping[group->key]) {
-			int i = std::min<int>(path->second.size()-1, segment+waypoint);
-			group->move(path->second[i]);
-		}
+		if (!group->isMicroing() && !regrouping[group->key])
+			group->move(path->second[segment+waypoint]);
+
 		/* If regrouping, finish that first */
 		else if (!group->isMicroing() && regrouping[group->key]) {
 			float3 gpos = group->pos();

@@ -11,7 +11,7 @@
 #include "ARegistrar.h"
 #include "AAStar.h"
 
-#define MOVE_BUFFER 1
+#define MOVE_BUFFER 2
 
 class ATask;
 class CGroup;
