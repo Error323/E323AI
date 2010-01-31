@@ -10,6 +10,9 @@
 #include "CUnit.h"
 #include "CUnitTable.h"
 #include "CThreatMap.h"
+#include "Util.hpp"
+
+#define NODE(id) (nodes[(id)])
 
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder")) {
 	this->ai   = ai;
@@ -21,11 +24,23 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	hm = ai->cb->GetHeightMap();
 	sm = ai->cb->GetSlopeMap();
 
+	std::string filename(ai->cb->GetMapName());
+	filename = filename.substr(0, filename.size()-4) + "-graph.bin";
+	filename = util::GetAbsFileName(ai->cb, filename);
+	std::fstream file(filename.c_str(), std::ios::binary | std::fstream::in | std::fstream::out);
+
+	if (file.good() && file.is_open()) {
+		LOG_II("CPathfinder reading graph from " << filename)
+	}
+	else {
+		LOG_II("CPathfinder creating graph at " << filename)
+	}
+
 	/* Initialize nodes per map type */
 	std::map<int, MoveData*>::iterator i;
 	for (i = ai->unittable->moveTypes.begin(); i != ai->unittable->moveTypes.end(); i++) {
-		std::vector<Node*> reset;
-		std::map<int, Node*> map;
+		std::vector<int> reset;
+		std::map<int, int> map;
 		maps[i->first]        = map;
 		activeNodes[i->first] = reset;
 		MoveData *md          = i->second;
@@ -40,7 +55,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 				/* Block edges */
 				if (z == 0 || z == Z-1 || x == 0 || x == X-1) {
 					node->setType(BLOCKED);
-					maps[i->first][smidx] = node;
+					nodes.push_back(node);
+					maps[i->first][smidx] = nodes.size()-1;
 					continue;
 				}
 
@@ -67,10 +83,11 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 
 				/* Store the usefull nodes */
 				if ((x % I_MAP_RES == 0 && z % I_MAP_RES == 0) || node->blocked()) {
-					maps[i->first][smidx] = node;
+					nodes.push_back(node);
+					maps[i->first][smidx] = nodes.size()-1;
 
 					if (!node->blocked())
-						activeNodes[i->first].push_back(node);
+						activeNodes[i->first].push_back(nodes.size()-1);
 				}
 				/* Delete the others */
 				else { delete node; }
@@ -103,11 +120,11 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	r[8] = -22.5f;
 
 	/* Define closest neighbours */
-	std::map<int, std::vector<Node*> >::iterator j;
+	std::map<int, std::vector<int> >::iterator j;
 	for (j = activeNodes.begin(); j != activeNodes.end(); j++) {
 		LOG_II("CPathfinder::CPathfinder MoveType(" << j->first << ") has " << activeNodes[j->first].size() << " active nodes")
 		for (size_t k = 0; k < activeNodes[j->first].size(); k++) {
-			Node *parent = activeNodes[j->first][k];
+			Node *parent = NODE(activeNodes[j->first][k]);
 
 			bool s[] = {false, false, false, false, false, false, false, false};
 			for (size_t p = 0; p < surrounding.size(); p+=2) {
@@ -154,9 +171,9 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 
 				if (!s[index]) {
 					s[index] = true;
-					Node *neighbour = maps[j->first][ID(xx,zz)];
+					Node *neighbour = NODE(maps[j->first][ID(xx,zz)]);
 					if (!neighbour->blocked())
-						parent->neighbours.push_back(neighbour);
+						parent->neighbours.push_back(maps[j->first][ID(xx,zz)]);
 				}
 				if (s[0] && s[1] && s[2] && s[3] && s[4] && s[5] && s[6] && s[7]) {
 					break;
@@ -186,7 +203,7 @@ void CPathfinder::resetMap(int thread) {
 	int size = activeNodes[activeMap].size() / nrThreads;
 	int offset = size*thread;
 	for (unsigned i = 0; i < size; i++) {
-		Node *n = activeNodes[activeMap][i+offset];
+		Node *n = NODE(activeNodes[activeMap][i+offset]);
 
 		int j = (n->z/I_MAP_RES)*(X/I_MAP_RES)+(n->x/I_MAP_RES);
 		n->w = ai->threatmap->map[j] + sm[n->id]*5.0f;
@@ -361,7 +378,7 @@ int CPathfinder::getClosestNodeId(float3 &f) {
 	int fz = int(round(f.z/REAL));
 	int fx = int(round(f.x/REAL));
 	if (maps[activeMap].find(ID(fx,fz)) != maps[activeMap].end()) {
-		Node *n = maps[activeMap][ID(fx,fz)];
+		Node *n = NODE(maps[activeMap][ID(fx,fz)]);
 		if (n != NULL && !n->blocked()) {
 			float3 f = n->toFloat3();
 			return ID(fx, fz);
@@ -372,7 +389,7 @@ int CPathfinder::getClosestNodeId(float3 &f) {
 		int z = fz + surrounding[i];
 		int x = fx + surrounding[i+1];
 		if (maps[activeMap].find(ID(x,z)) != maps[activeMap].end()) {
-			Node *n = maps[activeMap][ID(x,z)];
+			Node *n = NODE(maps[activeMap][ID(x,z)]);
 			if (n != NULL && !n->blocked()) {
 				float3 f = n->toFloat3();
 				return ID(x, z);
@@ -387,10 +404,10 @@ int CPathfinder::getClosestNodeId(float3 &f) {
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius) {
 
 	int sid = getClosestNodeId(s);
-	start = maps[activeMap][sid];
+	start = NODE(maps[activeMap][sid]);
 
 	int gid = getClosestNodeId(g);
-	goal = maps[activeMap][gid];
+	goal = NODE(maps[activeMap][gid]);
 
 	std::list<ANode*> nodepath;
 	bool success = (sid != -1 && gid != -1 && (findPath(nodepath)));
@@ -443,17 +460,17 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	Node *n = dynamic_cast<Node*>(an);
 	for (size_t u = 0; u < n->neighbours.size(); u++)
-		succ.push(n->neighbours[u]);
+		succ.push(NODE(n->neighbours[u]));
 }
 
 void CPathfinder::drawGraph(int map) {
 	for (size_t i = 0; i < activeNodes[map].size(); i++) {
-		Node *p = activeNodes[map][i]; 
+		Node *p = NODE(activeNodes[map][i]); 
 		if (p->x % I_MAP_RES == 0 && p->z % I_MAP_RES == 0) {
 			float3 fp = p->toFloat3();
 			fp.y = ai->cb->GetElevation(fp.x, fp.z) + 20.0f;
 			for (size_t j = 0; j < p->neighbours.size(); j++) {
-				Node *n = p->neighbours[j];
+				Node *n = NODE(p->neighbours[j]);
 				float3 fn = n->toFloat3();
 				fn.y = ai->cb->GetElevation(fn.x, fn.z) + 20.0f;
 				ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, 10000, 10);
@@ -464,9 +481,9 @@ void CPathfinder::drawGraph(int map) {
 }
 
 void CPathfinder::drawMap(int map) {
-	std::map<int, Node*>::iterator i;
+	std::map<int, int>::iterator i;
 	for (i = maps[map].begin(); i != maps[map].end(); i++) {
-		Node *node = i->second; 
+		Node *node = NODE(i->second); 
 		float3 p0 = node->toFloat3();
 		p0.y = ai->cb->GetElevation(p0.x, p0.z);
 		float3 p1(p0);
@@ -481,4 +498,45 @@ void CPathfinder::drawMap(int map) {
 			ai->cb->SetFigureColor(20, 1.0f, 1.0f, 1.0f, 0.1f);
 		}
 	}
+}
+
+std::ostream& operator<< (std::ostream &out, const CPathfinder::Node &n) {
+	out << n.id;
+	out << n.w;
+	out << n.g;
+	out << n.h;
+	out << n.open;
+	out << n.closed;
+
+	out << static_cast<unsigned int>(n.type);
+	out << n.x;
+	out << n.z;
+	out << n.neighbours.size();
+	for (unsigned int i = 0; i < n.neighbours.size(); i++)
+		out << n.neighbours[i];
+
+	out << std::endl;
+	return out;
+}
+
+std::istream& operator>> (std::istream &in, CPathfinder::Node &n) {
+	unsigned int N, neighbour, type;
+	in >> n.id;
+	in >> n.w;
+	in >> n.g;
+	in >> n.h;
+	in >> n.open;
+	in >> n.closed;
+
+	in >> type;
+	n.type = static_cast<CPathfinder::nodeType>(type);
+	in >> n.x;
+	in >> n.z;
+	in >> N;
+	for (unsigned int i = 0; i < N; i++) {
+		in >> neighbour;
+		n.neighbours.push_back(neighbour);
+	}
+
+	return in;
 }
