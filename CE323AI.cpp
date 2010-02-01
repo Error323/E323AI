@@ -14,7 +14,6 @@
 #include "CDefenseMatrix.h"
 #include "CUnit.h"
 #include "CScopedTimer.h"
-#include "DataUploader.h"
 
 void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai                = new AIClasses();
@@ -52,20 +51,18 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->intel         = new CIntel(ai);
 	ai->military      = new CMilitary(ai);
 	ai->defensematrix = new CDefenseMatrix(ai);
-	ai->uploader      = new CDataUploader(UPLOAD_URL);
 
 
+	/*
 	ai->uploader->AddString("aiversion", AI_VERSION_NR);
 	ai->uploader->AddString("ainame",    AI_NAME);
 	ai->uploader->AddString("modname",   ai->cb->GetModName());
 	ai->uploader->AddString("mapname",   ai->cb->GetMapName());
+	*/
 }
 
 void CE323AI::ReleaseAI() {
 	LOG_II(CScopedTimer::profile())
-	#ifndef DEBUG
-	ai->uploader->SendData();
-	#endif
 
 	delete ai->defensematrix;
 	delete ai->military;
@@ -79,7 +76,6 @@ void CE323AI::ReleaseAI() {
 	delete ai->metalmap;
 	delete ai->cfgparser;
 	delete ai->logger;
-	delete ai->uploader;
 	delete ai;
 }
 

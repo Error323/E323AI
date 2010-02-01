@@ -16,7 +16,6 @@ class CPathfinder;
 class CIntel;
 class CMilitary;
 class CDefenseMatrix;
-class CDataUploader;
 
 /* Ensures single instantiation of classes and good reachability */
 class AIClasses {
@@ -36,7 +35,6 @@ public:
 	CMilitary      *military;
 	CDefenseMatrix *defensematrix;
 	CLogger        *logger;
-	CDataUploader  *uploader;
 	int            team;
 };
 

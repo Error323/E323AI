@@ -1,11 +1,9 @@
 ### Generic native Skirmish AI config
 #
-FIND_PACKAGE(CURL REQUIRED)
-
 set(mySourceDirRel         "") # Common values are "" or "src"
 set(additionalSources      ${CUtils_SRC})
 set(additionalCompileFlags "")
 set(additionalLibraries    ${LegacyCpp_AIWRAPPER_TARGET} ${SDL_LIBRARY}
-	${Boost_THREAD_LIBRARY} ${CURL_LIBRARIES})
+	${Boost_THREAD_LIBRARY})
 
 ConfigureNativeSkirmishAI(mySourceDirRel additionalSources additionalCompileFlags additionalLibraries)
