@@ -235,12 +235,6 @@ void CTaskHandler::update() {
 		ATask *t = obsoleteTasks.top();
 		obsoleteTasks.pop();
 		activeTasks.erase(t->key);
-		// slogic: begin
-		/*
-		if(t->group)
-			groupToTask.erase(t->group->key);
-		*/
-		// slogic: end
 		delete t;
 	}
 
@@ -252,12 +246,6 @@ void CTaskHandler::update() {
 }
 
 float3 CTaskHandler::getPos(CGroup &group) {
-	/*
-	std::map<int, ATask*>::iterator it = groupToTask.find(group.key);
-	if(it == groupToTask.end())
-		return ERRORVECTOR;
-	return it->second->pos;
-	*/
 	return groupToTask[group.key]->pos;
 }
 

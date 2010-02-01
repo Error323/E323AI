@@ -108,9 +108,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 		char buf[1024];
 
-		/* Graphs <movetype, node id, vector id> */
-		std::map<int, Node*> graph;
-
 		/* Flat vector of nodes */
 		std::vector<Node*> nodes;
 

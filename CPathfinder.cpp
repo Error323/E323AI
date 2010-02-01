@@ -56,7 +56,6 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 		for (unsigned int i = 0; i < N; i++) {
 			Node *n = Node::unserialize(file);
 			nodes.push_back(n);
-			graph[ID(n->x, n->z)] = n;
 		}
 		LOG_II("CPathfinder parsed " << nodes.size() << " nodes")
 		file.close();
@@ -74,7 +73,6 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 		file.flush();
 		file.close();
 	}
-	//drawGraph(1);
 
 	draw = false;
 
@@ -82,13 +80,6 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	LOG_II("CPathfinder::CPathfinder Heightmap dimensions " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
 	LOG_II("CPathfinder::CPathfinder Pathmap dimensions   " << X/I_MAP_RES << "x" << Z/I_MAP_RES)
 
-/*
-	#if (BOOST_VERSION >= 103500)
-	nrThreads = boost::thread::hardware_concurrency();
-	#else
-	nrThreads = 2;
-	#endif
-*/
 	nrThreads = 1;
 	threads.resize(nrThreads-1);
 }
@@ -162,7 +153,6 @@ void CPathfinder::calcNodes() {
 
 				/* Store the usefull nodes */
 				if ((x % I_MAP_RES == 0 && z % I_MAP_RES == 0) || node->blocked(i->first)) {
-					graph[smidx] = node;
 					std::vector<int> V;
 					node->neighbours[i->first] = V;
 				}
@@ -368,8 +358,6 @@ void CPathfinder::updatePaths() {
 
     if (!addPath(repathGroup, start, goal)) {
 		LOG_EE("CPathfinder::updatePaths failed for " << (*groups[repathGroup]))
-		// synced with http://github.com/Error323/E323AI/commit/3154ad6eab48c962a55bbd9a01381e938fc6247d
-		//ai->tasks->removeTask(*groups[repathGroup]);
 	}
 }
 
@@ -399,28 +387,8 @@ bool CPathfinder::addGroup(CGroup &group) {
 bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 	activeMap = groups[group]->moveType;
 	std::vector<float3> path;
-	/* Initialize threads */
-	/*
-	for (size_t i = 1; i < nrThreads; i++)
-		threads[i-1] = new boost::thread(boost::bind(&CPathfinder::resetMap, this, i));
-	*/
-
 	/* Reset the nodes of this map using threads */
 	resetMap(0);
-	/*
-	for (size_t i = 1; i < nrThreads; i++) {
-		threads[i-1]->join();
-		delete threads[i-1];
-	}
-	*/
-
-	/* Reset leftovers */
-	/*
-	int rest   = activeNodes[activeMap].size() % nrThreads;
-	int offset = activeNodes[activeMap].size() - rest;
-	for (unsigned i = 0; i < rest; i++)
-		activeNodes[activeMap][i+offset]->reset();
-	*/
 
 	/* If we found a path, add it */
 	bool success = getPath(start, goal, path, group);
@@ -479,9 +447,6 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 	
 	if((gid = getClosestNodeId(g)) >= 0)
 		goal = NODE(gid);
-
-	//drawNode(graph[sid]);
-	//drawNode(graph[gid]);
 
 	std::list<ANode*> nodepath;
 	
