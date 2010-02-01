@@ -1,5 +1,7 @@
 #include "CMilitary.h"
 
+#include <limits>
+
 #include "headers/HEngine.h"
 
 #include "CRNG.h"
