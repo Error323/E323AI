@@ -7,6 +7,7 @@
 #include "CAI.h"
 #include "CUnit.h"
 #include "CConfigParser.h"
+#include "Util.hpp"
 
 std::map<std::string, unitCategory> CUnitTable::str2cat;
 std::map<unitCategory, std::string> CUnitTable::cat2str;
@@ -73,7 +74,7 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 
 	/* Parse or generate categories */
 	if (!ai->cfgparser->parseCategories(modname, units)) {
-		modname = ai->cfgparser->getAbsoluteFileName(modname, false);
+		modname = util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER)+modname, false);
 		generateCategorizationFile(modname.c_str());
 	}
 

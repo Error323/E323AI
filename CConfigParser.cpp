@@ -9,6 +9,7 @@
 #include "CAI.h"
 #include "CUnit.h"
 #include "CUnitTable.h"
+#include "Util.hpp"
 
 CConfigParser::CConfigParser(AIClasses *ai) {
 	this->ai = ai;
@@ -60,7 +61,7 @@ int CConfigParser::getMinGroupSize(int techLevel) {
 }
 
 bool CConfigParser::parseConfig(std::string filename) {
-	std::string dirfilename = getAbsoluteFileName(filename);
+	std::string dirfilename = util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER)+filename, true);
 	std::ifstream file(dirfilename.c_str());
 	unsigned linenr = 0;
 
@@ -111,10 +112,10 @@ bool CConfigParser::parseConfig(std::string filename) {
 	else {
 		LOG_II("Could not open " << dirfilename << " for parsing")
 
-		std::string templatefile = getAbsoluteFileName(std::string(CONFIG_TEMPLATE));
+		std::string templatefile = util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER)+std::string(CONFIG_TEMPLATE), true);
 		std::ifstream ifs(templatefile.c_str(), std::ios::binary);
 
-		std::string newfile = getAbsoluteFileName(filename, false);
+		std::string newfile = util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER)+filename, false);
 		std::ofstream ofs(newfile.c_str(), std::ios::binary);
 
 		ofs << ifs.rdbuf();
@@ -135,7 +136,7 @@ bool CConfigParser::isUsable() const {
 }
 
 bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType> &units) {
-	filename = getAbsoluteFileName(filename);
+	filename = util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER)+filename, true);
 	std::ifstream file(filename.c_str());
 	unsigned linenr = 0;
 
@@ -201,21 +202,6 @@ void CConfigParser::split(std::string &line, char c, std::vector<std::string> &s
 	/* Manually push the last */
 	substr = line.substr(begin, line.size()-1);
 	splitted.push_back(substr);
-}
-
-std::string CConfigParser::getAbsoluteFileName(std::string filename, bool readonly) {
-	char buf[2048];
-	sprintf(
-		buf, "%s%s",
-		CFG_FOLDER,
-		filename.c_str()
-	);
-	if (readonly)
-		ai->cb->GetValue(AIVAL_LOCATE_FILE_R, buf);
-	else
-		ai->cb->GetValue(AIVAL_LOCATE_FILE_W, buf);
-	filename = std::string(buf);
-	return filename;
 }
 
 bool CConfigParser::contains(std::string &line, char c) {

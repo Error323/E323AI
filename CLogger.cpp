@@ -7,6 +7,7 @@
 #include <ctime>
 
 #include "CAI.h"
+#include "Util.hpp"
 
 CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 	logLevels[ERROR]   = "(EE)";
@@ -18,8 +19,27 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 	logDesc[VERBOSE] = logLevels[VERBOSE] + " informational";
 
 	if (lt & CLogger::LOG_FILE) {
-		getFileName(fileName);
-		ofs.open(fileName, std::ios::app);
+		std::string mapname = std::string(ai->cb->GetMapName());
+		mapname.resize(mapname.size() - 4);
+
+		time_t now1;
+		time(&now1);
+		struct tm* now2 = localtime(&now1);
+
+		char relFileName[2048];
+		std::sprintf(
+			relFileName, "%s%s-%2.2d%2.2d%2.2d%2.2d%2.2d-team-%d.log", 
+			LOG_FOLDER,
+			mapname.c_str(), 
+			now2->tm_year + 1900, 
+			now2->tm_mon + 1, 
+			now2->tm_mday, 
+			now2->tm_hour, 
+			now2->tm_min, 
+			ai->team
+		);
+		fileName = util::GetAbsFileName(ai->cb, std::string(relFileName), false);
+		ofs.open(fileName.c_str(), std::ios::app);
 		if (ofs.good()) {
 			std::cout << "Logging to file: " << fileName << "\n";
 			ofs << "Version: " << AI_VERSION << "\n";
@@ -34,6 +54,7 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 			ofs.close();
 		}
 		else {
+			std::cout << "Logging to file: " << fileName << " failed!\n";
 			logType -= CLogger::LOG_FILE;
 		}
 	}
@@ -63,7 +84,7 @@ void CLogger::log(logLevel level, std::string &msg) {
 	output += logLevels[level] + ": " + msg + "\n";
 
 	if (logType & CLogger::LOG_FILE) {
-		ofs.open(fileName, std::ios::app);
+		ofs.open(fileName.c_str(), std::ios::app);
 		if (ofs.good()) {
 			ofs << output;
 			ofs.flush();
@@ -80,28 +101,4 @@ void CLogger::log(logLevel level, std::string &msg) {
 	if ((logType & CLogger::LOG_SPRING) && level == ERROR) {
 		ai->cb->SendTextMsg(msg.c_str(), 0);
 	}
-}
-
-void CLogger::getFileName(char *fileName) {
-	std::string mapname = std::string(ai->cb->GetMapName());
-	mapname.resize(mapname.size() - 4);
-
-	time_t now1;
-	time(&now1);
-	struct tm* now2 = localtime(&now1);
-
-	char buf[2048];
-	sprintf(buf, "%s", LOG_FOLDER);
-	ai->cb->GetValue(AIVAL_LOCATE_FILE_W, buf);
-	std::sprintf(
-		fileName, "%s%2.2d%2.2d%2.2d%2.2d%2.2d-%s-team-%d.log", 
-		buf, 
-		now2->tm_year + 1900, 
-		now2->tm_mon + 1, 
-		now2->tm_mday, 
-		now2->tm_hour, 
-		now2->tm_min, 
-		mapname.c_str(), 
-		ai->team
-	);
 }

@@ -37,7 +37,6 @@ class CConfigParser {
 		bool isUsable() const;
 		bool parseCategories(std::string filename, std::map<int, UnitType> &units);
 		void debugConfig();
-		std::string getAbsoluteFileName(std::string filename, bool readonly = true);
 
 	private:
 		std::map<int, std::map<std::string, int> > states;

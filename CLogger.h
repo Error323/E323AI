@@ -31,7 +31,7 @@ class CLogger {
 	private:
 		enum logLevel{ERROR, WARNING, VERBOSE};
 
-		char fileName[2048];
+		std::string fileName;
 
 		AIClasses *ai;
 
@@ -47,9 +47,6 @@ class CLogger {
 
 		/* Perform logging @ defined logTypes */
 		void log(logLevel level, std::string &msg);
-
-		/* Get the filename for logging the fstream to */
-		void getFileName(char *fileName);
 };
 
 #define LOG_EE(x)  {std::stringstream ss; ss << x; ai->logger->e(ss.str());}
