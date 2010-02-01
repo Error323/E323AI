@@ -143,9 +143,10 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 		
 		// TODO: compare spot depth against group move type maxWater & minWater
 
-		std::map<int,float3>::iterator j;
 		bool skip = false;
-		for (j = taken.begin(); j != taken.end(); j++) {
+
+		// skip already taken (in reality or by task planner) spots...
+		for (std::map<int,float3>::iterator j = taken.begin(); j != taken.end(); j++) {
 			float3 diff = (j->second - ms->f);
 			if (diff.Length2D() <= ai->cb->GetExtractorRadius()*1.5f) {
 				skip = true;
@@ -153,7 +154,20 @@ bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
 			}
 		}
 		if (skip) continue;
-		// TODO: search among allied MM
+
+		// skip spots taken by allied teams...
+		int numAllies = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], ms->f, ai->cb->GetExtractorRadius()*1.5f);
+		for(unsigned int j = 0; j < numAllies; j++)
+		{
+			const UnitDef *ud = ai->cb->GetUnitDef(ai->unitIDs[j]);
+			if(ud->extractsMetal > 0.0f)
+			{
+				skip = true;
+				break;
+			}
+		}
+		if (skip) continue;		
+
 		pathLength = (pos - ms->f).Length2D() - ms->c*EPSILON;
 		ms->dist = pathLength;
 		sorted.push_back(*ms);
