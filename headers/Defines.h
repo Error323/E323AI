@@ -102,8 +102,9 @@ enum unitCategory {
 
 	KBOT         = (1<<26),
 	VEHICLE      = (1<<27),
+	HOVER        = (1<<28),
 
-	DEFENSE      = (1<<28)
+	DEFENSE      = (1<<29)
 };
 
 /* Build priorities */

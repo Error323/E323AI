@@ -6,7 +6,9 @@
 
 CIntel::CIntel(AIClasses *ai) {
 	this->ai = ai;
-	units = new int[MAX_UNITS];
+	
+	units = &ai->unitIDs[0]; // save about 4x32KB of memory
+
 	selector.push_back(ASSAULT);
 	selector.push_back(SCOUTER);
 	selector.push_back(SNIPER);

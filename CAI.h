@@ -21,6 +21,8 @@ class CDefenseMatrix;
 class AIClasses {
 
 public:
+	AIClasses() { unitIDs.resize(MAX_UNITS); }
+
 	IAICallback    *cb;
 	IAICheats      *cbc;
 	CConfigParser  *cfgparser;
@@ -36,6 +38,7 @@ public:
 	CDefenseMatrix *defensematrix;
 	CLogger        *logger;
 	int            team;
+	std::vector<int> unitIDs; // temporary container for GetEnemyUnits(), GetFriendlyUnits() etc. results
 };
 
 #endif

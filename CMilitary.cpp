@@ -96,20 +96,25 @@ CGroup* CMilitary::requestGroup(groupType type) {
 }
 
 int CMilitary::selectTarget(float3 &ourPos, float radius, bool scout, std::vector<int> &targets) {
-	std::multimap<float, int> candidates;
+	int target = -1;
+	float estimate = std::numeric_limits<float>::max();
 	float factor = scout ? 10000 : 1;
 
 	/* First sort the targets on distance */
 	for (unsigned i = 0; i < targets.size(); i++) {
-		int target = targets[i];
+		int tempTarget = targets[i];
 
-		float3 epos = ai->cbc->GetUnitPos(target);
-		float dist = (epos-ourPos).Length2D();
-		dist += (factor*ai->threatmap->getThreat(epos, radius));
-		candidates.insert(std::pair<float,int>(dist, target));
+		float3 epos = ai->cbc->GetUnitPos(tempTarget);
+		float dist = (epos - ourPos).Length2D();
+		dist += (factor * ai->threatmap->getThreat(epos, radius));
+		
+		if(dist < estimate) {
+			estimate = dist;
+			target = tempTarget;
+		}
 	}
 
-	return (candidates.empty()) ? -1 : candidates.begin()->second;
+	return target;
 }
 
 void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &targets2) {
@@ -261,7 +266,9 @@ void CMilitary::update(int frame) {
 
 	/* Always have enough scouts */
 	if (activeScoutGroups.size() < ai->cfgparser->getMinScouts())
-		ai->wishlist->push(SCOUTER, HIGH);
+		// TODO: LAND cat should vary between LAND|SEA|AIR actually depending
+		// on map type
+		ai->wishlist->push(LAND | SCOUTER, HIGH);
 
 	/* Always build some unit */
 	ai->wishlist->push(requestUnit(), NORMAL);
@@ -274,8 +281,10 @@ unsigned CMilitary::requestUnit() {
 	for (i = ai->intel->roulette.begin(); i != ai->intel->roulette.end(); i++) {
 		sum += i->first;
 		if (r <= sum) {
-			return MOBILE | i->second;
+			// TODO: LAND cat should vary between LAND|SEA|AIR actually 
+			// depending on map type
+			return LAND | MOBILE | i->second;
 		}
 	}
-	return MOBILE | ASSAULT; // unreachable code :)
+	return LAND | MOBILE | ASSAULT; // unreachable code :)
 }

@@ -381,21 +381,31 @@ void CEconomy::update(int frame) {
 
 unsigned CEconomy::getAllowedFactory() {
 	int maxTech = ai->cfgparser->getMaxTechLevel();
+	int primary = type;
 	int secondary = type == KBOT ? VEHICLE : KBOT;
+	int tertiary = HOVER;
+
+	// TODO: make universal detection of what factory we can build per tech level
 	for (int i = 0; i < maxTech; i++) {
 		// assuming TECH1 = 1, TECH2 = 2, TECH3 = 4
 		unsigned tech = 1 << i;
-
+		
 		/* There is no tech3 vehicle */
-		if (tech == TECH3 && !ai->unittable->gotFactory(KBOT|TECH3))
-			return KBOT|TECH3;
+		
+		if (tech == TECH3 && !ai->unittable->gotFactory(KBOT|tech))
+			return KBOT|tech;
 
-		if (!ai->unittable->gotFactory(type|tech))
+		if (!ai->unittable->gotFactory(primary|tech))
 			return type|tech;
 
 		if (!ai->unittable->gotFactory(secondary|tech))
 			return secondary|tech;
+
+		// TODO: make next decision on map terrain analysis
+		if (tech == TECH1 && !ai->unittable->gotFactory(tertiary|tech))
+			return tertiary|tech;
 	}
+
 	return 0;
 }
 

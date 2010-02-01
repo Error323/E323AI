@@ -14,7 +14,8 @@ CThreatMap::CThreatMap(AIClasses *ai) {
 	this->Z  = ai->cb->GetMapHeight() / (HEIGHT2SLOPE*I_MAP_RES);
 	REAL     = HEIGHT2SLOPE*HEIGHT2REAL*I_MAP_RES;
 	map      = new float[X*Z];
-	units    = new int[MAX_UNITS_AI];
+	
+	units = &ai->unitIDs[0]; // save about 4x32KB of memory
 
 	for (int i = 0; i < X*Z; i++)
 		map[i] = 1.0f;
@@ -22,7 +23,6 @@ CThreatMap::CThreatMap(AIClasses *ai) {
 
 CThreatMap::~CThreatMap() {
 	delete[] map;
-	delete[] units;
 }
 
 float CThreatMap::getThreat(float3 &center, float radius) {

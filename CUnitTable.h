@@ -31,7 +31,7 @@ public:
 class CUnitTable: public ARegistrar {
 	public:
 		CUnitTable(AIClasses *ai);
-		~CUnitTable() {};
+		~CUnitTable();
 
 
 		/* Returns a fresh CUnit instance */

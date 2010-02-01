@@ -14,44 +14,45 @@ std::map<unitCategory, std::string> CUnitTable::cat2str;
 CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	this->ai = ai;
 	/* techlevels */
-	cat2str[TECH1]       = "TECH1";  
-	cat2str[TECH2]       = "TECH2";  
-	cat2str[TECH3]       = "TECH3";  
+	cat2str[TECH1]       = "TECH1";
+	cat2str[TECH2]       = "TECH2";
+	cat2str[TECH3]       = "TECH3";
 
 	/* main categories */
-	cat2str[AIR]         = "AIR";        
-	cat2str[SEA]         = "SEA";        
-	cat2str[LAND]        = "LAND";       
-	cat2str[STATIC]      = "STATIC";     
-	cat2str[MOBILE]      = "MOBILE";     
+	cat2str[AIR]         = "AIR";
+	cat2str[SEA]         = "SEA";
+	cat2str[LAND]        = "LAND";
+	cat2str[STATIC]      = "STATIC";
+	cat2str[MOBILE]      = "MOBILE";
 
 	/* builders */
-	cat2str[FACTORY]     = "FACTORY";    
-	cat2str[BUILDER]     = "BUILDER";    
-	cat2str[ASSISTER]    = "ASSISTER";      
+	cat2str[FACTORY]     = "FACTORY";
+	cat2str[BUILDER]     = "BUILDER";
+	cat2str[ASSISTER]    = "ASSISTER";
 	cat2str[RESURRECTOR] = "RESURRECTOR";
 
 	/* offensives */
-	cat2str[COMMANDER]   = "COMMANDER";  
-	cat2str[ATTACKER]    = "ATTACKER";   
-	cat2str[ANTIAIR]     = "ANTIAIR";    
-	cat2str[SCOUTER]     = "SCOUTER";  
+	cat2str[COMMANDER]   = "COMMANDER";
+	cat2str[ATTACKER]    = "ATTACKER";
+	cat2str[ANTIAIR]     = "ANTIAIR";
+	cat2str[SCOUTER]     = "SCOUTER";
 	cat2str[ARTILLERY]   = "ARTILLERY";  
 	cat2str[SNIPER]      = "SNIPER";  
 	cat2str[ASSAULT]     = "ASSAULT";  
 
 	/* economic */
-	cat2str[MEXTRACTOR]  = "MEXTRACTOR";  
-	cat2str[MMAKER]      = "MMAKER";      
-	cat2str[EMAKER]      = "EMAKER";      
-	cat2str[MSTORAGE]    = "MSTORAGE";    
-	cat2str[ESTORAGE]    = "ESTORAGE";    
-	cat2str[WIND]        = "WIND";  
-	cat2str[TIDAL]       = "TIDAL";  
+	cat2str[MEXTRACTOR]  = "MEXTRACTOR";
+	cat2str[MMAKER]      = "MMAKER";
+	cat2str[EMAKER]      = "EMAKER";
+	cat2str[MSTORAGE]    = "MSTORAGE";
+	cat2str[ESTORAGE]    = "ESTORAGE";
+	cat2str[WIND]        = "WIND";
+	cat2str[TIDAL]       = "TIDAL";
 
 	/* ground types */
-	cat2str[KBOT]        = "KBOT";  
-	cat2str[VEHICLE]     = "VEHICLE";  
+	cat2str[KBOT]        = "KBOT";
+	cat2str[VEHICLE]     = "VEHICLE";
+	cat2str[HOVER]       = "HOVER";
 
 	cat2str[DEFENSE]     = "DEFENSE";
 
@@ -109,6 +110,12 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	}
 }
 
+CUnitTable::~CUnitTable()
+{
+	for(int i = 0; i < ingameUnits.size(); i++)
+		delete ingameUnits[i];
+}
+
 void CUnitTable::generateCategorizationFile(const char *fileName) {
 	std::ofstream file(fileName, std::ios::trunc);
 	file << "# Unit Categorization for E323AI\n\n# Categories to choose from:\n";
@@ -161,7 +168,7 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	if (free.empty()) {
 		unit = new CUnit(ai, uid, bid);
 		ingameUnits.push_back(unit);
-		index = ingameUnits.size()-1;
+		index = ingameUnits.size() - 1;
 		LOG_II("CUnitTable::requestUnit new " << (*unit))
 	}
 
@@ -328,7 +335,7 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 			const UnitDef *canbuild = ai->cb->GetUnitDef(j->second.c_str());
 			if (canbuild->canfly) {
 				cats |= AIR;
-				cats -= LAND;
+				cats &= ~LAND;
 				break;
 			}
 			if (canbuild->movedata == NULL) continue;
@@ -342,6 +349,11 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 				cats |= VEHICLE;
 				break;
 			}
+			else if (canbuild->movedata->moveFamily == MoveData::Hover) {
+				cats |= HOVER;
+				break;
+			}
+
 		}
 		//XXX: hack
 		if (ud->metalCost < 2000.0f)
