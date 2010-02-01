@@ -70,9 +70,10 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 }
 
 CPathfinder::~CPathfinder() {
-	std::map<int, Node*>::iterator i;
 	for (unsigned int i = 0; i < CPathfinder::graph.size(); i++)
 		delete CPathfinder::graph[i];
+
+	CPathfinder::graph.clear();
 }
 
 void CPathfinder::Node::serialize(std::ostream &os) {
