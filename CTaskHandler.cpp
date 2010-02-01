@@ -235,6 +235,8 @@ void CTaskHandler::update() {
 		ATask *t = obsoleteTasks.top();
 		obsoleteTasks.pop();
 		activeTasks.erase(t->key);
+		if (t->group && groupToTask[t->group->key] == t)
+			groupToTask.erase(t->group->key);
 		delete t;
 	}
 
