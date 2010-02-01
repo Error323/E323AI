@@ -108,7 +108,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		char buf[1024];
 
 		/* Node Graph */
-		std::vector<Node*> graph;
+		static std::vector<Node*> graph;
 
 		/* The threads */
 		std::vector<boost::thread*> threads;

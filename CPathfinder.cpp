@@ -11,6 +11,8 @@
 #include "MathUtil.h"
 #include "Util.hpp"
 
+std::vector<CPathfinder::Node*> CPathfinder::graph;
+
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder")) {
 	this->ai   = ai;
 	this->X    = int(ai->cb->GetMapWidth()/HEIGHT2SLOPE);
@@ -23,52 +25,38 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	hm = ai->cb->GetHeightMap();
 	sm = ai->cb->GetSlopeMap();
 
-	std::string filename(ai->cb->GetMapName());
-	filename = std::string(CACHE_FOLDER) + filename.substr(0, filename.size()-4) + "-graph.bin";
-	filename = util::GetAbsFileName(ai->cb, filename);
-	std::fstream file(filename.c_str(), std::ios::binary | std::fstream::in);
+	if (CPathfinder::graph.empty()) {
+		std::string filename(ai->cb->GetMapName());
+		filename = std::string(CACHE_FOLDER) + filename.substr(0, filename.size()-4) + "-graph.bin";
+		filename = util::GetAbsFileName(ai->cb, filename);
+		std::fstream file;
+		file.open(filename.c_str(), std::ios::binary | std::fstream::in);
 
-	/* Precalculate surrounding nodes */
-	float radius = 0.0f;
-	while (radius < I_MAP_RES*HEIGHT2SLOPE+EPSILON) {
-		radius += 1.0f;
-		for (int z = -radius; z <= radius; z++) {
-			for (int x = -radius; x <= radius; x++) {
-				if (x == 0 && z == 0) continue;
-				float length = sqrt(float(x*x + z*z));
-				if (length > radius-0.5f && length < radius+0.5f) {
-					surrounding.push_back(z);
-					surrounding.push_back(x);
-				}
+		/* See if we can read from binary */
+		if (file.good() && file.is_open()) {
+			LOG_II("CPathfinder reading graph from " << filename)
+
+			unsigned int N;
+			file.read((char*)&N, sizeof(unsigned int));
+			for (unsigned int i = 0; i < N; i++) {
+				Node *n = Node::unserialize(file);
+				CPathfinder::graph.push_back(n);
 			}
+			LOG_II("CPathfinder parsed " << CPathfinder::graph.size() << " nodes")
+			file.close();
 		}
-	}
+		else {
+			LOG_II("CPathfinder creating graph at " << filename)
+			calcGraph();
+			file.open(filename.c_str(), std::ios::binary | std::fstream::out);
 
-
-	/* See if we can read from binary */
-	if (file.good() && file.is_open()) {
-		LOG_II("CPathfinder reading graph from " << filename)
-
-		unsigned int N;
-		file.read((char*)&N, sizeof(unsigned int));
-		for (unsigned int i = 0; i < N; i++) {
-			Node *n = Node::unserialize(file);
-			graph.push_back(n);
+			unsigned int N = CPathfinder::graph.size();
+			file.write((char*)&N, sizeof(unsigned int));
+			for (unsigned int i = 0; i < N; i++)
+				CPathfinder::graph[i]->serialize(file);
+			file.flush();
+			file.close();
 		}
-		LOG_II("CPathfinder parsed " << graph.size() << " nodes")
-		file.close();
-	}
-	else {
-		LOG_II("CPathfinder creating graph at " << filename)
-		calcGraph();
-		file.open(filename.c_str(), std::ios::binary | std::fstream::out);
-
-		unsigned int N = graph.size();
-		file.write((char*)&N, sizeof(unsigned int));
-		for (unsigned int i = 0; i < N; i++)
-			graph[i]->serialize(file);
-		file.flush();
-		file.close();
 	}
 
 	draw = false;
@@ -83,8 +71,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 
 CPathfinder::~CPathfinder() {
 	std::map<int, Node*>::iterator i;
-	for (unsigned int i = 0; i < graph.size(); i++)
-		delete graph[i];
+	for (unsigned int i = 0; i < CPathfinder::graph.size(); i++)
+		delete CPathfinder::graph[i];
 }
 
 void CPathfinder::Node::serialize(std::ostream &os) {
@@ -150,7 +138,23 @@ void CPathfinder::calcGraph() {
 	/* Initialize nodes */
 	for (int z = 0; z < ZZ; z++)
 		for (int x = 0; x < XX; x++)
-			graph.push_back(new Node(ID_GRAPH(x,z), x, z, 1.0f));
+			CPathfinder::graph.push_back(new Node(ID_GRAPH(x,z), x, z, 1.0f));
+
+	/* Precalculate surrounding nodes */
+	float radius = 0.0f;
+	while (radius < I_MAP_RES*HEIGHT2SLOPE+EPSILON) {
+		radius += 1.0f;
+		for (int z = -radius; z <= radius; z++) {
+			for (int x = -radius; x <= radius; x++) {
+				if (x == 0 && z == 0) continue;
+				float length = sqrt(float(x*x + z*z));
+				if (length > radius-0.5f && length < radius+0.5f) {
+					surrounding.push_back(z);
+					surrounding.push_back(x);
+				}
+			}
+		}
+	}
 
 	/* Create the 8 quadrants a node can be in */
 	float r[9]; float angle = 22.5f;
@@ -166,7 +170,7 @@ void CPathfinder::calcGraph() {
 		int map = k->first;
 		for (int x = 0; x < X; x+=I_MAP_RES) {
 			for (int z = 0; z < Z; z+=I_MAP_RES) {
-				Node *parent = graph[ID_GRAPH(x/I_MAP_RES,z/I_MAP_RES)];
+				Node *parent = CPathfinder::graph[ID_GRAPH(x/I_MAP_RES,z/I_MAP_RES)];
 				if (isBlocked(x, z, map))
 					parent->setBlocked(map, true);
 
@@ -233,7 +237,7 @@ void CPathfinder::resetMap(int thread) {
 	for (unsigned int z = 0; z < ZZ; z++) {
 		for (unsigned int x = 0; x < XX; x++) {
 			int id = ID_GRAPH(x,z);
-			Node *n = graph[id];
+			Node *n = CPathfinder::graph[id];
 			n->w = ai->threatmap->map[id] + sm[ID(x*I_MAP_RES, z*I_MAP_RES)]*5.0f;
 			n->reset();
 		}
@@ -403,7 +407,7 @@ CPathfinder::Node* CPathfinder::getClosestNodeId(float3 &f) {
 			int x = fx + j;
 			if (z < 0 || z > ZZ-1 || x < 0 || x > XX-1)
 				continue;
-			Node *n = graph[ID_GRAPH(x,z)];
+			Node *n = CPathfinder::graph[ID_GRAPH(x,z)];
 			if (!n->isBlocked(activeMap)) {
 				float3 s = n->toFloat3();
 				float dist = (s - f).Length2D();
@@ -484,16 +488,16 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	Node *n = dynamic_cast<Node*>(an);
 	for (size_t u = 0; u < n->neighbours[activeMap].size(); u++)
-		succ.push(graph[n->neighbours[activeMap][u]]);
+		succ.push(CPathfinder::graph[n->neighbours[activeMap][u]]);
 }
 
 void CPathfinder::drawGraph(int map) {
-	for (unsigned int i = 0; i < graph.size(); i++) {
-		Node *p = graph[i]; 
+	for (unsigned int i = 0; i < CPathfinder::graph.size(); i++) {
+		Node *p = CPathfinder::graph[i]; 
 		float3 fp = p->toFloat3();
 		fp.y = ai->cb->GetElevation(fp.x, fp.z) + 20.0f;
 		for (size_t j = 0; j < p->neighbours[map].size(); j++) {
-			Node *n = graph[p->neighbours[map][j]];
+			Node *n = CPathfinder::graph[p->neighbours[map][j]];
 			float3 fn = n->toFloat3();
 			fn.y = ai->cb->GetElevation(fn.x, fn.z) + 20.0f;
 			ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, 10000, 10);
@@ -505,7 +509,7 @@ void CPathfinder::drawGraph(int map) {
 /*
 void CPathfinder::drawMap(int map) {
 	std::map<int, int>::iterator i;
-	for (i = graph[map].begin(); i != graph[map].end(); i++) {
+	for (i = CPathfinder::graph[map].begin(); i != CPathfinder::graph[map].end(); i++) {
 		Node *node = NODE(i->second); 
 		float3 p0 = node->toFloat3();
 		p0.y = ai->cb->GetElevation(p0.x, p0.z);
