@@ -19,8 +19,6 @@ class AIClasses;
 
 class CPathfinder: public AAStar, public ARegistrar {
 	public:
-		enum nodeType{BLOCKED, START, GOAL, NORMAL};
-
 		CPathfinder(AIClasses *ai);
 		~CPathfinder();
 
@@ -31,10 +29,10 @@ class CPathfinder: public AAStar, public ARegistrar {
 					this->z = z;
 				}
 				std::map<int, std::vector<int> > neighbours;
-				std::map<int, nodeType> types;
+				std::map<int, bool> blocking;
 				int x, z;
-				bool blocked(int map) {return types.find(map) != types.end() && types[map] == BLOCKED;}
-				void setType(int map, nodeType nt) {types[map] = nt;}
+				bool isBlocked(int map) {return blocking.find(map) != blocking.end() && blocking[map];}
+				void setBlocked(int map, bool b) {blocking[map] = b;}
 
 				float3 toFloat3() const {
 					float fx = x * HEIGHT2REAL * HEIGHT2SLOPE;
@@ -48,7 +46,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 				static Node* unserialize(std::istream &is) {
 					int x, z, m, id;
 					char N, M, K;
-					nodeType t;
+					bool blocked;
 
 					is.read((char*)&id, sizeof(int));
 					is.read((char*)&x, sizeof(int));
@@ -71,8 +69,8 @@ class CPathfinder: public AAStar, public ARegistrar {
 					is.read((char*)&N, sizeof(char));
 					for (unsigned int i = 0; i < N; i++) {
 						is.read((char*)&K, sizeof(char));
-						is.read((char*)&t, sizeof(nodeType));
-						n->types[(int)K] = t;
+						is.read((char*)&blocked, sizeof(bool));
+						n->blocking[(int)K] = blocked;
 					}
 					
 					return n;
@@ -108,8 +106,8 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 		char buf[1024];
 
-		/* Flat vector of nodes */
-		std::vector<Node*> nodes;
+		/* Node Graph */
+		std::map<int, Node*> graph;
 
 		/* The threads */
 		std::vector<boost::thread*> threads;
@@ -147,7 +145,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* overload */
 		void successors(ANode *an, std::queue<ANode*> &succ);
 
-		int getClosestNodeId(float3 &f);
+		Node* getClosestNodeId(float3 &f);
 
 		/* overload */
 		float heuristic(ANode *an1, ANode *an2);
@@ -160,6 +158,9 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 		/* Calculate the nodes */
 		void calcNodes();
+
+		/* x and z in slopemap resolution */
+		bool isBlocked(int x, int z, int movetype);
 
 		/* Determine the nodes their neighbours */
 		void calcNeighbours();

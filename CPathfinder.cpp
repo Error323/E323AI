@@ -13,8 +13,6 @@
 #include "MathUtil.h"
 #include "Util.hpp"
 
-#define NODE(id) (nodes[(id)])
-
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder")) {
 	this->ai   = ai;
 	this->X    = int(ai->cb->GetMapWidth()/HEIGHT2SLOPE);
@@ -55,21 +53,21 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 		file.read((char*)&N, sizeof(unsigned int));
 		for (unsigned int i = 0; i < N; i++) {
 			Node *n = Node::unserialize(file);
-			nodes.push_back(n);
+			graph[n->id] = n;
 		}
-		LOG_II("CPathfinder parsed " << nodes.size() << " nodes")
+		LOG_II("CPathfinder parsed " << graph.size() << " nodes")
 		file.close();
 	}
 	else {
 		LOG_II("CPathfinder creating graph at " << filename)
-		calcNodes();
 		calcNeighbours();
 		file.open(filename.c_str(), std::ios::binary | std::fstream::out);
 
-		unsigned int N = nodes.size();
+		unsigned int N = graph.size();
 		file.write((char*)&N, sizeof(unsigned int));
-		for (unsigned int i = 0; i < nodes.size(); i++)
-			nodes[i]->serialize(file);
+		std::map<int, Node*>::iterator i;
+		for (i = graph.begin(); i != graph.end(); i++)
+			i->second->serialize(file);
 		file.flush();
 		file.close();
 	}
@@ -85,8 +83,9 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 }
 
 CPathfinder::~CPathfinder() {
-	for (size_t i = 0; i < nodes.size(); i++)
-		delete nodes[i];
+	std::map<int, Node*>::iterator i;
+	for (i = graph.begin(); i != graph.end(); i++)
+		delete i->second;
 }
 
 void CPathfinder::Node::serialize(std::ostream &os) {
@@ -106,67 +105,54 @@ void CPathfinder::Node::serialize(std::ostream &os) {
 			os.write((char*)&(i->second[j]), sizeof(int));
 	}
 
-	N = (char) types.size();
+	N = (char) blocking.size();
 	os.write((char*)&N, sizeof(char));
-	std::map<int, nodeType>::iterator j;
-	for (j = types.begin(); j != types.end(); j++) {
+	std::map<int, bool>::iterator j;
+	for (j = blocking.begin(); j != blocking.end(); j++) {
 		M = (char) j->first;
 		os.write((char*)&M, sizeof(char));
-		os.write((char*)&(j->second), sizeof(nodeType));
+		os.write((char*)&(j->second), sizeof(bool));
 	}
 }
 
-void CPathfinder::calcNodes() {
-	/* Initialize nodes */
-	for (int z = 0; z < Z; z++)
-		for (int x = 0; x < X; x++)
-			nodes.push_back(new Node(ID(x,z), x, z, 1.0f));
+bool CPathfinder::isBlocked(int x, int z, int movetype) {
+	MoveData *md = ai->unittable->moveTypes[movetype];
+	int smidx = ID(x,z);
+	int hmidx = (z*HEIGHT2SLOPE)*(X*HEIGHT2SLOPE)+(x*HEIGHT2SLOPE);
 
-	std::map<int, MoveData*>::iterator i;
-	for (i = ai->unittable->moveTypes.begin(); i != ai->unittable->moveTypes.end(); i++) {
-		MoveData *md = i->second;
-		LOG_II("CPathfinder::CPathfinder MoveType("<<i->first<<") name("<<md->name<<")")
-		for (int z = 0; z < Z; z++) {
-			for (int x = 0; x < X; x++) {
-				int smidx = ID(x,z);
-				int hmidx = (z*HEIGHT2SLOPE)*(X*HEIGHT2SLOPE)+(x*HEIGHT2SLOPE);
-				Node *node = NODE(smidx);
+	/* Block edges */
+	if (z == 0 || z == Z-1 || x == 0 || x == X-1)
+		return true;
 
-				/* Block edges */
-				if (z == 0 || z == Z-1 || x == 0 || x == X-1)
-					node->setType(i->first, BLOCKED);
+	/* Block too steep slopes */
+	if (sm[smidx] > md->maxSlope)
+		return true;
 
-				/* Block too steep slopes */
-				if (sm[smidx] > md->maxSlope)
-					node->setType(i->first, BLOCKED);
+	switch(md->moveType) {
+		case MoveData::Ship_Move: {
+			if (-hm[hmidx] < md->depth)
+				return true;
+		} break;
 
-				switch(md->moveType) {
-					case MoveData::Ship_Move: {
-						if (-hm[hmidx] < md->depth)
-							node->setType(i->first, BLOCKED);
-					} break;
+		case MoveData::Ground_Move: {
+			if (-hm[hmidx] > md->depth)
+				return true;
+		} break;
 
-					case MoveData::Ground_Move: {
-						if (-hm[hmidx] > md->depth)
-							node->setType(i->first, BLOCKED);
-					} break;
-
-					case MoveData::Hover_Move: {
-						/* can go everywhere */
-					} break;
-				}
-
-				/* Store the usefull nodes */
-				if ((x % I_MAP_RES == 0 && z % I_MAP_RES == 0) || node->blocked(i->first)) {
-					std::vector<int> V;
-					node->neighbours[i->first] = V;
-				}
-			}
-		}
+		case MoveData::Hover_Move: {
+			/* can go everywhere */
+		} break;
 	}
+
+	return false;
 }
 
 void CPathfinder::calcNeighbours() {
+	/* Initialize nodes */
+	for (int z = 0; z < Z; z+=I_MAP_RES)
+		for (int x = 0; x < X; x+=I_MAP_RES)
+			graph[ID(x,z)] = new Node(ID(x,z), x, z, 1.0f);
+
 	/* Create the 8 quadrants a node can be in */
 	float r[9]; float angle = 22.5f;
 	for (int g = 0; g < 8; g++) {
@@ -181,8 +167,11 @@ void CPathfinder::calcNeighbours() {
 		int map = k->first;
 		for (int x = 0; x < X; x+=I_MAP_RES) {
 			for (int z = 0; z < Z; z+=I_MAP_RES) {
-				Node *parent = NODE(ID(x,z));
-				if (parent->blocked(map)) continue;
+				Node *parent = graph[ID(x,z)];
+				if (isBlocked(x, z, map)) {
+					parent->setBlocked(map, true);
+					continue;
+				}
 
 				bool s[] = {false, false, false, false, false, false, false, false};
 				for (size_t p = 0; p < surrounding.size(); p+=2) {
@@ -199,9 +188,8 @@ void CPathfinder::calcNeighbours() {
 
 					if (
 						(xx % I_MAP_RES != 0 || zz % I_MAP_RES != 0) &&
-						!NODE(ID(xx,zz))->blocked(map)
-					)
-						continue;
+						!isBlocked(xx,zz,map)
+					) continue;
 
 					float a;
 					if (j == 0) {
@@ -232,8 +220,7 @@ void CPathfinder::calcNeighbours() {
 
 					if (!s[index]) {
 						s[index] = true;
-						Node *neighbour = NODE(ID(xx,zz));
-						if (!neighbour->blocked(map))
+						if (!isBlocked(xx, zz, map))
 							parent->neighbours[map].push_back(ID(xx,zz));
 					}
 					if (s[0] && s[1] && s[2] && s[3] && s[4] && s[5] && s[6] && s[7]) {
@@ -248,7 +235,7 @@ void CPathfinder::calcNeighbours() {
 void CPathfinder::resetMap(int thread) {
 	for (unsigned int z = 0; z < Z; z+=I_MAP_RES) {
 		for (unsigned int x = 0; x < X; x+=I_MAP_RES) {
-			Node *n = NODE(ID(x,z));
+			Node *n = graph[ID(x,z)];
 			int j = (n->z/I_MAP_RES)*(X/I_MAP_RES)+(n->x/I_MAP_RES);
 			n->w = ai->threatmap->map[j] + sm[n->id]*5.0f;
 			n->reset();
@@ -405,17 +392,17 @@ bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 	return success;
 }
 
-int CPathfinder::getClosestNodeId(float3 &f) {
+CPathfinder::Node* CPathfinder::getClosestNodeId(float3 &f) {
 	if(f == ERRORVECTOR)
-		return -1;
+		return NULL;
 
 	int fz = int(round(f.z/REAL));
 	int fx = int(round(f.x/REAL));
 	if (fz % I_MAP_RES == 0 && fx % I_MAP_RES == 0) {
-		Node *n = NODE(ID(fx,fz));
-		if (n != NULL && !n->blocked(activeMap)) {
+		Node *n = graph[ID(fx,fz)];
+		if (n != NULL && !n->isBlocked(activeMap)) {
 			float3 f = n->toFloat3();
-			return ID(fx, fz);
+			return n;
 		}
 	}
 
@@ -423,17 +410,17 @@ int CPathfinder::getClosestNodeId(float3 &f) {
 		int z = fz + surrounding[i];
 		int x = fx + surrounding[i+1];
 		if (z % I_MAP_RES == 0 && x % I_MAP_RES == 0) {
-			Node *n = NODE(ID(x,z));
-			if (n != NULL && !n->blocked(activeMap)) {
+			Node *n = graph[ID(x,z)];
+			if (n != NULL && !n->isBlocked(activeMap)) {
 				float3 f = n->toFloat3();
-				return ID(x, z);
+				return n;
 			}
 		}
 	}
 
-	LOG_EE("CPathfinder::getClosestNode failed to lock node")
+	LOG_EE("CPathfinder::getClosestNode failed to lock node("<<fx<<","<<fz<<")")
 
-	return -1;
+	return NULL;
 }
 
 void CPathfinder::drawNode(Node *n) {
@@ -445,17 +432,12 @@ void CPathfinder::drawNode(Node *n) {
 }
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius) {
-	int sid, gid;
-
-	if((sid = getClosestNodeId(s)) >= 0)
-		start = NODE(sid);
-	
-	if((gid = getClosestNodeId(g)) >= 0)
-		goal = NODE(gid);
+	start = getClosestNodeId(s);
+	goal = getClosestNodeId(g);
 
 	std::list<ANode*> nodepath;
 	
-	bool success = (sid != -1 && gid != -1 && (findPath(nodepath)));
+	bool success = (start != NULL && goal != NULL && (findPath(nodepath)));
 	if (success) {
 		/* Insert a pre-waypoint at the starting of the path */
 		int waypoint = std::min<int>(4, nodepath.size()-1);
@@ -487,8 +469,8 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 			ai->cb->SetFigureColor(group, group/float(CGroup::counter), 1.0f-group/float(CGroup::counter), 1.0f, 1.0f);
 		}
 	}
-	else if (sid != gid) {
-		LOG_EE("CPathfinder::getPath failed for " << (*groups[group]) << " sid " << sid << " gid " << gid << " start("<<s.x<<","<<s.z<<") goal("<<g.x<<","<<g.z<<")")
+	else {
+		LOG_EE("CPathfinder::getPath failed for " << (*groups[group]) << " start("<<s.x<<","<<s.z<<") goal("<<g.x<<","<<g.z<<")")
 	}
 
 	return success;
@@ -505,17 +487,18 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	Node *n = dynamic_cast<Node*>(an);
 	for (size_t u = 0; u < n->neighbours[activeMap].size(); u++)
-		succ.push(NODE(n->neighbours[activeMap][u]));
+		succ.push(graph[n->neighbours[activeMap][u]]);
 }
 
 void CPathfinder::drawGraph(int map) {
-	for (size_t i = 0; i < nodes.size(); i++) {
-		Node *p = nodes[i]; 
-		if ((p->x % I_MAP_RES == 0 && p->z % I_MAP_RES == 0) || p->blocked(map)) {
+	std::map<int, Node*>::iterator i;
+	for (i = graph.begin(); i != graph.end(); i++) {
+		Node *p = i->second; 
+		if ((p->x % I_MAP_RES == 0 && p->z % I_MAP_RES == 0) || p->isBlocked(map)) {
 			float3 fp = p->toFloat3();
 			fp.y = ai->cb->GetElevation(fp.x, fp.z) + 20.0f;
 			for (size_t j = 0; j < p->neighbours[map].size(); j++) {
-				Node *n = NODE(p->neighbours[map][j]);
+				Node *n = graph[p->neighbours[map][j]];
 				float3 fn = n->toFloat3();
 				fn.y = ai->cb->GetElevation(fn.x, fn.z) + 20.0f;
 				ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, 10000, 10);
@@ -533,7 +516,7 @@ void CPathfinder::drawMap(int map) {
 		float3 p0 = node->toFloat3();
 		p0.y = ai->cb->GetElevation(p0.x, p0.z);
 		float3 p1(p0);
-		if (node->blocked()) {
+		if (node->isBlocked()) {
 			p0.y += 100.0f;
 			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, DRAW_TIME, 10);
 			ai->cb->SetFigureColor(10, 1.0f, 0.0f, 0.0f, 1.0f);
