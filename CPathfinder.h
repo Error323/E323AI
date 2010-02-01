@@ -29,13 +29,13 @@ class CPathfinder: public AAStar, public ARegistrar {
 				Node(int id, int x, int z, float w) : ANode(id, w) {
 					this->x = x;
 					this->z = z;
-					this->type = CPathfinder::NORMAL;
 				}
-				std::vector<int> neighbours;
-				CPathfinder::nodeType type;
+				std::map<int, std::vector<int> > neighbours;
+				std::map<int, nodeType> types;
 				int x, z;
-				bool blocked() const {return type == CPathfinder::BLOCKED;}
-				void setType(nodeType nt) {type = nt;}
+				bool blocked(int map) {return types.find(map) != types.end() && types[map] == BLOCKED;}
+				void setType(int map, nodeType nt) {types[map] = nt;}
+
 				float3 toFloat3() const {
 					float fx = x * HEIGHT2REAL * HEIGHT2SLOPE;
 					float fy = 0.0f;
@@ -43,8 +43,40 @@ class CPathfinder: public AAStar, public ARegistrar {
 					return float3(fx, fy, fz);
 				}
 
-				friend std::ostream& operator<< (std::ostream &out, const CPathfinder::Node &n);
-				friend std::istream& operator>> (std::istream &in, CPathfinder::Node &n);
+				void serialize(std::ostream &os);
+
+				static Node* unserialize(std::istream &is) {
+					int x, z, m, id;
+					char N, M, K;
+					nodeType t;
+
+					is.read((char*)&id, sizeof(int));
+					is.read((char*)&x, sizeof(int));
+					is.read((char*)&z, sizeof(int));
+
+					Node *n = new Node(id, x, z, 1.0f);
+
+					is.read((char*)&N, sizeof(char));
+					for (unsigned int i = 0; i < N; i++) {
+						is.read((char*)&K, sizeof(char));
+						std::vector<int> V;
+						n->neighbours[(int)K] = V;
+						is.read((char*)&M, sizeof(char));
+						for (unsigned int j = 0; j < M; j++) {
+							is.read((char*)&m, sizeof(int));
+							n->neighbours[(int)K].push_back(m);
+						}
+					}
+
+					is.read((char*)&N, sizeof(char));
+					for (unsigned int i = 0; i < N; i++) {
+						is.read((char*)&K, sizeof(char));
+						is.read((char*)&t, sizeof(nodeType));
+						n->types[(int)K] = t;
+					}
+					
+					return n;
+				}
 		};
 
 		/* Get estimated time of arrival */
@@ -76,11 +108,8 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 		char buf[1024];
 
-		/* Nodes to be resetted */
-		std::map<int, std::vector<int> > activeNodes;
-
 		/* Graphs <movetype, node id, vector id> */
-		std::map<int, std::map<int, int> > maps;
+		std::map<int, Node*> graph;
 
 		/* Flat vector of nodes */
 		std::vector<Node*> nodes;
@@ -97,7 +126,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* group to receive repathing event next updatePaths() call */
 		int repathGroup;
 
-		/* Active map (maps[activeMap]), CRUCIAL to A* */
+		/* Active map (graph[activeMap]), CRUCIAL to A* */
 		int activeMap;
 
 		/* controls which path may be updated, (round robin-ish) */
@@ -132,12 +161,19 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* Reset the map nodes */
 		void resetMap(int thread);
 
+		/* Calculate the nodes */
+		void calcNodes();
+
+		/* Determine the nodes their neighbours */
+		void calcNeighbours();
+
 		/* Start pathfinding */
 		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius = EPSILON);
 
 		/* Draw the map */
-		void drawMap(int map);
+		//void drawMap(int map);
 		void drawGraph(int map);
+		void drawNode(Node *n);
 };
 
 #endif
