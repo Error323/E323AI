@@ -24,44 +24,45 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 		class Node : public ANode {
 			public:
-				Node(int id, int x, int z, float w) : ANode(id, w) {
+				Node(unsigned short int id, unsigned char x, unsigned char z, float w) : ANode(id, w) {
 					this->x = x;
 					this->z = z;
 				}
-				std::map<int, std::vector<int> > neighbours;
+				std::map<int, std::vector<unsigned short int> > neighbours;
 				std::map<int, bool> blocking;
-				int x, z;
+				unsigned char x, z;
 				bool isBlocked(int map) {return blocking.find(map) != blocking.end() && blocking[map];}
 				void setBlocked(int map, bool b) {blocking[map] = b;}
 
 				float3 toFloat3() const {
-					float fx = x * HEIGHT2REAL * HEIGHT2SLOPE;
+					float fx = x * HEIGHT2REAL * HEIGHT2SLOPE * I_MAP_RES;
 					float fy = 0.0f;
-					float fz = z * HEIGHT2REAL * HEIGHT2SLOPE;
+					float fz = z * HEIGHT2REAL * HEIGHT2SLOPE * I_MAP_RES;
 					return float3(fx, fy, fz);
 				}
 
 				void serialize(std::ostream &os);
 
 				static Node* unserialize(std::istream &is) {
-					int x, z, m, id;
+					unsigned char x, z;
+					unsigned short int m, id;
 					char N, M, K;
 					bool blocked;
 
-					is.read((char*)&id, sizeof(int));
-					is.read((char*)&x, sizeof(int));
-					is.read((char*)&z, sizeof(int));
+					is.read((char*)&id, sizeof(unsigned short int));
+					is.read((char*)&x, sizeof(unsigned char));
+					is.read((char*)&z, sizeof(unsigned char));
 
 					Node *n = new Node(id, x, z, 1.0f);
 
 					is.read((char*)&N, sizeof(char));
 					for (unsigned int i = 0; i < N; i++) {
 						is.read((char*)&K, sizeof(char));
-						std::vector<int> V;
+						std::vector<unsigned short int> V;
 						n->neighbours[(int)K] = V;
 						is.read((char*)&M, sizeof(char));
 						for (unsigned int j = 0; j < M; j++) {
-							is.read((char*)&m, sizeof(int));
+							is.read((char*)&m, sizeof(unsigned short int));
 							n->neighbours[(int)K].push_back(m);
 						}
 					}
@@ -97,7 +98,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* NOTE: slopemap 1:2 heightmap 1:8 realmap, GetMapWidth() and
 		 * GetMapHeight() give map dimensions in heightmap resolution
 		 */
-		int X,Z;
+		int X,Z,XX,ZZ;
 		float REAL;
 
 
@@ -107,7 +108,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		char buf[1024];
 
 		/* Node Graph */
-		std::map<int, Node*> graph;
+		std::vector<Node*> graph;
 
 		/* The threads */
 		std::vector<boost::thread*> threads;
@@ -163,7 +164,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		bool isBlocked(int x, int z, int movetype);
 
 		/* Determine the nodes their neighbours */
-		void calcNeighbours();
+		void calcGraph();
 
 		/* Start pathfinding */
 		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius = EPSILON);

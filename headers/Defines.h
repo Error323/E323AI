@@ -29,7 +29,8 @@
 /* Misc macro's */
 #define UD(u) (ai->cb->GetUnitDef(u))
 #define UT(u) (&(ai->unittable->units[u]))
-#define ID(x,z) (z*X+x)
+#define ID(x,z) ((z)*X+(x))
+#define ID_GRAPH(x,z) ((z)*XX+(x))
 
 /* Metal to Energy ratio */
 #define METAL2ENERGY 60
