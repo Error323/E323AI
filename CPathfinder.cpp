@@ -84,6 +84,11 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	threads.resize(nrThreads-1);
 }
 
+CPathfinder::~CPathfinder() {
+	for (size_t i = 0; i < nodes.size(); i++)
+		delete nodes[i];
+}
+
 void CPathfinder::Node::serialize(std::ostream &os) {
 	char M, N = (char) neighbours.size();
 	os.write((char*)&id, sizeof(int));
