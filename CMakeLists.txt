@@ -3,7 +3,7 @@
 FIND_PACKAGE( PkgConfig )
 pkg_check_modules( CURL libcurl )
 IF( NOT CURL_FOUND )
-	MESSAGE( FATAL_ERROR "E323AI will not be built -- required library libCURL not found" )
+	MESSAGE( STATUS "E323AI will not be built -- required library libCURL not found" )
 ELSE( NOT CURL_FOUND )
 	INCLUDE_DIRECTORIES( ${CURL_INCLUDE_DIR} )
 	IF(WIN32)
