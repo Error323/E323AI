@@ -1,5 +1,8 @@
 #include <cassert>
 #include <cstring>
+#ifndef _USE_MATH_DEFINES
+	#define _USE_MATH_DEFINES
+#endif
 #include <cmath>
 #include <algorithm>
 
@@ -8,8 +11,9 @@
 
 namespace util {
 	std::string GetAbsFileName(IAICallback* cb, const std::string& relFileName, bool readonly) {
-		char        dst[2048];
+		char dst[2048];
 		sprintf(dst, "%s", relFileName.c_str());
+
 		// get the absolute path to the file
 		// (and create folders along the way)
 		if (readonly) {
