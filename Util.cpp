@@ -8,15 +8,8 @@
 
 namespace util {
 	std::string GetAbsFileName(IAICallback* cb, const std::string& relFileName, bool readonly) {
-		char        dst[2048] = {0};
-		const char* src       = relFileName.c_str();
-		const int   len       = relFileName.size();
-
-		// last char ('\0') in dst
-		// should not be overwritten
-		assert(len < (2048 - 1));
-		memcpy(dst, src, len);
-
+		char        dst[2048];
+		sprintf(dst, "%s", relFileName.c_str());
 		// get the absolute path to the file
 		// (and create folders along the way)
 		if (readonly) {
