@@ -13,7 +13,7 @@ class CUnit;
 class CDefenseMatrix {
 	public:
 		CDefenseMatrix(AIClasses *ai);
-		~CDefenseMatrix(){};
+		~CDefenseMatrix() {}
 
 		/* Determine all clusters currently ingame */
 		void update();
