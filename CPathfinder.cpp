@@ -26,36 +26,51 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	sm = ai->cb->GetSlopeMap();
 
 	if (CPathfinder::graph.empty()) {
+		const std::string cacheVersion(CACHE_VERSION);
+
+		bool readOk = false;
+		unsigned int N;
 		std::string filename(ai->cb->GetMapName());
+		std::string cacheMarker;
+
+		cacheMarker.resize(cacheVersion.size());
+
 		filename = std::string(CACHE_FOLDER) + filename.substr(0, filename.size()-4) + "-graph.bin";
 		filename = util::GetAbsFileName(ai->cb, filename);
-		std::fstream file;
-		file.open(filename.c_str(), std::ios::binary | std::fstream::in);
 
 		/* See if we can read from binary */
-		if (file.good() && file.is_open()) {
-			LOG_II("CPathfinder reading graph from " << filename)
-
-			unsigned int N;
-			file.read((char*)&N, sizeof(unsigned int));
-			for (unsigned int i = 0; i < N; i++) {
-				Node *n = Node::unserialize(file);
-				CPathfinder::graph.push_back(n);
+		std::ifstream fin;
+		fin.open(filename.c_str(), std::ios::binary | std::ios::in);
+		if (fin.good() && fin.is_open()) {
+			fin.read(&cacheMarker[0], cacheMarker.size());
+			if (!fin.eof() && cacheMarker == cacheVersion) {
+				LOG_II("CPathfinder reading graph from " << filename)
+				fin.read((char*)&N, sizeof(N));
+				for (unsigned int i = 0; i < N; i++) {
+					Node *n = Node::unserialize(fin);
+					CPathfinder::graph.push_back(n);
+				}
+				LOG_II("CPathfinder parsed " << CPathfinder::graph.size() << " nodes")
+				readOk = true;
 			}
-			LOG_II("CPathfinder parsed " << CPathfinder::graph.size() << " nodes")
-			file.close();
+			fin.close();
 		}
-		else {
-			LOG_II("CPathfinder creating graph at " << filename)
-			calcGraph();
-			file.open(filename.c_str(), std::ios::binary | std::fstream::out);
 
-			unsigned int N = CPathfinder::graph.size();
-			file.write((char*)&N, sizeof(unsigned int));
+		if (!readOk)
+		{
+			std::ofstream fout;
+
+			LOG_II("CPathfinder creating graph at " << filename)
+			
+			calcGraph();
+			
+			fout.open(filename.c_str(), std::ios::binary | std::ios::out);
+			N = CPathfinder::graph.size();
+			fout.write(&cacheVersion[0], cacheVersion.size());
+			fout.write((char*)&N, sizeof(N));
 			for (unsigned int i = 0; i < N; i++)
-				CPathfinder::graph[i]->serialize(file);
-			file.flush();
-			file.close();
+				CPathfinder::graph[i]->serialize(fout);
+			fout.close();
 		}
 	}
 
