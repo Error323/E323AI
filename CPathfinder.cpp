@@ -59,6 +59,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 		}
 	}
 
+	drawGraph(1);
 	draw = false;
 
 	this->REAL = HEIGHT2REAL*HEIGHT2SLOPE;
@@ -91,15 +92,6 @@ void CPathfinder::Node::serialize(std::ostream &os) {
 		os.write((char*)&N, sizeof(char));
 		for (unsigned int j = 0; j < N; j++)
 			os.write((char*)&(i->second[j]), sizeof(unsigned short int));
-	}
-
-	N = (char) blocking.size();
-	os.write((char*)&N, sizeof(char));
-	std::map<int, bool>::iterator j;
-	for (j = blocking.begin(); j != blocking.end(); j++) {
-		M = (char) j->first;
-		os.write((char*)&M, sizeof(char));
-		os.write((char*)&(j->second), sizeof(bool));
 	}
 }
 
@@ -142,6 +134,7 @@ void CPathfinder::calcGraph() {
 			CPathfinder::graph.push_back(new Node(ID_GRAPH(x,z), x, z, 1.0f));
 
 	/* Precalculate surrounding nodes */
+	std::vector<int> surrounding;
 	float radius = 0.0f;
 	while (radius < I_MAP_RES*HEIGHT2SLOPE+EPSILON) {
 		radius += 1.0f;
@@ -172,8 +165,6 @@ void CPathfinder::calcGraph() {
 		for (int x = 0; x < X; x+=I_MAP_RES) {
 			for (int z = 0; z < Z; z+=I_MAP_RES) {
 				Node *parent = CPathfinder::graph[ID_GRAPH(x/I_MAP_RES,z/I_MAP_RES)];
-				if (isBlocked(x, z, map))
-					parent->setBlocked(map, true);
 
 				bool s[] = {false, false, false, false, false, false, false, false};
 				for (size_t p = 0; p < surrounding.size(); p+=2) {
@@ -409,7 +400,7 @@ CPathfinder::Node* CPathfinder::getClosestNodeId(float3 &f) {
 			if (z < 0 || z > ZZ-1 || x < 0 || x > XX-1)
 				continue;
 			Node *n = CPathfinder::graph[ID_GRAPH(x,z)];
-			if (!n->isBlocked(activeMap)) {
+			if (!isBlocked(x,z,activeMap)) {
 				float3 s = n->toFloat3();
 				float dist = (s - f).Length2D();
 				candidates[dist] = n;

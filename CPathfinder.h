@@ -29,10 +29,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 					this->z = z;
 				}
 				std::map<int, std::vector<unsigned short int> > neighbours;
-				std::map<int, bool> blocking;
 				unsigned char x, z;
-				bool isBlocked(int map) {return blocking.find(map) != blocking.end() && blocking[map];}
-				void setBlocked(int map, bool b) {blocking[map] = b;}
 
 				float3 toFloat3() const {
 					float fx = x * HEIGHT2REAL * HEIGHT2SLOPE * I_MAP_RES;
@@ -47,7 +44,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 					unsigned char x, z;
 					unsigned short int m, id;
 					char N, M, K;
-					bool blocked;
 
 					is.read((char*)&id, sizeof(unsigned short int));
 					is.read((char*)&x, sizeof(unsigned char));
@@ -67,13 +63,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 						}
 					}
 
-					is.read((char*)&N, sizeof(char));
-					for (unsigned int i = 0; i < N; i++) {
-						is.read((char*)&K, sizeof(char));
-						is.read((char*)&blocked, sizeof(bool));
-						n->blocking[(int)K] = blocked;
-					}
-					
 					return n;
 				}
 		};
@@ -112,9 +101,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 		/* The threads */
 		std::vector<boost::thread*> threads;
-
-		/* Surrounding nodes */
-		std::vector<int> surrounding;
 
 		/* Number of threads */
 		size_t nrThreads;
