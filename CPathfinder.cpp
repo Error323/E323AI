@@ -30,7 +30,9 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 
 		bool readOk = false;
 		unsigned int N;
-		std::string filename(ai->cb->GetMapName());
+		std::string modname(ai->cb->GetModName());
+		modname.resize(modname.size()-4);
+		std::string filename = modname + "/" + std::string(ai->cb->GetMapName());
 		std::string cacheMarker;
 
 		cacheMarker.resize(cacheVersion.size());
@@ -74,7 +76,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 		}
 	}
 
-	drawGraph(1);
+	//drawGraph(1);
 	draw = false;
 
 	this->REAL = HEIGHT2REAL*HEIGHT2SLOPE;
