@@ -40,7 +40,7 @@ class CUnitTable: public ARegistrar {
 		/* Return unit by ingame id */
 		CUnit* getUnit(int id);
 
-		/* Total nr of units */
+		/* Total number of unit types (definitions) */
 		int numUnits;
 
 		/* All units flattened in a map */
