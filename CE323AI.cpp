@@ -87,22 +87,34 @@ void CE323AI::ReleaseAI() {
 void CE323AI::UnitCreated(int uid, int bid) {
 	CUnit *unit = ai->unittable->requestUnit(uid, bid);
 
-	LOG_II("CE323AI::UnitCreated " << (*unit))
+	LOG_II("CE323AI::UnitCreated " << (*unit) << " (bid=" << bid << ")")
 
 	unsigned int c = unit->type->cats;
-	if (unit->def->isCommander) {
+	if (unit->def->isCommander && !ai->economy->isInitialized()) {
 		ai->economy->init(*unit);
-		return;
 	}
 
 	if (c&MEXTRACTOR)
 		ai->metalmap->addUnit(*unit);
 
-	if (c&ATTACKER && c&MOBILE)
-		unit->moveForward(400.0f);
+	if (bid < 0)
+		return; // unit was spawned from nowhere (e.g. commander)
 
-	if (c&BUILDER && c&MOBILE)
-		unit->moveForward(200.0f);
+	if (c&MOBILE) {
+		CUnit *builder = ai->unittable->getUnit(bid);
+		// if builder is a mobile unit (like Consul in BA) then do not 
+		// aissign move command...
+		if (builder->type->cats&STATIC) {
+			// NOTE: factories should be already rotated in proper direction to prevent
+			// units going outside the map
+			if (c&AIR)
+				unit->moveRandom(500.0f, true);
+			else if (c&BUILDER)
+				unit->moveForward(200.0f);
+			else
+				unit->moveForward(400.0f);
+		}
+	}
 }
 
 /* Called when units are finished in a factory and able to move */
@@ -141,7 +153,10 @@ void CE323AI::UnitIdle(int uid) {
 
 /* Called when unit is damaged */
 void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
-
+	// TODO: introduce quick imrovement for builders to reclaim their attacker
+	// but next it should return to its current job, so we need to delay 
+	// current task which is impossible while there is no task queue per unit
+	// group (curently we have a single task per group)
 }
 
 /* Called on move fail e.g. can't reach point */
@@ -211,23 +226,38 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 
 /* Update AI per logical frame = 1/30 sec on gamespeed 1.0 */
 void CE323AI::Update() {
-	int frame = ai->cb->GetCurrentFrame();
+	// NOTE: if AI is attached at game start Update() is called since 1st game frame.
+	// By current time all player commanders are already spawned and that's good because 
+	// we calculate number of enemies in CIntel::init()
+	const int frame = ai->cb->GetCurrentFrame();
+	
+	if (frame < 0)
+		return; // some shit happened with engine? (stolen from AAI)
 
-	if(frame == 1)
+	// NOTE: AI can be attached in mid-game state with /aicontrol command
+	int localFrame;
+
+	if (attachedAtFrame < 0) {
+		attachedAtFrame = frame - 1;
+	}
+	
+	localFrame = frame - attachedAtFrame;
+
+	if(localFrame == 1)
 		ai->intel->init();
 	
-	if(!ai->economy->getInitialized())
+	if(!ai->economy->isInitialized())
 		return;
 
 	// anyway show AI is loaded even if it is not playing actually...
-	if (frame == (800 + (ai->team*200))) {
+	if (localFrame == (800 + (ai->team*200))) {
 		LOG_SS("*** " << AI_VERSION << " ***");
 		LOG_SS("*** " << AI_CREDITS << " ***");
 		LOG_SS("*** " <<  AI_NOTES  << " ***");
 	}
 
 	/* Make sure we shift the multiplexer for each instance of E323AI */
-	int aiframe = frame + ai->team;
+	int aiframe = localFrame + ai->team;
 	
 	// Make sure we start playing since "eco-incomes" update
 	if(!isRunning) {
@@ -247,7 +277,7 @@ void CE323AI::Update() {
 
 		case 1: { /* update threatmap */
 			CScopedTimer t(std::string("threatmap"));
-			ai->threatmap->update(frame);
+			ai->threatmap->update(localFrame);
 		}
 		break;
 
@@ -265,7 +295,7 @@ void CE323AI::Update() {
 
 		case 4: { /* update enemy intel */
 			CScopedTimer t(std::string("intel"));
-			ai->intel->update(frame);
+			ai->intel->update(localFrame);
 		}
 		break;
 
@@ -276,13 +306,13 @@ void CE323AI::Update() {
 
 		case 6: { /* update military */
 			CScopedTimer t(std::string("military"));
-			ai->military->update(frame);
+			ai->military->update(localFrame);
 		}
 		break;
 
 		case 7: { /* update economy */
 			CScopedTimer t(std::string("eco-update"));
-			ai->economy->update(frame);
+			ai->economy->update(localFrame);
 		}
 		break;
 

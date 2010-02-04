@@ -34,10 +34,11 @@ CEconomy::~CEconomy()
 }
 
 void CEconomy::init(CUnit &unit) {
+	if(initialized)	return;
 	// NOTE: expecting "unit" is a commander unit
 	const UnitDef *ud = ai->cb->GetUnitDef(unit.key);
 	UnitType *utCommander = UT(ud->id);
-	windmap = (ai->cb->GetMaxWind() + ai->cb->GetMinWind())/2.0f >= 10.0f;
+	windmap = ((ai->cb->GetMaxWind() + ai->cb->GetMinWind()) / 2.0f) >= 10.0f;
 	//float avgWind   = (ai->cb->GetMinWind() + ai->cb->GetMaxWind()) / 2.0f;
 	//float windProf  = avgWind / utWind->cost;
 	//float solarProf = utSolar->energyMake / utSolar->cost;

@@ -78,7 +78,7 @@ class CEconomy: public ARegistrar {
 		/* Can we afford to build this ? */
 		bool canAffordToBuild(UnitType *builder, UnitType *utToBuild);
 
-		bool getInitialized() { return initialized; };
+		bool isInitialized() { return initialized; };
 
 	private:
 		bool initialized;
