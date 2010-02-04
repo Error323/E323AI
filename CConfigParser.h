@@ -50,8 +50,6 @@ class CConfigParser {
 
 		void split(std::string &line, char c, std::vector<std::string> &splitted);
 		bool contains(std::string &line, char c);
-		void removeWhiteSpace(std::string &line);
-
 };
 
 #endif

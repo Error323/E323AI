@@ -13,6 +13,7 @@ namespace util {
 	void StringToLowerInPlace(std::string&);
 	std::string StringToLower(std::string);
 	std::string StringStripSpaces(const std::string&);
+	int RemoveWhiteSpaceInPlace(std::string&);
 
 	float WeightedAverage(std::list<float>&, std::list<float>&);
 

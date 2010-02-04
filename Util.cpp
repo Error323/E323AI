@@ -25,10 +25,10 @@ namespace util {
 		return (std::string(dst));
 	}
 
-
 	void StringToLowerInPlace(std::string& s) {
 		std::transform(s.begin(), s.end(), s.begin(), (int (*)(int))tolower);
 	}
+
 	std::string StringToLower(std::string s) {
 		StringToLowerInPlace(s);
 		return s;
@@ -46,7 +46,22 @@ namespace util {
 		return s2;
 	}
 
-
+	int RemoveWhiteSpaceInPlace(std::string &line) {
+		int num = 0;
+		for ( int i = 0, j ; i < line.length() ; ++ i ) {
+			if ( line [i] == ' ' || line[i] == '\t') {
+				for ( j = i + 1; j < line.length ( ) ; ++j )
+				{
+					if ( line [j] != ' ' || line[i] == '\t')
+					break ;
+				}
+				num += (j - i);
+				line = line.erase(i, (j - i));
+			}
+		}
+		return num;
+	}
+	
 	float WeightedAverage(std::list<float>& V, std::list<float>& W) {
 		float wavg = 0.0f;
 		std::list<float>::const_iterator v, w;

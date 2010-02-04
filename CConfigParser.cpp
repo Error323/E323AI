@@ -73,10 +73,10 @@ bool CConfigParser::parseConfig(std::string filename) {
 			std::string line;
 
 			std::getline(file, line);
-			line = line.substr(0, line.find('#')-1);
-			removeWhiteSpace(line);
+			line = line.substr(0, line.find('#') - 1);
+			util::RemoveWhiteSpaceInPlace(line);
 
-			if (line[0] == '#' || line.empty())
+			if (line.empty() || line[0] == '#')
 				continue;
 
 			if (line == "TEMPLATE") {
@@ -110,7 +110,7 @@ bool CConfigParser::parseConfig(std::string filename) {
 		loaded = true;
 	}
 	else {
-		LOG_II("Could not open " << dirfilename << " for parsing")
+		LOG_WW("Could not open " << dirfilename << " for parsing")
 
 		std::string templatefile = util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER)+std::string(CONFIG_TEMPLATE), true);
 		std::ifstream ifs(templatefile.c_str(), std::ios::binary);
@@ -151,7 +151,7 @@ bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType
 			if (line.empty() || line[0] == '#')
 				continue;
 
-			line = line.substr(0, line.find('#')-1);
+			line = line.substr(0, line.find('#') - 1);
 			split(line, ',', splitted);
 			const UnitDef *ud = ai->cb->GetUnitDef(splitted[0].c_str());
 			if (ud == NULL) {
@@ -179,7 +179,7 @@ bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType
 		file.close();
 	}
 	else {
-		LOG_II("Could not open " << filename << " for parsing")
+		LOG_WW("Could not open " << filename << " for parsing")
 		return false;
 	}
 	LOG_II("CConfigParser::parseCategories parsed "<<linenr<<" lines from " << filename)
@@ -210,19 +210,6 @@ bool CConfigParser::contains(std::string &line, char c) {
 			return true;
 	}
 	return false;
-}
-
-void CConfigParser::removeWhiteSpace(std::string &line) {
-	for ( int i = 0, j ; i < line.length( ) ; ++ i ) {
-		if ( line [i] == ' ' || line[i] == '\t') {
-			for ( j = i + 1; j < line.length ( ) ; ++j )
-			{
-				if ( line [j] != ' ' || line[i] == '\t')
-				break ;
-			}
-			line = line.erase ( i, (j - i) );
-		}
-	}
 }
 
 void CConfigParser::debugConfig() {
