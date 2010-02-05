@@ -98,7 +98,6 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	LOG_II("CPathfinder::CPathfinder Pathmap dimensions   " << XX << "x" << ZZ)
 
 	nrThreads = 1;
-	threads.resize(nrThreads-1);
 }
 
 CPathfinder::~CPathfinder() {

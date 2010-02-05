@@ -4,7 +4,6 @@
 #include <map>
 #include <vector>
 #include <iostream>
-#include <boost/thread.hpp>
 
 #include "headers/HEngine.h"
 #include "headers/Defines.h"
@@ -100,9 +99,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 		/* Node Graph */
 		static std::vector<Node*> graph;
-
-		/* The threads */
-		std::vector<boost::thread*> threads;
 
 		/* Number of threads */
 		size_t nrThreads;
