@@ -1,6 +1,7 @@
 #include "CPathfinder.h"
 
 #include <math.h>
+#include <limits>
 
 #include "CAI.h"
 #include "CTaskHandler.h"
@@ -11,12 +12,20 @@
 #include "MathUtil.h"
 #include "Util.hpp"
 
+#include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
+
+
+
+extern std::map<int, CAIGlobalAI*> myAIs;
+
 std::vector<CPathfinder::Node*> CPathfinder::graph;
 
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder")) {
 	this->ai   = ai;
+	// NOTE: X and Z are in slope map resolution units
 	this->X    = int(ai->cb->GetMapWidth()/HEIGHT2SLOPE);
 	this->Z    = int(ai->cb->GetMapHeight()/HEIGHT2SLOPE);
+	// NOTE: XX and ZZ are in graph map resolution units
 	this->XX   = this->X / I_MAP_RES;
 	this->ZZ   = this->Z / I_MAP_RES;
 	update     = 0;
@@ -44,18 +53,23 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 		std::ifstream fin;
 		fin.open(filename.c_str(), std::ios::binary | std::ios::in);
 		if (fin.good() && fin.is_open()) {
+			LOG_II("CPathfinder reading graph from " << filename)
 			fin.read(&cacheMarker[0], cacheMarker.size());
 			if (!fin.eof() && cacheMarker == cacheVersion) {
-				LOG_II("CPathfinder reading graph from " << filename)
 				fin.read((char*)&N, sizeof(N));
-				for (unsigned int i = 0; i < N; i++) {
-					Node *n = Node::unserialize(fin);
-					CPathfinder::graph.push_back(n);
+				if(N == (XX * ZZ)) {
+					for (unsigned int i = 0; i < N; i++) {
+						Node *n = Node::unserialize(fin);
+						CPathfinder::graph.push_back(n);
+					}
+					LOG_II("CPathfinder parsed " << CPathfinder::graph.size() << " nodes")
+					readOk = true;
 				}
-				LOG_II("CPathfinder parsed " << CPathfinder::graph.size() << " nodes")
-				readOk = true;
 			}
 			fin.close();
+			if(!readOk)
+				// TODO: explain for user why?
+				LOG_WW("CPathfinder detected invalid cache data")
 		}
 
 		if (!readOk)
@@ -88,6 +102,9 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 }
 
 CPathfinder::~CPathfinder() {
+	if(myAIs.size() > 1)
+		return; // there are another instances of current AI type
+
 	for (unsigned int i = 0; i < CPathfinder::graph.size(); i++)
 		delete CPathfinder::graph[i];
 
@@ -117,8 +134,8 @@ bool CPathfinder::isBlocked(int x, int z, int movetype) {
 	int smidx = ID(x,z);
 	int hmidx = (z*HEIGHT2SLOPE)*(X*HEIGHT2SLOPE)+(x*HEIGHT2SLOPE);
 
-	/* Block edges */
-	if (z == 0 || z == Z-1 || x == 0 || x == X-1)
+	/* Block edges and out of bounds */
+	if (z <= 0 || z >= Z-1 || x <= 0 || x >= X-1)
 		return true;
 
 	/* Block too steep slopes */
@@ -148,7 +165,7 @@ void CPathfinder::calcGraph() {
 	/* Initialize nodes */
 	for (int z = 0; z < ZZ; z++)
 		for (int x = 0; x < XX; x++)
-			CPathfinder::graph.push_back(new Node(ID_GRAPH(x,z), x, z, 1.0f));
+			CPathfinder::graph.push_back(new Node(ID_GRAPH(x, z), x, z, 1.0f));
 
 	/* Precalculate surrounding nodes */
 	std::vector<int> surrounding;
@@ -159,7 +176,7 @@ void CPathfinder::calcGraph() {
 			for (int x = -radius; x <= radius; x++) {
 				if (x == 0 && z == 0) continue;
 				float length = sqrt(float(x*x + z*z));
-				if (length > radius-0.5f && length < radius+0.5f) {
+				if (length > (radius - 0.5f) && length < (radius + 0.5f)) {
 					surrounding.push_back(z);
 					surrounding.push_back(x);
 				}
@@ -197,8 +214,8 @@ void CPathfinder::calcGraph() {
 					if (zz > Z-1) {s[5] = s[4] = s[3] = true; continue;} // south
 
 					if (
-						(xx % I_MAP_RES != 0 || zz % I_MAP_RES != 0) &&
-						!isBlocked(xx,zz,map)
+						(xx % I_MAP_RES != 0 || zz % I_MAP_RES != 0)
+						&& !isBlocked(xx, zz, map)
 					) continue;
 
 					float a;
@@ -406,31 +423,36 @@ CPathfinder::Node* CPathfinder::getClosestNodeId(float3 &f) {
 	if(f == ERRORVECTOR)
 		return NULL;
 
-	int fz = int(round(f.z/REAL/I_MAP_RES));
 	int fx = int(round(f.x/REAL/I_MAP_RES));
+	int fz = int(round(f.z/REAL/I_MAP_RES));
 
-	std::map<float, Node*> candidates;
+	Node *bestNode = NULL;
+	float bestScore = std::numeric_limits<float>::max();
+
 	for (int i = -1; i <= 1; i++) {
 		for (int j = -1; j <= 1; j++) {
 			int z = fz + i;
 			int x = fx + j;
+			
 			if (z < 0 || z > ZZ-1 || x < 0 || x > XX-1)
 				continue;
-			Node *n = CPathfinder::graph[ID_GRAPH(x,z)];
-			if (!isBlocked(x,z,activeMap)) {
+			
+			if (!isBlocked(x * I_MAP_RES, z * I_MAP_RES, activeMap)) {
+				Node *n = CPathfinder::graph[ID_GRAPH(x, z)];
 				float3 s = n->toFloat3();
 				float dist = (s - f).Length2D();
-				candidates[dist] = n;
+				if(dist < bestScore) {
+					bestNode = n;
+					bestScore = dist;
+				}
 			}
 		}
 	}
 
-	if (candidates.empty()) {
+	if (bestNode == NULL)
 		LOG_EE("CPathfinder::getClosestNode failed to lock node("<<fx<<","<<fz<<") for pos("<<f.x<<","<<f.z<<")")
-		return NULL;
-	}
-	else
-		return candidates.begin()->second;
+	
+	return bestNode;
 }
 
 void CPathfinder::drawNode(Node *n) {

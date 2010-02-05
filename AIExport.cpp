@@ -36,8 +36,10 @@
 #include "AIExport.h"
 #include "CE323AI.h"
 
+// NOTE: myAIs is not static cause we need to count AI instances
+
 // teamId -> AI map
-static std::map<int, CAIGlobalAI*> myAIs;
+std::map<int, CAIGlobalAI*> myAIs;
 
 // filled with the teamId for the first team handled by this Skirmish AI
 static int firstTeamId = -1;
