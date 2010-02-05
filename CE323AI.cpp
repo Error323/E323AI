@@ -203,7 +203,9 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 		case AI_EVENT_UNITGIVEN:
 			/* Unit gained */
 			if ((cte->newteam) == ai->team) {
+				UnitCreated(cte->unit, -1);
 				UnitFinished(cte->unit);
+				
 				CUnit *unit = ai->unittable->getUnit(cte->unit);
 
 				LOG_II("CE323AI::UnitGiven " << (*unit))
