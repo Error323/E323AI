@@ -90,7 +90,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 		}
 	}
 
-	//drawGraph(1);
+	drawGraph(1);
 	draw = false;
 
 	this->REAL = HEIGHT2REAL*HEIGHT2SLOPE;
@@ -198,6 +198,8 @@ void CPathfinder::calcGraph() {
 		for (int x = 0; x < X; x+=I_MAP_RES) {
 			for (int z = 0; z < Z; z+=I_MAP_RES) {
 				Node *parent = CPathfinder::graph[ID_GRAPH(x/I_MAP_RES,z/I_MAP_RES)];
+				if (isBlocked(x,z, map))
+					continue;
 
 				bool s[] = {false, false, false, false, false, false, false, false};
 				for (size_t p = 0; p < surrounding.size(); p+=2) {
@@ -525,11 +527,11 @@ void CPathfinder::drawGraph(int map) {
 	for (unsigned int i = 0; i < CPathfinder::graph.size(); i++) {
 		Node *p = CPathfinder::graph[i]; 
 		float3 fp = p->toFloat3();
-		fp.y = ai->cb->GetElevation(fp.x, fp.z) + 20.0f;
+		fp.y = ai->cb->GetElevation(fp.x, fp.z) + 50.0f;
 		for (size_t j = 0; j < p->neighbours[map].size(); j++) {
 			Node *n = CPathfinder::graph[p->neighbours[map][j]];
 			float3 fn = n->toFloat3();
-			fn.y = ai->cb->GetElevation(fn.x, fn.z) + 20.0f;
+			fn.y = ai->cb->GetElevation(fn.x, fn.z) + 50.0f;
 			ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, 10000, 10);
 			ai->cb->SetFigureColor(10, 0.0f, 0.0f, 1.0f, 0.5f);
 		}

@@ -13,7 +13,7 @@
 
 #define MOVE_BUFFER 2
 
-#define CACHE_VERSION "CACHEv01"
+#define CACHE_VERSION "CACHEv02"
 
 class CGroup;
 class AIClasses;
