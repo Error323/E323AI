@@ -9,7 +9,7 @@
 
 #include "headers/HEngine.h"
 
-#define METAL_THRESHOLD 32
+#define METAL_THRESHOLD 24
 
 GameMap::GameMap(AIClasses *ai) {
 	this->ai = ai;
@@ -29,7 +29,7 @@ float3 GameMap::GetClosestOpenMetalSpot(CGroup* group) {
 	std::list<float3>::iterator i;
 	for (i = metalspots.begin(); i != metalspots.end(); i++) {
 		int units[50];
-		int numUnits = ai->cb->GetFriendlyUnits(units, *i, 100.0f, 50);
+		int numUnits = ai->cb->GetFriendlyUnits(units, *i, 50.0f, 50);
 		bool taken = false;
 		for (int j = 0; j < numUnits; j++) {
 			if (ai->cb->GetUnitDef(units[j])->extractsMetal > EPSILON) {
@@ -133,7 +133,7 @@ void GameMap::CalcMetalSpots() {
 		metalspots.push_back(metalspot);
 
 		// Debug
-		// ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
+		//ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
 	}
 }
 
