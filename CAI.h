@@ -6,7 +6,6 @@
 #include "CLogger.h"
 
 class CConfigParser;
-class CMetalMap;
 class CUnitTable;
 class CEconomy;
 class CWishList;
@@ -27,7 +26,6 @@ public:
 	IAICallback    *cb;
 	IAICheats      *cbc;
 	CConfigParser  *cfgparser;
-	CMetalMap      *metalmap;
 	GameMap        *gamemap;
 	CUnitTable     *unittable;
 	CEconomy       *economy;

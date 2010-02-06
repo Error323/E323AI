@@ -2,7 +2,6 @@
 
 #include "CAI.h"
 #include "CConfigParser.h"
-#include "CMetalMap.h"
 #include "GameMap.hpp"
 #include "CUnitTable.h"
 #include "CEconomy.h"
@@ -42,7 +41,6 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 		throw 33;
 	}
 
-	ai->metalmap      = new CMetalMap(ai);
 	ai->gamemap       = new GameMap(ai);
 	ai->unittable     = new CUnitTable(ai);
 	ai->economy       = new CEconomy(ai);
@@ -75,7 +73,7 @@ void CE323AI::ReleaseAI() {
 	delete ai->wishlist;
 	delete ai->economy;
 	delete ai->unittable;
-	delete ai->metalmap;
+	delete ai->gamemap;
 	delete ai->cfgparser;
 	delete ai->logger;
 	delete ai;
@@ -95,9 +93,6 @@ void CE323AI::UnitCreated(int uid, int bid) {
 	if (unit->def->isCommander && !ai->economy->isInitialized()) {
 		ai->economy->init(*unit);
 	}
-
-	if (c&MEXTRACTOR)
-		ai->metalmap->addUnit(*unit);
 
 	if (bid < 0)
 		return; // unit was spawned from nowhere (e.g. commander)

@@ -5,7 +5,6 @@
 #include <string>
 
 #include "CAI.h"
-#include "CMetalMap.h"
 #include "CUnitTable.h"
 #include "CWishList.h"
 #include "CPathfinder.h"
@@ -319,8 +318,7 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister, float &travelTime) {
 	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
 	travelTime = ai->pathfinder->getETA(assister, gpos);
 
-	/* If a build takes more then 5 seconds after arrival, we can assist it */
-	return (buildTime > (travelTime+30*5));
+	return (buildTime > travelTime);
 }
 
 /**************************************************************/

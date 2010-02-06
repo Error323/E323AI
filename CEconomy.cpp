@@ -5,7 +5,7 @@
 #include "CAI.h"
 #include "CTaskHandler.h"
 #include "CUnitTable.h"
-#include "CMetalMap.h"
+#include "GameMap.hpp"
 #include "CWishList.h"
 #include "CDefenseMatrix.h"
 #include "CGroup.h"
@@ -177,8 +177,8 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 			}
 
 			case BUILD_MPROVIDER: {
-				bool canBuildMex = ai->metalmap->getMexSpot(group, goal);
-				if (canBuildMex) {
+				goal = ai->gamemap->GetClosestOpenMetalSpot(&group);
+				if (goal != ZeroVector) {
 					bool b1 = mIncome < 3.0f;
 					bool b2 = !unit->def->isCommander;
 					/* If we are commander, only build if the metalincome is <
@@ -403,7 +403,10 @@ unsigned CEconomy::getAllowedFactory() {
 			return secondary|tech;
 
 		// TODO: make next decision on map terrain analysis
-		if (tech == TECH1 && !ai->unittable->gotFactory(tertiary|tech))
+		bool isT1 = tech == TECH1;
+		bool hasWater = ai->gamemap->GetAmountOfWater() > 0.2f; // 20% of map water
+		bool isNewFactory = !ai->unittable->gotFactory(tertiary|tech);
+		if (isT1 && hasWater && isNewFactory)
 			return tertiary|tech;
 	}
 
@@ -560,11 +563,6 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 
 	for (i = ai->tasks->activeBuildTasks.begin(); i != ai->tasks->activeBuildTasks.end(); i++) {
 		CTaskHandler::BuildTask *buildtask = i->second;
-
-		/* Don't build TECH1 mexes together */
-		unsigned c = buildtask->toBuild->cats;
-		if (c&MEXTRACTOR && c&TECH1)
-			continue;
 
 		/* Only build tasks we are interested in */
 		float travelTime;

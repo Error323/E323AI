@@ -23,25 +23,29 @@ GameMap::GameMap(AIClasses *ai) {
 }
 
 float3 GameMap::GetClosestOpenMetalSpot(CGroup* group) {
-	std::map<float, float3> candidates;
+	float bestDist = FLT_MAX;
+	float3 bestSpot = ZeroVector;
 	float3 gpos = group->pos();
 	std::list<float3>::iterator i;
 	for (i = metalspots.begin(); i != metalspots.end(); i++) {
 		int units[50];
-		int numUnits = ai->cb->GetFriendlyUnits(units, *i, ai->cb->GetExtractorRadius(), 50);
+		int numUnits = ai->cb->GetFriendlyUnits(units, *i, 100.0f, 50);
 		bool taken = false;
 		for (int j = 0; j < numUnits; j++) {
-			if (ai->cb->GetUnitDef(units[j])->extractsMetal > 0.0f) {
+			if (ai->cb->GetUnitDef(units[j])->extractsMetal > EPSILON) {
 				taken = true;
 				break;
 			}
 		}
 		if (!taken) {
-			float radius = (gpos - *i).Length2D();
-			candidates[radius] = *i;
+			float dist = (gpos - *i).Length2D();
+			if (bestDist > dist) {
+				bestDist = dist;
+				bestSpot = *i;
+			}
 		}
 	}
-	return candidates.empty() ? ZeroVector : candidates.begin()->second;
+	return bestSpot;
 }
 
 
@@ -129,7 +133,7 @@ void GameMap::CalcMetalSpots() {
 		metalspots.push_back(metalspot);
 
 		// Debug
-		ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
+		// ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
 	}
 }
 
