@@ -3,6 +3,7 @@
 #include "CAI.h"
 #include "CConfigParser.h"
 #include "CMetalMap.h"
+#include "GameMap.hpp"
 #include "CUnitTable.h"
 #include "CEconomy.h"
 #include "CWishList.h"
@@ -42,6 +43,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	}
 
 	ai->metalmap      = new CMetalMap(ai);
+	ai->gamemap       = new GameMap(ai);
 	ai->unittable     = new CUnitTable(ai);
 	ai->economy       = new CEconomy(ai);
 	ai->wishlist      = new CWishList(ai);

@@ -16,6 +16,7 @@ class CPathfinder;
 class CIntel;
 class CMilitary;
 class CDefenseMatrix;
+class GameMap;
 
 /* Ensures single instantiation of classes and good reachability */
 class AIClasses {
@@ -27,6 +28,7 @@ public:
 	IAICheats      *cbc;
 	CConfigParser  *cfgparser;
 	CMetalMap      *metalmap;
+	GameMap        *gamemap;
 	CUnitTable     *unittable;
 	CEconomy       *economy;
 	CWishList      *wishlist;
