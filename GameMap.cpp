@@ -6,6 +6,7 @@
 
 #include "CAI.h"
 #include "CGroup.h"
+#include "CThreatMap.h"
 
 #include "headers/HEngine.h"
 
@@ -29,7 +30,7 @@ float3 GameMap::GetClosestOpenMetalSpot(CGroup* group) {
 	std::list<float3>::iterator i;
 	for (i = metalspots.begin(); i != metalspots.end(); i++) {
 		int units[50];
-		int numUnits = ai->cb->GetFriendlyUnits(units, *i, 100.0f, 50);
+		int numUnits = ai->cb->GetFriendlyUnits(units, *i, ai->cb->GetExtractorRadius(), 50);
 		bool taken = false;
 		for (int j = 0; j < numUnits; j++) {
 			if (ai->cb->GetUnitDef(units[j])->extractsMetal > EPSILON) {
@@ -37,7 +38,7 @@ float3 GameMap::GetClosestOpenMetalSpot(CGroup* group) {
 				break;
 			}
 		}
-		if (!taken) {
+		if (!taken && ai->threatmap->getThreat(*i, 0.0f) <= 1.0f ) {
 			float dist = (gpos - *i).Length2D();
 			if (bestDist > dist) {
 				bestDist = dist;
