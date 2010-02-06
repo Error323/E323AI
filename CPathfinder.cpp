@@ -90,7 +90,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 		}
 	}
 
-	drawGraph(1);
+	//drawGraph(1);
 	draw = false;
 
 	this->REAL = HEIGHT2REAL*HEIGHT2SLOPE;
