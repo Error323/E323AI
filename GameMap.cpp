@@ -29,7 +29,7 @@ float3 GameMap::GetClosestOpenMetalSpot(CGroup* group) {
 	std::list<float3>::iterator i;
 	for (i = metalspots.begin(); i != metalspots.end(); i++) {
 		int units[50];
-		int numUnits = ai->cb->GetFriendlyUnits(units, *i, 50.0f, 50);
+		int numUnits = ai->cb->GetFriendlyUnits(units, *i, 100.0f, 50);
 		bool taken = false;
 		for (int j = 0; j < numUnits; j++) {
 			if (ai->cb->GetUnitDef(units[j])->extractsMetal > EPSILON) {
