@@ -7,20 +7,32 @@
 #include "CAI.h"
 #include "CGroup.h"
 #include "CThreatMap.h"
+#include "CUnitTable.h"
+#include "CUnit.h"
 
 #include "headers/HEngine.h"
 
 #define METAL_THRESHOLD 24
 
+bool  GameMap::isInitialized = false;
+float GameMap::heightVariance = 0.0f;
+float GameMap::waterAmount = 0.0f;
+float GameMap::metalAmount = 0.0f;
+
+std::list<float3> GameMap::geospots;
+std::list<float3> GameMap::metalfeatures;
+std::list<float3> GameMap::energyfeatures;
+std::list<float3> GameMap::metalspots;
+
 GameMap::GameMap(AIClasses *ai) {
 	this->ai = ai;
 
-	heightVariance = 0.0f;
-	waterAmount    = 0.0f;
-	metalAmount    = 0.0f;
+	if (GameMap::isInitialized)
+		return;
 
 	CalcMapHeightFeatures();
 	CalcMetalSpots();
+	GameMap::isInitialized = true;
 }
 
 float3 GameMap::GetClosestOpenMetalSpot(CGroup* group) {
@@ -28,12 +40,11 @@ float3 GameMap::GetClosestOpenMetalSpot(CGroup* group) {
 	float3 bestSpot = ZeroVector;
 	float3 gpos = group->pos();
 	std::list<float3>::iterator i;
-	for (i = metalspots.begin(); i != metalspots.end(); i++) {
-		int units[50];
-		int numUnits = ai->cb->GetFriendlyUnits(units, *i, ai->cb->GetExtractorRadius(), 50);
+	for (i = GameMap::metalspots.begin(); i != GameMap::metalspots.end(); i++) {
 		bool taken = false;
+		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], *i, ai->cb->GetExtractorRadius(), 50);
 		for (int j = 0; j < numUnits; j++) {
-			if (ai->cb->GetUnitDef(units[j])->extractsMetal > EPSILON) {
+			if (ai->cb->GetUnitDef(ai->unitIDs[j])->extractsMetal > EPSILON) {
 				taken = true;
 				break;
 			}
@@ -47,6 +58,35 @@ float3 GameMap::GetClosestOpenMetalSpot(CGroup* group) {
 		}
 	}
 	return bestSpot;
+}
+
+int GameMap::GetClosestUpgradableMetalSpot(CGroup* group) {
+	float bestDist = FLT_MAX;
+	int mexUpgrade = -1;
+	float3 gpos = group->pos();
+	std::list<float3>::iterator i;
+	for (i = GameMap::metalspots.begin(); i != GameMap::metalspots.end(); i++) {
+		CUnit *unit;
+		bool taken = false;
+		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], *i, ai->cb->GetExtractorRadius(), 50);
+		for (int j = 0; j < numUnits; j++) {
+			unit = ai->unittable->getUnit(ai->unitIDs[j]);
+			bool isMex = unit->def->extractsMetal > EPSILON;
+			bool isUpgradable = (unit->techlvl&TECH1 > 0);
+			if (isMex && isUpgradable) {
+				taken = true;
+				break;
+			}
+		}
+		if (taken && ai->threatmap->getThreat(*i, 0.0f) <= 1.0f ) {
+			float dist = (gpos - *i).Length2D();
+			if (bestDist > dist) {
+				bestDist = dist;
+				mexUpgrade = unit->key;
+			}
+		}
+	}
+	return mexUpgrade;
 }
 
 
@@ -131,7 +171,7 @@ void GameMap::CalcMetalSpots() {
 
 		// Store metal spot
 		float3 metalspot(bestX, ai->cb->GetElevation(bestX,bestZ), bestZ);
-		metalspots.push_back(metalspot);
+		GameMap::metalspots.push_back(metalspot);
 
 		// Debug
 		//ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);

@@ -46,14 +46,15 @@ class GameMap {
 		std::list<float3>& GetEnergyFeatures() { return energyfeatures; }
 	
 	private:
-		float heightVariance;
-		float waterAmount;
-		float metalAmount;
+		static bool  isInitialized;
+		static float heightVariance;
+		static float waterAmount;
+		static float metalAmount;
 
-		std::list<float3> geospots;
-		std::list<float3> metalfeatures;
-		std::list<float3> energyfeatures;
-		std::list<float3> metalspots;
+		static std::list<float3> geospots;
+		static std::list<float3> metalfeatures;
+		static std::list<float3> energyfeatures;
+		static std::list<float3> metalspots;
 
 		AIClasses* ai;
 
