@@ -20,9 +20,6 @@ class CIntel {
 		bool enemyInbound();
 		float3 getEnemyVector();
 
-		/* Get the primary unit type, veh, kbot etc */
-		unitCategory getUnitType();
-
 		std::vector<int> factories;
 		std::vector<int> attackers;
 		std::vector<int> mobileBuilders;
@@ -43,7 +40,6 @@ class CIntel {
 		std::vector<unitCategory> selector;
 		unsigned totalCount;
 		float3 enemyvector;
-		unitCategory primaryType;
 
 		/* Reset enemy unit counters */
 		void resetCounters();

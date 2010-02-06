@@ -14,6 +14,7 @@
 #include "CPathfinder.h"
 #include "CConfigParser.h"
 #include "CIntel.h"
+#include "GameMap.hpp"
 
 CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	this->ai = ai;
@@ -44,7 +45,7 @@ void CEconomy::init(CUnit &unit) {
 	//float solarProf = utSolar->energyMake / utSolar->cost;
 	mStart = utCommander->def->metalMake;
 	eStart = utCommander->def->energyMake;
-	type   = ai->intel->getUnitType();
+	type   = ai->gamemap->IsKbotMap() ? KBOT : VEHICLE;
 	initialized = true;
 }
 		
