@@ -7,6 +7,8 @@
 #include "CThreatMap.h"
 #include "MathUtil.h"
 
+std::vector<CMetalMap::MSpot> CMetalMap::spots;
+
 CMetalMap::CMetalMap(AIClasses *ai): ARegistrar(300) {
 	this->ai = ai;
 	threshold = 64;
@@ -16,31 +18,37 @@ CMetalMap::CMetalMap(AIClasses *ai): ARegistrar(300) {
 	N = 100; // spot count threshold to decide map is speedmetal
 
 	cbMap = ai->cb->GetMetalMap();
-	radius = (int) round( (ai->cb->GetExtractorRadius()) / SCALAR);
+	radius = (int) round((ai->cb->GetExtractorRadius()) / SCALAR);
 	diameter = radius * 2;
 	squareRadius = radius * radius;
 
-	map = new unsigned char[X*Z];
-	coverage = new unsigned int[diameter*diameter];
-	bestCoverage = new unsigned int[diameter*diameter];
+	if(CMetalMap::spots.empty())
+	{
+		map = new unsigned char[X*Z];
+		coverage = new unsigned int[diameter*diameter];
+		bestCoverage = new unsigned int[diameter*diameter];
 
 #if _MSC_VER > 1310 // >= Visual Studio 2005
-	memcpy_s(map, sizeof(unsigned char)*X*Z, cbMap, X*Z);
+		memcpy_s(map, sizeof(unsigned char)*X*Z, cbMap, X*Z);
 #else
-	memcpy(map, cbMap, sizeof(unsigned char)*X*Z);
+		memcpy(map, cbMap, sizeof(unsigned char)*X*Z);
 #endif
 
-	findBestSpots();
+		findBestSpots();
+
+		// we don't need them anymore...
+		delete[] map;
+		delete[] coverage;
+		delete[] bestCoverage;
+	}
 }
 
 CMetalMap::~CMetalMap() {
-	delete[] map;
-	delete[] coverage;
-	delete[] bestCoverage;
 }
 
 void CMetalMap::remove(ARegistrar &unit) {
 	CUnit *u = dynamic_cast<CUnit*>(&unit);
+	// TODO: do we really need removeFromTaken()?
 	if (u->type->cats&MEXTRACTOR)
 		removeFromTaken(unit.key);
 	else
@@ -59,6 +67,9 @@ void CMetalMap::findBestSpots() {
 	bool metalSpots;
 	int i, x, z, k, bestX, bestZ, highestSaturation, saturation;
 	int counter = 0;
+
+	if(!CMetalMap::spots.empty())
+		CMetalMap::spots.clear();
 
 	while (true) {
 		counter++;
@@ -87,7 +98,7 @@ void CMetalMap::findBestSpots() {
 		float3 pos = float3(bestX*SCALAR, ai->cb->GetElevation(bestX*SCALAR,bestZ*SCALAR), bestZ*SCALAR);
 		// TODO: remove this when underwater MSpots will be supported
 		if(pos.y >= 0.0)
-			spots.push_back(MSpot(spots.size(), pos, highestSaturation));
+			CMetalMap::spots.push_back(MSpot(spots.size(), pos, highestSaturation));
 
 		if (counter >= N) {
 			LOG_SS("Speedmetal infects my skills... I won't play");
@@ -98,9 +109,8 @@ void CMetalMap::findBestSpots() {
 			map[bestCoverage[i]] = 0;
 	}
 
-	std::random_shuffle(spots.begin(), spots.end());
+	std::random_shuffle(CMetalMap::spots.begin(), CMetalMap::spots.end());
 }
-
 
 int CMetalMap::getSaturation(int x, int z, int *k) {
 	int index, i, j, sum;
@@ -129,23 +139,24 @@ int CMetalMap::squareDist(int x, int z, int j, int i) {
 }
 
 bool CMetalMap::getMexSpot(CGroup &group, float3 &spot) {
-	if (taken.size() == spots.size())
+	if (taken.size() == CMetalMap::spots.size())
 		// all spots are taken
 		return false;
 
 	std::vector<MSpot> sorted;
 	float3 pos = group.pos();
 	float pathLength;
-	MSpot *ms, *bestMs = NULL;
+	/*const*/ MSpot *ms;
+	MSpot *bestMs = NULL;
 	
-	for (unsigned i = 0; i < spots.size(); i++) {
-		ms = &(spots[i]);
+	for (unsigned i = 0; i < CMetalMap::spots.size(); i++) {
+		ms = &(CMetalMap::spots[i]);
 		
 		// TODO: compare spot depth against group move type maxWater & minWater
 
 		bool skip = false;
 
-		// skip already taken (in reality or by task planner) spots...
+		// skip already taken (existing or in task planner) spots...
 		for (std::map<int,float3>::iterator j = taken.begin(); j != taken.end(); j++) {
 			float3 diff = (j->second - ms->f);
 			if (diff.Length2D() <= ai->cb->GetExtractorRadius()*1.5f) {
@@ -202,8 +213,10 @@ void CMetalMap::removeFromTaken(int mex) {
 	std::map<int,float3>::iterator i;
 	for (i = taken.begin(); i != taken.end(); i++) {
 		float3 diff = pos - i->second;
-		if (diff.Length2D() <= ai->cb->GetExtractorRadius()*1.2f)
+		if (diff.Length2D() <= ai->cb->GetExtractorRadius()*1.2f) {
 			erase = i->first;
+			break;
+		}
 	}
 	assert(erase != -1);
 	taken.erase(erase);

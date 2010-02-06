@@ -26,9 +26,10 @@ class CMetalMap: public ARegistrar {
 
 		struct MSpot {
 			int id;
-			float3 f;				// point in 3d space
-			int c;					// metal coverage
-			float dist;
+			float3 f;	// point in 3d space
+			int c;		// metal coverage
+			// TODO: storing temp var (dist) in a member which is used from outside is a bad design, fix it
+			float dist;	// used as temp var to store distance in getMexSpot() and for sorting procedure
 			
 			MSpot(int id, float3 f, int c) {
 				this->id = id;
@@ -44,12 +45,14 @@ class CMetalMap: public ARegistrar {
 
 		bool getMexSpot(CGroup &group, float3 &pos);
 		void removeFromTaken(int mex);
-		std::map<int,float3> taken;
+		std::map<int,float3> taken; // key = mex unit id, value = spot position
 
 	private:
 		void findBestSpots();
 		int getSaturation(int x, int z, int *k);
 		int squareDist(int x, int z, int j, int i);
+
+		static std::vector<MSpot> spots;
 
 		int X, Z, N;
 		int threshold;
@@ -60,7 +63,6 @@ class CMetalMap: public ARegistrar {
 		unsigned char *map;
 		unsigned int *coverage;
 		unsigned int *bestCoverage;
-		std::vector<MSpot> spots;
 
 		AIClasses *ai;
 };
