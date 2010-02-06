@@ -17,6 +17,7 @@ CDefenseMatrix::CDefenseMatrix(AIClasses *ai) {
 }
 
 float3 CDefenseMatrix::getBestDefendedPos(int n) {
+	n = std::min<int>(n, clusters.size()-1);
 	std::multimap<float, Cluster*>::iterator i;
 	int j = 0;
 	for (i = clusters.begin(); i != clusters.end(); i++) {
