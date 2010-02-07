@@ -6,6 +6,7 @@
 #include <math.h>
 #include <iostream>
 #include <map>
+#include <cfloat>
 
 #include "CAI.h"
 #include "CGroup.h"
@@ -79,7 +80,7 @@ int GameMap::GetClosestUpgradableMetalSpot(CGroup* group) {
 		for (int j = 0; j < numUnits; j++) {
 			unit = ai->unittable->getUnit(ai->unitIDs[j]);
 			bool isMex = unit->def->extractsMetal > EPSILON;
-			bool isUpgradable = (unit->techlvl&TECH1 > 0);
+			bool isUpgradable = ((unit->techlvl & TECH1) > 0);
 			if (isMex && isUpgradable) {
 				taken = true;
 				break;
