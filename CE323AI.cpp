@@ -13,6 +13,7 @@
 #include "CMilitary.h"
 #include "CDefenseMatrix.h"
 #include "CUnit.h"
+#include "CGroup.h"
 #include "CScopedTimer.h"
 
 void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
@@ -148,6 +149,14 @@ void CE323AI::UnitDestroyed(int uid, int attacker) {
 void CE323AI::UnitIdle(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
 	LOG_II("CE323AI::UnitIdle " << (*unit))
+	if(ai->unittable->unitsUnderPlayerControl.find(uid) != ai->unittable->unitsUnderPlayerControl.end()) {
+		ai->unittable->unitsUnderPlayerControl.erase(uid);
+		assert(unit->group == NULL);
+		LOG_II("CE323AI::PlayerCommand no " << (*unit))
+		// re-assigning unit to appropriate group
+		UnitFinished(uid);
+		return;
+	}
 	ai->unittable->idle[uid] = true;
 }
 
@@ -210,7 +219,7 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 
 				LOG_II("CE323AI::UnitGiven " << (*unit))
 			}
-		break;
+			break;
 
 		case AI_EVENT_UNITCAPTURED:
 			/* Unit lost */
@@ -220,7 +229,60 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 
 				LOG_II("CE323AI::UnitCaptured " << (*unit))
 			}
-		break;
+			break;
+
+		case AI_EVENT_PLAYER_COMMAND:
+			/* Player incoming command */
+			const PlayerCommandEvent* pce = (const PlayerCommandEvent*) data;
+			bool importantCommand = false;
+			if(pce->command.id < 0)
+				importantCommand = true;
+			else
+				switch(pce->command.id)
+				{
+					case CMD_MOVE:
+					case CMD_PATROL:
+					case CMD_FIGHT:
+					case CMD_ATTACK:
+					case CMD_AREA_ATTACK:
+					case CMD_GUARD:
+					case CMD_REPAIR:
+					case CMD_LOAD_UNITS:
+					case CMD_UNLOAD_UNITS:
+					case CMD_UNLOAD_UNIT:
+					case CMD_RECLAIM:
+					case CMD_DGUN:
+					case CMD_RESTORE:
+					case CMD_RESURRECT:
+					case CMD_CAPTURE:
+						importantCommand = true;
+						break;
+				}
+
+			if(importantCommand && !pce->units.empty()) {
+				for(int i = 0; i < pce->units.size(); i++) {
+					if(ai->unittable->unitsUnderPlayerControl.find(pce->units[i]) == ai->unittable->unitsUnderPlayerControl.end()) {
+						// we have to remove unit from a group, but not 
+						// to emulate unit is dead
+						CUnit* unit = ai->unittable->getUnit(pce->units[i]);
+						if(unit->group) {
+							// remove unit from group so it will not receive 
+							// AI commands anymore
+							unit->unreg(*unit->group); // this prevent a crash when unit destroyed in player mode
+							unit->group->remove(*unit);
+								
+						}							
+						// NOTE: i think the following two lines have almost
+						// no sense cause current AI design does not deal
+						// with units not assigned to any group
+						unit->micro(false);
+						ai->unittable->idle[unit->key] = false; // because player controls it
+						ai->unittable->unitsUnderPlayerControl[unit->key] = unit;
+						LOG_II("CE323AI::PlayerCommand " << (*unit))
+					}
+				}
+			}
+			break;	
 	}
 
 	return 0;

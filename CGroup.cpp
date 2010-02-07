@@ -18,6 +18,7 @@ void CGroup::addUnit(CUnit &unit) {
 
 	units[unit.key] = &unit;
 	unit.reg(*this);
+	unit.group = this;
 
 	// TODO: if group is busy invoke new unit to community process?
 }
@@ -26,8 +27,10 @@ void CGroup::remove() {
 	LOG_II("CGroup::remove " << (*this))
 
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++)
+	for (i = units.begin(); i != units.end(); i++) {
 		i->second->unreg(*this);
+		i->second->group = NULL;
+	}
 	
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
@@ -36,16 +39,20 @@ void CGroup::remove() {
 }
 
 void CGroup::remove(ARegistrar &unit) {
-	// TODO: looks like "unit" can be a ATask instance
 	LOG_II("CGroup::remove unit(" << unit.key << ")")
 
+	// NOTE: looks like "unit" can be an ATask instance, here will check this
+	assert(units.find(unit.key) != units.end());
+	
+	CUnit *unit2 = units[unit.key];
+	unit2->group = NULL;
 	units.erase(unit.key);
 
 	/* If no more units remain in this group, remove the group */
 	if (units.empty()) {
 		std::list<ARegistrar*>::iterator i;
 		for (i = records.begin(); i != records.end(); i++)
-			// remove from CEconoy, CPathfinder, ATask
+			// remove from CEconomy, CPathfinder, ATask
   	        (*i)->remove(*this);
 	}
 	else {

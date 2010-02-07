@@ -30,6 +30,7 @@ void CUnit::reset(int uid, int bid) {
 	this->waiting = false;
 	this->microing= false;
 	this->techlvl = 0;
+	this->group = NULL;
 }
 
 bool CUnit::reclaim(float3 pos, float radius) {
