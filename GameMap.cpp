@@ -1,11 +1,15 @@
 #include "GameMap.hpp"
 
-#include <float.h>
+#ifndef _USE_MATH_DEFINES
+	#define _USE_MATH_DEFINES
+#endif
+#include <math.h>
 #include <iostream>
 #include <map>
 
 #include "CAI.h"
 #include "CGroup.h"
+#include "MathUtil.h"
 #include "CThreatMap.h"
 #include "CUnitTable.h"
 #include "CUnit.h"
@@ -41,15 +45,15 @@ float3 GameMap::GetClosestOpenMetalSpot(CGroup* group) {
 	float3 gpos = group->pos();
 	std::list<float3>::iterator i;
 	for (i = GameMap::metalspots.begin(); i != GameMap::metalspots.end(); i++) {
+		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], *i, ai->cb->GetExtractorRadius() * 1.1f, 50);
 		bool taken = false;
-		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], *i, ai->cb->GetExtractorRadius(), 50);
 		for (int j = 0; j < numUnits; j++) {
 			if (ai->cb->GetUnitDef(ai->unitIDs[j])->extractsMetal > EPSILON) {
 				taken = true;
 				break;
 			}
 		}
-		if (!taken && ai->threatmap->getThreat(*i, 0.0f) <= 1.0f ) {
+		if (!taken && ai->threatmap->getThreat(*i, 0.0f) <= 1.0f) {
 			float dist = (gpos - *i).Length2D();
 			if (bestDist > dist) {
 				bestDist = dist;
@@ -60,6 +64,9 @@ float3 GameMap::GetClosestOpenMetalSpot(CGroup* group) {
 	return bestSpot;
 }
 
+// SLOGIC: this method has nothing to do with GamMap class, it is pure CEconomy
+// related stuff where we should track already built MExes. Also it somewhat 
+// heavy
 int GameMap::GetClosestUpgradableMetalSpot(CGroup* group) {
 	float bestDist = FLT_MAX;
 	int mexUpgrade = -1;
@@ -89,18 +96,20 @@ int GameMap::GetClosestUpgradableMetalSpot(CGroup* group) {
 	return mexUpgrade;
 }
 
-
 void GameMap::CalcMetalSpots() {
 	int X = int(ai->cb->GetMapWidth()/4);
 	int Z = int(ai->cb->GetMapHeight()/4);
 	int R = int(round(ai->cb->GetExtractorRadius() / 32.0f));
-	unsigned char metalmap[X*Z];
+	const unsigned char *metalmapData = ai->cb->GetMetalMap();
+	unsigned char *metalmap;
+		
+	metalmap = new unsigned char[X*Z];
 
 	// Calculate circular stamp
 	std::vector<int> circle;
 	for (int i = -R; i <= R; i++) {
 		for (int j = -R; j <= R; j++) {
-			float r = sqrt(i*i + j*j);
+			float r = sqrt((float)i*i + j*j);
 			if (r > R) continue;
 			circle.push_back(i);
 			circle.push_back(j);
@@ -117,7 +126,7 @@ void GameMap::CalcMetalSpots() {
 					int zz = z*2+i; int xx = x*2+j;
 					if (zz < 0 || zz > (Z*2-1) || xx < 0 || xx > (X*2-1))
 						continue;
-					sum += ai->cb->GetMetalMap()[zz*(X*2)+xx];
+					sum += metalmapData[zz*(X*2)+xx];
 				}
 			}
 
@@ -142,7 +151,7 @@ void GameMap::CalcMetalSpots() {
 				int zz = circle[c]+z; int xx = circle[c+1]+x;
 				if (xx < 0 || xx > X-1 || zz < 0 || zz > Z-1)
 					continue;
-				float r = sqrt(circle[c]*circle[c] + circle[c+1]*circle[c+1]);
+				float r = sqrt((float)circle[c]*circle[c] + circle[c+1]*circle[c+1]);
 				saturation += metalmap[ID(xx, zz)] * (1.0f / (r+1.0f));
 				sum += metalmap[ID(xx,zz)];
 			}
@@ -176,6 +185,8 @@ void GameMap::CalcMetalSpots() {
 		// Debug
 		//ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
 	}
+
+	delete[] metalmap;
 }
 
 
@@ -212,7 +223,7 @@ void GameMap::CalcMapHeightFeatures() {
 		for (int x = 0; x < X; x++) {
 			float h = hm[ID(x,z)];
 			if (h >= 0.0f) 
-				heightVariance += (h/fsum) * std::pow<float>((h - favg), 2.0f);
+				heightVariance += (h/fsum) * std::pow((h - favg), 2.0f);
 		}
 	}
 
