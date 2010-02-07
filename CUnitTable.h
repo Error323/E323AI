@@ -62,6 +62,7 @@ class CUnitTable: public ARegistrar {
 		std::map<int, CUnit*>     defenses;
 		std::map<int, CUnit*>     energyStorages;
 		std::map<int, int>        unitsAliveTime;
+		std::map<int, CUnit*>     unitsUnderPlayerControl;
 
 		/* unitCategories in string format, see Defines.h */
 		static std::map<unitCategory, std::string> cat2str;

@@ -9,6 +9,7 @@
 
 class AIClasses;
 class UnitType;
+class CGroup;
 
 /* Building facings, NOTE: this order is important! */
 enum facing{SOUTH, EAST, NORTH, WEST, NONE};
@@ -91,6 +92,8 @@ class CUnit: public ARegistrar {
 		bool isMicroing();
 
 		float3 pos();
+
+		CGroup *group; // group unit belongs to
 
 		/* Get best facing */
 		facing getBestFacing(float3 &pos);
