@@ -316,7 +316,7 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister, float &travelTime) {
 
 	float3 gpos = group->pos();
 	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
-	travelTime = ai->pathfinder->getETA(assister, gpos);
+	travelTime = ai->pathfinder->getETA(assister, gpos, assister.buildRange);
 
 	return (buildTime > travelTime);
 }
