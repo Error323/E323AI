@@ -155,6 +155,7 @@ void CUnitTable::remove(ARegistrar &unit) {
 	defenses.erase(unit.key);
 	unitsAliveTime.erase(unit.key);
 	energyStorages.erase(unit.key);
+	unitsUnderPlayerControl.erase(unit.key);
 }
 
 CUnit* CUnitTable::getUnit(int uid) {
