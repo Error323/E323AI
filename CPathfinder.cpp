@@ -271,9 +271,9 @@ void CPathfinder::resetMap(int thread) {
 	}
 }
 
-float CPathfinder::getETA(CGroup &group, float3 &pos) {
+float CPathfinder::getETA(CGroup &group, float3 &pos, float radius) {
 	float3 gpos = group.pos();
-	float dist = (pos - gpos).Length2D()+MULTIPLEXER;
+	float dist = ai->cb->GetPathLength(gpos, pos, group.moveType) - radius;
 	float travelTime = (dist / group.speed);
 	return travelTime;
 }

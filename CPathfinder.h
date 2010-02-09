@@ -69,7 +69,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		};
 
 		/* Get estimated time of arrival */
-		float getETA(CGroup&, float3&);
+		float getETA(CGroup&, float3&, float radius = 0.0f);
 
 		/* Update groups following paths */
 		void updateFollowers();
