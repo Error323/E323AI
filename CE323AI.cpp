@@ -23,6 +23,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->team          = team;
 	ai->logger        = new CLogger(ai, CLogger::LOG_SCREEN | CLogger::LOG_FILE);
 	ai->cfgparser     = new CConfigParser(ai);
+	ai->unittable     = new CUnitTable(ai);
 
 	std::string configfile(ai->cb->GetModName());
 	configfile = configfile.substr(0, configfile.size()-4) + "-config.cfg";
@@ -37,13 +38,13 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 		// in case of an error in InitAI().
 		delete ai->cfgparser;
 		delete ai->logger;
+		delete ai->unittable;
 		delete ai;
 		// this will kill this AI instance gracefully
 		throw 33;
 	}
 
 	ai->gamemap       = new GameMap(ai);
-	ai->unittable     = new CUnitTable(ai);
 	ai->economy       = new CEconomy(ai);
 	ai->wishlist      = new CWishList(ai);
 	ai->tasks         = new CTaskHandler(ai);
