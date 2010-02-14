@@ -84,6 +84,9 @@ void GameMap::CalcMetalSpots() {
 		// Using a greedy approach, find the best metalspot
 		for (size_t i = 0; i < M.size(); i+=2) {
 			int z = M[i]; int x = M[i+1];
+			if (metalmap[ID(x,z)] == 0)
+				continue;
+
 			float saturation = 0.0f; float sum = 0.0f;
 			for (size_t c = 0; c < circle.size(); c+=2) {
 				int zz = circle[c]+z; int xx = circle[c+1]+x;
