@@ -405,9 +405,9 @@ unsigned CEconomy::getAllowedFactory() {
 
 		// TODO: make next decision on map terrain analysis
 		bool isT1 = tech == TECH1;
-		bool hasWater = ai->gamemap->GetAmountOfWater() > 0.2f; // 20% of map water
+		bool isHooverMap = ai->gamemap->IsHooverMap();
 		bool isNewFactory = !ai->unittable->gotFactory(tertiary|tech);
-		if (isT1 && hasWater && isNewFactory)
+		if (isT1 && isHooverMap && isNewFactory)
 			return tertiary|tech;
 	}
 

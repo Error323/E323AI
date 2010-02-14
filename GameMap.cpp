@@ -17,12 +17,8 @@
 
 #include "headers/HEngine.h"
 
-#define METAL_THRESHOLD 24
+#define METAL_THRESHOLD 10
 
-bool  GameMap::isInitialized = false;
-float GameMap::heightVariance = 0.0f;
-float GameMap::waterAmount = 0.0f;
-float GameMap::metalAmount = 0.0f;
 
 std::list<float3> GameMap::geospots;
 std::list<float3> GameMap::metalfeatures;
@@ -31,13 +27,11 @@ std::list<float3> GameMap::metalspots;
 
 GameMap::GameMap(AIClasses *ai) {
 	this->ai = ai;
-
-	if (GameMap::isInitialized)
-		return;
-
+	heightVariance = 0.0f;
+	waterAmount = 0.0f;
 	CalcMapHeightFeatures();
-	CalcMetalSpots();
-	GameMap::isInitialized = true;
+	if (GameMap::metalspots.empty())
+		CalcMetalSpots();
 }
 
 float3 GameMap::GetClosestOpenMetalSpot(CGroup* group) {
@@ -166,8 +160,6 @@ void GameMap::CalcMetalSpots() {
 		// No more mex spots
 		if (!mexSpotFound) break;
 
-		metalAmount += metalmap[bestZ*Z+bestX];
-
 		// "Erase" metal under the bestX bestZ radius
 		for (size_t c = 0; c < circle.size(); c+=2) {
 			int z = circle[c]+bestZ; int x = circle[c+1]+bestX;
@@ -224,10 +216,15 @@ void GameMap::CalcMapHeightFeatures() {
 		for (int x = 0; x < X; x++) {
 			float h = hm[ID(x,z)];
 			if (h >= 0.0f) 
-				heightVariance += (h/fsum) * std::pow((h - favg), 2.0f);
+				heightVariance += (h/fsum) * pow((h - favg), 2);
 		}
 	}
+	heightVariance = sqrt(heightVariance);
 
 	// Calculate amount of water in [0,1]
 	waterAmount = 1.0f - (count / float(total));
+
+	std::string type(IsKbotMap() ? "Kbot" : "Vehicle");
+	std::string hoover(IsHooverMap() ? "Activated" : "Disabled");
+	LOG_II("GameMap::CalcMapHeightFeatures Primary lab: "<<type<<", Hoover lab: " << hoover)
 }

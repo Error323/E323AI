@@ -32,24 +32,23 @@ class GameMap {
 		float GetAmountOfLand() { return (1.0f - waterAmount); }
 
 
-		bool HasMetalSpots() { return metalAmount > 0.0f; }
 		bool HasGeoSpots() { return geospots.size() > 0; }
 		bool HasMetalFeatures() { return metalfeatures.size() > 0; }
 		bool HasEnergyFeatures() { return energyfeatures.size() > 0; }
+		//bool HasMetalSpots() { return true; }
 
 		bool IsKbotMap() { return heightVariance > KBOT_VEH_THRESHOLD; }
 		bool IsVehicleMap() { return !IsKbotMap(); }
-		bool IsMetalMap() { return metalAmount > 0.0f; }
+		bool IsHooverMap() { return waterAmount > 0.2f; }
+		//bool IsMetalMap() { return true; }
 
 		std::list<float3>& GetGeoSpots() { return geospots; }
 		std::list<float3>& GetMetalFeatures() { return metalfeatures; }
 		std::list<float3>& GetEnergyFeatures() { return energyfeatures; }
 	
 	private:
-		static bool  isInitialized;
-		static float heightVariance;
-		static float waterAmount;
-		static float metalAmount;
+		float heightVariance;
+		float waterAmount;
 
 		static std::list<float3> geospots;
 		static std::list<float3> metalfeatures;
