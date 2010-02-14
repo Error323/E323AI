@@ -57,8 +57,11 @@ class CEconomy: public ARegistrar {
 		/* Overload */
 		void remove(ARegistrar &group);
 
-		/* Add a new unit */
-		void addUnit(CUnit &unit);
+		/* Add a new unit on finished */
+		void addUnitOnCreated(CUnit &unit);
+
+		/* Add a new unit on created */
+		void addUnitOnFinished(CUnit &unit);
 
 		/* Initialize economy module */
 		void init(CUnit &unit);
@@ -83,6 +86,8 @@ class CEconomy: public ARegistrar {
 	private:
 		bool initialized;
 		AIClasses *ai;
+
+		std::map<int, float3> takenMexes;
 
 		/* The group container */
 		std::vector<CGroup*> groups;
@@ -113,6 +118,9 @@ class CEconomy: public ARegistrar {
 
 		/* See if we can help with a certain task */
 		ATask* canAssist(buildType t, CGroup &group);
+
+		/* Fills takenMexes also */
+		float3 getClosestOpenMetalSpot(CGroup &group);
 
 		/* Prevent stalling */
 		void preventStalling();

@@ -34,63 +34,6 @@ GameMap::GameMap(AIClasses *ai) {
 		CalcMetalSpots();
 }
 
-float3 GameMap::GetClosestOpenMetalSpot(CGroup* group) {
-	float bestDist = FLT_MAX;
-	float3 bestSpot = ZeroVector;
-	float3 gpos = group->pos();
-	std::list<float3>::iterator i;
-	for (i = GameMap::metalspots.begin(); i != GameMap::metalspots.end(); i++) {
-		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], *i, ai->cb->GetExtractorRadius() * 1.1f, 50);
-		bool taken = false;
-		for (int j = 0; j < numUnits; j++) {
-			if (ai->cb->GetUnitDef(ai->unitIDs[j])->extractsMetal > EPSILON) {
-				taken = true;
-				break;
-			}
-		}
-		if (!taken && ai->threatmap->getThreat(*i, 0.0f) <= 1.0f) {
-			float dist = (gpos - *i).Length2D();
-			if (bestDist > dist) {
-				bestDist = dist;
-				bestSpot = *i;
-			}
-		}
-	}
-	return bestSpot;
-}
-
-// SLOGIC: this method has nothing to do with GamMap class, it is pure CEconomy
-// related stuff where we should track already built MExes. Also it somewhat 
-// heavy
-int GameMap::GetClosestUpgradableMetalSpot(CGroup* group) {
-	float bestDist = FLT_MAX;
-	int mexUpgrade = -1;
-	float3 gpos = group->pos();
-	std::list<float3>::iterator i;
-	for (i = GameMap::metalspots.begin(); i != GameMap::metalspots.end(); i++) {
-		CUnit *unit;
-		bool taken = false;
-		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], *i, ai->cb->GetExtractorRadius(), 50);
-		for (int j = 0; j < numUnits; j++) {
-			unit = ai->unittable->getUnit(ai->unitIDs[j]);
-			bool isMex = unit->def->extractsMetal > EPSILON;
-			bool isUpgradable = ((unit->techlvl & TECH1) > 0);
-			if (isMex && isUpgradable) {
-				taken = true;
-				break;
-			}
-		}
-		if (taken && ai->threatmap->getThreat(*i, 0.0f) <= 1.0f ) {
-			float dist = (gpos - *i).Length2D();
-			if (bestDist > dist) {
-				bestDist = dist;
-				mexUpgrade = unit->key;
-			}
-		}
-	}
-	return mexUpgrade;
-}
-
 void GameMap::CalcMetalSpots() {
 	int X = int(ai->cb->GetMapWidth()/4);
 	int Z = int(ai->cb->GetMapHeight()/4);

@@ -114,6 +114,7 @@ void CE323AI::UnitCreated(int uid, int bid) {
 				unit->moveForward(400.0f);
 		}
 	}
+	ai->economy->addUnitOnCreated(*unit);
 }
 
 /* Called when units are finished in a factory and able to move */
@@ -130,7 +131,7 @@ void CE323AI::UnitFinished(int uid) {
 
 	/* Eco unit */
 	if (!(c&ATTACKER) || c&COMMANDER)
-		ai->economy->addUnit(*unit);
+		ai->economy->addUnitOnFinished(*unit);
 	/* Military unit */
 	else
 		ai->military->addUnit(*unit);

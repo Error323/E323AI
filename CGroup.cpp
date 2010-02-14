@@ -139,7 +139,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 	}
 
 	MoveData *md = ai->cb->GetUnitDef(unit->key)->movedata;
-    if (md->maxSlope <= maxSlope) {
+    if (md != NULL && md->maxSlope <= maxSlope) {
 		moveType = md->pathType;
 		maxSlope = md->maxSlope;
 	}

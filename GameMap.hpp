@@ -16,12 +16,6 @@ class GameMap {
 		GameMap(AIClasses*);
 		~GameMap(){}
 
-		/** @return float3, ZeroVector when there are no candidates */
-		float3 GetClosestOpenMetalSpot(CGroup*);
-
-		/** @return int, unit id of the upgradeable mex, -1 if there are no candidates */
-		int GetClosestUpgradableMetalSpot(CGroup*);
-
 		/** @return float, height variance */
 		float GetHeightVariance() { return heightVariance; }
 
@@ -45,15 +39,15 @@ class GameMap {
 		std::list<float3>& GetGeoSpots() { return geospots; }
 		std::list<float3>& GetMetalFeatures() { return metalfeatures; }
 		std::list<float3>& GetEnergyFeatures() { return energyfeatures; }
+
+		static std::list<float3> metalspots;
+		static std::list<float3> geospots;
+		static std::list<float3> metalfeatures;
+		static std::list<float3> energyfeatures;
 	
 	private:
 		float heightVariance;
 		float waterAmount;
-
-		static std::list<float3> geospots;
-		static std::list<float3> metalfeatures;
-		static std::list<float3> energyfeatures;
-		static std::list<float3> metalspots;
 
 		AIClasses* ai;
 

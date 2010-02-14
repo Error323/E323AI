@@ -1,5 +1,7 @@
 #include "CEconomy.h"
 
+#include <cfloat>
+
 #include "headers/HEngine.h"
 
 #include "CAI.h"
@@ -95,7 +97,6 @@ CGroup* CEconomy::requestGroup() {
 
 	lookup[group->key] = index;
 	group->reg(*this);
-	activeGroups[group->key] = group;
 
 	return group;
 }
@@ -105,6 +106,7 @@ void CEconomy::remove(ARegistrar &group) {
 	free.push(lookup[group.key]);
 	lookup.erase(group.key);
 	activeGroups.erase(group.key);
+	takenMexes.erase(group.key);
 
 	// NOTE: CEconomy is registered inside group, so the next lines 
 	// are senseless because records.size() = 0 always
@@ -113,7 +115,18 @@ void CEconomy::remove(ARegistrar &group) {
 		(*i)->remove(group);
 }
 
-void CEconomy::addUnit(CUnit &unit) {
+void CEconomy::addUnitOnCreated(CUnit &unit) {
+	unsigned c = unit.type->cats;
+	if (c&MEXTRACTOR) {
+		CGroup *group = requestGroup();
+		group->addUnit(unit);
+		takenMexes[group->key] = group->pos();
+		CUnit *builder = ai->unittable->getUnit((group->units.begin()++)->second->builder);
+		takenMexes.erase(builder->group->key);
+	}
+}
+
+void CEconomy::addUnitOnFinished(CUnit &unit) {
 	LOG_II("CEconomy::addUnit " << unit)
 
 	unsigned c = unit.type->cats;
@@ -125,6 +138,7 @@ void CEconomy::addUnit(CUnit &unit) {
 	else if (c&BUILDER && c&MOBILE) {
 		CGroup *group = requestGroup();
 		group->addUnit(unit);
+		activeGroups[group->key] = group;
 	}
 
 	else if (c&MMAKER) {
@@ -178,7 +192,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 			}
 
 			case BUILD_MPROVIDER: {
-				goal = ai->gamemap->GetClosestOpenMetalSpot(&group);
+				goal = getClosestOpenMetalSpot(group);
 				if (goal != ZeroVector) {
 					bool b1 = mIncome < 3.0f;
 					bool b2 = !unit->def->isCommander;
@@ -194,6 +208,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 							ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
 					}
 				}
+				// XXX: && !estall
 				else if (!eRequest) {
 					UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 					if (mmaker != NULL)
@@ -264,6 +279,36 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 			}
 		}
 	}
+}
+
+float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
+	float bestDist = FLT_MAX;
+	float3 bestSpot = ZeroVector;
+	float3 gpos = group.pos();
+	float radius = ai->cb->GetExtractorRadius();
+
+	std::list<float3>::iterator i;
+	std::map<int, float3>::iterator j;
+	for (i = GameMap::metalspots.begin(); i != GameMap::metalspots.end(); i++) {
+		bool taken = false;
+		for (j = takenMexes.begin(); j != takenMexes.end(); j++) {
+			if ((*i - j->second).Length2D() < radius) {
+				taken = true;
+				break;
+			}
+		}
+		if (taken) continue;
+
+		float dist = (gpos - *i).Length2D();
+		if (dist < bestDist) {
+			bestDist = dist;
+			bestSpot = *i;
+		}
+	}
+	if (bestSpot != ZeroVector)
+		takenMexes[group.key] = bestSpot;
+
+	return bestSpot;
 }
 
 void CEconomy::update(int frame) {
@@ -578,9 +623,14 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 		return NULL;
 
 	bool isCommander = group.units.begin()->second->def->isCommander;
-	bool isToFar     = suited.begin()->first > 30*10;
-	if (isCommander && isToFar)
-		return NULL;
+	
+	if (isCommander) {
+		float3 g = (suited.begin()++)->second->pos;
+		float eta = ai->pathfinder->getETA(group,g);
+
+		/* Don't pursuit as commander when walkdistance is more then 10 seconds */
+		if (eta > 30*10) return NULL;
+	}
 
 	return suited.begin()->second;
 }
