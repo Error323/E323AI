@@ -76,6 +76,7 @@ void GameMap::CalcMetalSpots() {
 		}
 	}
 
+	const float minimum = (METAL_THRESHOLD*M_PI*pow((0.7*R),2));
 	while (true) {
 		float highestSaturation = 0.0f;
 		int bestX, bestZ;
@@ -89,14 +90,15 @@ void GameMap::CalcMetalSpots() {
 
 			float saturation = 0.0f; float sum = 0.0f;
 			for (size_t c = 0; c < circle.size(); c+=2) {
-				int zz = circle[c]+z; int xx = circle[c+1]+x;
+				int a = circle[c]; int b = circle[c+1];
+				int zz = a+z; int xx = b+x;
 				if (xx < 0 || xx > X-1 || zz < 0 || zz > Z-1)
 					continue;
-				float r = sqrt((float)circle[c]*circle[c] + circle[c+1]*circle[c+1]);
+				float r = sqrt((float)a*a + b*b);
 				saturation += metalmap[ID(xx, zz)] * (1.0f / (r+1.0f));
 				sum += metalmap[ID(xx,zz)];
 			}
-			if (saturation > highestSaturation && sum > (METAL_THRESHOLD*M_PI*pow((0.7*R),2))) {
+			if (saturation > highestSaturation && sum > minimum) {
 				bestX = x; bestZ = z;
 				highestSaturation = saturation;
 				mexSpotFound = true;
@@ -122,8 +124,9 @@ void GameMap::CalcMetalSpots() {
 		GameMap::metalspots.push_back(metalspot);
 
 		// Debug
-		//ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
+		// ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
 	}
+	LOG_II("GameMap::CalcMetalSpots found "<<GameMap::metalspots.size()<<" metal spots")
 
 	delete[] metalmap;
 }
