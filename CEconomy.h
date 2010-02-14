@@ -49,7 +49,7 @@ class CEconomy: public ARegistrar {
 		int state;
 
 		/* stalling/exceeding vars, updated in updateIncomes() */
-		bool mstall, estall, mexceeding, eexceeding;
+		bool mstall, estall, mexceeding, eexceeding, areMMakersEnabled;
 
 		/* Returns a fresh CGroup instance */
 		CGroup* requestGroup();

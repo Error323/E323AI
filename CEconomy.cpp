@@ -28,6 +28,7 @@ CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	mStorage = eStorage                                   = 0.0f;
 	mstall = estall = mexceeding = eexceeding = mRequest = eRequest = false;
 	initialized = false;
+	areMMakersEnabled = true;
 }
 
 CEconomy::~CEconomy()
@@ -208,11 +209,13 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 							ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
 					}
 				}
-				// XXX: && !estall
-				else if (!eRequest) {
+				else if (!eRequest && areMMakersEnabled) {
 					UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 					if (mmaker != NULL)
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
+				}
+				else if (!areMMakersEnabled) {
+					buildOrAssist(group, BUILD_EPROVIDER, EMAKER|LAND);
 				}
 				break;
 			}
@@ -483,6 +486,7 @@ void CEconomy::controlMetalMakers() {
 		}
 		if (success > 0) {
 			estall = false;
+			areMMakersEnabled = false;
 			return;
 		}
 	}
@@ -499,6 +503,7 @@ void CEconomy::controlMetalMakers() {
 		}
 		if (success > 0) {
 			mstall = false;
+			areMMakersEnabled = true;
 			return;
 		}
 	}
