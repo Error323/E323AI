@@ -131,9 +131,9 @@ void GameMap::CalcMetalSpots() {
 		GameMap::metalspots.push_back(metalspot);
 
 		// Debug
-		ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
+		// ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
 	}
-	std::string maptype(IsMetalMap() ? "metalmap" : "normal");
+	std::string maptype(IsMetalMap() ? "metalmap" : "non-metalmap");
 	LOG_II("GameMap::CalcMetalSpots Maptype: "<<maptype)
 	LOG_II("GameMap::CalcMetalSpots found "<<GameMap::metalspots.size()<<" metal spots")
 
