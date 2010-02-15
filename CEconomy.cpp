@@ -122,7 +122,7 @@ void CEconomy::addUnitOnCreated(CUnit &unit) {
 		CGroup *group = requestGroup();
 		group->addUnit(unit);
 		takenMexes[group->key] = group->pos();
-		CUnit *builder = ai->unittable->getUnit((group->units.begin()++)->second->builder);
+		CUnit *builder = ai->unittable->getUnit((group->units.begin())->second->builder);
 		takenMexes.erase(builder->group->key);
 	}
 }
@@ -630,7 +630,7 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 	bool isCommander = group.units.begin()->second->def->isCommander;
 	
 	if (isCommander) {
-		float3 g = (suited.begin()++)->second->pos;
+		float3 g = (suited.begin())->second->pos;
 		float eta = ai->pathfinder->getETA(group,g);
 
 		/* Don't pursuit as commander when walkdistance is more then 10 seconds */
