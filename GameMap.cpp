@@ -30,6 +30,7 @@ GameMap::GameMap(AIClasses *ai) {
 	heightVariance = 0.0f;
 	waterAmount = 0.0f;
 	CalcMapHeightFeatures();
+	isMetalMap = true;
 	if (GameMap::metalspots.empty())
 		CalcMetalSpots();
 }
@@ -73,18 +74,24 @@ void GameMap::CalcMetalSpots() {
 				M.push_back(z);
 				M.push_back(x);
 			}
+			else {
+				isMetalMap = false;
+			}
 		}
 	}
 
 	const float minimum = (METAL_THRESHOLD*M_PI*pow((0.7*R),2));
 	while (true) {
 		float highestSaturation = 0.0f;
-		int bestX, bestZ;
+		int bestX = 0, bestZ = 0;
 		bool mexSpotFound = false;
 
 		// Using a greedy approach, find the best metalspot
 		for (size_t i = 0; i < M.size(); i+=2) {
 			int z = M[i]; int x = M[i+1];
+			if (isMetalMap && (z % 10 != 0 || x % 10 != 0))
+				continue;
+
 			if (metalmap[ID(x,z)] == 0)
 				continue;
 
@@ -124,8 +131,10 @@ void GameMap::CalcMetalSpots() {
 		GameMap::metalspots.push_back(metalspot);
 
 		// Debug
-		// ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
+		ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
 	}
+	std::string maptype(IsMetalMap() ? "metalmap" : "normal");
+	LOG_II("GameMap::CalcMetalSpots Maptype: "<<maptype)
 	LOG_II("GameMap::CalcMetalSpots found "<<GameMap::metalspots.size()<<" metal spots")
 
 	delete[] metalmap;

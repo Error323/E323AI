@@ -29,12 +29,11 @@ class GameMap {
 		bool HasGeoSpots() { return geospots.size() > 0; }
 		bool HasMetalFeatures() { return metalfeatures.size() > 0; }
 		bool HasEnergyFeatures() { return energyfeatures.size() > 0; }
-		//bool HasMetalSpots() { return true; }
 
 		bool IsKbotMap() { return heightVariance > KBOT_VEH_THRESHOLD; }
 		bool IsVehicleMap() { return !IsKbotMap(); }
 		bool IsHooverMap() { return waterAmount > 0.2f; }
-		//bool IsMetalMap() { return true; }
+		bool IsMetalMap() { return isMetalMap; }
 
 		std::list<float3>& GetGeoSpots() { return geospots; }
 		std::list<float3>& GetMetalFeatures() { return metalfeatures; }
@@ -48,6 +47,8 @@ class GameMap {
 	private:
 		float heightVariance;
 		float waterAmount;
+
+		bool isMetalMap;
 
 		AIClasses* ai;
 
