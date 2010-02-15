@@ -370,7 +370,7 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->energyStorage / ut->cost > 0.2f)
 		cats |= ESTORAGE;
 
-	if (ud->isMetalMaker)
+	if (ud->makesMetal >= 1 && ud->energyUpkeep > ud->makesMetal * 40)
 		cats |= MMAKER;
 
 	if ((ud->energyMake - ud->energyUpkeep) / ut->cost > 0.002 ||
