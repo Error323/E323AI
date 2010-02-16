@@ -273,9 +273,23 @@ bool CGroup::canAdd(CUnit *unit) {
 }
 		
 bool CGroup::canMerge(CGroup *group) {
-	// TODO:
+	/* TODO: can't merge: 
+	- static vs mobile
+	- water with non-water
+	- underwater with hovers?
+	- builders with non-builders?
+	- nukes with non-nukes
+	- lrpc with non-lrpc?
+	*/
 	return true;
 }
+
+CUnit* CGroup::firstUnit() {
+	if (units.empty())
+		return NULL;
+	return units.begin()->second;
+}
+
 
 std::ostream& operator<<(std::ostream &out, const CGroup &group) {
 	std::stringstream ss;
