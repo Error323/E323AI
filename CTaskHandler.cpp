@@ -193,22 +193,22 @@ std::map<task, std::string> CTaskHandler::taskStr;
 CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500, std::string("taskhandler")) {
 	this->ai = ai;
 
-	if (CTaskHandler::taskStr.empty()) {
-		CTaskHandler::taskStr[ASSIST]        = std::string("ASSIST");
-		CTaskHandler::taskStr[BUILD]         = std::string("BUILD");
-		CTaskHandler::taskStr[ATTACK]        = std::string("ATTACK");
-		CTaskHandler::taskStr[MERGE]         = std::string("MERGE");
-		CTaskHandler::taskStr[FACTORY_BUILD] = std::string("FACTORY_BUILD");
+	if (taskStr.empty()) {
+		taskStr[ASSIST]        = std::string("ASSIST");
+		taskStr[BUILD]         = std::string("BUILD");
+		taskStr[ATTACK]        = std::string("ATTACK");
+		taskStr[MERGE]         = std::string("MERGE");
+		taskStr[FACTORY_BUILD] = std::string("FACTORY_BUILD");
 	}
 
-	if (CTaskHandler::buildStr.empty()) {
-		CTaskHandler::buildStr[BUILD_MPROVIDER] = std::string("MPROVIDER");
-		CTaskHandler::buildStr[BUILD_EPROVIDER] = std::string("EPROVIDER");
-		CTaskHandler::buildStr[BUILD_AA_DEFENSE] = std::string("AA_DEFENSE");
-		CTaskHandler::buildStr[BUILD_AG_DEFENSE] = std::string("AG_DEFENSE");
-		CTaskHandler::buildStr[BUILD_FACTORY] = std::string("FACTORY");
-		CTaskHandler::buildStr[BUILD_MSTORAGE] = std::string("MSTORAGE");
-		CTaskHandler::buildStr[BUILD_ESTORAGE] = std::string("ESTORAGE");
+	if (buildStr.empty()) {
+		buildStr[BUILD_MPROVIDER] = std::string("MPROVIDER");
+		buildStr[BUILD_EPROVIDER] = std::string("EPROVIDER");
+		buildStr[BUILD_AA_DEFENSE] = std::string("AA_DEFENSE");
+		buildStr[BUILD_AG_DEFENSE] = std::string("AG_DEFENSE");
+		buildStr[BUILD_FACTORY] = std::string("FACTORY");
+		buildStr[BUILD_MSTORAGE] = std::string("MSTORAGE");
+		buildStr[BUILD_ESTORAGE] = std::string("ESTORAGE");
 	}
 }
 
