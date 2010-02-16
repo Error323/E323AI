@@ -129,7 +129,7 @@ void CEconomy::addUnitOnCreated(CUnit &unit) {
 }
 
 void CEconomy::addUnitOnFinished(CUnit &unit) {
-	LOG_II("CEconomy::addUnit " << unit)
+	LOG_II("CEconomy::addUnitOnFinished " << unit)
 
 	unsigned c = unit.type->cats;
 	if (c&FACTORY) {
@@ -331,6 +331,8 @@ float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
 }
 
 void CEconomy::update(int frame) {
+	int builderGroupsNum = 0;
+
 	/* See if we can improve our eco by controlling metalmakers */
 	controlMetalMakers();
 
@@ -345,6 +347,10 @@ void CEconomy::update(int frame) {
 	for (i = activeGroups.begin(); i != activeGroups.end(); i++) {
 		CGroup *group = i->second;
 		CUnit *unit = group->units.begin()->second;
+
+		// TODO: count only mobile groups? Should we count commander?
+		if (group->speed > 0.0001f)
+			builderGroupsNum++;
 
 		if (group->busy || !ai->unittable->canPerformTask(*unit)) continue;
 
@@ -438,10 +444,10 @@ void CEconomy::update(int frame) {
 		}
 	}
 
-	if (activeGroups.size() < ai->cfgparser->getMaxWorkers() && 
-	   (activeGroups.size() < ai->cfgparser->getMinWorkers())
-	) ai->wishlist->push(BUILDER, HIGH);
-	else if (activeGroups.size() < ai->cfgparser->getMaxWorkers())
+	if (builderGroupsNum < ai->cfgparser->getMaxWorkers() 
+	&& (builderGroupsNum < ai->cfgparser->getMinWorkers()))
+		ai->wishlist->push(BUILDER, HIGH);
+	else if (builderGroupsNum < ai->cfgparser->getMaxWorkers())
 		ai->wishlist->push(BUILDER, NORMAL);
 }
 
