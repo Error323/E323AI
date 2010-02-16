@@ -114,34 +114,7 @@ EXPORT(int) handleEvent(int teamId, int topic, const void* data) {
 	return -1;
 }
 
-
 // methods from here on are for AI internal use only
-
-/*
-const char* aiexport_getDataDir(bool absoluteAndWriteable) {
-	static char* dd_ws_rel = NULL;
-	static char* dd_ws_abs_w = NULL;
-
-	if (absoluteAndWriteable) {
-		if (dd_ws_abs_w == NULL) {
-			// this is the writeable one, absolute
-			dd_ws_abs_w = util_allocStrCpy(firstCallback->Clb_DataDirs_getWriteableDir(firstTeamId));
-		}
-		return dd_ws_abs_w;
-	} else {
-		if (dd_ws_rel == NULL) {
-			dd_ws_rel = util_allocStrCpy(firstCallback->Clb_DataDirs_getConfigDir(firstTeamId));
-			// remove the X, so we end up with a slash at the end
-			if (dd_ws_rel != NULL) {
-				dd_ws_rel[strlen(dd_ws_rel) -1] = '\0';
-			}
-		}
-		return dd_ws_rel;
-	}
-
-	return NULL;
-}
-*/
 
 const char* aiexport_getVersion() {
 	return firstCallback->Clb_SkirmishAI_Info_getValueByKey(firstTeamId, SKIRMISH_AI_PROPERTY_VERSION);

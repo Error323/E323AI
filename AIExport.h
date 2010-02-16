@@ -44,9 +44,10 @@ struct SSkirmishAICallback;
 // see struct SSkirmishAILibrary in "ExternalAI/Interface/SSkirmishAILibrary.h"
 
 // static AI library methods (optional to implement)
-EXPORT(enum LevelOfSupport) getLevelOfSupportFor(int teamId,
-		const char* engineVersionString, int engineVersionNumber,
-		const char* aiInterfaceShortName, const char* aiInterfaceVersion);
+EXPORT(enum LevelOfSupport) getLevelOfSupportFor(
+	int teamId,
+	const char* engineVersionString, int engineVersionNumber,
+	const char* aiInterfaceShortName, const char* aiInterfaceVersion);
 
 // team instance functions
 EXPORT(int) init(int teamId, const struct SSkirmishAICallback* callback);
@@ -55,7 +56,6 @@ EXPORT(int) handleEvent(int teamId, int topic, const void* data);
 
 // methods from here on are for AI internal use only
 const char* aiexport_getMyInfo(const char* key);
-//const char* aiexport_getDataDir(bool absoluteAndWriteable);
 const char* aiexport_getVersion();
 const char* aiexport_getMyOption(int teamId, const char* key);
 

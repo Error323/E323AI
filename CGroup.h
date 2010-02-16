@@ -103,8 +103,19 @@ class CGroup: public ARegistrar {
 		/* Get the maximal lateral dispersion */
 		int maxLength();
 
+		/* Is position reachable by group? */
+		bool canReach(float3 &pos);
+
+		bool canShoot(int uid);
+
+		bool canAdd(CUnit *unit);
+		
+		bool canMerge(CGroup *group);
+
 		/* output stream */
 		friend std::ostream& operator<<(std::ostream &out, const CGroup &group);
+
+		RegistrarType regtype() { return REGT_GROUP; }
 
 	private:
 		AIClasses *ai;

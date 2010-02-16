@@ -27,6 +27,7 @@ CMilitary::~CMilitary()
 
 void CMilitary::remove(ARegistrar &group) {
 	LOG_II("CMilitary::remove group(" << group.key << ")")
+	
 	free.push(lookup[group.key]);
 	lookup.erase(group.key);
 	activeScoutGroups.erase(group.key);
@@ -34,6 +35,15 @@ void CMilitary::remove(ARegistrar &group) {
 	mergeScouts.erase(group.key);
 	mergeGroups.erase(group.key);
 
+	for (std::map<int,CGroup*>::iterator i = currentGroups.begin(); i != currentGroups.end(); i++) {
+		if (i->second->key == group.key) {
+			currentGroups.erase(group.key);
+			break;
+		}
+	}
+	
+	// NOTE: CMilitary is registered inside group, so the next lines 
+	// are senseless because records.size() == 0 always
 	std::list<ARegistrar*>::iterator i;
 	for (i = records.begin(); i != records.end(); i++)
 		(*i)->remove(group);
@@ -53,12 +63,12 @@ void CMilitary::addUnit(CUnit &unit) {
 			/* If there is a new factory, or the current group is busy, request
 			 * a new group 
 			 */
-			if (currentGroups.find(unit.builder) == currentGroups.end() ||
-				currentGroups[unit.builder]->busy) {
+			if (currentGroups.find(unit.builtBy) == currentGroups.end() ||
+				currentGroups[unit.builtBy]->busy) {
 				CGroup *group = requestGroup(ENGAGE);
-				currentGroups[unit.builder] = group;
+				currentGroups[unit.builtBy] = group;
 			}
-			currentGroups[unit.builder]->addUnit(unit);
+			currentGroups[unit.builtBy]->addUnit(unit);
 		}
 	}
 }
@@ -174,6 +184,7 @@ void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &tar
 
 void CMilitary::update(int frame) {
 	std::vector<int> all, harras;
+	
 	prepareTargets(all, harras);
 
 	std::map<int, CGroup*>::iterator i,k;

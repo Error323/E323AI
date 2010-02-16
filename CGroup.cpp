@@ -32,28 +32,30 @@ void CGroup::remove() {
 		i->second->group = NULL;
 	}
 	
-	std::list<ARegistrar*>::iterator j;
-	for (j = records.begin(); j != records.end(); j++)
+	std::list<ARegistrar*>::iterator j = records.begin();
+	while(j != records.end()) {
+		ARegistrar *regobj = *j; j++;
 		// remove from CEconomy, CPathfinder, ATask
-		(*j)->remove(*this);
+		regobj->remove(*this);
+	}
+	// TODO: we can remove the following line when we're sure CMilitary,
+	// CEconomy and CPathfinder removes their links from CGroup.records
+	records.clear();
 }
 
 void CGroup::remove(ARegistrar &unit) {
 	LOG_II("CGroup::remove unit(" << unit.key << ")")
 
-	// NOTE: looks like "unit" can be an ATask instance, here will check this
 	assert(units.find(unit.key) != units.end());
 	
 	CUnit *unit2 = units[unit.key];
 	unit2->group = NULL;
+	unit.unreg(*this);
 	units.erase(unit.key);
 
 	/* If no more units remain in this group, remove the group */
 	if (units.empty()) {
-		std::list<ARegistrar*>::iterator i;
-		for (i = records.begin(); i != records.end(); i++)
-			// remove from CEconomy, CPathfinder, ATask
-  	        (*i)->remove(*this);
+		remove();
 	}
 	else {
 		/* Recalculate properties of the current group */
@@ -68,7 +70,8 @@ void CGroup::remove(ARegistrar &unit) {
 void CGroup::reclaim(int feature) {
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++)
-		i->second->reclaim(ai->cb->GetFeaturePos(feature), 16.0f);
+		if (i->second->def->canReclaim)
+			i->second->reclaim(ai->cb->GetFeaturePos(feature), 16.0f);
 }
 
 void CGroup::abilities(bool on) {
@@ -127,21 +130,24 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		los        = 0.0f;
 		busy       = false;
 		maxSlope   = 1.0f;
-		//moveType = ?;
+		moveType   = -1; // emulate NONE
 		techlvl    = 1;
     }
 
 	if(unit == NULL)
 		return;
 
-    if (unit->builder > 0) {
+    if (unit->builtBy > 0) {
 		techlvl = std::max<int>(techlvl, unit->techlvl);
 	}
 
+	// NOTE: aircraft & static units do not have movedata
 	MoveData *md = ai->cb->GetUnitDef(unit->key)->movedata;
-    if (md != NULL && md->maxSlope <= maxSlope) {
-		moveType = md->pathType;
-		maxSlope = md->maxSlope;
+    if (md) {
+    	if (md->maxSlope <= maxSlope) {
+			moveType = md->pathType;
+			maxSlope = md->maxSlope;
+		}
 	}
 		
 	strength += ai->cb->GetUnitPower(unit->key);
@@ -183,13 +189,13 @@ void CGroup::assist(ATask &t) {
 	switch(t.t) {
 		case BUILD: {
 			CTaskHandler::BuildTask *task = dynamic_cast<CTaskHandler::BuildTask*>(&t);
-			CUnit  *unit  = task->group->units.begin()->second;
+			CUnit *unit  = task->group->units.begin()->second;
 			guard(unit->key);
 			break;
 		}
 
 		case ATTACK: {
-			//TODO: Calculate the flanking pos and attack from there
+			// TODO: Calculate the flanking pos and attack from there
 			CTaskHandler::AttackTask *task = dynamic_cast<CTaskHandler::AttackTask*>(&t);
 			attack(task->target);
 			break;
@@ -197,7 +203,8 @@ void CGroup::assist(ATask &t) {
 
 		case FACTORY_BUILD: {
 			CTaskHandler::FactoryTask *task = dynamic_cast<CTaskHandler::FactoryTask*>(&t);
-			guard(task->factory->key);
+			CUnit *unit  = task->group->units.begin()->second;
+			guard(unit->key);
 			break;
 		}
 
@@ -247,6 +254,26 @@ void CGroup::guard(int target, bool enqueue) {
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++)
 		i->second->guard(target, enqueue);
+}
+
+bool CGroup::canReach(float3 &pos) {
+	// TODO: what movetype should we use?
+	return true;
+}
+
+bool CGroup::canShoot(int uid) {
+	// TODO: if at least one unit can shoot target then return true
+	return true;
+}
+
+bool CGroup::canAdd(CUnit *unit) {
+	// TODO:
+	return true;
+}
+		
+bool CGroup::canMerge(CGroup *group) {
+	// TODO:
+	return true;
 }
 
 std::ostream& operator<<(std::ostream &out, const CGroup &group) {

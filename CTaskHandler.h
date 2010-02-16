@@ -20,6 +20,7 @@ class ATask: public ARegistrar {
 	public:
 		ATask(AIClasses *ai): 
 			ARegistrar(counter, std::string("task")) {
+			active = false;
 			counter++;
 			isMoving = true;
 			pos = ZEROVECTOR;
@@ -27,6 +28,8 @@ class ATask: public ARegistrar {
   	        this->ai = ai;
 		}
 		~ATask(){}
+
+		bool active;
 
 		/* The task in {BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD} */
 		task t;
@@ -44,12 +47,13 @@ class ATask: public ARegistrar {
 		bool isMoving;
 
 		/* The position to navigate too */
+		// TODO: make it as method because for assisting task this position
+		// may vary depending on master task 
 		float3 pos;
 
 		/* Remove this task, unreg groups involved, and make them available
-		 * again 
-		 */
-		void remove();
+		   again */
+		virtual void remove();
 
 		/* Overload */
 		void remove(ARegistrar &group);
@@ -66,9 +70,12 @@ class ATask: public ARegistrar {
 		/* Update this task */
 		virtual void update() = 0;
 
+		RegistrarType regtype() { return REGT_TASK; } 
+
+		friend std::ostream& operator<<(std::ostream &out, const ATask &task);
+
 		AIClasses *ai;
 		char buf[512];
-		friend std::ostream& operator<<(std::ostream &out, const ATask &task);
 };
 
 class CTaskHandler: public ARegistrar {
@@ -101,8 +108,6 @@ class CTaskHandler: public ARegistrar {
 
 		struct FactoryTask: public ATask {
 			FactoryTask(AIClasses *_ai): ATask(_ai){t = FACTORY_BUILD;}
-
-			CUnit *factory;
 
 			/* set the factorytask to wait including assisters */
 			void setWait(bool wait);
@@ -178,8 +183,8 @@ class CTaskHandler: public ARegistrar {
 		/* build type to string */
 		static std::map<buildType, std::string> buildStr;
 
-		/* Tasks to string */
-		std::map<task, std::string> taskStr;
+		/* task type to string */
+		static std::map<task, std::string> taskStr;
 
 		/* Overload */
 		void remove(ARegistrar &task);
@@ -197,9 +202,9 @@ class CTaskHandler: public ARegistrar {
 		void addMergeTask(std::map<int,CGroup*> &groups);
 
 		/* Add a fresh factory task */
-		void addFactoryTask(CUnit &factory);
+		void addFactoryTask(CGroup &group);
 
-		/* Remove a task */
+		/* Remove a task (is not used) */
 		void removeTask(CGroup &group);
 
 		/* Get the group destination */

@@ -4,6 +4,13 @@
 #include <list>
 #include <string>
 
+enum RegistrarType {
+	REGT_NOTE,
+	REGT_GROUP,
+	REGT_TASK,
+	REGT_UNIT
+};
+
 class ARegistrar {
 	public:
 		virtual ~ARegistrar() {}
@@ -22,6 +29,8 @@ class ARegistrar {
 
 		/* Propagate removal through the system */
 		virtual void remove(ARegistrar &obj) = 0;
+
+		virtual RegistrarType regtype() { return REGT_NOTE; } 
 
 	protected:
 		ARegistrar(): key(0), name("undefined") {}

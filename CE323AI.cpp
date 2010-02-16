@@ -45,6 +45,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	}
 
 	ai->gamemap       = new GameMap(ai);
+	
 	ai->economy       = new CEconomy(ai);
 	ai->wishlist      = new CWishList(ai);
 	ai->tasks         = new CTaskHandler(ai);
@@ -114,6 +115,7 @@ void CE323AI::UnitCreated(int uid, int bid) {
 				unit->moveForward(400.0f);
 		}
 	}
+
 	ai->economy->addUnitOnCreated(*unit);
 }
 
@@ -126,8 +128,8 @@ void CE323AI::UnitFinished(int uid) {
 	LOG_II("CE323AI::UnitFinished " << (*unit))
 
 	unsigned int c = unit->type->cats;
-	if (unit->builder > 0)
-		ai->unittable->builders[unit->builder] = true;
+	if (unit->builtBy >= 0)
+		ai->unittable->builders[unit->builtBy] = true;
 
 	/* Eco unit */
 	if (!(c&ATTACKER) || c&COMMANDER)
@@ -262,7 +264,7 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 				for(int i = 0; i < pce->units.size(); i++) {
 					if(ai->unittable->unitsUnderPlayerControl.find(pce->units[i]) == ai->unittable->unitsUnderPlayerControl.end()) {
 						// we have to remove unit from a group, but not 
-						// to emulate unit is dead
+						// to emulate unit death
 						CUnit* unit = ai->unittable->getUnit(pce->units[i]);
 						if(unit->group) {
 							// remove unit from group so it will not receive 

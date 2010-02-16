@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <math.h>
 
 #include "CAI.h"
 #include "CUnitTable.h"
@@ -22,40 +23,49 @@ int ATask::counter = 0;
 void ATask::remove() {
 	LOG_II("ATask::remove " << (*this))
 
-	group->unreg(*this);
-	group->busy = false;
-	group->unwait();
-	group->micro(false);
-	group->abilities(false);
+	// NOTE: removal order below is VERY important
 
-	// remove all assisting tasks...
-	std::list<ATask*>::iterator i;
-	for (i = assisters.begin(); i != assisters.end(); i++)
-		(*i)->remove();
-	
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
-		// remove current task from CTaskHandler
+		// remove current task from CTaskHandler, so it will mark this task 
+		// to be killed on next update
 		(*j)->remove(*this);
+
+	// remove all assisting tasks...
+	std::list<ATask*>::iterator i = assisters.begin();
+	while(i != assisters.end()) {
+		ATask *task = *i; i++;
+		task->remove();
+	}
+	//assert(assisters.size() == 0);
+
+	if (group) {
+		// remove from group...
+		group->unreg(*this);
+		group->busy = false;
+		group->unwait();
+		group->micro(false);
+		group->abilities(false);
+		group = NULL;
+	}
+
+	active = false;
 }
 
 // called on Group removing
 void ATask::remove(ARegistrar &group) {
-	LOG_II("ATask::remove " << (*this))
+	LOG_II("ATask::remove by group(" << (*(dynamic_cast<CGroup*>(&group))) << ")")
 
-	// remove all assisting tasks...
-	std::list<ATask*>::iterator i;
-	for (i = assisters.begin(); i != assisters.end(); i++)
-		(*i)->remove();
-	
-	std::list<ARegistrar*>::iterator j;
-	for (j = records.begin(); j != records.end(); j++)
-		// remove current task from CTaskHandler
-		(*j)->remove(*this);
+	// NOTE: experimental
+	//group = NULL; // group is going to be inactive
+
+	remove();
 }
 
 void ATask::addGroup(CGroup &g) {
-	this->group = &g;
+	// make sure a task is active per only group
+	assert(group == NULL);
+	group = &g;
 	group->reg(*this);
 	group->busy = true;
 	group->micro(false);
@@ -132,7 +142,7 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 
 		case ASSIST: {
 			const CTaskHandler::AssistTask *task = dynamic_cast<const CTaskHandler::AssistTask*>(&atask);
-			ss << "AssistTask(" << task->key << ") Assisting(" << (*task->assist) << ") ";
+			ss << "AssistTask(" << task->key << ") assisting(" << (*task->assist) << ") ";
 			ss << (*(task->group));
 		} break;
 
@@ -144,7 +154,8 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 
 		case FACTORY_BUILD: {
 			const CTaskHandler::FactoryTask *task = dynamic_cast<const CTaskHandler::FactoryTask*>(&atask);
-			ss << "FactoryTask(" << task->key << ") " << (*(task->factory));
+			ss << "FactoryTask(" << task->key << ") ";
+			ss << (*(task->group));
 		} break;
 
 		case MERGE: {
@@ -177,29 +188,40 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 /************************* CTASKHANDLER ***********************/
 /**************************************************************/
 std::map<buildType, std::string> CTaskHandler::buildStr;
+std::map<task, std::string> CTaskHandler::taskStr;
 
 CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500, std::string("taskhandler")) {
 	this->ai = ai;
 
-	taskStr[ASSIST]        = std::string("ASSIST");
-	taskStr[BUILD]         = std::string("BUILD");
-	taskStr[ATTACK]        = std::string("ATTACK");
-	taskStr[MERGE]         = std::string("MERGE");
-	taskStr[FACTORY_BUILD] = std::string("FACTORY_BUILD");
+	if (CTaskHandler::taskStr.empty()) {
+		CTaskHandler::taskStr[ASSIST]        = std::string("ASSIST");
+		CTaskHandler::taskStr[BUILD]         = std::string("BUILD");
+		CTaskHandler::taskStr[ATTACK]        = std::string("ATTACK");
+		CTaskHandler::taskStr[MERGE]         = std::string("MERGE");
+		CTaskHandler::taskStr[FACTORY_BUILD] = std::string("FACTORY_BUILD");
+	}
 
-	CTaskHandler::buildStr[BUILD_MPROVIDER] = std::string("MPROVIDER");
-	CTaskHandler::buildStr[BUILD_EPROVIDER] = std::string("EPROVIDER");
-	CTaskHandler::buildStr[BUILD_AA_DEFENSE] = std::string("AA_DEFENSE");
-	CTaskHandler::buildStr[BUILD_AG_DEFENSE] = std::string("AG_DEFENSE");
-	CTaskHandler::buildStr[BUILD_FACTORY] = std::string("FACTORY");
-	CTaskHandler::buildStr[BUILD_MSTORAGE] = std::string("MSTORAGE");
-	CTaskHandler::buildStr[BUILD_ESTORAGE] = std::string("ESTORAGE");
+	if (CTaskHandler::buildStr.empty()) {
+		CTaskHandler::buildStr[BUILD_MPROVIDER] = std::string("MPROVIDER");
+		CTaskHandler::buildStr[BUILD_EPROVIDER] = std::string("EPROVIDER");
+		CTaskHandler::buildStr[BUILD_AA_DEFENSE] = std::string("AA_DEFENSE");
+		CTaskHandler::buildStr[BUILD_AG_DEFENSE] = std::string("AG_DEFENSE");
+		CTaskHandler::buildStr[BUILD_FACTORY] = std::string("FACTORY");
+		CTaskHandler::buildStr[BUILD_MSTORAGE] = std::string("MSTORAGE");
+		CTaskHandler::buildStr[BUILD_ESTORAGE] = std::string("ESTORAGE");
+	}
 }
 
 void CTaskHandler::remove(ARegistrar &task) {
 	ATask *t = dynamic_cast<ATask*>(&task);
-	obsoleteTasks.push(t);
+	
 	LOG_II("CTaskHandler::remove " << (*t))
+	
+	obsoleteTasks.push(t);
+	
+	if (t->group)
+		groupToTask.erase(t->group->key);
+	
 	switch(t->t) {
 		case BUILD:
 			activeBuildTasks.erase(t->key);
@@ -234,15 +256,16 @@ void CTaskHandler::update() {
 		ATask *t = obsoleteTasks.top();
 		obsoleteTasks.pop();
 		activeTasks.erase(t->key);
-		if (t->group && groupToTask[t->group->key] == t)
-			groupToTask.erase(t->group->key);
+		// make sure task is really detached from group
+		assert(t->group == NULL);
 		delete t;
 	}
 
 	/* Begin task updates */
 	std::map<int, ATask*>::iterator i;
 	for (i = activeTasks.begin(); i != activeTasks.end(); i++) {
-		i->second->update();
+		if (i->second->active)
+			i->second->update();
 	}
 }
 
@@ -251,7 +274,9 @@ float3 CTaskHandler::getPos(CGroup &group) {
 }
 
 void CTaskHandler::removeTask(CGroup &group) {
-	groupToTask[group.key]->remove();
+	int key = group.key;
+	groupToTask[key]->remove();
+	groupToTask.erase(key);
 }
 
 /**************************************************************/
@@ -263,16 +288,19 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 	buildTask->bt        = build;
 	buildTask->toBuild   = toBuild;
 	buildTask->eta       = int((ai->pathfinder->getETA(group, pos)+100)*1.3f);
-	buildTask->reg(*this);
+	buildTask->reg(*this); // register task in a task handler
 	buildTask->addGroup(group);
 
 	activeBuildTasks[buildTask->key] = buildTask;
 	activeTasks[buildTask->key] = buildTask;
-
 	groupToTask[group.key] = buildTask;
+	
 	LOG_II((*buildTask))
+	
 	if (!ai->pathfinder->addGroup(group))
 		buildTask->remove();
+	else
+		buildTask->active = true;
 }
 
 void CTaskHandler::BuildTask::update() {
@@ -288,7 +316,6 @@ void CTaskHandler::BuildTask::update() {
 	if (isMoving && dist.Length2D() <= group->buildRange) {
 		group->build(pos, toBuild);
 		ai->pathfinder->remove(*group);
-		group->unreg(*(ai->pathfinder));
 		isMoving = false;
 	}
 	/* See if we can suck wreckages */
@@ -316,7 +343,7 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister, float &travelTime) {
 
 	float3 gpos = group->pos();
 	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
-	travelTime = ai->pathfinder->getETA(assister, gpos, assister.buildRange);
+	travelTime = ai->pathfinder->getETA(assister, gpos);
 
 	return (buildTime > travelTime);
 }
@@ -324,22 +351,27 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister, float &travelTime) {
 /**************************************************************/
 /************************* FACTORY TASK ***********************/
 /**************************************************************/
-void CTaskHandler::addFactoryTask(CUnit &factory) {
+void CTaskHandler::addFactoryTask(CGroup &group) {
 	FactoryTask *factoryTask = new FactoryTask(ai);
-	factoryTask->pos         = factory.pos();
-	factoryTask->factory     = &factory;
-	factoryTask->reg(*this);
+	// NOTE: currently if factories are joined into one group then assisters 
+	// will assist the first factory only
+	//factoryTask->pos = group.pos();
+	factoryTask->pos = group.units.begin()->second->pos();
+	factoryTask->reg(*this); // register task in a task handler
+	factoryTask->addGroup(group);
 
 	activeFactoryTasks[factoryTask->key] = factoryTask;
 	activeTasks[factoryTask->key] = factoryTask;
+	groupToTask[factoryTask->key] = factoryTask;
 
-	factory.reg(*factoryTask);
 	LOG_II((*factoryTask))
+
+	factoryTask->active = true;
 }
 
 bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 	if (assisters.size() >= std::min(ai->cfgparser->getState() * 2, FACTORY_ASSISTERS) || 
-		!factory->def->canBeAssisted) {
+		!group->units.begin()->second->def->canBeAssisted) {
 		return false;
 	}
 	else {
@@ -359,30 +391,39 @@ bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 }
 
 void CTaskHandler::FactoryTask::update() {
-	if (ai->unittable->idle[factory->key] && !ai->wishlist->empty(factory->key)) {
-		UnitType *ut = ai->wishlist->top(factory->key); ai->wishlist->pop(factory->key);
-		factory->factoryBuild(ut);
-		ai->unittable->factoriesBuilding[factory->key] = ut;
-		ai->unittable->idle[factory->key] = false;
+	std::map<int,CUnit*>::iterator i;
+	CUnit *factory;
+	
+	for(i = group->units.begin(); i != group->units.end(); i++) {
+		factory = i->second;
+		if (ai->unittable->idle[factory->key] && !ai->wishlist->empty(factory->key)) {
+			UnitType *ut = ai->wishlist->top(factory->key); ai->wishlist->pop(factory->key);
+			factory->factoryBuild(ut);
+			ai->unittable->factoriesBuilding[factory->key] = ut;
+			ai->unittable->idle[factory->key] = false;
+		}
 	}
 }
 
 void CTaskHandler::FactoryTask::setWait(bool on) {
-	if (on) {
-		factory->wait();
-		std::list<ATask*>::iterator i;
-		for (i = assisters.begin(); i != assisters.end(); i++) {
-			if ((*i)->isMoving) continue;
-			(*i)->group->wait();
-		}
+	std::map<int,CUnit*>::iterator ui;
+	std::list<ATask*>::iterator ti;
+	CUnit *factory;
+
+	for (ui = group->units.begin(); ui != group->units.end(); ui++) {
+		factory = ui->second;
+		if(on)
+			factory->wait();
+		else
+			factory->unwait();
 	}
-	else {
-		factory->unwait();
-		std::list<ATask*>::iterator i;
-		for (i = assisters.begin(); i != assisters.end(); i++) {
-			if ((*i)->isMoving) continue;
-			(*i)->group->unwait();
-		}
+
+	for (ti = assisters.begin(); ti != assisters.end(); ti++) {
+		if ((*ti)->isMoving) continue;
+		if(on)
+			(*ti)->group->wait();
+		else
+			(*ti)->group->unwait();
 	}
 }
 
@@ -394,9 +435,10 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 	assistTask->assist     = &toAssist;
 	assistTask->pos        = toAssist.pos;
 	assistTask->addGroup(group);
-	assistTask->reg(*this);
+	assistTask->reg(*this); // register task in a task handler
 
 	toAssist.assisters.push_back(assistTask);
+
 	activeAssistTasks[assistTask->key] = assistTask;
 	activeTasks[assistTask->key] = assistTask;
 	groupToTask[group.key] = assistTask;
@@ -405,29 +447,26 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 	
 	if (!ai->pathfinder->addGroup(group))
 		assistTask->remove();
+	else
+		assistTask->active = true;
 }
 
 void CTaskHandler::AssistTask::remove(ARegistrar &group) {
-	LOG_II("AssistTask::remove " << (*this))
-
-	assist->assisters.remove(this);
+	LOG_II("AssistTask::remove by group(" << (*(dynamic_cast<CGroup*>(&group))) << ")")
 	
-	std::list<ARegistrar*>::iterator j;
-	for (j = records.begin(); j != records.end(); j++)
-		(*j)->remove(*this);
+	//assert(this->group == &group);
+
+	remove();
 }
 
 void CTaskHandler::AssistTask::remove() {
 	LOG_II("AssistTask::remove " << (*this))
-	group->unreg(*this);
-	group->busy = false;
-	group->unwait();
-
-	assist->assisters.remove(this);
 	
-	std::list<ARegistrar*>::iterator j;
-	for (j = records.begin(); j != records.end(); j++)
-		(*j)->remove(*this);
+	// NOTE: we have to remove manually because assisting tasks are not 
+	// completely built upon ARegistrar pattern
+	assist->assisters.remove(this);
+
+	ATask::remove();
 }
 
 void CTaskHandler::AssistTask::update() {
@@ -440,7 +479,6 @@ void CTaskHandler::AssistTask::update() {
 	if (isMoving && dist.Length2D() <= range) {
 		group->assist(*assist);
 		ai->pathfinder->remove(*group);
-		group->unreg(*(ai->pathfinder));
 		isMoving = false;
 	}
 	/* See if we can suck wreckages */
@@ -454,21 +492,26 @@ void CTaskHandler::AssistTask::update() {
 /**************************************************************/
 void CTaskHandler::addAttackTask(int target, CGroup &group) {
 	const UnitDef *ud = ai->cbc->GetUnitDef(target);
+	
 	if (ud == NULL) return;
 
 	AttackTask *attackTask = new AttackTask(ai);
 	attackTask->target     = target;
 	attackTask->pos        = ai->cbc->GetUnitPos(target);
 	attackTask->enemy      = ud->humanName;
-	attackTask->reg(*this);
+	attackTask->reg(*this); // register task in a task handler
 	attackTask->addGroup(group);
 
 	activeAttackTasks[attackTask->key] = attackTask;
 	activeTasks[attackTask->key] = attackTask;
 	groupToTask[group.key] = attackTask;
+	
 	LOG_II((*attackTask))
+	
 	if (!ai->pathfinder->addGroup(group))
 		attackTask->remove();
+	else
+		attackTask->active = true;
 }
 
 void CTaskHandler::AttackTask::update() {
@@ -477,6 +520,7 @@ void CTaskHandler::AttackTask::update() {
 
 	/* If the target is destroyed, remove the task, unreg groups */
 	if (ai->cbc->GetUnitHealth(target) <= 0.0f) {
+		ai->pathfinder->remove(*group);
 		remove();
 		return;
 	}
@@ -488,7 +532,6 @@ void CTaskHandler::AttackTask::update() {
 		group->attack(target);
 		isMoving = false;
 		ai->pathfinder->remove(*group);
-		group->unreg(*(ai->pathfinder));
 	}
 	/* See if we can attack a target we found on our path */
 	else if (!group->isMicroing()) {
@@ -505,14 +548,17 @@ void CTaskHandler::AttackTask::update() {
 /************************* MERGE TASK *************************/
 /**************************************************************/
 void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
+	int i;
 	int range = 0;
+	int units = 0;
 	std::map<int,CGroup*>::iterator j;
 	float maxSlope = MAX_FLOAT;
+	float sqLeg;
 	
 	MergeTask *mergeTask = new MergeTask(ai);
 	mergeTask->groups = groups;
 	mergeTask->pos = float3(0.0f, 0.0f, 0.0f);
-	mergeTask->reg(*this);
+	mergeTask->reg(*this); // register task in a task handler
 	
 	for (j = groups.begin(); j != groups.end(); j++) {
 		j->second->reg(*mergeTask);
@@ -521,14 +567,23 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 		j->second->abilities(true);
 		groupToTask[j->first] = mergeTask;
 		range += j->second->size;
+		units += j->second->units.size();
 		if (j->second->maxSlope < maxSlope) {
 			maxSlope = j->second->maxSlope;
 			mergeTask->pos = j->second->pos();
 		}
 	}
-	mergeTask->range = 200.0f;
+	
+	// TODO: actually range should increase from the smallest to calculated 
+	// here as long as more groups are joined
+	for(i = 1; units > i * i; i++);
+	i *= i;
+	sqLeg = (float)range * i / units;
+	sqLeg *= sqLeg;
+	mergeTask->range = sqrt(sqLeg + sqLeg);
+	//mergeTask->range = 200.0f;
 
-	LOG_II(*mergeTask)
+	LOG_II((*mergeTask))
 
 	activeMergeTasks[mergeTask->key] = mergeTask;
 	activeTasks[mergeTask->key] = mergeTask;
@@ -538,6 +593,9 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 			break;
 		}
 	}
+
+	if (j == groups.end())
+		mergeTask->active = true;
 }
 
 void CTaskHandler::MergeTask::remove() {
@@ -548,15 +606,21 @@ void CTaskHandler::MergeTask::remove() {
 		g->second->busy = false;
 		g->second->micro(false);
 		g->second->abilities(false);
+		ai->pathfinder->remove(*(g->second));
 	}
 	
 	std::list<ARegistrar*>::iterator j;
 	for (j = records.begin(); j != records.end(); j++)
 		(*j)->remove(*this);
+
+	active = false;
 }
 
+// called on Group removing
 void CTaskHandler::MergeTask::remove(ARegistrar &group) {
 	groups.erase(group.key);
+	group.unreg(*this);
+	// TODO: cleanup other data of group?
 }
 		
 void CTaskHandler::MergeTask::update() {
@@ -566,16 +630,13 @@ void CTaskHandler::MergeTask::update() {
 	std::map<int,CGroup*>::iterator g;
 	for (g = groups.begin(); g != groups.end(); g++) {
 		CGroup *group = g->second;
-		float3 grouppos = group->pos();
-		float3 dist = grouppos - pos;
-		if (dist.Length2D() <= range) {
+		if (pos.distance2D(group->pos()) <= range) {
 			mergable.push_back(group);
-			ai->pathfinder->remove(*group);
-			group->unreg(*(ai->pathfinder));
+			//ai->pathfinder->remove(*group);
 		}
 	}
-
-	/* We have atleast two groups, now we can merge */
+	
+	/* We have at least two groups, now we can merge */
 	if (mergable.size() >= 2) {
 		CGroup *alpha = mergable[0];
 		for (unsigned j = 1; j < mergable.size(); j++) {

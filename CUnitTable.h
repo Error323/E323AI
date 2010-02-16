@@ -55,10 +55,10 @@ class CUnitTable: public ARegistrar {
 		/* Ingame units, set in eco module */
 		std::map<int, bool>       idle;
 		std::map<int, bool>       builders;
-		std::map<int, bool>       metalMakers;
+		std::map<int, CUnit*>     metalMakers;
 		std::map<int, UnitType*>  factoriesBuilding;
 		std::map<int, CUnit*>     activeUnits;
-		std::map<int, bool>       factories;
+		std::map<int, CUnit*>     factories;
 		std::map<int, CUnit*>     defenses;
 		std::map<int, CUnit*>     energyStorages;
 		std::map<int, int>        unitsAliveTime;
@@ -85,6 +85,9 @@ class CUnitTable: public ARegistrar {
 		void getBuildables(UnitType *ut, unsigned i, unsigned e, std::multimap<float, UnitType*> &candidates);
 		bool gotFactory(unsigned c);
 
+		static CUnit* CUnitTable::getUnitByDef(std::map<int, CUnit*> &dic, const UnitDef *udef);
+		static CUnit* CUnitTable::getUnitByDef(std::map<int, CUnit*> &dic, int did);
+		
 		/* Debugging functions */
 		std::string debugCategories(UnitType *ut);
 		std::string debugCategories(unsigned categories);

@@ -28,7 +28,7 @@ class CUnit: public ARegistrar {
 
 		const UnitDef *def;
 		UnitType *type;
-		int builder;
+		int builtBy;
 		int techlvl;
 
 		/* Remove the unit from everywhere registered */
@@ -91,6 +91,8 @@ class CUnit: public ARegistrar {
 
 		bool isMicroing();
 
+		bool isOn();
+
 		float3 pos();
 
 		CGroup *group; // group unit belongs to
@@ -100,6 +102,8 @@ class CUnit: public ARegistrar {
 
 		/* Get quadrant */
 		quadrant getQuadrant(float3 &pos);
+
+		RegistrarType regtype() { return REGT_UNIT; } 
 
 		/* output stream */
 		friend std::ostream& operator<<(std::ostream &out, const CUnit &unit);

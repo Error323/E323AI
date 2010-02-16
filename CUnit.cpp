@@ -8,17 +8,20 @@ void CUnit::remove() {
 	remove(*this);
 }
 
-float3 CUnit::pos() {
-	return ai->cb->GetUnitPos(key);
-}
-
 void CUnit::remove(ARegistrar &reg) {
 	LOG_II("CUnit::remove " << (*this))
-	std::list<ARegistrar*>::iterator i;
-	for (i = records.begin(); i != records.end(); i++) {
+	
+	std::list<ARegistrar*>::iterator i = records.begin();
+	while(i != records.end()) {
+		ARegistrar *regobj = *i; i++;
 		// remove from CUnitTable, CGroup
-		(*i)->remove(reg);
+		regobj->remove(reg);
 	}
+	//records.clear();
+}
+
+float3 CUnit::pos() {
+	return ai->cb->GetUnitPos(key);
 }
 
 void CUnit::reset(int uid, int bid) {
@@ -26,7 +29,7 @@ void CUnit::reset(int uid, int bid) {
 	this->key     = uid;
 	this->def     = ai->cb->GetUnitDef(uid);
 	this->type    = UT(def->id);
-	this->builder = bid;
+	this->builtBy = bid;
 	this->waiting = false;
 	this->microing= false;
 	this->techlvl = 0;
@@ -203,6 +206,10 @@ bool CUnit::isMicroing() {
 	return microing;
 }
 
+bool CUnit::isOn() {
+	return ai->cb->IsUnitActivated(key);
+}
+
 bool CUnit::wait() {
 	if (!waiting) {
 		Command c;
@@ -320,6 +327,6 @@ facing CUnit::getBestFacing(float3 &pos) {
 }
 
 std::ostream& operator<<(std::ostream &out, const CUnit &unit) {
-	out << unit.def->humanName << "(" << unit.key << ", " << unit.builder << ")";
+	out << unit.def->humanName << "(" << unit.key << ", " << unit.builtBy << ")";
 	return out;
 }

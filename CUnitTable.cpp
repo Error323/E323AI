@@ -14,55 +14,61 @@ std::map<unitCategory, std::string> CUnitTable::cat2str;
 
 CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	this->ai = ai;
-	/* techlevels */
-	cat2str[TECH1]       = "TECH1";
-	cat2str[TECH2]       = "TECH2";
-	cat2str[TECH3]       = "TECH3";
+	
+	if (cat2str.empty()) {
+		/* techlevels */
+		cat2str[TECH1]       = "TECH1";
+		cat2str[TECH2]       = "TECH2";
+		cat2str[TECH3]       = "TECH3";
 
-	/* main categories */
-	cat2str[AIR]         = "AIR";
-	cat2str[SEA]         = "SEA";
-	cat2str[LAND]        = "LAND";
-	cat2str[STATIC]      = "STATIC";
-	cat2str[MOBILE]      = "MOBILE";
+		/* main categories */
+		cat2str[AIR]         = "AIR";
+		cat2str[SEA]         = "SEA";
+		cat2str[LAND]        = "LAND";
+		cat2str[STATIC]      = "STATIC";
+		cat2str[MOBILE]      = "MOBILE";
 
-	/* builders */
-	cat2str[FACTORY]     = "FACTORY";
-	cat2str[BUILDER]     = "BUILDER";
-	cat2str[ASSISTER]    = "ASSISTER";
-	cat2str[RESURRECTOR] = "RESURRECTOR";
+		/* builders */
+		cat2str[FACTORY]     = "FACTORY";
+		cat2str[BUILDER]     = "BUILDER";
+		cat2str[ASSISTER]    = "ASSISTER";
+		cat2str[RESURRECTOR] = "RESURRECTOR";
 
-	/* offensives */
-	cat2str[COMMANDER]   = "COMMANDER";
-	cat2str[ATTACKER]    = "ATTACKER";
-	cat2str[ANTIAIR]     = "ANTIAIR";
-	cat2str[SCOUTER]     = "SCOUTER";
-	cat2str[ARTILLERY]   = "ARTILLERY";  
-	cat2str[SNIPER]      = "SNIPER";  
-	cat2str[ASSAULT]     = "ASSAULT";  
+		/* offensives */
+		cat2str[COMMANDER]   = "COMMANDER";
+		cat2str[ATTACKER]    = "ATTACKER";
+		cat2str[ANTIAIR]     = "ANTIAIR";
+		cat2str[SCOUTER]     = "SCOUTER";
+		cat2str[ARTILLERY]   = "ARTILLERY";  
+		cat2str[SNIPER]      = "SNIPER";  
+		cat2str[ASSAULT]     = "ASSAULT";  
 
-	/* economic */
-	cat2str[MEXTRACTOR]  = "MEXTRACTOR";
-	cat2str[MMAKER]      = "MMAKER";
-	cat2str[EMAKER]      = "EMAKER";
-	cat2str[MSTORAGE]    = "MSTORAGE";
-	cat2str[ESTORAGE]    = "ESTORAGE";
-	cat2str[WIND]        = "WIND";
-	cat2str[TIDAL]       = "TIDAL";
+		/* economic */
+		cat2str[MEXTRACTOR]  = "MEXTRACTOR";
+		cat2str[MMAKER]      = "MMAKER";
+		cat2str[EMAKER]      = "EMAKER";
+		cat2str[MSTORAGE]    = "MSTORAGE";
+		cat2str[ESTORAGE]    = "ESTORAGE";
+		cat2str[WIND]        = "WIND";
+		cat2str[TIDAL]       = "TIDAL";
 
-	/* ground types */
-	cat2str[KBOT]        = "KBOT";
-	cat2str[VEHICLE]     = "VEHICLE";
-	cat2str[HOVER]       = "HOVER";
+		/* ground types */
+		cat2str[KBOT]        = "KBOT";
+		cat2str[VEHICLE]     = "VEHICLE";
+		cat2str[HOVER]       = "HOVER";
 
-	cat2str[DEFENSE]     = "DEFENSE";
-
-	/* Create the str2cat table and cats vector */
-	std::map<unitCategory,std::string>::iterator i;
-	for (i = cat2str.begin(); i != cat2str.end(); i++) {
-		cats.push_back(i->first);
-		str2cat[i->second] = i->first;
+		cat2str[DEFENSE]     = "DEFENSE";
 	}
+
+	if (cats.empty()) {
+		/* Create the str2cat table and cats vector */
+		std::map<unitCategory,std::string>::iterator i;
+		for (i = cat2str.begin(); i != cat2str.end(); i++) {
+			cats.push_back(i->first);
+			str2cat[i->second] = i->first;
+		}
+	}
+
 	numUnits = ai->cb->GetNumUnitDefs();
 
  	/* Build the techtree, note that this is actually a graph in XTA */
@@ -156,6 +162,7 @@ void CUnitTable::remove(ARegistrar &unit) {
 	unitsAliveTime.erase(unit.key);
 	energyStorages.erase(unit.key);
 	unitsUnderPlayerControl.erase(unit.key);
+	unit.unreg(*this);
 }
 
 CUnit* CUnitTable::getUnit(int uid) {
@@ -178,6 +185,7 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	else {
 		index = free.top(); free.pop();
 		unit  = ingameUnits[index];
+		assert(unit->group == NULL);
 		unit->reset(uid, bid);
 		LOG_II("CUnitTable::requestUnit existing " << (*unit))
 	}
@@ -204,7 +212,7 @@ void CUnitTable::update() {
 	std::map<int,int>::iterator i;
 	for (i = unitsAliveTime.begin(); i != unitsAliveTime.end(); i++) {
 		/* Ignore the commander so we start early */
-		if (activeUnits[i->first]->builder == -1) 
+		if (activeUnits[i->first]->builtBy == -1) 
 			i->second += 500;
 		/* Makes sure new units are not instantly assigned tasks */
 		else if(!activeUnits[i->first]->isMicroing())
@@ -427,7 +435,7 @@ bool CUnitTable::gotFactory(unsigned c) {
 		if (c&cats[i])
 			utcats.push_back(cats[i]);
 
-	std::map<int, bool>::iterator i;
+	std::map<int, CUnit*>::iterator i;
 	for (i = factories.begin(); i != factories.end(); i++) {
 		bool qualifies = true;
 		unsigned int cat = activeUnits[i->first]->type->cats;
@@ -495,6 +503,22 @@ UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
 			return j->second;
 	}
 	LOG_WW("CUnitTable::canBuild failed to build " << debugCategories(c))
+	return NULL;
+}
+
+CUnit* CUnitTable::getUnitByDef(std::map<int, CUnit*> &dic, const UnitDef *udef) {
+	return CUnitTable::getUnitByDef(dic, udef->id);
+}
+
+CUnit* CUnitTable::getUnitByDef(std::map<int, CUnit*> &dic, int did) {
+	CUnit* unit;
+	std::map<int, CUnit*>::const_iterator i;
+	for(i = dic.begin(); i != dic.end(); i++) {
+		unit = i->second;
+		if(unit->def->id == did) {
+			return unit;
+		}
+	}
 	return NULL;
 }
 

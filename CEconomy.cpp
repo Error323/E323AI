@@ -98,6 +98,7 @@ CGroup* CEconomy::requestGroup() {
 
 	lookup[group->key] = index;
 	group->reg(*this);
+	activeGroups[group->key] = group;
 
 	return group;
 }
@@ -110,7 +111,7 @@ void CEconomy::remove(ARegistrar &group) {
 	takenMexes.erase(group.key);
 
 	// NOTE: CEconomy is registered inside group, so the next lines 
-	// are senseless because records.size() = 0 always
+	// are senseless because records.size() == 0 always
 	std::list<ARegistrar*>::iterator i;
 	for (i = records.begin(); i != records.end(); i++)
 		(*i)->remove(group);
@@ -132,18 +133,33 @@ void CEconomy::addUnitOnFinished(CUnit &unit) {
 
 	unsigned c = unit.type->cats;
 	if (c&FACTORY) {
-		ai->tasks->addFactoryTask(unit);
-		ai->unittable->factories[unit.key] = true;
+		CGroup *group = requestGroup();
+		group->addUnit(unit);
+		ai->tasks->addFactoryTask(*group);
+		
+		/* TODO: put same factories in a single group. This requiers refactoring of task
+		assisting, because when factory is dead assising tasks continue working on ex. factory
+		position.
+
+		CUnit *factory = CUnitTable::getUnitByDef(ai->unittable->factories, unit.def);
+		if(factory && factory->group) {
+			factory->group->addUnit(unit);
+		} else {
+			CGroup *group = requestGroup();
+			group->addUnit(unit);
+			ai->tasks->addFactoryTask(*group);
+		}
+		*/
+		ai->unittable->factories[unit.key] = &unit;
 	}
 
 	else if (c&BUILDER && c&MOBILE) {
 		CGroup *group = requestGroup();
 		group->addUnit(unit);
-		activeGroups[group->key] = group;
 	}
 
 	else if (c&MMAKER) {
-		ai->unittable->metalMakers[unit.key] = true;
+		ai->unittable->metalMakers[unit.key] = &unit;
 	}
 }
 
@@ -454,6 +470,7 @@ unsigned CEconomy::getAllowedFactory() {
 		// TODO: make next decision on map terrain analysis
 		bool isT1 = tech == TECH1;
 		bool isHooverMap = ai->gamemap->IsHooverMap();
+		bool hasWater = ai->gamemap->GetAmountOfWater() > 0.2f; // 20% of map water
 		bool isNewFactory = !ai->unittable->gotFactory(tertiary|tech);
 		if (isT1 && isHooverMap && isNewFactory)
 			return tertiary|tech;
@@ -473,14 +490,13 @@ bool CEconomy::taskInProgress(buildType bt) {
 
 void CEconomy::controlMetalMakers() {
 	float eRatio = eNow / eStorage;
-	std::map<int, bool>::iterator j;
+	std::map<int, CUnit*>::iterator j;
 	if (eRatio < 0.4f) {
 		int success = 0;
 		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
-			if (j->second) {
-				CUnit *unit = ai->unittable->getUnit(j->first);
+			CUnit *unit = j->second;
+			if(unit->isOn()) {
 				unit->setOnOff(false);
-				j->second = false;
 				success++;
 			}
 		}
@@ -494,10 +510,9 @@ void CEconomy::controlMetalMakers() {
 	if (eRatio > 0.6f) {
 		int success = 0;
 		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
-			if (!j->second) {
-				CUnit *unit = ai->unittable->getUnit(j->first);
+			CUnit *unit = j->second;
+			if(!unit->isOn()) {
 				unit->setOnOff(true);
-				j->second = true;
 				success++;
 			}
 		}
@@ -628,7 +643,7 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 		return NULL;
 
 	bool isCommander = group.units.begin()->second->def->isCommander;
-	
+
 	if (isCommander) {
 		float3 g = (suited.begin())->second->pos;
 		float eta = ai->pathfinder->getETA(group,g);

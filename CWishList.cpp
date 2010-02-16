@@ -12,10 +12,11 @@ CWishList::CWishList(AIClasses *ai) {
 }
 
 void CWishList::push(unsigned categories, buildPriority p) {
-	std::map<int, bool>::iterator itFac = ai->unittable->factories.begin();
+	std::map<int, CUnit*>::iterator itFac = ai->unittable->factories.begin();
 	UnitType *fac;
 	for (;itFac != ai->unittable->factories.end(); itFac++) {
-		fac = UT(ai->cb->GetUnitDef(itFac->first)->id);
+		//fac = UT(ai->cb->GetUnitDef(itFac->first)->id);
+		fac = itFac->second->type;
 		std::multimap<float, UnitType*> candidates;
 		ai->unittable->getBuildables(fac, categories, 0, candidates);
 		if (!candidates.empty()) { 
