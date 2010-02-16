@@ -60,7 +60,7 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		cat2str[DEFENSE]     = "DEFENSE";
 	}
 
-	if (cats.empty()) {
+	if (str2cat.empty()) {
 		/* Create the str2cat table and cats vector */
 		std::map<unitCategory,std::string>::iterator i;
 		for (i = cat2str.begin(); i != cat2str.end(); i++) {

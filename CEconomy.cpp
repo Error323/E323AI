@@ -123,7 +123,7 @@ void CEconomy::addUnitOnCreated(CUnit &unit) {
 		CGroup *group = requestGroup();
 		group->addUnit(unit);
 		takenMexes[group->key] = group->pos();
-		CUnit *builder = ai->unittable->getUnit((group->units.begin())->second->builder);
+		CUnit *builder = ai->unittable->getUnit((group->units.begin())->second->builtBy);
 		takenMexes.erase(builder->group->key);
 	}
 }
