@@ -47,6 +47,8 @@ void CMilitary::remove(ARegistrar &group) {
 	std::list<ARegistrar*>::iterator i;
 	for (i = records.begin(); i != records.end(); i++)
 		(*i)->remove(group);
+
+	group.unreg(*this);
 }
 
 void CMilitary::addUnit(CUnit &unit) {
@@ -142,6 +144,7 @@ void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &tar
 	all.insert(all.end(), ai->intel->rest.begin(), ai->intel->rest.end());
 	all.insert(all.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
 	all.insert(all.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
+	all.insert(all.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
 
 	for (size_t i = 0; i < all.size(); i++) {
 		int target = all[i];
@@ -160,10 +163,14 @@ void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &tar
 	}
 
 	std::vector<int> harras;
+	// TODO: put radars on the fist place when appropriate tag will be 
+	// introduced
 	harras.insert(harras.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
 	harras.insert(harras.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
 	harras.insert(harras.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
 	harras.insert(harras.end(), ai->intel->factories.begin(), ai->intel->factories.end());
+	harras.insert(harras.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
+	
 
 	for (size_t i = 0; i < harras.size(); i++) {
 		int target = harras[i];
@@ -183,6 +190,8 @@ void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &tar
 }
 
 void CMilitary::update(int frame) {
+	int target = 0;
+
 	std::vector<int> all, harras;
 	
 	prepareTargets(all, harras);
@@ -197,30 +206,39 @@ void CMilitary::update(int frame) {
 		if (group->busy)
 			continue;
 
-		float3 pos = group->pos();
-
-		int target = selectTarget(pos, 300.0f, true, harras);
-
-		/* There are no harras targets available */
-		if (target == -1)
-			target = selectTarget(pos, 300.0f, true, all);
+		// NOTE: if once target is not found it will never appear during
+		// current loop execution
+		if (target >= 0) {
+			float3 pos = group->pos();
+			target = selectTarget(pos, 300.0f, true, harras);
+			/* There are no harras targets available */
+			if (target < 0)
+				target = selectTarget(pos, 300.0f, true, all);
+		}
 
 		/* Nothing available */
-		if (target == -1) {
-			mergeScouts[group->key] = group;
-			break;
+		if (target < 0) {
+			if (group->units.size() < MAX_SCOUTS_IN_GROUP)
+				mergeScouts[group->key] = group;
 		}
 		else {
 			float3 tpos = ai->cbc->GetUnitPos(target);
-			if (ai->threatmap->getThreat(tpos,0.0f) < group->strength) {
+			float threat = ai->threatmap->getThreat(tpos, 0.0f);
+			if (threat < group->strength) {
 				mergeScouts.erase(group->key);
 				ai->tasks->addAttackTask(target, *group);
+				break;
 			}
 			else {
-				mergeScouts[group->key] = group;
+				//LOG_II("CMilitary::update target at (" << tpos << ") is too dangerous (threat=" << threat << ") for scout Group(" << group->key << "):strength(" << group->strength << ")")
+				if (group->units.size() < MAX_SCOUTS_IN_GROUP)
+					mergeScouts[group->key] = group;
 			}
-			break;
 		}
+
+		// prevent merging of more than 2 groups
+		if(mergeScouts.size() >= 2)
+			break;
 	}
 
 	/* Merge the scout groups that were not strong enough */
@@ -300,4 +318,13 @@ unsigned CMilitary::requestUnit() {
 		}
 	}
 	return LAND | MOBILE | ASSAULT; // unreachable code :)
+}
+
+int CMilitary::idleScoutGroupsNum() {
+	int result = 0;
+	std::map<int, CGroup*>::iterator i;
+	for(i = activeScoutGroups.begin(); i != activeScoutGroups.end(); i++)
+		if(!i->second->busy)
+			result++;
+	return result;
 }
