@@ -76,6 +76,9 @@ class CGroup: public ARegistrar {
 		/* Add a unit to the group */
 		void addUnit(CUnit &unit);
 
+		/* Get the first unit of the group */
+		CUnit* firstUnit();
+
 		/* Merge another group with this group */
 		void merge(CGroup &group);
 

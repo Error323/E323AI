@@ -92,7 +92,6 @@ void CE323AI::UnitCreated(int uid, int bid) {
 
 	LOG_II("CE323AI::UnitCreated " << (*unit) << " (bid=" << bid << ")")
 
-	unsigned int c = unit->type->cats;
 	if (unit->def->isCommander && !ai->economy->isInitialized()) {
 		ai->economy->init(*unit);
 	}
@@ -100,6 +99,7 @@ void CE323AI::UnitCreated(int uid, int bid) {
 	if (bid < 0)
 		return; // unit was spawned from nowhere (e.g. commander)
 
+	unsigned int c = unit->type->cats;
 	if (c&MOBILE) {
 		CUnit *builder = ai->unittable->getUnit(bid);
 		// if builder is a mobile unit (like Consul in BA) then do not 

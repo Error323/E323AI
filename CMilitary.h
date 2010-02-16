@@ -32,6 +32,8 @@ class CMilitary: public ARegistrar {
 		/* update callin */
 		void update(int groupsize);
 
+		int idleScoutGroupsNum();
+
 	private:
 		AIClasses *ai;
 

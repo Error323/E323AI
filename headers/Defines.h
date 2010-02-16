@@ -54,6 +54,12 @@
 /* Max factory Assisters */
 #define FACTORY_ASSISTERS 6
 
+/* Max number of scouts per group */
+#define MAX_SCOUTS_IN_GROUP 3
+
+/* Max number of idle scout groups to prevent building unnecessary scouts */
+#define MAX_IDLE_SCOUT_GROUPS 3
+
 /* Number of multiplex iterations */
 #define MULTIPLEXER 10 
 

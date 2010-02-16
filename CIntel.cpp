@@ -3,6 +3,7 @@
 #include "CAI.h"
 #include "CUnitTable.h"
 #include "CUnit.h"
+#include "CMilitary.h"
 
 CIntel::CIntel(AIClasses *ai) {
 	this->ai = ai;
@@ -41,9 +42,12 @@ void CIntel::update(int frame) {
 	attackers.clear();
 	metalMakers.clear();
 	energyMakers.clear();
+	restUnarmedUnits.clear();
 	rest.clear();
 	resetCounters();
+
 	numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
+	
 	for (int i = 0; i < numUnits; i++) {
 		const UnitDef *ud = ai->cbc->GetUnitDef(units[i]);
 		UnitType      *ut = UT(ud->id);
@@ -69,6 +73,8 @@ void CIntel::update(int frame) {
 		else if (c&EMAKER) {
 			energyMakers.push_back(units[i]);
 		}
+		else if (ud->weapons.empty())
+			restUnarmedUnits.push_back(units[i]);
 		else {
 			rest.push_back(units[i]);
 		}
@@ -102,14 +108,22 @@ void CIntel::updateCounts(unsigned c) {
 
 void CIntel::resetCounters() {
 	roulette.clear();
+	
 	/* Put the counts in a normalized reversed map first and reset counters*/
 	for (size_t i = 0; i < selector.size(); i++) {
 		roulette.insert(std::pair<float,unitCategory>(counts[selector[i]]/float(totalCount), selector[i]));
 		counts[selector[i]] = 1;
 	}
+	
 	counts[ANTIAIR] = 0;
 	counts[AIR] = 0;
 	counts[ASSAULT] = 3;
+	
+	if(ai->military->idleScoutGroupsNum() >= MAX_IDLE_SCOUT_GROUPS)
+		counts[SCOUTER] = 0;
+	else
+		counts[SCOUTER] = 1; // default value
+	
 	totalCount = selector.size();
 }
 

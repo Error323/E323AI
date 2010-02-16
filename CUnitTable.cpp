@@ -60,7 +60,7 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		cat2str[DEFENSE]     = "DEFENSE";
 	}
 
-	if (cats.empty()) {
+	if (str2cat.empty()) {
 		/* Create the str2cat table and cats vector */
 		std::map<unitCategory,std::string>::iterator i;
 		for (i = cat2str.begin(); i != cat2str.end(); i++) {
@@ -221,7 +221,11 @@ void CUnitTable::update() {
 }
 
 bool CUnitTable::canPerformTask(CUnit &unit) {
-	/* lifetime of more then 5 seconds */
+	// TODO: this is a temporarily hack until we make all groups behaviour via
+	// tasks. Currently for most of static groups this is wrong
+	if (unit.type->cats & STATIC)
+		return false;
+	/* lifetime of more then 10 seconds */
 	return unitsAliveTime.find(unit.key) != unitsAliveTime.end() && unitsAliveTime[unit.key] > 30*10;
 }
 

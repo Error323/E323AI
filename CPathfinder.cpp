@@ -272,9 +272,21 @@ void CPathfinder::resetMap(int thread) {
 }
 
 float CPathfinder::getETA(CGroup &group, float3 &pos, float radius) {
+	float dist;
+	float travelTime;
 	float3 gpos = group.pos();
-	float dist = ai->cb->GetPathLength(gpos, pos, group.moveType) - radius;
-	float travelTime = (dist / group.speed);
+	// TODO: better use categories, and check STATIC flag, but it is inconvenient 
+	// to get them currently
+	if (group.moveType < 0) {
+		// FIXME: should we consider "radius" here?
+		if (gpos.distance2D(pos) < group.buildRange)
+			travelTime = 0.0f;
+		else
+			travelTime = std::numeric_limits<float>::max();
+	} else {
+		dist = ai->cb->GetPathLength(gpos, pos, group.moveType) - radius;
+		travelTime = (dist / group.speed);
+	}
 	return travelTime;
 }
 

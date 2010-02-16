@@ -85,8 +85,8 @@ class CUnitTable: public ARegistrar {
 		void getBuildables(UnitType *ut, unsigned i, unsigned e, std::multimap<float, UnitType*> &candidates);
 		bool gotFactory(unsigned c);
 
-		static CUnit* CUnitTable::getUnitByDef(std::map<int, CUnit*> &dic, const UnitDef *udef);
-		static CUnit* CUnitTable::getUnitByDef(std::map<int, CUnit*> &dic, int did);
+		static CUnit* getUnitByDef(std::map<int, CUnit*> &dic, const UnitDef *udef);
+		static CUnit* getUnitByDef(std::map<int, CUnit*> &dic, int did);
 		
 		/* Debugging functions */
 		std::string debugCategories(UnitType *ut);
