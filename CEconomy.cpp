@@ -225,7 +225,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 							ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
 					}
 				}
-				else if (!eRequest && areMMakersEnabled) {
+				else if (areMMakersEnabled && eIncome > eUsage) {
 					UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 					if (mmaker != NULL)
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
@@ -470,7 +470,6 @@ unsigned CEconomy::getAllowedFactory() {
 		// TODO: make next decision on map terrain analysis
 		bool isT1 = tech == TECH1;
 		bool isHooverMap = ai->gamemap->IsHooverMap();
-		bool hasWater = ai->gamemap->GetAmountOfWater() > 0.2f; // 20% of map water
 		bool isNewFactory = !ai->unittable->gotFactory(tertiary|tech);
 		if (isT1 && isHooverMap && isNewFactory)
 			return tertiary|tech;
@@ -491,7 +490,7 @@ bool CEconomy::taskInProgress(buildType bt) {
 void CEconomy::controlMetalMakers() {
 	float eRatio = eNow / eStorage;
 	std::map<int, CUnit*>::iterator j;
-	if (eRatio < 0.4f) {
+	if (eRatio < 0.3f) {
 		int success = 0;
 		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
 			CUnit *unit = j->second;
@@ -507,7 +506,7 @@ void CEconomy::controlMetalMakers() {
 		}
 	}
 
-	if (eRatio > 0.6f) {
+	if (eRatio > 0.7f) {
 		int success = 0;
 		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
 			CUnit *unit = j->second;

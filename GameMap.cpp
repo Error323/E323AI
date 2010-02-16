@@ -29,8 +29,8 @@ GameMap::GameMap(AIClasses *ai) {
 	this->ai = ai;
 	heightVariance = 0.0f;
 	waterAmount = 0.0f;
+	metalCount = nonMetalCount = 0;
 	CalcMapHeightFeatures();
-	isMetalMap = true;
 	if (GameMap::metalspots.empty())
 		CalcMetalSpots();
 }
@@ -73,9 +73,10 @@ void GameMap::CalcMetalSpots() {
 			if (metalmap[ID(x,z)] >= METAL_THRESHOLD) {
 				M.push_back(z);
 				M.push_back(x);
+				metalCount++;
 			}
 			else {
-				isMetalMap = false;
+				nonMetalCount++;
 			}
 		}
 	}
@@ -89,7 +90,7 @@ void GameMap::CalcMetalSpots() {
 		// Using a greedy approach, find the best metalspot
 		for (size_t i = 0; i < M.size(); i+=2) {
 			int z = M[i]; int x = M[i+1];
-			if (isMetalMap && (z % 10 != 0 || x % 10 != 0))
+			if (IsMetalMap() && (z % 10 != 0 || x % 10 != 0))
 				continue;
 
 			if (metalmap[ID(x,z)] == 0)
