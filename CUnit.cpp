@@ -170,7 +170,7 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 	float3 goal        = ai->cb->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
 
 	int i = 0;
-	while (goal == ERRORVECTOR) {
+	while (goal.x < 0.0f) {
 		startRadius += def->buildDistance;
 		goal = ai->cb->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
 		i++;
