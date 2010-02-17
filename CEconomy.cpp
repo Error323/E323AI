@@ -20,6 +20,7 @@
 
 CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	this->ai = ai;
+	state = 0;
 	incomes  = 0;
 	mNow     = mNowSummed     = eNow     = eNowSummed     = 0.0f;
 	mIncome  = mIncomeSummed  = eIncome  = eIncomeSummed  = 0.0f;
@@ -28,7 +29,7 @@ CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	mStorage = eStorage                                   = 0.0f;
 	mstall = estall = mexceeding = eexceeding = mRequest = eRequest = false;
 	initialized = false;
-	areMMakersEnabled = true;
+	areMMakersEnabled = ai->gamemap->IsNonMetalMap();
 }
 
 CEconomy::~CEconomy()
@@ -169,7 +170,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 		ai->tasks->addAssistTask(*task, group);
 	else {
 		/* Retrieve the allowed buildable units */
-		CUnit *unit = group.units.begin()->second;
+		CUnit *unit = group.firstUnit();
 		std::multimap<float, UnitType*> candidates;
 		ai->unittable->getBuildables(unit->type, include, exclude, candidates);
 
@@ -178,7 +179,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 
 		/* Determine which of these we can afford */
 		std::multimap<float, UnitType*>::iterator i = candidates.begin();
-		int iterations = candidates.size() / (ai->cfgparser->getTotalStates()+1-state);
+		int iterations = candidates.size() / (ai->cfgparser->getTotalStates() + 1 - state);
 		bool affordable = false;
 		while(iterations >= 0) {
 			if (canAffordToBuild(group.units.begin()->second->type, i->second))
@@ -647,11 +648,11 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 	if (suited.empty())
 		return NULL;
 
-	bool isCommander = group.units.begin()->second->def->isCommander;
+	bool isCommander = group.firstUnit()->def->isCommander;
 
 	if (isCommander) {
 		float3 g = (suited.begin())->second->pos;
-		float eta = ai->pathfinder->getETA(group,g);
+		float eta = ai->pathfinder->getETA(group, g);
 
 		/* Don't pursuit as commander when walkdistance is more then 10 seconds */
 		if (eta > 30*10) return NULL;
