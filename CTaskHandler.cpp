@@ -14,6 +14,7 @@
 #include "CEconomy.h"
 #include "CConfigParser.h"
 #include "CThreatMap.h"
+#include "CScopedTimer.h"
 
 /**************************************************************/
 /************************* ATASK ******************************/
@@ -304,6 +305,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 }
 
 void CTaskHandler::BuildTask::update() {
+	CScopedTimer t(std::string("tasks-build"));
 	float3 grouppos = group->pos();
 	float3 dist = grouppos - pos;
 	timer += MULTIPLEXER;
@@ -391,6 +393,7 @@ bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 }
 
 void CTaskHandler::FactoryTask::update() {
+	CScopedTimer t(std::string("tasks-factory"));
 	std::map<int,CUnit*>::iterator i;
 	CUnit *factory;
 	
@@ -470,6 +473,7 @@ void CTaskHandler::AssistTask::remove() {
 }
 
 void CTaskHandler::AssistTask::update() {
+	CScopedTimer t(std::string("tasks-assist"));
 	float3 grouppos = group->pos();
 	float3 dist = grouppos - pos;
 	float range = (assist->t == ATTACK) ? group->range : group->buildRange;
@@ -515,6 +519,7 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 }
 
 void CTaskHandler::AttackTask::update() {
+	CScopedTimer t(std::string("tasks-attack"));
 	if (group->isMicroing() && group->isIdle())
 		group->micro(false);
 
@@ -624,6 +629,7 @@ void CTaskHandler::MergeTask::remove(ARegistrar &group) {
 }
 		
 void CTaskHandler::MergeTask::update() {
+	CScopedTimer t(std::string("tasks-merge"));
 	std::vector<CGroup*> mergable;
 
 	/* See which groups can be merged already */
