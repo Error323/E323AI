@@ -5,10 +5,11 @@
 #include <sstream>
 #include <iomanip>
 #include <map>
+#include <limits>
 
 #include <SDL_timer.h>
 
-#define MAX_STR_LENGTH 21
+#define MAX_STR_LENGTH 30
 
 class CScopedTimer {
 	public:
@@ -16,6 +17,8 @@ class CScopedTimer {
 			if (times.find(task) == times.end()) {
 				times[task] = 0;
 				counters[task] = 0;
+				maxtimes[task] = 0;
+				mintimes[task] = std::numeric_limits<int>::max();
 			}
 			t1 = SDL_GetTicks();
 		}
@@ -24,6 +27,9 @@ class CScopedTimer {
 			t2           = SDL_GetTicks();
 			t3           = t2 - t1;
 			times[task] += t3;
+			if (t3 > 0) // we are not interested in 0 timings
+				mintimes[task] = std::min<float>(mintimes[task], t3);
+			maxtimes[task] = std::max<float>(maxtimes[task], t3);
 			sum         += t3;
 			counters[task]++;
 		}
@@ -33,7 +39,7 @@ class CScopedTimer {
 			ss << "[CScopedTimer] milliseconds\n";
 			for (int i = 0; i < MAX_STR_LENGTH; i++)
 				ss << " ";
-			ss << "PCT\tAVG\tTOT\n";
+			ss << "PCT\tAVG\tMIN\tMAX\tTOT\n";
 
 			std::map<std::string, unsigned>::iterator i;
 			for (i = times.begin(); i != times.end(); i++) {
@@ -44,7 +50,7 @@ class CScopedTimer {
 				ss << "  " << i->first;
 				for (unsigned j = i->first.size()+2; j < MAX_STR_LENGTH; j++)
 				  ss << " ";
-				ss << pct << "%\t" << avg << "\t" << i->second << "\t" << "\n";
+				ss << pct << "%\t" << avg << "\t" << mintimes[i->first] << "\t" << maxtimes[i->first] << "\t" << i->second << "\t" << "\n";
 			}
 			ss << "\n";
 			return ss.str();
@@ -61,6 +67,7 @@ class CScopedTimer {
 		static unsigned sum;
 		static std::map<std::string, unsigned> times;
 		static std::map<std::string, unsigned> counters;
+		static std::map<std::string, unsigned> mintimes,maxtimes;
 };
 
 #endif
