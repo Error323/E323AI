@@ -124,6 +124,8 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* draw the path ? */
 		bool draw;
 
+		unsigned int graphSize;
+
 		const float *sm;
 		const float *hm;
 

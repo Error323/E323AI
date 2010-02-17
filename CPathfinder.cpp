@@ -29,6 +29,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	// NOTE: XX and ZZ are in graph map resolution units
 	this->XX   = this->X / I_MAP_RES;
 	this->ZZ   = this->Z / I_MAP_RES;
+	graphSize = XX * ZZ;
 	update     = 0;
 	repathGroup= -1;
 
@@ -58,7 +59,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 			fin.read(&cacheMarker[0], cacheMarker.size());
 			if (!fin.eof() && cacheMarker == cacheVersion) {
 				fin.read((char*)&N, sizeof(N));
-				if(N == (XX * ZZ)) {
+				if(N == graphSize) {
 					for (unsigned int i = 0; i < N; i++) {
 						Node *n = Node::unserialize(fin);
 						CPathfinder::graph.push_back(n);
@@ -266,13 +267,14 @@ void CPathfinder::calcGraph() {
 
 void CPathfinder::resetMap(int thread) {
 	PROFILE(pf-grouppath-resetmap)
-	for (unsigned int z = 0; z < ZZ; z++) {
-		for (unsigned int x = 0; x < XX; x++) {
-			int id = ID_GRAPH(x,z);
-			Node *n = CPathfinder::graph[id];
-			n->w = ai->threatmap->map[id] + sm[ID(x*I_MAP_RES, z*I_MAP_RES)]*5.0f;
-			n->reset();
-		}
+
+	int idSlopeMap = 0;
+	
+	for(unsigned int id = 0; id < graphSize; id++) {
+		Node *n = CPathfinder::graph[id];
+		n->reset();
+		n->w = ai->threatmap->map[id] + sm[idSlopeMap] * 5.0f;
+		idSlopeMap += I_MAP_RES;
 	}
 }
 
