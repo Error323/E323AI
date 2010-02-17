@@ -46,9 +46,6 @@ class CUnitTable: public ARegistrar {
 		/* All units flattened in a map */
 		std::map<int, UnitType>   units;
 
-		/* Unit categories in vector */
-		std::vector<unitCategory> cats;
-
 		/* movetypes, used by pathfinder */
 		std::map<int, MoveData*>  moveTypes;
 
@@ -67,6 +64,8 @@ class CUnitTable: public ARegistrar {
 		/* unitCategories in string format, see Defines.h */
 		static std::map<unitCategory, std::string> cat2str;
 		static std::map<std::string, unitCategory> str2cat;
+		/* Unit categories in vector */
+		static std::vector<unitCategory> cats;
 
 
 		/* Special commander hook, since it's the first to spawn */
@@ -83,6 +82,7 @@ class CUnitTable: public ARegistrar {
 		/* Returns a unittype with categories that ut can build */
 		UnitType* canBuild(UnitType *ut, unsigned int categories);
 		void getBuildables(UnitType *ut, unsigned i, unsigned e, std::multimap<float, UnitType*> &candidates);
+		int factoryCount(unsigned c);
 		bool gotFactory(unsigned c);
 
 		static CUnit* getUnitByDef(std::map<int, CUnit*> &dic, const UnitDef *udef);

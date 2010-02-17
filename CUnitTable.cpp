@@ -11,6 +11,7 @@
 
 std::map<std::string, unitCategory> CUnitTable::str2cat;
 std::map<unitCategory, std::string> CUnitTable::cat2str;
+std::vector<unitCategory> CUnitTable::cats;
 
 CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	this->ai = ai;
@@ -131,7 +132,6 @@ void CUnitTable::generateCategorizationFile(const char *fileName) {
 	UnitType *utParent;
 	for (i = cat2str.begin(); i != cat2str.end(); i++) {
 		file << "# " << i->second << "\n";
-		str2cat[i->second] = i->first;
 	}
 	
 	file << "\n\n# " << numUnits << " units in total\n\n";
@@ -433,7 +433,10 @@ float CUnitTable::calcUnitDps(UnitType *ut) {
 	return ut->def->power;
 }
 
-bool CUnitTable::gotFactory(unsigned c) {
+int CUnitTable::factoryCount(unsigned c) {
+	int result = 0;
+
+	// decode categories from "c" and put them into "utcats"...
 	std::vector<unitCategory> utcats;
 	for (unsigned int i = 0; i < cats.size(); i++)
 		if (c&cats[i])
@@ -444,12 +447,19 @@ bool CUnitTable::gotFactory(unsigned c) {
 		bool qualifies = true;
 		unsigned int cat = activeUnits[i->first]->type->cats;
 		for (unsigned int i = 0; i < utcats.size(); i++)
-			if (!(utcats[i]&cat))
+			if (!(utcats[i]&cat)) {
 				qualifies = false;
+				break;
+			}
 		if (qualifies)
-			return true;
+			result++;
 	}
-	return false;
+	
+	return result;
+}
+
+bool CUnitTable::gotFactory(unsigned c) {
+	return factoryCount(c) > 0;
 }
 
 void CUnitTable::getBuildables(UnitType *ut, unsigned include, unsigned exclude, std::multimap<float, UnitType*> &candidates) {
