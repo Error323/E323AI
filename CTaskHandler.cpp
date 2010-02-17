@@ -317,6 +317,10 @@ void CTaskHandler::BuildTask::update() {
 	/* If idle, our micro is done */
 	if (group->isMicroing() && group->isIdle())
 		group->micro(false);
+	
+	/* If microing, break */
+	if (group->isMicroing())
+		return;
 
 	/* See if we can build yet */
 	if (isMoving && dist.Length2D() <= group->buildRange) {

@@ -131,6 +131,9 @@ void CPathfinder::Node::serialize(std::ostream &os) {
 
 bool CPathfinder::isBlocked(int x, int z, int movetype) {
 	MoveData *md = ai->unittable->moveTypes[movetype];
+	if (md == NULL) 
+		return false;
+
 	int smidx = ID(x,z);
 	int hmidx = (z*HEIGHT2SLOPE)*(X*HEIGHT2SLOPE)+(x*HEIGHT2SLOPE);
 
