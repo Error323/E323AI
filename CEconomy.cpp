@@ -230,7 +230,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 					if (mmaker != NULL)
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
 				}
-				else if (!areMMakersEnabled) {
+				else {
 					buildOrAssist(group, BUILD_EPROVIDER, EMAKER|LAND);
 				}
 				break;
