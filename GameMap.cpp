@@ -9,11 +9,7 @@
 #include <cfloat>
 
 #include "CAI.h"
-#include "CGroup.h"
 #include "MathUtil.h"
-#include "CThreatMap.h"
-#include "CUnitTable.h"
-#include "CUnit.h"
 
 #include "headers/HEngine.h"
 
