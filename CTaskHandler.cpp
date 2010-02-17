@@ -74,7 +74,7 @@ void ATask::addGroup(CGroup &g) {
 }
 
 void ATask::enemyScan(bool scout) {
-	CScopedTimer t(std::string("tasks-enemyscan"));
+	PROFILE(tasks-enemyscan)
 	std::multimap<float, int> candidates;
 	float3 pos = group->pos();
 	int enemyids[MAX_ENEMIES];
@@ -106,7 +106,7 @@ void ATask::enemyScan(bool scout) {
 }
 
 void ATask::resourceScan() {
-	CScopedTimer t(std::string("tasks-resourcescan"));
+	PROFILE(tasks-resourcescan)
 	/* Leave metal alone when we can't store it */
 	if (ai->economy->mexceeding)
 		return;
@@ -309,7 +309,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 }
 
 void CTaskHandler::BuildTask::update() {
-	CScopedTimer t(std::string("tasks-build"));
+	PROFILE(tasks-build)
 	float3 grouppos = group->pos();
 	float3 dist = grouppos - pos;
 	timer += MULTIPLEXER;
@@ -397,7 +397,7 @@ bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 }
 
 void CTaskHandler::FactoryTask::update() {
-	CScopedTimer t(std::string("tasks-factory"));
+	PROFILE(tasks-factory)
 	std::map<int,CUnit*>::iterator i;
 	CUnit *factory;
 	
@@ -477,7 +477,7 @@ void CTaskHandler::AssistTask::remove() {
 }
 
 void CTaskHandler::AssistTask::update() {
-	CScopedTimer t(std::string("tasks-assist"));
+	PROFILE(tasks-assist)
 	float3 grouppos = group->pos();
 	float3 dist = grouppos - pos;
 	float range = (assist->t == ATTACK) ? group->range : group->buildRange;
@@ -523,7 +523,7 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 }
 
 void CTaskHandler::AttackTask::update() {
-	CScopedTimer t(std::string("tasks-attack"));
+	PROFILE(tasks-attack)
 	if (group->isMicroing() && group->isIdle())
 		group->micro(false);
 
@@ -633,7 +633,7 @@ void CTaskHandler::MergeTask::remove(ARegistrar &group) {
 }
 		
 void CTaskHandler::MergeTask::update() {
-	CScopedTimer t(std::string("tasks-merge"));
+	PROFILE(tasks-merge)
 	std::vector<CGroup*> mergable;
 
 	/* See which groups can be merged already */

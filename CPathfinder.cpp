@@ -262,7 +262,7 @@ void CPathfinder::calcGraph() {
 }
 
 void CPathfinder::resetMap(int thread) {
-	CScopedTimer t(std::string("pf-grouppath-resetmap"));
+	PROFILE(pf-grouppath-resetmap)
 	for (unsigned int z = 0; z < ZZ; z++) {
 		for (unsigned int x = 0; x < XX; x++) {
 			int id = ID_GRAPH(x,z);
@@ -483,7 +483,7 @@ void CPathfinder::drawNode(Node *n) {
 }
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius) {
-	CScopedTimer t(std::string("pf-grouppath-getpath"));
+	PROFILE(pf-grouppath-getpath)
 	start = getClosestNodeId(s);
 	goal = getClosestNodeId(g);
 

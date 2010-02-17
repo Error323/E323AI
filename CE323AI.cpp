@@ -335,59 +335,59 @@ void CE323AI::Update() {
 	/* Rotate through the different update events to distribute computations */
 	switch(aiframe % MULTIPLEXER) {
 		case 0: { /* update incomes */
-			CScopedTimer t(std::string("eco-incomes"));
+			PROFILE(eco-incomes)
 			ai->economy->updateIncomes();
 		}
 		break;
 
 		case 1: { /* update threatmap */
-			CScopedTimer t(std::string("threatmap"));
+			PROFILE(threatmap)
 			ai->threatmap->update(localFrame);
 		}
 		break;
 
 		case 2: { /* update the path itself of a group */
-			CScopedTimer t(std::string("pf-grouppath"));
+			PROFILE(pf-grouppath)
 			ai->pathfinder->updatePaths();
 		}
 		break;
 
 		case 3: { /* update the groups following a path */
-			CScopedTimer t(std::string("pf-followers"));
+			PROFILE(pf-followers)
 			ai->pathfinder->updateFollowers();
 		}
 		break;
 
 		case 4: { /* update enemy intel */
-			CScopedTimer t(std::string("intel"));
+			PROFILE(intel)
 			ai->intel->update(localFrame);
 		}
 		break;
 
 		case 5: { /* update defense matrix */
-			CScopedTimer t(std::string("defensematrix"));
+			PROFILE(defensematrix)
 			ai->defensematrix->update();
 		}
 
 		case 6: { /* update military */
-			CScopedTimer t(std::string("military"));
+			PROFILE(military)
 			ai->military->update(localFrame);
 		}
 		break;
 
 		case 7: { /* update economy */
-			CScopedTimer t(std::string("eco-update"));
+			PROFILE(eco-update)
 			ai->economy->update(localFrame);
 		}
 		break;
 
 		case 8: { /* update taskhandler */
-			CScopedTimer t(std::string("tasks"));
+			PROFILE(tasks)
 			ai->tasks->update();
 		}
 
 		case 9: { /* update unit table */
-			CScopedTimer t(std::string("unittable"));
+			PROFILE(unittable)
 			ai->unittable->update();
 		}
 		break;

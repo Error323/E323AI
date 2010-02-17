@@ -11,6 +11,13 @@
 
 #define MAX_STR_LENGTH 30
 
+#ifdef DEBUG
+	#define PROFILE(x) CScopedTimer t(std::string((#x)));
+#else
+	#define PROFILE(x)
+#endif
+
+
 class CScopedTimer {
 	public:
 		CScopedTimer(const std::string& s): task(s) {
