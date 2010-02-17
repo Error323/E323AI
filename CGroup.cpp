@@ -240,9 +240,10 @@ void CGroup::attack(int target, bool enqueue) {
 void CGroup::build(float3 &pos, UnitType *ut) {
 	std::map<int, CUnit*>::iterator alpha, i;
 	alpha = units.begin();
-	alpha->second->build(ut, pos);
-	for (i = ++alpha; i != units.end(); i++)
-		i->second->guard(alpha->first);
+	if (alpha->second->build(ut, pos)) {
+		for (i = ++alpha; i != units.end(); i++)
+			i->second->guard(alpha->first);
+	}
 }
 
 void CGroup::stop() {
