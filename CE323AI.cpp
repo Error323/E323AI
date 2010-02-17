@@ -149,7 +149,7 @@ void CE323AI::UnitDestroyed(int uid, int attacker) {
 /* Called when unit is idle */
 void CE323AI::UnitIdle(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
-	LOG_II("CE323AI::UnitIdle " << (*unit))
+	//LOG_II("CE323AI::UnitIdle " << (*unit))
 	if(ai->unittable->unitsUnderPlayerControl.find(uid) != ai->unittable->unitsUnderPlayerControl.end()) {
 		ai->unittable->unitsUnderPlayerControl.erase(uid);
 		assert(unit->group == NULL);

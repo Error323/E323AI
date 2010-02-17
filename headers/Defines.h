@@ -36,7 +36,7 @@
 #define METAL2ENERGY 60
 
 /* Max features */
-#define MAX_FEATURES 10
+#define MAX_FEATURES 50
 
 /* Max enemies */
 #define MAX_ENEMIES 20

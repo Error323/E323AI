@@ -28,8 +28,8 @@ class CScopedTimer {
 			t3           = t2 - t1;
 			times[task] += t3;
 			if (t3 > 0) // we are not interested in 0 timings
-				mintimes[task] = std::min<float>(mintimes[task], t3);
-			maxtimes[task] = std::max<float>(maxtimes[task], t3);
+				mintimes[task] = std::min<unsigned>(mintimes[task], t3);
+			maxtimes[task] = std::max<unsigned>(maxtimes[task], t3);
 			sum         += t3;
 			counters[task]++;
 		}

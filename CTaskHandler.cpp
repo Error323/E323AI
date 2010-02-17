@@ -74,6 +74,7 @@ void ATask::addGroup(CGroup &g) {
 }
 
 void ATask::enemyScan(bool scout) {
+	CScopedTimer t(std::string("tasks-enemyscan"));
 	std::multimap<float, int> candidates;
 	float3 pos = group->pos();
 	int enemyids[MAX_ENEMIES];
@@ -105,27 +106,30 @@ void ATask::enemyScan(bool scout) {
 }
 
 void ATask::resourceScan() {
+	CScopedTimer t(std::string("tasks-resourcescan"));
 	/* Leave metal alone when we can't store it */
 	if (ai->economy->mexceeding)
 		return;
 
-	std::map<float, int> candidates;
+	float bestDist = std::numeric_limits<float>::max();
+	int bestFeature = -1;
 	float3 pos = group->pos();
 	float radius = group->buildRange;
-	int featureids[MAX_FEATURES];
-	const int numFeatures = ai->cb->GetFeatures(&featureids[0], MAX_FEATURES, pos, radius);
+	const int numFeatures = ai->cb->GetFeatures(&ai->unitIDs[0], MAX_FEATURES, pos, radius);
 	for (int i = 0; i < numFeatures; i++) {
-		const FeatureDef *fd = ai->cb->GetFeatureDef(featureids[i]);
+		const FeatureDef *fd = ai->cb->GetFeatureDef(ai->unitIDs[i]);
 		if (fd->metal > 0.0f) {
-			float3 fpos = ai->cb->GetFeaturePos(featureids[i]);
+			float3 fpos = ai->cb->GetFeaturePos(ai->unitIDs[i]);
 			float dist = (fpos - pos).Length2D();
-			candidates[dist] = featureids[i];
+			if (dist < bestDist) {
+				bestFeature = ai->unitIDs[i];
+				bestDist = dist;
+			}
 		}
 	}
 
-	if (!candidates.empty()) {
-		int f = candidates.begin()->second;
-		group->reclaim(f);
+	if (bestFeature != -1) {
+		group->reclaim(bestFeature);
 		group->micro(true);
 		LOG_II("ATask::resourceScan group " << (*group) << " is reclaiming")
 	}
