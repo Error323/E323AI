@@ -385,6 +385,10 @@ void CPathfinder::updatePaths() {
 	if (!groups[repathGroup]->busy)
 		return;
 
+	/* group is not following main path */
+	if (groups[repathGroup]->isMicroing())
+		return;
+
 	float3 start = groups[repathGroup]->pos();
 	float3 goal  = ai->tasks->getPos(*groups[repathGroup]);
 
