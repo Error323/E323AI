@@ -57,9 +57,6 @@ void ATask::remove() {
 void ATask::remove(ARegistrar &group) {
 	LOG_II("ATask::remove by group(" << (*(dynamic_cast<CGroup*>(&group))) << ")")
 
-	// NOTE: experimental
-	//group = NULL; // group is going to be inactive
-
 	remove();
 }
 
