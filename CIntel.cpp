@@ -52,11 +52,12 @@ void CIntel::update(int frame) {
 		const UnitDef *ud = ai->cbc->GetUnitDef(units[i]);
 		UnitType      *ut = UT(ud->id);
 		unsigned int    c = ut->cats;
+		bool armed = !ud->weapons.empty();
 
-		if (
-			ai->cbc->UnitBeingBuilt(units[i]) || /* Ignore units being built */
-			ai->cbc->IsUnitCloaked(units[i])     /* Ignore cloaked units */
-		) continue;
+		/* Ignore units being built and cloaked units */
+		if ((ai->cbc->UnitBeingBuilt(units[i]) && (armed || !(c&STATIC)))
+		|| 	ai->cbc->IsUnitCloaked(units[i]))
+			continue;
 		
 		if (c&ATTACKER && !(c&AIR)) {
 			attackers.push_back(units[i]);
@@ -73,7 +74,7 @@ void CIntel::update(int frame) {
 		else if (c&EMAKER) {
 			energyMakers.push_back(units[i]);
 		}
-		else if (ud->weapons.empty())
+		else if (!armed)
 			restUnarmedUnits.push_back(units[i]);
 		else {
 			rest.push_back(units[i]);
