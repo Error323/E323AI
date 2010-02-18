@@ -14,7 +14,7 @@
 /* AI meta data */
 #define AI_VERSION_NR  aiexport_getVersion()
 #define AI_NAME        std::string("E323AI")
-#define AI_VERSION     AI_NAME + AI_VERSION_NR + " - High Templar"
+#define AI_VERSION     AI_NAME + " " + AI_VERSION_NR + " - High Templar (" + __DATE__ + ")"
 #define AI_CREDITS     "Error323 - folkerthuizinga@gmail.com"
 #define AI_NOTES       "This A.I. mainly focusses on the XTA and BA mods"
 
@@ -36,7 +36,7 @@
 #define METAL2ENERGY 60
 
 /* Max features */
-#define MAX_FEATURES 50
+#define MAX_FEATURES 25
 
 /* Max enemies */
 #define MAX_ENEMIES 20
@@ -50,6 +50,7 @@
 #define HEIGHT2REAL 8
 #define I_MAP_RES 8 /* Inverse map resolution (must be even) */
 #define HEIGHT2SLOPE 2
+#define FOOTPRINT2REAL 8
 
 /* Max factory Assisters */
 #define FACTORY_ASSISTERS 6
