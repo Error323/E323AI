@@ -40,7 +40,7 @@ class CMilitary: public ARegistrar {
 		void prepareTargets(std::vector<int> &all, std::vector<int> &harras);
 
 		/* Current group per factory <factory, CGroup*> */
-		std::map<int, CGroup*> currentGroups;
+		std::map<int, CGroup*> assemblingGroups;
 
 		/* The group container */
 		std::vector<CGroup*> groups;

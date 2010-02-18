@@ -28,16 +28,18 @@ CMilitary::~CMilitary()
 void CMilitary::remove(ARegistrar &group) {
 	LOG_II("CMilitary::remove group(" << group.key << ")")
 	
-	free.push(lookup[group.key]);
+	// NOTE: we do not destory groups to prevent unnecessary memory allocations
+	free.push(lookup[group.key]); // remember index of free group
+	
 	lookup.erase(group.key);
 	activeScoutGroups.erase(group.key);
 	activeAttackGroups.erase(group.key);
 	mergeScouts.erase(group.key);
 	mergeGroups.erase(group.key);
-
-	for (std::map<int,CGroup*>::iterator i = currentGroups.begin(); i != currentGroups.end(); i++) {
+	
+	for (std::map<int,CGroup*>::iterator i = assemblingGroups.begin(); i != assemblingGroups.end(); i++) {
 		if (i->second->key == group.key) {
-			currentGroups.erase(group.key);
+			assemblingGroups.erase(group.key);
 			break;
 		}
 	}
@@ -53,7 +55,8 @@ void CMilitary::remove(ARegistrar &group) {
 
 void CMilitary::addUnit(CUnit &unit) {
 	LOG_II("CMilitary::addUnit " << unit)
-	unsigned c = unit.type->cats;
+	
+	unsigned int c = unit.type->cats;
 
 	if (c&MOBILE) {
 		if (c&SCOUTER) {
@@ -65,27 +68,26 @@ void CMilitary::addUnit(CUnit &unit) {
 			/* If there is a new factory, or the current group is busy, request
 			 * a new group 
 			 */
-			if (currentGroups.find(unit.builtBy) == currentGroups.end() ||
-				currentGroups[unit.builtBy]->busy) {
+			if (assemblingGroups.find(unit.builtBy) == assemblingGroups.end() 
+			|| assemblingGroups[unit.builtBy]->busy) {
 				CGroup *group = requestGroup(ENGAGE);
-				currentGroups[unit.builtBy] = group;
+				assemblingGroups[unit.builtBy] = group;
 			}
-			currentGroups[unit.builtBy]->addUnit(unit);
+			assemblingGroups[unit.builtBy]->addUnit(unit);
 		}
 	}
 }
 
 CGroup* CMilitary::requestGroup(groupType type) {
+	int index = 0;
 	CGroup *group = NULL;
-	int index     = 0;
 
 	/* Create a new slot */
 	if (free.empty()) {
 		group = new CGroup(ai);
 		groups.push_back(group);
-		index = groups.size()-1;
+		index = groups.size() - 1;
 	}
-
 	/* Use top free slot from stack */
 	else {
 		index = free.top(); free.pop();
@@ -94,16 +96,16 @@ CGroup* CMilitary::requestGroup(groupType type) {
 	}
 
 	lookup[group->key] = index;
+	
 	group->reg(*this);
 
 	switch(type) {
 		case SCOUT:
 			activeScoutGroups[group->key] = group;
-		break;
+			break;
 		case ENGAGE:
 			activeAttackGroups[group->key] = group;
-		break;
-		default: return group;
+			break;
 	}
 
 	return group;
@@ -196,7 +198,7 @@ void CMilitary::update(int frame) {
 	
 	prepareTargets(all, harras);
 
-	std::map<int, CGroup*>::iterator i,k;
+	std::map<int, CGroup*>::iterator i, k;
 	
 	/* Give idle scouting groups a new attack plan */
 	for (i = activeScoutGroups.begin(); i != activeScoutGroups.end(); i++) {
@@ -255,11 +257,14 @@ void CMilitary::update(int frame) {
 		if (group->busy)
 			continue;
 
-		/* Determine if this group is the current group */
-		bool isCurrent = false;
-		for (k = currentGroups.begin(); k != currentGroups.end(); k++)
-			if (k->second->key == group->key)
-				isCurrent = true;
+		/* Determine if this group is the assembling group */
+		bool isAssembling = false;
+		for (k = assemblingGroups.begin(); k != assemblingGroups.end(); k++) {
+			if (k->second->key == group->key) {
+				isAssembling = true;
+				break;
+			}
+		}
 
 		/* Select a target */
 		float3 pos = group->pos();
@@ -267,11 +272,23 @@ void CMilitary::update(int frame) {
 
 		/* There are no targets available, assist an attack */
 		if (target == -1) {
+			// FIXME: there is a chance that group with one unit only
+			// will go assisting attack task, which is LOL
 			if (!ai->tasks->activeAttackTasks.empty()) {
-				mergeGroups.erase(group->key);
-				ai->tasks->addAssistTask(*(ai->tasks->activeAttackTasks.begin()->second), *group);
-				break;
+				float minStrength = std::numeric_limits<float>::max();
+				ATask* task = NULL;
+				std::map<int, CTaskHandler::AttackTask*>::iterator i;
+				for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
+					if (i->second->group->strength < minStrength) {
+						task = i->second;
+					}
+				}
+				if (task) {
+					ai->tasks->addAssistTask(*task, *group);
+					mergeGroups.erase(group->key);
+				}
 			}
+			break;
 		}
 
 		/* Determine if the group has the strength */
@@ -279,10 +296,10 @@ void CMilitary::update(int frame) {
 		bool isStrongEnough = group->strength >= ai->threatmap->getThreat(targetpos, 0.0f);
 		bool isSizeEnough   = group->units.size() >= ai->cfgparser->getMinGroupSize(group->techlvl);
 
-		if (!isCurrent && !isStrongEnough)
+		if (!isAssembling && !isStrongEnough)
 			mergeGroups[group->key] = group;
 
-		if ((isCurrent && isSizeEnough) || (!isCurrent && isStrongEnough)) {
+		if ((isAssembling && isSizeEnough) || (!isAssembling && isStrongEnough)) {
 			mergeGroups.erase(group->key);
 			ai->tasks->addAttackTask(target, *group);
 			break;
