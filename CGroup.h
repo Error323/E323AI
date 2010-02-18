@@ -22,8 +22,8 @@ class CGroup: public ARegistrar {
 			reset();
 			counter++;
 		}
-		CGroup(){};
-		~CGroup(){};
+		CGroup() {};
+		~CGroup() {};
 
 		/* Group counter */
 		static int counter;

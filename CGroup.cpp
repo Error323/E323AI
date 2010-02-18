@@ -14,10 +14,17 @@ int CGroup::counter = 0;
 void CGroup::addUnit(CUnit &unit) {
 	LOG_II("CGroup::add " << unit)
 
+	if (unit.group == this)
+		return; // already registered
+
 	recalcProperties(&unit);
 
 	units[unit.key] = &unit;
 	unit.reg(*this);
+	// NOTE: unit can only exist in one and only group
+	if (unit.group)
+		unit.group->remove(unit);
+	assert(unit.group == NULL);
 	unit.group = this;
 
 	// TODO: if group is busy invoke new unit to community process?
@@ -26,18 +33,24 @@ void CGroup::addUnit(CUnit &unit) {
 void CGroup::remove() {
 	LOG_II("CGroup::remove " << (*this))
 
-	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++) {
-		i->second->unreg(*this);
-		i->second->group = NULL;
-	}
-	
+	// NOTE: removal order below is important
+		
 	std::list<ARegistrar*>::iterator j = records.begin();
 	while(j != records.end()) {
 		ARegistrar *regobj = *j; j++;
 		// remove from CEconomy, CPathfinder, ATask
 		regobj->remove(*this);
 	}
+	
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++) {
+		i->second->unreg(*this);
+		i->second->group = NULL;
+	}
+	units.clear();
+	
+	//assert(records.empty());
+
 	// TODO: we can remove the following line when we're sure CMilitary,
 	// CEconomy and CPathfinder removes their links from CGroup.records
 	records.clear();
@@ -145,7 +158,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 	MoveData *md = ai->cb->GetUnitDef(unit->key)->movedata;
     if (md) {
     	if (md->maxSlope <= maxSlope) {
-			// TODO: rename moveType into pathType because it is not the same
+			// TODO: rename moveType into pathType because this is not the same
 			moveType = md->pathType;
 			maxSlope = md->maxSlope;
 		}
@@ -153,8 +166,8 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		
 	strength += ai->cb->GetUnitPower(unit->key);
 	buildSpeed += unit->def->buildSpeed;
-	// TODO: replace hardcoded constants with readable constants
-	size += 8*std::max<int>(unit->def->xsize, unit->def->zsize);
+	size += FOOTPRINT2REAL * std::max<int>(unit->def->xsize, unit->def->zsize);
+	// FIXME: why 0.7 and 1.5?
 	range = std::max<float>(ai->cb->GetUnitMaxRange(unit->key)*0.7f, range);
 	buildRange = std::max<float>(unit->def->buildDistance*1.5f, buildRange);
 	speed = std::min<float>(ai->cb->GetUnitSpeed(unit->key), speed);
@@ -162,12 +175,20 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 }
 
 void CGroup::merge(CGroup &group) {
-	std::map<int, CUnit*>::iterator i;
+	std::map<int, CUnit*>::iterator i = group.units.begin();
+	// NOTE: "group" will automatically be removed when last unit is transferred
+	while(i != group.units.end()) {
+		CUnit *unit = i->second; i++;
+		assert(unit->group == &group);
+		addUnit(*unit);
+	}	
+	/*
 	for (i = group.units.begin(); i != group.units.end(); i++) {
 		CUnit *unit = i->second;
 		addUnit(*unit);
 	}
 	group.remove();
+	*/
 }
 
 float3 CGroup::pos() {
