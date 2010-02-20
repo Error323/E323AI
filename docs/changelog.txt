@@ -1,0 +1,51 @@
+E323AI changelog
+----------------
+
+v3.18.0 [2010-02-20]
+* categorization file is generated now along with config file on new mod
+* faster loading on speed metal maps
+* intelligently enabling of hovercraft (on maps with 20% of water)
+* much better economy handling on non-metal maps
+* scout groups became stronger, merge faster on idle
+* number of scout groups will not increase eternally now after merging
+* increased number of possible targets for scouts, so less idle
+* attack/harass unarmed buildings being under construction also
+* builders will reclaim unarmed enemy building nearby
+* fixed numerous (potential) crashes
+* eternal memory consumption fixed
+* slight optimization in pathfinding
+* other minor fixes
+
+v3.17.0 [2010-02-08]
+* fixed zero sized cache files under Windows
+* more stable on loading graph cache data
+* compatible with /aikill and /aicontrol commands
+* fixed a crash when unit was given to AI
+* graph calculation correction
+* comm sharing support
+* other minor fixes
+
+v3.16.0 [2010-02-02]
+* graph caching, much faster loading times
+* hovercraft support for BA
+* BOTA support
+* failing more gracefully
+* bugfixes & cleanups
+
+v3.14.5 [2010-01-24]
+* group merging re-enabled
+* watermap support
+
+v3.13.1 [2010-01-11]
+* group merging
+* generation of config files on new mod
+* config updates in BA and XTA
+* epic target selection
+* more defensive on close units
+* removed state debuggin info
+* auto vehicle/kbot selection
+* commander walking reduced
+* no watermaps support yet
+
+For the rest changelog please visit our forum thread:
+http://springrts.com/phpbb/viewtopic.php?f=15 
