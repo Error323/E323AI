@@ -122,16 +122,17 @@ void ATask::resourceScan() {
 	float bestDist = std::numeric_limits<float>::max();
 	int bestFeature = -1;
 	float3 gpos = group->pos();
-	float radius = group->buildRange;
-	
+	float radius = group->los;
+		
 	const int numFeatures = ai->cb->GetFeatures(&ai->unitIDs[0], MAX_FEATURES, gpos, radius);
 	for (int i = 0; i < numFeatures; i++) {
-		const FeatureDef *fd = ai->cb->GetFeatureDef(ai->unitIDs[i]);
+		const int uid = ai->unitIDs[i];
+		const FeatureDef *fd = ai->cb->GetFeatureDef(uid);
 		if (fd->metal > 0.0f) {
-			float3 fpos = ai->cb->GetFeaturePos(ai->unitIDs[i]);
+			float3 fpos = ai->cb->GetFeaturePos(uid);
 			float dist = gpos.distance2D(fpos);
 			if (dist < bestDist) {
-				bestFeature = ai->unitIDs[i];
+				bestFeature = uid;
 				bestDist = dist;
 			}
 		}
@@ -142,14 +143,17 @@ void ATask::resourceScan() {
 	if (bestFeature == -1) {
 		const int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], gpos, radius, MAX_ENEMIES);
 		for (int i = 0; i < numEnemies; i++) {
-			const UnitDef *ud = ai->cbc->GetUnitDef(ai->unitIDs[i]);
+			const int uid = ai->unitIDs[i];
+			if (ai->cbc->IsUnitCloaked(uid))
+				continue;
+			const UnitDef *ud = ai->cbc->GetUnitDef(uid);
 			UnitType *ut = UT(ud->id);
 			if ((ut->cats&STATIC) && ud->weapons.empty()) {
-				float3 epos = ai->cbc->GetUnitPos(ai->unitIDs[i]);
+				float3 epos = ai->cbc->GetUnitPos(uid);
 				float dist = gpos.distance2D(epos);
 				if (dist < bestDist) {
 					bestDist = dist;
-					bestFeature = ai->unitIDs[i];
+					bestFeature = uid;
 				}
 			}
 		}
@@ -393,9 +397,9 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister, float &travelTime) {
 
 	float3 gpos = group->pos();
 	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
-
+	
 	/* travelTime + 5 seconds to make it worth the trip */
-	travelTime = ai->pathfinder->getETA(assister, gpos) + 30 * 5;
+	travelTime = ai->pathfinder->getETA(assister, gpos) + 30 * 5;	
 
 	return (buildTime > travelTime);
 }
