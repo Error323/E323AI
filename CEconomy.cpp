@@ -310,6 +310,10 @@ float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
 	std::list<float3>::iterator i;
 	std::map<int, float3>::iterator j;
 	for (i = GameMap::metalspots.begin(); i != GameMap::metalspots.end(); i++) {
+		// TODO: compare with actual group properties
+		if (i->y < 0.0f)
+			continue;
+		
 		bool taken = false;
 		for (j = takenMexes.begin(); j != takenMexes.end(); j++) {
 			if ((*i - j->second).Length2D() < radius) {
@@ -347,7 +351,7 @@ void CEconomy::update(int frame) {
 	std::map<int, CGroup*>::iterator i;
 	for (i = activeGroups.begin(); i != activeGroups.end(); i++) {
 		CGroup *group = i->second;
-		CUnit *unit = group->units.begin()->second;
+		CUnit *unit = group->firstUnit();
 
 		// TODO: count only mobile groups? Should we count commander?
 		if (group->speed > 0.0001f)
