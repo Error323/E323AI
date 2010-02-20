@@ -215,16 +215,13 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				if (goal != ZeroVector) {
 					bool tooSmallIncome = mIncome < 3.0f;
 					bool isComm  = unit->def->isCommander;
-					if (tooSmallIncome || !isComm || ai->pathfinder->getETA(group, goal) < 30*7) {
+					if (tooSmallIncome || !isComm || ai->pathfinder->getETA(group, goal) < 30*10) {
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, i->second, group, goal);
 					}
 					else if (areMMakersEnabled && canBuildMMaker) {
 						UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 						if (mmaker != NULL)
 							ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
-					}
-					else {
-						buildOrAssist(group, BUILD_EPROVIDER, EMAKER|LAND);
 					}
 				}
 				else if (areMMakersEnabled && canBuildMMaker) {
