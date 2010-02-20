@@ -81,6 +81,7 @@ class CUnit: public ARegistrar {
 		bool wait();
 
 		bool reclaim(float3 pos, float radius);
+		bool reclaim(int target, bool enqueue = false);
 
 		/* Undo wait command */
 		bool unwait();

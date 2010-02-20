@@ -46,6 +46,18 @@ bool CUnit::reclaim(float3 pos, float radius) {
 	return false;
 }
 
+bool CUnit::reclaim(int target, bool enqueue) {
+	Command c = createTargetCommand(CMD_RECLAIM, target);
+	if (c.id != 0) {
+		if (enqueue)
+			c.options |= SHIFT_KEY;
+		ai->cb->GiveOrder(key, &c);
+		ai->unittable->idle[key] = false;
+		return true;
+	}
+	return false;
+}	
+
 int CUnit::queueSize() {
 	return ai->cb->GetCurrentUnitCommands(key)->size();
 }
