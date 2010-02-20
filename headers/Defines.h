@@ -15,7 +15,7 @@
 #define AI_VERSION_NR  aiexport_getVersion()
 #define AI_NAME        std::string("E323AI")
 #define AI_VERSION     AI_NAME + " " + AI_VERSION_NR + " - High Templar (" + __DATE__ + ")"
-#define AI_CREDITS     "Error323 & Slogic"
+#define AI_CREDITS     "Error323 & Simon Logic"
 #define AI_NOTES       "This A.I. mainly focusses on the XTA and BA mods"
 
 /* Folders */
@@ -43,8 +43,6 @@
 
 /* Max enemy units */
 #define MAX_UNITS_AI 500
-
-#define MAX_UNITS_MILITARY 50
 
 /* Map ratios */
 #define HEIGHT2REAL 8
