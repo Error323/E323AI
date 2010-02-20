@@ -115,25 +115,25 @@ void ATask::enemyScan(bool scout) {
 
 void ATask::resourceScan() {
 	PROFILE(tasks-resourcescan)
-	/* Leave metal alone when we can't store it */
-	if (ai->economy->mexceeding)
-		return;
-
-	float bestDist = std::numeric_limits<float>::max();
+	
 	int bestFeature = -1;
-	float3 gpos = group->pos();
+	float bestDist = std::numeric_limits<float>::max();
 	float radius = group->los;
-		
-	const int numFeatures = ai->cb->GetFeatures(&ai->unitIDs[0], MAX_FEATURES, gpos, radius);
-	for (int i = 0; i < numFeatures; i++) {
-		const int uid = ai->unitIDs[i];
-		const FeatureDef *fd = ai->cb->GetFeatureDef(uid);
-		if (fd->metal > 0.0f) {
-			float3 fpos = ai->cb->GetFeaturePos(uid);
-			float dist = gpos.distance2D(fpos);
-			if (dist < bestDist) {
-				bestFeature = uid;
-				bestDist = dist;
+	float3 gpos = group->pos();
+
+	// reclaim features when we can store metal only...
+	if (!ai->economy->mexceeding) {
+		const int numFeatures = ai->cb->GetFeatures(&ai->unitIDs[0], MAX_FEATURES, gpos, radius);
+		for (int i = 0; i < numFeatures; i++) {
+			const int uid = ai->unitIDs[i];
+			const FeatureDef *fd = ai->cb->GetFeatureDef(uid);
+			if (fd->metal > 0.0f) {
+				float3 fpos = ai->cb->GetFeaturePos(uid);
+				float dist = gpos.distance2D(fpos);
+				if (dist < bestDist) {
+					bestFeature = uid;
+					bestDist = dist;
+				}
 			}
 		}
 	}
