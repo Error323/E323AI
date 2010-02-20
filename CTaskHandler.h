@@ -207,6 +207,8 @@ class CTaskHandler: public ARegistrar {
 		/* Remove a task (is not used) */
 		void removeTask(CGroup &group);
 
+		const ATask* getTask(CGroup &group);
+
 		/* Get the group destination */
 		float3 getPos(CGroup &group);
 

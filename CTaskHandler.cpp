@@ -72,29 +72,40 @@ void ATask::addGroup(CGroup &g) {
 
 void ATask::enemyScan(bool scout) {
 	PROFILE(tasks-enemyscan)
+	
 	std::multimap<float, int> candidates;
-	float3 pos = group->pos();
+	float3 gpos = group->pos();
 	int enemyids[MAX_ENEMIES];
-	int numEnemies = ai->cbc->GetEnemyUnits(&enemyids[0], pos, group->range, MAX_ENEMIES);
+	int numEnemies = ai->cbc->GetEnemyUnits(&enemyids[0], gpos, scout ? 3.0f * group->range: 1.1f * group->range, MAX_ENEMIES);
+	
 	for (int i = 0; i < numEnemies; i++) {
 		const UnitDef *ud = ai->cbc->GetUnitDef(enemyids[i]);
 		UnitType *ut = UT(ud->id);
 		float3 epos = ai->cbc->GetUnitPos(enemyids[i]);
-		float dist = (epos-pos).Length2D();
-		if (!(ut->cats&AIR) && !(ut->cats&SCOUTER) && !(ai->cbc->IsUnitCloaked(enemyids[i])))
+		float dist = gpos.distance2D(epos);
+		if (!(ut->cats&AIR) && !(ai->cbc->IsUnitCloaked(enemyids[i])))
 			candidates.insert(std::pair<float,int>(dist, enemyids[i]));
 	}
 
 	if (!candidates.empty()) {
+		float threat = 0.0f;
 		std::multimap<float,int>::iterator i = candidates.begin();
-		float3 epos = ai->cbc->GetUnitPos(i->second);
-		bool offensive = ai->threatmap->getThreat(epos, 400.0f) > 1.1f;
-		if (scout && !offensive) {
-			group->attack(i->second);
-			group->micro(true);
-			LOG_II("ATask::enemyScan scout " << (*group) << " is microing enemy targets")
+		if (scout) {
+			while (i != candidates.end()) {
+				const UnitDef *ud = ai->cbc->GetUnitDef(i->second);
+				float3 epos = ai->cbc->GetUnitPos(i->second);
+				threat = ai->threatmap->getThreat(epos, 400.0f);
+				if (threat <= 1.1f && group->strength >= ai->cbc->GetUnitPower(i->second))
+					break;
+				i++;
+			}
+			if (i != candidates.end()) {
+				group->attack(i->second);
+				group->micro(true);
+				LOG_II("ATask::enemyScan scout " << (*group) << " is microing enemy target Unit(" << i->second << ") with threat =" << threat)
+			}
 		}
-		else if (!scout) {
+		else {
 			group->attack(i->second);
 			group->micro(true);
 			LOG_II("ATask::enemyScan group " << (*group) << " is microing enemy targets")
@@ -110,14 +121,15 @@ void ATask::resourceScan() {
 
 	float bestDist = std::numeric_limits<float>::max();
 	int bestFeature = -1;
-	float3 pos = group->pos();
+	float3 gpos = group->pos();
 	float radius = group->buildRange;
-	const int numFeatures = ai->cb->GetFeatures(&ai->unitIDs[0], MAX_FEATURES, pos, radius);
+	
+	const int numFeatures = ai->cb->GetFeatures(&ai->unitIDs[0], MAX_FEATURES, gpos, radius);
 	for (int i = 0; i < numFeatures; i++) {
 		const FeatureDef *fd = ai->cb->GetFeatureDef(ai->unitIDs[i]);
 		if (fd->metal > 0.0f) {
 			float3 fpos = ai->cb->GetFeaturePos(ai->unitIDs[i]);
-			float dist = (fpos - pos).Length2D();
+			float dist = gpos.distance2D(fpos);
 			if (dist < bestDist) {
 				bestFeature = ai->unitIDs[i];
 				bestDist = dist;
@@ -125,6 +137,24 @@ void ATask::resourceScan() {
 		}
 	}
 
+	// if there is no feature available then reclaim enemy unarmed building, 
+	// hehe :)
+	if (bestFeature == -1) {
+		const int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], gpos, radius, MAX_ENEMIES);
+		for (int i = 0; i < numEnemies; i++) {
+			const UnitDef *ud = ai->cbc->GetUnitDef(ai->unitIDs[i]);
+			UnitType *ut = UT(ud->id);
+			if ((ut->cats&STATIC) && ud->weapons.empty()) {
+				float3 epos = ai->cbc->GetUnitPos(ai->unitIDs[i]);
+				float dist = gpos.distance2D(epos);
+				if (dist < bestDist) {
+					bestDist = dist;
+					bestFeature = ai->unitIDs[i];
+				}
+			}
+		}
+	}			
+	
 	if (bestFeature != -1) {
 		group->reclaim(bestFeature);
 		group->micro(true);
@@ -275,8 +305,19 @@ float3 CTaskHandler::getPos(CGroup &group) {
 	return groupToTask[group.key]->pos;
 }
 
+const ATask* CTaskHandler::getTask(CGroup &group) {
+	if (groupToTask.find(group.key) == groupToTask.end())
+		return NULL;
+	
+	return groupToTask[group.key];
+}
+
 void CTaskHandler::removeTask(CGroup &group) {
 	int key = group.key;
+	
+	if (groupToTask.find(key) == groupToTask.end())
+		return;
+	
 	groupToTask[key]->remove();
 	groupToTask.erase(key);
 }
@@ -307,27 +348,28 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 
 void CTaskHandler::BuildTask::update() {
 	PROFILE(tasks-build)
-	float3 grouppos = group->pos();
-	float3 dist = grouppos - pos;
+	
+	float3 gpos = group->pos();
+
 	timer += MULTIPLEXER;
 
-	/* If idle, our micro is done */
-	if (group->isMicroing() && group->isIdle())
-		group->micro(false);
-	
-	/* If microing, break */
 	if (group->isMicroing())
-		return;
+		if (group->isIdle())
+			group->micro(false); // if idle, our micro is done
+		else
+	    	return; // if microing, break
 
 	/* See if we can build yet */
-	if (isMoving && dist.Length2D() <= group->buildRange) {
-		group->build(pos, toBuild);
-		ai->pathfinder->remove(*group);
-		isMoving = false;
-	}
-	/* See if we can suck wreckages */
-	else if (isMoving && !group->isMicroing()) {
-		resourceScan();
+	if (isMoving) {
+		if (gpos.distance2D(pos) <= group->buildRange) {
+			group->build(pos, toBuild);
+			ai->pathfinder->remove(*group);
+			isMoving = false;
+		}
+		/* See if we can suck wreckages */
+		else if (!group->isMicroing()) {
+			resourceScan();
+		}
 	}
 
 	/* We are building or blocked */
@@ -525,33 +567,49 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 
 void CTaskHandler::AttackTask::update() {
 	PROFILE(tasks-attack)
+	
 	if (group->isMicroing() && group->isIdle())
 		group->micro(false);
 
 	/* If the target is destroyed, remove the task, unreg groups */
 	if (ai->cbc->GetUnitHealth(target) <= 0.0f) {
-		ai->pathfinder->remove(*group);
+		if (isMoving)
+			ai->pathfinder->remove(*group);
 		remove();
 		return;
 	}
 
-	/* See if we can attack our target already */
-	float3 grouppos = group->pos();
-	float3 dist = grouppos - pos;
-	if (isMoving && dist.Length2D() <= group->range) {
-		group->attack(target);
-		isMoving = false;
-		ai->pathfinder->remove(*group);
+	CUnit* unit = group->firstUnit();
+	bool builder = unit->type->cats&BUILDER && !(unit->type->cats&ATTACKER);
+
+	if (isMoving) {
+		/* Keep tracking the target */
+		pos = ai->cbc->GetUnitPos(target);
+	
+		float range = builder ? group->buildRange: group->range;
+		float3 gpos = group->pos();
+
+		/* See if we can attack our target already */
+		if (gpos.distance2D(pos) <= range) {
+			if (builder)
+				group->reclaim(target);
+			else
+				group->attack(target);
+			isMoving = false;
+			ai->pathfinder->remove(*group);
+			group->micro(true);
+		}
 	}
+	
 	/* See if we can attack a target we found on our path */
-	else if (!group->isMicroing()) {
-		if (group->units.begin()->second->type->cats&SCOUTER)
+	if (!group->isMicroing()) {
+		if (builder)
+		    resourceScan(); // builders should not be too agressive
+		if (unit->type->cats&SCOUTER)
 			enemyScan(true);
 		else
 			enemyScan(false);
 	}
-	/* Keep tracking the target */
-	pos = ai->cbc->GetUnitPos(target);
 }
 
 /**************************************************************/
