@@ -225,8 +225,8 @@ bool CUnitTable::canPerformTask(CUnit &unit) {
 	// tasks. Currently for most of static groups this is wrong
 	if (unit.type->cats & STATIC)
 		return false;
-	/* lifetime of more then 10 seconds */
-	return unitsAliveTime.find(unit.key) != unitsAliveTime.end() && unitsAliveTime[unit.key] > 30*10;
+	/* lifetime of more then 5 seconds */
+	return unitsAliveTime.find(unit.key) != unitsAliveTime.end() && unitsAliveTime[unit.key] > 30*5;
 }
 
 void CUnitTable::buildTechTree() {
