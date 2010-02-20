@@ -60,14 +60,14 @@ void CThreatMap::update(int frame) {
 		const UnitType *ut = UT(ud->id);
 		
 		/* Don't let air be part of the threatmap */
-		if (ut->cats&ATTACKER && ut->cats&AIR && ut->cats&MOBILE)
+		if ((ut->cats&ATTACKER) && (ut->cats&AIR) && (ut->cats&MOBILE))
 			continue;
 
 		/* Ignore paralyzed units */
 		if (ai->cbc->IsUnitParalyzed(units[i]))
 			continue;
 
-		if (ut->cats&ATTACKER && !(ut->cats&AIR) && !ai->cbc->UnitBeingBuilt(units[i])) {
+		if ((ut->cats&ATTACKER) && !(ut->cats&AIR) && !ai->cbc->UnitBeingBuilt(units[i])) {
 			const float3  upos = ai->cbc->GetUnitPos(units[i]);
 			const float uRealX = upos.x/REAL;
 			const float uRealZ = upos.z/REAL;
