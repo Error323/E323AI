@@ -173,7 +173,6 @@ void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &tar
 	harras.insert(harras.end(), ai->intel->factories.begin(), ai->intel->factories.end());
 	harras.insert(harras.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
 	
-
 	for (size_t i = 0; i < harras.size(); i++) {
 		int target = harras[i];
 		bool isOccupied = false;
@@ -205,7 +204,7 @@ void CMilitary::update(int frame) {
 		CGroup *group = i->second;
 
 		/* This group is busy, don't bother */
-		if (group->busy)
+		if (group->busy || !ai->unittable->canPerformTask(*group->firstUnit()))
 			continue;
 
 		// NOTE: if once target is not found it will never appear during
@@ -245,6 +244,7 @@ void CMilitary::update(int frame) {
 
 	/* Merge the scout groups that were not strong enough */
 	if (mergeScouts.size() >= 2) {
+		// TODO: do not merge groups which are too far from each other
 		ai->tasks->addMergeTask(mergeScouts);
 		mergeScouts.clear();
 	}
@@ -254,7 +254,7 @@ void CMilitary::update(int frame) {
 		CGroup *group = i->second;
 
 		/* This group is busy, don't bother */
-		if (group->busy)
+		if (group->busy || !ai->unittable->canPerformTask(*group->firstUnit()))
 			continue;
 
 		/* Determine if this group is the assembling group */
@@ -281,6 +281,7 @@ void CMilitary::update(int frame) {
 				for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
 					if (i->second->group->strength < minStrength) {
 						task = i->second;
+						minStrength = i->second->group->strength;
 					}
 				}
 				if (task) {
