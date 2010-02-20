@@ -80,11 +80,23 @@ void CGroup::remove(ARegistrar &unit) {
 	}
 }
 
-void CGroup::reclaim(int feature) {
+void CGroup::reclaim(int entity) {
+	float3 pos = ERRORVECTOR;
+	const UnitDef* ud = ai->cbc->GetUnitDef(entity);
+	if (ud) {
+		if (ud->isFeature)
+			pos = ai->cb->GetFeaturePos(entity);
+	}
+	else
+		pos = ai->cb->GetFeaturePos(entity);
+
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++)
 		if (i->second->def->canReclaim)
-			i->second->reclaim(ai->cb->GetFeaturePos(feature), 16.0f);
+			if (pos.x < 0)
+				i->second->reclaim(entity);
+			else			
+				i->second->reclaim(pos, 16.0f);
 }
 
 void CGroup::abilities(bool on) {
@@ -182,13 +194,6 @@ void CGroup::merge(CGroup &group) {
 		assert(unit->group == &group);
 		addUnit(*unit);
 	}	
-	/*
-	for (i = group.units.begin(); i != group.units.end(); i++) {
-		CUnit *unit = i->second;
-		addUnit(*unit);
-	}
-	group.remove();
-	*/
 }
 
 float3 CGroup::pos() {
@@ -284,7 +289,7 @@ bool CGroup::canReach(float3 &pos) {
 	return true;
 }
 
-bool CGroup::canShoot(int uid) {
+bool CGroup::canAttack(int uid) {
 	// TODO: if at least one unit can shoot target then return true
 	return true;
 }

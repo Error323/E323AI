@@ -67,8 +67,8 @@ class CGroup: public ARegistrar {
 		/* The units <id, CUnit*> */
 		std::map<int, CUnit*> units;
 
-		/* Reclaim a feature */
-		void reclaim(int feature);
+		/* Reclaim an entity (unit, feature etc.) */
+		void reclaim(int entity);
 
 		/* Set this group to micro mode true/false */
 		void micro(bool on);
@@ -109,7 +109,7 @@ class CGroup: public ARegistrar {
 		/* Is position reachable by group? */
 		bool canReach(float3 &pos);
 
-		bool canShoot(int uid);
+		bool canAttack(int uid);
 
 		bool canAdd(CUnit *unit);
 		
