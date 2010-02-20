@@ -6,15 +6,12 @@
 #include <math.h>
 #include <iostream>
 #include <map>
-#include <cfloat>
+#include <limits>
 
 #include "CAI.h"
 #include "MathUtil.h"
 
 #include "headers/HEngine.h"
-
-#define METAL_THRESHOLD 10
-
 
 std::list<float3> GameMap::geospots;
 std::list<float3> GameMap::metalfeatures;
@@ -34,7 +31,7 @@ GameMap::GameMap(AIClasses *ai) {
 void GameMap::CalcMetalSpots() {
 	int X = int(ai->cb->GetMapWidth()/4);
 	int Z = int(ai->cb->GetMapHeight()/4);
-	int R = int(round(ai->cb->GetExtractorRadius() / 32.0f));
+	int R = int(ceil(ai->cb->GetExtractorRadius() / 32.0f));
 	const unsigned char *metalmapData = ai->cb->GetMetalMap();
 	unsigned char *metalmap;
 		
@@ -53,6 +50,7 @@ void GameMap::CalcMetalSpots() {
 
 	// Copy metalmap to mutable metalmap
 	std::vector<int> M;
+	int minMetal = std::numeric_limits<int>::max();
 	for (int z = 0; z < Z; z++) {
 		for (int x = 0; x < X; x++) {
 			float sum = 0.0f;
@@ -66,9 +64,10 @@ void GameMap::CalcMetalSpots() {
 			}
 
 			metalmap[ID(x,z)] = int(round(sum/9.0f));
-			if (metalmap[ID(x,z)] >= METAL_THRESHOLD) {
+			if (metalmap[ID(x,z)] > 0) {
 				M.push_back(z);
 				M.push_back(x);
+				minMetal = std::min<int>(minMetal, metalmap[ID(x,z)]);
 				metalCount++;
 			}
 			else {
@@ -77,7 +76,7 @@ void GameMap::CalcMetalSpots() {
 		}
 	}
 
-	const float minimum = (METAL_THRESHOLD*M_PI*pow((0.7*R),2));
+	const float minimum = (minMetal*M_PI*R*R);
 	while (true) {
 		float highestSaturation = 0.0f;
 		int bestX = 0, bestZ = 0;
@@ -144,8 +143,8 @@ void GameMap::CalcMapHeightFeatures() {
 	int Z = int(ai->cb->GetMapHeight());
 	const float *hm = ai->cb->GetHeightMap();
 
-	float fmin =  FLT_MAX;
-	float fmax = -FLT_MAX;
+	float fmin = std::numeric_limits<float>::max();
+	float fmax = std::numeric_limits<float>::min();
 	float fsum = 0.0f;
 
 	unsigned count = 0;
