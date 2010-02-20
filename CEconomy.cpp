@@ -182,7 +182,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 		int iterations = candidates.size() / (ai->cfgparser->getTotalStates() + 1 - state);
 		bool affordable = false;
 		while(iterations >= 0) {
-			if (canAffordToBuild(group.units.begin()->second->type, i->second))
+			if (canAffordToBuild(group.firstUnit()->type, i->second))
 				affordable = true;
 			else
 				break;
@@ -211,22 +211,23 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 
 			case BUILD_MPROVIDER: {
 				goal = getClosestOpenMetalSpot(group);
+				bool canBuildMMaker = (eIncome - eUsage) >= METAL2ENERGY || eexceeding;
 				if (goal != ZeroVector) {
-					bool b1 = mIncome < 3.0f;
-					bool b2 = !unit->def->isCommander;
-					/* If we are commander, only build if the metalincome is <
-					 * 3 or the eta to the next metalspot is smaller then 7
-					 * sec. TODO: make configurable?
-					 */
-					if (b1 || (b2 || ai->pathfinder->getETA(group, goal) < 32*7))
+					bool tooSmallIncome = mIncome < 3.0f;
+					bool isComm  = unit->def->isCommander;
+					if (tooSmallIncome || !isComm || ai->pathfinder->getETA(group, goal) < 30*7) {
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, i->second, group, goal);
-					else if (!eRequest && !estall && state >= 3) {
+					}
+					else if (areMMakersEnabled && canBuildMMaker) {
 						UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 						if (mmaker != NULL)
 							ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
 					}
+					else {
+						buildOrAssist(group, BUILD_EPROVIDER, EMAKER|LAND);
+					}
 				}
-				else if (areMMakersEnabled && eIncome > eUsage) {
+				else if (areMMakersEnabled && canBuildMMaker) {
 					UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 					if (mmaker != NULL)
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
@@ -377,8 +378,16 @@ void CEconomy::update(int frame) {
 				buildOrAssist(*group, BUILD_FACTORY, type|TECH1);
 				if (group->busy) continue;
 			}
-			ATask *task = NULL;
+			/* If we are exceeding and don't have estorage yet, build estorage */
+			if (eexceeding) {
+				if (ai->unittable->energyStorages.size() >= ai->cfgparser->getMaxTechLevel())
+					buildOrAssist(*group, BUILD_ESTORAGE, LAND|MMAKER);
+				else
+					buildOrAssist(*group, BUILD_ESTORAGE, LAND|ESTORAGE);
+				if (group->busy) continue;
+			}
 			/* If we can assist a lab and it's close enough, do so */
+			ATask *task = NULL;
 			if ((task = canAssistFactory(*group)) != NULL) {
 				ai->tasks->addAssistTask(*task, *group);
 				if (group->busy) continue;
