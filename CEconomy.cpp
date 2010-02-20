@@ -236,7 +236,8 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 			}
 
 			case BUILD_MSTORAGE: case BUILD_ESTORAGE: {
-				if (!taskInProgress(bt)) {
+				/* Start building storage after enough ingame time */
+				if (!taskInProgress(bt) && ai->cb->GetCurrentFrame() > 30*60*7) {
 					pos = ai->defensematrix->getBestDefendedPos(0);
 					ai->tasks->addBuildTask(bt, i->second, group, pos);
 				}
