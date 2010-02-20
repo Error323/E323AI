@@ -15,6 +15,7 @@
 #include "CUnit.h"
 #include "CGroup.h"
 #include "CScopedTimer.h"
+#include "CRNG.h"
 
 void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai                = new AIClasses();
@@ -96,6 +97,8 @@ void CE323AI::UnitCreated(int uid, int bid) {
 		ai->economy->init(*unit);
 	}
 
+	ai->economy->addUnitOnCreated(*unit);
+
 	if (bid < 0)
 		return; // unit was spawned from nowhere (e.g. commander)
 
@@ -103,7 +106,7 @@ void CE323AI::UnitCreated(int uid, int bid) {
 	if (c&MOBILE) {
 		CUnit *builder = ai->unittable->getUnit(bid);
 		// if builder is a mobile unit (like Consul in BA) then do not 
-		// aissign move command...
+		// assign move command...
 		if (builder->type->cats&STATIC) {
 			// NOTE: factories should be already rotated in proper direction to prevent
 			// units going outside the map
@@ -115,8 +118,6 @@ void CE323AI::UnitCreated(int uid, int bid) {
 				unit->moveForward(400.0f);
 		}
 	}
-
-	ai->economy->addUnitOnCreated(*unit);
 }
 
 /* Called when units are finished in a factory and able to move */
@@ -167,6 +168,23 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 	// but next it should return to its current job, so we need to delay 
 	// current task which is impossible while there is no task queue per unit
 	// group (curently we have a single task per group)
+	/*
+	if (!ai->cb->UnitBeingBuilt(damaged) && (rng.RandInt(9) % 2 || ai->unittable->idle[damaged])) {
+		CUnit* unit = ai->unittable->getUnit(damaged);
+		
+		if ((unit->type->cats&(MOBILE|ATTACKER)) || (unit->type->cats&(MOBILE|BUILDER))) {
+			float3 epos = ai->cbc->GetUnitPos(attacker);
+			if (unit->group && unit->group->pos().distance2D(epos) < 300.0f) {
+				const ATask* task = ai->tasks->getTask(*unit->group);
+				if (!task || (task->t != ATTACK && task->t != FACTORY_BUILD)) {
+					if (task)
+						ai->tasks->removeTask(*unit->group);
+					ai->tasks->addAttackTask(attacker, *unit->group);
+				}
+			}
+		}
+	}
+	*/
 }
 
 /* Called on move fail e.g. can't reach point */
