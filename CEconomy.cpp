@@ -376,7 +376,7 @@ void CEconomy::update(int frame) {
 				if (group->busy) continue;
 			}
 			/* If we are exceeding and don't have estorage yet, build estorage */
-			if (eexceeding) {
+			if (eexceeding && !ai->unittable->factories.empty()) {
 				if (ai->unittable->energyStorages.size() >= ai->cfgparser->getMaxTechLevel())
 					buildOrAssist(*group, BUILD_ESTORAGE, LAND|MMAKER);
 				else
