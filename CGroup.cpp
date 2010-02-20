@@ -91,12 +91,14 @@ void CGroup::reclaim(int entity) {
 		pos = ai->cb->GetFeaturePos(entity);
 
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++)
-		if (i->second->def->canReclaim)
+	for (i = units.begin(); i != units.end(); i++) {
+		if (i->second->def->canReclaim) {
 			if (pos.x < 0)
 				i->second->reclaim(entity);
 			else			
 				i->second->reclaim(pos, 16.0f);
+		}
+	}
 }
 
 void CGroup::abilities(bool on) {

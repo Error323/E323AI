@@ -92,7 +92,7 @@ void ATask::enemyScan(bool scout) {
 		std::multimap<float,int>::iterator i = candidates.begin();
 		if (scout) {
 			while (i != candidates.end()) {
-				const UnitDef *ud = ai->cbc->GetUnitDef(i->second);
+				//const UnitDef *ud = ai->cbc->GetUnitDef(i->second);
 				float3 epos = ai->cbc->GetUnitPos(i->second);
 				threat = ai->threatmap->getThreat(epos, 400.0f);
 				if (threat <= 1.1f && group->strength >= ai->cbc->GetUnitPower(i->second))
@@ -353,11 +353,12 @@ void CTaskHandler::BuildTask::update() {
 
 	timer += MULTIPLEXER;
 
-	if (group->isMicroing())
+	if (group->isMicroing()) {
 		if (group->isIdle())
 			group->micro(false); // if idle, our micro is done
 		else
 	    	return; // if microing, break
+	}
 
 	/* See if we can build yet */
 	if (isMoving) {
