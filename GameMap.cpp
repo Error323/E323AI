@@ -33,7 +33,7 @@ void GameMap::CalcMetalSpots() {
 	PROFILE(metalspots)
 	int X = int(ai->cb->GetMapWidth()/2);
 	int Z = int(ai->cb->GetMapHeight()/2);
-	int R = int(floor(ai->cb->GetExtractorRadius() / 16.0f));
+	int R = int(round(ai->cb->GetExtractorRadius() / 16.0f));
 	const unsigned char *metalmapData = ai->cb->GetMetalMap();
 	unsigned char *metalmap;
 		
@@ -71,62 +71,63 @@ void GameMap::CalcMetalSpots() {
 	}
 
 	if (IsMetalMap()) {
-		M.clear();
-		for (int z = R; z < Z-R; z+=10) {
-			for (int x = R; x < X-R; x+=10) {
+		for (int z = R; z < Z-R; z+=5) {
+			for (int x = R; x < X-R; x+=5) {
 				if (metalmap[ID(x,z)] > 1) {
-					M.push_back(z);
-					M.push_back(x);
+					float3 metalspot(x*16.0f, ai->cb->GetElevation(x*16.0f,z*16.0f), z*16.0f);
+					GameMap::metalspots.push_back(metalspot);
 				}
 			}
 		}
 	}
+	else {
+		float minimum = (M_PI*R*R);
+		R++;
+		while (true) {
+			float highestSaturation = 0.0f;
+			int bestX = 0, bestZ = 0;
+			bool mexSpotFound = false;
 
-	float minimum = (M_PI*R*R);
-	R++;
-	while (true) {
-		float highestSaturation = 0.0f;
-		int bestX = 0, bestZ = 0;
-		bool mexSpotFound = false;
+			// Using a greedy approach, find the best metalspot
+			for (size_t i = 0; i < M.size(); i+=2) {
+				int z = M[i]; int x = M[i+1];
+				if (metalmap[ID(x,z)] == 0)
+					continue;
 
-		// Using a greedy approach, find the best metalspot
-		for (size_t i = 0; i < M.size(); i+=2) {
-			int z = M[i]; int x = M[i+1];
-			if (metalmap[ID(x,z)] == 0)
-				continue;
+				float saturation = 0.0f; float sum = 0.0f;
+				for (size_t c = 0; c < circle.size(); c+=2) {
+					unsigned char &m = metalmap[ID(x+circle[c+1],z+circle[c])];
+					saturation += m * (R-sqrtCircle[c/2]);
+					sum += m;
+				}
+				if (saturation > highestSaturation && sum > minimum) {
+					bestX = x; bestZ = z;
+					highestSaturation = saturation;
+					mexSpotFound = true;
+				}
+			}
 
-			float saturation = 0.0f; float sum = 0.0f;
+			// No more mex spots
+			if (!mexSpotFound) break;
+
+			// "Erase" metal under the bestX bestZ radius
 			for (size_t c = 0; c < circle.size(); c+=2) {
-				unsigned char &m = metalmap[ID(x+circle[c+1],z+circle[c])];
-				saturation += m * (R-sqrtCircle[c/2]);
-				sum += m;
+				int z = circle[c]+bestZ; int x = circle[c+1]+bestX;
+				metalmap[ID(x,z)] = 0;
 			}
-			if (saturation > highestSaturation && sum > minimum) {
-				bestX = x; bestZ = z;
-				highestSaturation = saturation;
-				mexSpotFound = true;
-			}
+			
+			// Increase to world size
+			bestX *= 16.0f; bestZ *= 16.0f;
+
+			// Store metal spot
+			float3 metalspot(bestX, ai->cb->GetElevation(bestX,bestZ), bestZ);
+			GameMap::metalspots.push_back(metalspot);
+
+			// Debug
+			ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
 		}
-
-		// No more mex spots
-		if (!mexSpotFound) break;
-
-		// "Erase" metal under the bestX bestZ radius
-		for (size_t c = 0; c < circle.size(); c+=2) {
-			int z = circle[c]+bestZ; int x = circle[c+1]+bestX;
-			metalmap[ID(x,z)] = 0;
-		}
-		
-		// Increase to world size
-		bestX *= 16.0f; bestZ *= 16.0f;
-
-		// Store metal spot
-		float3 metalspot(bestX, ai->cb->GetElevation(bestX,bestZ), bestZ);
-		GameMap::metalspots.push_back(metalspot);
-
-		// Debug
-		// ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
 	}
+
 	std::string maptype;
 	if(IsMetalMap())
 		maptype = "speedmetal";
