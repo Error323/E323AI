@@ -82,7 +82,8 @@ void GameMap::CalcMetalSpots() {
 		}
 	}
 
-	const float minimum = (minMetal*M_PI*R*R);
+	float minimum = (minMetal*M_PI*R*R);
+	R++;
 	while (true) {
 		float highestSaturation = 0.0f;
 		int bestX = 0, bestZ = 0;
@@ -97,7 +98,7 @@ void GameMap::CalcMetalSpots() {
 			float saturation = 0.0f; float sum = 0.0f;
 			for (size_t c = 0; c < circle.size(); c+=2) {
 				unsigned char &m = metalmap[ID(x+circle[c+1],z+circle[c])];
-				saturation += m * (R-sqrtCircle[c/2]+1.0f);
+				saturation += m * (R-sqrtCircle[c/2]);
 				sum += m;
 			}
 			if (saturation > highestSaturation && sum > minimum) {
@@ -126,7 +127,13 @@ void GameMap::CalcMetalSpots() {
 		// Debug
 		// ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
 	}
-	std::string maptype(IsMetalMap() ? "metalmap" : "non-metalmap");
+	std::string maptype;
+	if(IsMetalMap())
+		maptype = "speedmetal";
+	else if (nonMetalCount == 0)
+		maptype = "no metalmap";
+	else
+		maptype = "normal metalmap"
 	LOG_II("GameMap::CalcMetalSpots Maptype: "<<maptype)
 	LOG_II("GameMap::CalcMetalSpots found "<<GameMap::metalspots.size()<<" metal spots")
 
@@ -176,6 +183,6 @@ void GameMap::CalcMapHeightFeatures() {
 	waterAmount = 1.0f - (count / float(total));
 
 	std::string type(IsKbotMap() ? "Kbot" : "Vehicle");
-	std::string hoover(IsHooverMap() ? "Activated" : "Disabled");
+	std::string hoover(IsHooverMap() ? "Enabled" : "Disabled");
 	LOG_II("GameMap::CalcMapHeightFeatures Primary lab: "<<type<<", Hoover lab: " << hoover)
 }
