@@ -33,7 +33,7 @@ class GameMap {
 		bool IsKbotMap() { return heightVariance > KBOT_VEH_THRESHOLD; }
 		bool IsVehicleMap() { return !IsKbotMap(); }
 		bool IsHooverMap() { return waterAmount > 0.2f; }
-		bool IsMetalMap() { return nonMetalCount == 0; }
+		bool IsMetalMap() { return 0.75*nonMetalCount < metalCount; }
 		bool IsNonMetalMap() { return metalCount == 0; }
 
 		std::list<float3>& GetGeoSpots() { return geospots; }

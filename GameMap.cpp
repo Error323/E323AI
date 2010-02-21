@@ -10,6 +10,7 @@
 
 #include "CAI.h"
 #include "MathUtil.h"
+#include "CScopedTimer.h"
 
 #include "headers/HEngine.h"
 
@@ -29,9 +30,10 @@ GameMap::GameMap(AIClasses *ai) {
 }
 
 void GameMap::CalcMetalSpots() {
+	PROFILE(metalspots)
 	int X = int(ai->cb->GetMapWidth()/4);
 	int Z = int(ai->cb->GetMapHeight()/4);
-	int R = int(ceil(ai->cb->GetExtractorRadius() / 32.0f));
+	int R = int(floor(ai->cb->GetExtractorRadius() / 32.0f));
 	const unsigned char *metalmapData = ai->cb->GetMetalMap();
 	unsigned char *metalmap;
 		
@@ -39,31 +41,23 @@ void GameMap::CalcMetalSpots() {
 
 	// Calculate circular stamp
 	std::vector<int> circle;
+	std::vector<float> sqrtCircle;
 	for (int i = -R; i <= R; i++) {
 		for (int j = -R; j <= R; j++) {
 			float r = sqrt((float)i*i + j*j);
 			if (r > R) continue;
 			circle.push_back(i);
 			circle.push_back(j);
+			sqrtCircle.push_back(r);
 		}
 	}
 
 	// Copy metalmap to mutable metalmap
 	std::vector<int> M;
 	int minMetal = std::numeric_limits<int>::max();
-	for (int z = 0; z < Z; z++) {
-		for (int x = 0; x < X; x++) {
-			float sum = 0.0f;
-			for (int i = -1; i <= 1; i++) {
-				for (int j = -1; j <= 1; j++) {
-					int zz = z*2+i; int xx = x*2+j;
-					if (zz < 0 || zz > (Z*2-1) || xx < 0 || xx > (X*2-1))
-						continue;
-					sum += metalmapData[zz*(X*2)+xx];
-				}
-			}
-
-			metalmap[ID(x,z)] = int(round(sum/9.0f));
+	for (int z = R; z < Z-R; z++) {
+		for (int x = R; x < X-R; x++) {
+			metalmap[ID(x,z)] = metalmapData[z*2*X*2+x*2];
 			if (metalmap[ID(x,z)] > 0) {
 				M.push_back(z);
 				M.push_back(x);
@@ -72,6 +66,18 @@ void GameMap::CalcMetalSpots() {
 			}
 			else {
 				nonMetalCount++;
+			}
+		}
+	}
+
+	if (IsMetalMap()) {
+		M.clear();
+		for (int z = R; z < Z-R; z+=5) {
+			for (int x = R; x < X-R; x+=5) {
+				if (metalmap[ID(x,z)] > 0) {
+					M.push_back(z);
+					M.push_back(x);
+				}
 			}
 		}
 	}
@@ -85,21 +91,14 @@ void GameMap::CalcMetalSpots() {
 		// Using a greedy approach, find the best metalspot
 		for (size_t i = 0; i < M.size(); i+=2) {
 			int z = M[i]; int x = M[i+1];
-			if (IsMetalMap() && (z % 10 != 0 || x % 10 != 0))
-				continue;
-
 			if (metalmap[ID(x,z)] == 0)
 				continue;
 
 			float saturation = 0.0f; float sum = 0.0f;
 			for (size_t c = 0; c < circle.size(); c+=2) {
-				int a = circle[c]; int b = circle[c+1];
-				int zz = a+z; int xx = b+x;
-				if (xx < 0 || xx > X-1 || zz < 0 || zz > Z-1)
-					continue;
-				float r = sqrt((float)a*a + b*b);
-				saturation += metalmap[ID(xx, zz)] * (1.0f / (r+1.0f));
-				sum += metalmap[ID(xx,zz)];
+				unsigned char &m = metalmap[ID(x+circle[c+1],z+circle[c])];
+				saturation += m * (R-sqrtCircle[c/2]+1.0f);
+				sum += m;
 			}
 			if (saturation > highestSaturation && sum > minimum) {
 				bestX = x; bestZ = z;
@@ -114,8 +113,6 @@ void GameMap::CalcMetalSpots() {
 		// "Erase" metal under the bestX bestZ radius
 		for (size_t c = 0; c < circle.size(); c+=2) {
 			int z = circle[c]+bestZ; int x = circle[c+1]+bestX;
-			if (x < 0 || x > X-1 || z < 0 || z > Z-1)
-				continue;
 			metalmap[ID(x,z)] = 0;
 		}
 		
