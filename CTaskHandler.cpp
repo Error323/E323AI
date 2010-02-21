@@ -118,12 +118,14 @@ void ATask::resourceScan() {
 	
 	int bestFeature = -1;
 	float bestDist = std::numeric_limits<float>::max();
-	float radius = group->los;
+	// NOTE: do not use group->los because it is too small and do not 
+	// correspond to real map units
+	float radius = group->buildRange;
 	float3 gpos = group->pos();
 
 	// reclaim features when we can store metal only...
 	if (!ai->economy->mexceeding) {
-		const int numFeatures = ai->cb->GetFeatures(&ai->unitIDs[0], MAX_FEATURES, gpos, radius);
+		const int numFeatures = ai->cb->GetFeatures(&ai->unitIDs[0], MAX_FEATURES, gpos, 1.5f * radius);
 		for (int i = 0; i < numFeatures; i++) {
 			const int uid = ai->unitIDs[i];
 			const FeatureDef *fd = ai->cb->GetFeatureDef(uid);
