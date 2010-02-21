@@ -133,7 +133,7 @@ void GameMap::CalcMetalSpots() {
 	else if (nonMetalCount == 0)
 		maptype = "no metalmap";
 	else
-		maptype = "normal metalmap"
+		maptype = "normal metalmap";
 	LOG_II("GameMap::CalcMetalSpots Maptype: "<<maptype)
 	LOG_II("GameMap::CalcMetalSpots found "<<GameMap::metalspots.size()<<" metal spots")
 
