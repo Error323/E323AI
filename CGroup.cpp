@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <string>
+#include <limits>
 
 #include "CAI.h"
 #include "CUnit.h"
@@ -149,7 +150,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 {
 	if(reset) {
 		strength   = 0.0f;
-		speed      = MAX_FLOAT;
+		speed      = std::numeric_limits<float>::max();
 		size       = 0;
 		buildSpeed = 0.0f;
 		range      = 0.0f;
@@ -159,7 +160,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		maxSlope   = 1.0f;
 		moveType   = -1; // emulate NONE
 		techlvl    = 1;
-    }
+	}
 
 	if(unit == NULL)
 		return;
@@ -181,9 +182,8 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 	strength += ai->cb->GetUnitPower(unit->key);
 	buildSpeed += unit->def->buildSpeed;
 	size += FOOTPRINT2REAL * std::max<int>(unit->def->xsize, unit->def->zsize);
-	// FIXME: why 0.7 and 1.5?
-	range = std::max<float>(ai->cb->GetUnitMaxRange(unit->key)*0.7f, range);
-	buildRange = std::max<float>(unit->def->buildDistance*1.5f, buildRange);
+	range = std::max<float>(ai->cb->GetUnitMaxRange(unit->key), range);
+	buildRange = std::max<float>(unit->def->buildDistance, buildRange);
 	speed = std::min<float>(ai->cb->GetUnitSpeed(unit->key), speed);
 	los = std::max<float>(unit->def->losRadius, los);
 }
@@ -322,7 +322,7 @@ CUnit* CGroup::firstUnit() {
 
 std::ostream& operator<<(std::ostream &out, const CGroup &group) {
 	std::stringstream ss;
-	ss << "Group(" << group.key << "):" << " amount(" << group.units.size() << ") [";
+	ss << "Group(" << group.key << "):" << " range(" << group.range << "), buildRange(" << group.buildRange << "), los(" << group.los << "), amount(" << group.units.size() << ") [";
 	std::map<int, CUnit*>::const_iterator i = group.units.begin();
 	for (i = group.units.begin(); i != group.units.end(); i++) {
 		ss << (*i->second) << ", ";
