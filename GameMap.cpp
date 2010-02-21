@@ -31,9 +31,9 @@ GameMap::GameMap(AIClasses *ai) {
 
 void GameMap::CalcMetalSpots() {
 	PROFILE(metalspots)
-	int X = int(ai->cb->GetMapWidth()/4);
-	int Z = int(ai->cb->GetMapHeight()/4);
-	int R = int(floor(ai->cb->GetExtractorRadius() / 32.0f));
+	int X = int(ai->cb->GetMapWidth()/2);
+	int Z = int(ai->cb->GetMapHeight()/2);
+	int R = int(floor(ai->cb->GetExtractorRadius() / 16.0f));
 	const unsigned char *metalmapData = ai->cb->GetMetalMap();
 	unsigned char *metalmap;
 		
@@ -57,8 +57,8 @@ void GameMap::CalcMetalSpots() {
 	int minMetal = std::numeric_limits<int>::max();
 	for (int z = R; z < Z-R; z++) {
 		for (int x = R; x < X-R; x++) {
-			metalmap[ID(x,z)] = metalmapData[z*2*X*2+x*2];
-			if (metalmap[ID(x,z)] > 0) {
+			metalmap[ID(x,z)] = metalmapData[ID(x,z)];
+			if (metalmap[ID(x,z)] > 1) {
 				M.push_back(z);
 				M.push_back(x);
 				minMetal = std::min<int>(minMetal, metalmap[ID(x,z)]);
@@ -72,9 +72,9 @@ void GameMap::CalcMetalSpots() {
 
 	if (IsMetalMap()) {
 		M.clear();
-		for (int z = R; z < Z-R; z+=5) {
-			for (int x = R; x < X-R; x+=5) {
-				if (metalmap[ID(x,z)] > 0) {
+		for (int z = R; z < Z-R; z+=10) {
+			for (int x = R; x < X-R; x+=10) {
+				if (metalmap[ID(x,z)] > 1) {
 					M.push_back(z);
 					M.push_back(x);
 				}
@@ -82,7 +82,7 @@ void GameMap::CalcMetalSpots() {
 		}
 	}
 
-	float minimum = (minMetal*M_PI*R*R);
+	float minimum = (M_PI*R*R);
 	R++;
 	while (true) {
 		float highestSaturation = 0.0f;
@@ -118,7 +118,7 @@ void GameMap::CalcMetalSpots() {
 		}
 		
 		// Increase to world size
-		bestX *= 32.0f; bestZ *= 32.0f;
+		bestX *= 16.0f; bestZ *= 16.0f;
 
 		// Store metal spot
 		float3 metalspot(bestX, ai->cb->GetElevation(bestX,bestZ), bestZ);
