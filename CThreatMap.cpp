@@ -1,10 +1,10 @@
 #include "CThreatMap.h"
 
 #include <math.h>
+#include <map>
 
 #include "CAI.h"
 #include "CUnitTable.h"
-#include "CIntel.h"
 #include "CUnit.h"
 #include "MathUtil.h"
 
@@ -71,9 +71,51 @@ void CThreatMap::update(int frame) {
 			const float3  upos = ai->cbc->GetUnitPos(units[i]);
 			const float uRealX = upos.x/REAL;
 			const float uRealZ = upos.z/REAL;
-			const float  range = (ud->maxWeaponRange+100.0f)/REAL;
+			const float range = (ud->maxWeaponRange+100.0f)/REAL;
 			float       powerT = ai->cbc->GetUnitPower(units[i]);
-			const float  power = ut->cats&COMMANDER ? powerT/20.0f : powerT;
+			const float power = ut->cats&COMMANDER ? powerT/20.0f : powerT;
+			float3 pos(0.0f, 0.0f, 0.0f);
+
+			const int R = (int) ceil(range);
+			for (int z = -R; z <= R; z++) {
+				for (int x = -R; x <= R; x++) {
+					pos.x = x;
+					pos.z = z;
+					if (pos.Length2D() <= range) {
+						pos.x += uRealX;
+						pos.z += uRealZ;
+						const unsigned int mx = (unsigned int) round(pos.x);
+						const unsigned int mz = (unsigned int) round(pos.z);
+						if (mx < X && mz < Z)
+							map[ID(mx,mz)] += power;
+					}
+				}
+			}
+			totalPower += power;
+		}
+	}
+
+	/* Add friendlies, this encourages flanking */
+	std::map<int, CUnit*>::iterator i;
+	for (i = ai->unittable->activeUnits.begin(); i != ai->unittable->activeUnits.end(); i++) {
+		const UnitDef  *ud = ai->cb->GetUnitDef(i->first);
+		const UnitType *ut = UT(i->first);
+		
+		/* Don't let air be part of the threatmap */
+		if ((ut->cats&ATTACKER) && (ut->cats&AIR) && (ut->cats&MOBILE))
+			continue;
+
+		/* Ignore paralyzed units */
+		if (ai->cbc->IsUnitParalyzed(i->first))
+			continue;
+
+		if ((ut->cats&ATTACKER) && !(ut->cats&AIR) && !ai->cb->UnitBeingBuilt(i->first)) {
+			const float3  upos = i->second->pos();
+			const float uRealX = upos.x/REAL;
+			const float uRealZ = upos.z/REAL;
+			const float range = (ud->maxWeaponRange+100.0f)/REAL;
+			float       powerT = ai->cb->GetUnitPower(i->first);
+			const float power = 0.1f * (ut->cats&COMMANDER ? powerT/20.0f : powerT);
 			float3 pos(0.0f, 0.0f, 0.0f);
 
 			const int R = (int) ceil(range);

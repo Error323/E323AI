@@ -83,7 +83,6 @@ void GameMap::CalcMetalSpots() {
 	}
 	avgMetal /= (metalCount + nonMetalCount);
 
-	debug = true;
 	if (IsMetalMap()) {
 		int step = (R+R) > 4 ? (R+R) : 4;
 		for (int z = R; z < Z-R; z+=step) {
