@@ -24,6 +24,7 @@ GameMap::GameMap(AIClasses *ai) {
 	heightVariance = 0.0f;
 	waterAmount = 0.0f;
 	metalCount = nonMetalCount = 0;
+	debug = false;
 	CalcMapHeightFeatures();
 	if (GameMap::metalspots.empty())
 		CalcMetalSpots();
@@ -31,9 +32,10 @@ GameMap::GameMap(AIClasses *ai) {
 
 void GameMap::CalcMetalSpots() {
 	PROFILE(metalspots)
-	int X = int(ai->cb->GetMapWidth()/2);
-	int Z = int(ai->cb->GetMapHeight()/2);
-	int R = int(round(ai->cb->GetExtractorRadius() / 16.0f));
+	const int METAL2REAL = 32.0f;
+	int X = int(ai->cb->GetMapWidth()/4);
+	int Z = int(ai->cb->GetMapHeight()/4);
+	int R = int(round(ai->cb->GetExtractorRadius() / METAL2REAL));
 	const unsigned char *metalmapData = ai->cb->GetMetalMap();
 	unsigned char *metalmap;
 		
@@ -51,40 +53,54 @@ void GameMap::CalcMetalSpots() {
 			sqrtCircle.push_back(r);
 		}
 	}
+	float minimum = 10*M_PI*R*R;
 
 	// Copy metalmap to mutable metalmap
 	std::vector<int> M;
-	int minMetal = std::numeric_limits<int>::max();
+	avgMetal = 0;
+	minMetal = std::numeric_limits<int>::max();
+	maxMetal = std::numeric_limits<int>::min();
 	for (int z = R; z < Z-R; z++) {
 		for (int x = R; x < X-R; x++) {
-			metalmap[ID(x,z)] = metalmapData[ID(x,z)];
-			if (metalmap[ID(x,z)] > 1) {
+			int m = 0;
+			for (int i = -1; i <= 1; i++)
+				for (int j = -1; j <= 1; j++)
+					if (metalmapData[(z*2+i)*X*2+(x*2+j)] > 1)
+						m = std::max<int>(metalmapData[(z*2+i)*X*2+(x*2+j)], m);
+
+			if (m > 1) {
+				metalCount++;
+				minMetal = std::min<int>(minMetal, m);
+				maxMetal = std::max<int>(maxMetal, m);
 				M.push_back(z);
 				M.push_back(x);
-				minMetal = std::min<int>(minMetal, metalmap[ID(x,z)]);
-				metalCount++;
 			}
-			else {
+			else
 				nonMetalCount++;
-			}
+			metalmap[ID(x,z)] = m;
+			avgMetal += m;
 		}
 	}
+	avgMetal /= (metalCount + nonMetalCount);
 
+	debug = true;
 	if (IsMetalMap()) {
-		for (int z = R; z < Z-R; z+=5) {
-			for (int x = R; x < X-R; x+=5) {
+		int step = (R+R) > 4 ? (R+R) : 4;
+		for (int z = R; z < Z-R; z+=step) {
+			for (int x = R; x < X-R; x+=step) {
 				if (metalmap[ID(x,z)] > 1) {
-					float3 metalspot(x*16.0f, ai->cb->GetElevation(x*16.0f,z*16.0f), z*16.0f);
+					float3 metalspot(x*METAL2REAL, ai->cb->GetElevation(x*METAL2REAL,z*METAL2REAL), z*METAL2REAL);
 					GameMap::metalspots.push_back(metalspot);
+					if (debug)
+						ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
 				}
 			}
 		}
 	}
 	else {
-		float minimum = (M_PI*R*R);
 		R++;
 		while (true) {
-			float highestSaturation = 0.0f;
+			float highestSaturation = 0.0f, saturation, sum;
 			int bestX = 0, bestZ = 0;
 			bool mexSpotFound = false;
 
@@ -94,12 +110,13 @@ void GameMap::CalcMetalSpots() {
 				if (metalmap[ID(x,z)] == 0)
 					continue;
 
-				float saturation = 0.0f; float sum = 0.0f;
+				saturation = 0.0f; sum = 0.0f;
 				for (size_t c = 0; c < circle.size(); c+=2) {
 					unsigned char &m = metalmap[ID(x+circle[c+1],z+circle[c])];
 					saturation += m * (R-sqrtCircle[c/2]);
-					sum += m;
+					sum        += m;
 				}
+
 				if (saturation > highestSaturation && sum > minimum) {
 					bestX = x; bestZ = z;
 					highestSaturation = saturation;
@@ -111,20 +128,18 @@ void GameMap::CalcMetalSpots() {
 			if (!mexSpotFound) break;
 
 			// "Erase" metal under the bestX bestZ radius
-			for (size_t c = 0; c < circle.size(); c+=2) {
-				int z = circle[c]+bestZ; int x = circle[c+1]+bestX;
-				metalmap[ID(x,z)] = 0;
-			}
+			for (size_t c = 0; c < circle.size(); c+=2)
+				metalmap[ID(circle[c+1]+bestX,circle[c]+bestZ)] = 0;
 			
 			// Increase to world size
-			bestX *= 16.0f; bestZ *= 16.0f;
+			bestX *= METAL2REAL; bestZ *= METAL2REAL;
 
 			// Store metal spot
 			float3 metalspot(bestX, ai->cb->GetElevation(bestX,bestZ), bestZ);
 			GameMap::metalspots.push_back(metalspot);
 
-			// Debug
-			ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
+			if (debug)
+				ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
 		}
 	}
 
@@ -137,6 +152,7 @@ void GameMap::CalcMetalSpots() {
 		maptype = "normal metalmap";
 	LOG_II("GameMap::CalcMetalSpots Maptype: "<<maptype)
 	LOG_II("GameMap::CalcMetalSpots found "<<GameMap::metalspots.size()<<" metal spots")
+	LOG_II("GameMap::CalcMetalSpots minMetal( "<<minMetal<<") maxMetal("<<maxMetal<<") avgMetal("<<avgMetal<<")")
 
 	delete[] metalmap;
 }
