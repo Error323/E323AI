@@ -449,10 +449,12 @@ void CEconomy::update(int frame) {
 				if (group->busy) continue;
 			}
 			/* Otherwise just expand */
-			if ((mNow / mStorage) > (eNow / eStorage))
-				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
-			else
-				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
+			if (!ai->gamemap->IsMetalMap()) {
+				if ((mNow / mStorage) > (eNow / eStorage))
+					buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
+				else
+					buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
+			}
 		}
 	}
 
