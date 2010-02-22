@@ -138,7 +138,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		float heuristic(ANode *an1, ANode *an2);
 
 		/* Add a path to a unit or group */
-		bool addPath(int group, float3 &start, float3 &goal);
+		bool addPath(CGroup&, float3 &start, float3 &goal);
 
 		/* Reset the map nodes */
 		void resetMap(int thread);
@@ -153,7 +153,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		void calcGraph();
 
 		/* Start pathfinding */
-		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius = EPSILON);
+		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup&, float radius = EPSILON);
 
 		/* Draw the map */
 		//void drawMap(int map);
