@@ -444,7 +444,7 @@ bool CPathfinder::addPath(CGroup &group, float3 &start, float3 &goal) {
 	return success;
 }
 
-CPathfinder::Node* CPathfinder::getClosestNodeId(float3 &f) {
+CPathfinder::Node* CPathfinder::getClosestNode(float3 &f) {
 	if(f == ERRORVECTOR)
 		return NULL;
 
@@ -490,8 +490,8 @@ void CPathfinder::drawNode(Node *n) {
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup &group, float radius) {
 	PROFILE(pf-grouppath-getpath)
-	start = getClosestNodeId(s);
-	goal = getClosestNodeId(g);
+	start = getClosestNode(s);
+	goal = getClosestNode(g);
 
 	std::list<ANode*> nodepath;
 	
