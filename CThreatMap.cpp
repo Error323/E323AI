@@ -1,10 +1,10 @@
 #include "CThreatMap.h"
 
 #include <math.h>
+#include <map>
 
 #include "CAI.h"
 #include "CUnitTable.h"
-#include "CIntel.h"
 #include "CUnit.h"
 #include "MathUtil.h"
 
@@ -71,9 +71,9 @@ void CThreatMap::update(int frame) {
 			const float3  upos = ai->cbc->GetUnitPos(units[i]);
 			const float uRealX = upos.x/REAL;
 			const float uRealZ = upos.z/REAL;
-			const float  range = (ud->maxWeaponRange+100.0f)/REAL;
+			const float range = (ud->maxWeaponRange+100.0f)/REAL;
 			float       powerT = ai->cbc->GetUnitPower(units[i]);
-			const float  power = ut->cats&COMMANDER ? powerT/20.0f : powerT;
+			const float power = ut->cats&COMMANDER ? powerT/20.0f : powerT;
 			float3 pos(0.0f, 0.0f, 0.0f);
 
 			const int R = (int) ceil(range);
@@ -94,6 +94,49 @@ void CThreatMap::update(int frame) {
 			totalPower += power;
 		}
 	}
+
+	/* Add friendlies, this encourages flanking */
+//	std::map<int, CUnit*>::iterator i;
+//	for (i = ai->unittable->activeUnits.begin(); i != ai->unittable->activeUnits.end(); i++) {
+//		const UnitDef  *ud = i->second->def;
+//		const UnitType *ut = i->second->type;
+//		
+//		/* Don't let air be part of the threatmap */
+//		if ((ut->cats&ATTACKER) && (ut->cats&AIR) && (ut->cats&MOBILE))
+//			continue;
+//
+//		/* Ignore paralyzed units */
+//		if (ai->cbc->IsUnitParalyzed(i->first))
+//			continue;
+//
+//		if ((ut->cats&ATTACKER)) {
+//			const float3  upos = i->second->pos();
+//			const float uRealX = upos.x/REAL;
+//			const float uRealZ = upos.z/REAL;
+//			const float range = (ud->maxWeaponRange+100.0f)/REAL;
+//			float       powerT = ud->power;
+//			const float power = 0.1f * (ut->cats&COMMANDER ? powerT/20.0f : powerT);
+//			float3 pos(0.0f, 0.0f, 0.0f);
+//
+//			const int R = (int) ceil(range);
+//			for (int z = -R; z <= R; z++) {
+//				for (int x = -R; x <= R; x++) {
+//					pos.x = x;
+//					pos.z = z;
+//					if (pos.Length2D() <= range) {
+//						pos.x += uRealX;
+//						pos.z += uRealZ;
+//						const unsigned int mx = (unsigned int) round(pos.x);
+//						const unsigned int mz = (unsigned int) round(pos.z);
+//						if (mx < X && mz < Z)
+//							map[ID(mx,mz)] += power;
+//					}
+//				}
+//			}
+//			totalPower += power;
+//		}
+//	}
+//	draw();
 }
 
 float CThreatMap::gauss(float x, float sigma, float mu) {
@@ -109,8 +152,9 @@ void CThreatMap::draw() {
 				float3 p0(x*REAL, ai->cb->GetElevation(x*REAL,z*REAL), z*REAL);
 				float3 p1(p0);
 				p1.y += (map[ID(x,z)]/totalPower) * 300.0f;
-				ai->cb->CreateLineFigure(p0, p1, 4, 1, DRAW_TIME, 1);
+				ai->cb->CreateLineFigure(p0, p1, 4, 10.0, DRAW_TIME, 5);
 			}
 		}
 	}
+	ai->cb->SetFigureColor(5, 1.0f, 0.0f, 0.0f, 1.0f);
 }
