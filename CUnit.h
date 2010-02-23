@@ -106,6 +106,10 @@ class CUnit: public ARegistrar {
 
 		RegistrarType regtype() { return REGT_UNIT; } 
 
+		static bool isMilitary(const UnitDef* ud) { return !ud->weapons.empty(); }
+		static bool isStatic(const UnitDef* ud) { return ud->speed < 0.0001f; }
+		static bool isDefense(const UnitDef* ud) { return isStatic(ud) && isMilitary(ud); }
+
 		/* output stream */
 		friend std::ostream& operator<<(std::ostream &out, const CUnit &unit);
 

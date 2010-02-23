@@ -17,6 +17,7 @@ void CUnit::remove(ARegistrar &reg) {
 		// remove from CUnitTable, CGroup
 		regobj->remove(reg);
 	}
+	assert(records.empty());
 	//records.clear();
 }
 
