@@ -70,6 +70,8 @@ class CGroup: public ARegistrar {
 		/* Reclaim an entity (unit, feature etc.) */
 		void reclaim(int entity);
 
+		void repair(int target);
+
 		/* Set this group to micro mode true/false */
 		void micro(bool on);
 

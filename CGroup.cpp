@@ -9,6 +9,7 @@
 #include "CUnit.h"
 #include "CUnitTable.h"
 #include "CTaskHandler.h"
+#include "CPathfinder.h"
 
 int CGroup::counter = 0;
 
@@ -100,6 +101,15 @@ void CGroup::reclaim(int entity) {
 				i->second->reclaim(pos, 16.0f);
 		}
 	}
+}
+
+void CGroup::repair(int target) {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); i++) {
+		if (i->second->def->canRepair)
+			i->second->repair(target);
+	}
+	
 }
 
 void CGroup::abilities(bool on) {
@@ -278,6 +288,7 @@ void CGroup::stop() {
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++)
 		i->second->stop();
+	ai->pathfinder->remove(*this);
 }
 
 void CGroup::guard(int target, bool enqueue) {
