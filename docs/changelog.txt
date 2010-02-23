@@ -2,7 +2,7 @@ E323AI changelog
 ----------------
 
 v3.18.1 [2010-02-22]
-* builders now more aggressive and will reclaim nearby enemy structures even when metal is nowhere to store
+* builders are more aggressive now and will reclaim nearby enemy structures even when metal is nowhere to store
 * fixed too narrow builder reclaiming area
 * great speedup in loading metal spots data
 
