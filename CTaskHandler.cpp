@@ -189,8 +189,8 @@ void ATask::repairScan() {
 		const float healthDamage = ai->cb->GetUnitMaxHealth(uid) - ai->cb->GetUnitHealth(uid);
 		if (healthDamage > 0.0001f && !ai->cb->UnitBeingBuilt(uid)) {
 			// TODO: somehow limit number of repairing builders per unit
-			const CUnit* unit = ai->unittable->getUnit(uid);
-			const float score = healthDamage + 10000.0f * std::min<int>(unit->type->cats & DEFENSE, 1) + 5000.0f * std::min<int>(unit->type->cats & STATIC, 1);
+			const UnitDef *ud = ai->cb->GetUnitDef(uid);
+			const float score = healthDamage + (CUnit::isDefense(ud) ? 10000.0f: 0.0f) + (CUnit::isStatic(ud) ? 5000.0f: 0.0f);
 			if (score > bestScore) {
 				bestUnit = uid;
 				bestScore = score;
