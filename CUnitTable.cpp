@@ -166,7 +166,10 @@ void CUnitTable::remove(ARegistrar &unit) {
 }
 
 CUnit* CUnitTable::getUnit(int uid) {
-	return ingameUnits[lookup[uid]];
+	std::map<int, int>::iterator i = lookup.find(uid);
+	if (i != lookup.end())
+		return ingameUnits[i->second];
+	return NULL;
 }
 
 CUnit* CUnitTable::requestUnit(int uid, int bid) {
@@ -196,7 +199,7 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	activeUnits[uid] = unit;
 	idle[bid] = false;
 	idle[uid] = false;
-	if (unit->type->cats&MOBILE && bid > 0) {
+	if ((unit->type->cats&MOBILE) && bid >= 0) {
 		unit->techlvl = (activeUnits[bid]->type->cats&TECH1) ? TECH1 : unit->techlvl;
 		unit->techlvl = (activeUnits[bid]->type->cats&TECH2) ? TECH2 : unit->techlvl;
 		unit->techlvl = (activeUnits[bid]->type->cats&TECH3) ? TECH3 : unit->techlvl;
