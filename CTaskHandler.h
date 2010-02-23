@@ -62,7 +62,9 @@ class ATask: public ARegistrar {
 		void addGroup(CGroup &group);
 
 		/* Scan and micro for resources */
-		void resourceScan();
+		bool resourceScan();
+
+		void repairScan();
 
 		/* Scan and micro for enemy targets */
 		void enemyScan(bool scout);

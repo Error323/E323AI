@@ -47,6 +47,8 @@ void ATask::remove() {
 		group->unwait();
 		group->micro(false);
 		group->abilities(false);
+		if (isMoving)
+			group->stop();
 		group = NULL;
 	}
 
@@ -113,7 +115,7 @@ void ATask::enemyScan(bool scout) {
 	}
 }
 
-void ATask::resourceScan() {
+bool ATask::resourceScan() {
 	PROFILE(tasks-resourcescan)
 	
 	int bestFeature = -1;
@@ -165,6 +167,41 @@ void ATask::resourceScan() {
 		group->reclaim(bestFeature);
 		group->micro(true);
 		LOG_II("ATask::resourceScan group " << (*group) << " is reclaiming")
+		return true;
+	}
+
+	return false;
+}
+
+void ATask::repairScan() {
+	PROFILE(tasks-repairscan)
+	
+	if (ai->economy->mstall || ai->economy->estall)
+		return;
+	int bestUnit = -1;
+	float bestScore = 0.0f;
+	float radius = group->buildRange;
+	float3 gpos = group->pos();
+
+	const int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], gpos, 2.0f * radius);
+	for (int i = 0; i < numUnits; i++) {
+		const int uid = ai->unitIDs[i];
+		const float healthDamage = ai->cb->GetUnitMaxHealth(uid) - ai->cb->GetUnitHealth(uid);
+		if (healthDamage > 0.0001f && !ai->cb->UnitBeingBuilt(uid)) {
+			// TODO: somehow limit number of repairing builders per unit
+			const CUnit* unit = ai->unittable->getUnit(uid);
+			const float score = healthDamage + 10000.0f * std::min<int>(unit->type->cats & DEFENSE, 1) + 5000.0f * std::min<int>(unit->type->cats & STATIC, 1);
+			if (score > bestScore) {
+				bestUnit = uid;
+				bestScore = score;
+			}
+		}
+	}
+
+	if (bestUnit != -1) {
+		group->repair(bestUnit);
+		group->micro(true);
+		LOG_II("ATask::repairScan group " << (*group) << " is repairing")		
 	}
 }
 
@@ -378,7 +415,8 @@ void CTaskHandler::BuildTask::update() {
 		}
 		/* See if we can suck wreckages */
 		else if (!group->isMicroing()) {
-			resourceScan();
+			if (!resourceScan())
+				repairScan();
 		}
 	}
 
@@ -421,7 +459,10 @@ void CTaskHandler::addFactoryTask(CGroup &group) {
 	// NOTE: currently if factories are joined into one group then assisters 
 	// will assist the first factory only
 	//factoryTask->pos = group.pos();
+	// NOTE: "pos" is never used currently
 	factoryTask->pos = pos;
+	// TODO: rethink this when implementing units like Consul
+	factoryTask->isMoving = false; // assuming factory is not moving
 	factoryTask->reg(*this); // register task in a task handler
 	factoryTask->addGroup(group);
 
@@ -443,16 +484,6 @@ bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 		ai->wishlist->push(BUILDER, HIGH);
 		return true;
 	}
-
-/*
-	float3 gpos = factory->pos();
-	float travelTime = ai->pathfinder->getETA(assister, gpos);
-
-	bool canAssist = (travelTime < FACTORY_ASSISTERS-assisters.size());
-	if (canAssist)
-		ai->wishlist->push(BUILDER, HIGH);
-	return canAssist;
-*/
 }
 
 void CTaskHandler::FactoryTask::update() {
