@@ -89,9 +89,9 @@ void CE323AI::ReleaseAI() {
 
 /* Called when units are spawned in a factory or when game starts */
 void CE323AI::UnitCreated(int uid, int bid) {
-	CUnit *unit = ai->unittable->requestUnit(uid, bid);
+	LOG_II("CE323AI::UnitCreated(uid=" << uid << ", bid=" << bid << ")")
 
-	LOG_II("CE323AI::UnitCreated " << (*unit) << " (bid=" << bid << ")")
+	CUnit *unit = ai->unittable->requestUnit(uid, bid);
 
 	if (unit->def->isCommander && !ai->economy->isInitialized()) {
 		ai->economy->init(*unit);
