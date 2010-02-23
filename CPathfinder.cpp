@@ -399,7 +399,7 @@ void CPathfinder::updatePaths() {
 	float3 start = groups[repathGroup]->pos();
 	float3 goal  = ai->tasks->getPos(*groups[repathGroup]);
 
-    if (!addPath(repathGroup, start, goal)) {
+    if (!addPath(*groups[repathGroup], start, goal)) {
 		LOG_EE("CPathfinder::updatePaths failed for " << (*groups[repathGroup]))
 	}
 }
@@ -414,21 +414,22 @@ void CPathfinder::remove(ARegistrar &obj) {
 }
 
 bool CPathfinder::addGroup(CGroup &group) {
-	LOG_II("CPathfinder::addGroup " << group)
-	groups[group.key] = &group;
-	regrouping[group.key] = true;
-	group.reg(*this);
 	float3 s = group.pos();
 	float3 g = ai->tasks->getPos(group);
-	bool success = addPath(group.key, s, g);
-	if (!success) {
-		remove(group);
+	bool success = addPath(group, s, g);
+
+	if (success) {
+		LOG_II("CPathfinder::addGroup " << group)
+		regrouping[group.key] = true;
+		groups[group.key] = &group;
+		group.reg(*this);
 	}
+
 	return success;
 }
 
-bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {
-	activeMap = groups[group]->moveType;
+bool CPathfinder::addPath(CGroup &group, float3 &start, float3 &goal) {
+	activeMap = group.moveType;
 	std::vector<float3> path;
 	/* Reset the nodes of this map using threads */
 	resetMap(0);
@@ -438,12 +439,12 @@ bool CPathfinder::addPath(int group, float3 &start, float3 &goal) {
 
 	/* Add it when not empty */
 	if (success && !path.empty())
-		paths[group] = path;
+		paths[group.key] = path;
 
 	return success;
 }
 
-CPathfinder::Node* CPathfinder::getClosestNodeId(float3 &f) {
+CPathfinder::Node* CPathfinder::getClosestNode(float3 &f) {
 	if(f == ERRORVECTOR)
 		return NULL;
 
@@ -487,10 +488,10 @@ void CPathfinder::drawNode(Node *n) {
 	ai->cb->SetFigureColor(11, 0.0f, 1.0f, 1.0f, 0.5f);
 }
 
-bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius) {
+bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup &group, float radius) {
 	PROFILE(pf-grouppath-getpath)
-	start = getClosestNodeId(s);
-	goal = getClosestNodeId(g);
+	start = getClosestNode(s);
+	goal = getClosestNode(g);
 
 	std::list<ANode*> nodepath;
 	
@@ -522,12 +523,12 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, int g
 
 		if (draw) {
 			for (unsigned i = 2; i < path.size(); i++) 
-				ai->cb->CreateLineFigure(path[i-1], path[i], 8.0f, 0, DRAW_TIME, group);
-			ai->cb->SetFigureColor(group, group/float(CGroup::counter), 1.0f-group/float(CGroup::counter), 1.0f, 1.0f);
+				ai->cb->CreateLineFigure(path[i-1], path[i], 8.0f, 0, DRAW_TIME, group.key);
+			ai->cb->SetFigureColor(group.key, group.key/float(CGroup::counter), 1.0f-group.key/float(CGroup::counter), 1.0f, 1.0f);
 		}
 	}
 	else {
-		LOG_EE("CPathfinder::getPath failed for " << (*groups[group]) << " start("<<s.x<<","<<s.z<<") goal("<<g.x<<","<<g.z<<")")
+		LOG_EE("CPathfinder::getPath failed for " << (group) << " start("<<s.x<<","<<s.z<<") goal("<<g.x<<","<<g.z<<")")
 	}
 
 	return success;

@@ -85,6 +85,9 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* Overload */
 		void remove(ARegistrar &obj);
 
+		/* Get closest Node id to real world vector f, return NULL on failure */
+		Node* getClosestNode(float3 &f);
+
 		/* NOTE: slopemap 1:2 heightmap 1:8 realmap, GetMapWidth() and
 		 * GetMapHeight() give map dimensions in heightmap resolution
 		 */
@@ -132,13 +135,11 @@ class CPathfinder: public AAStar, public ARegistrar {
 		/* overload */
 		void successors(ANode *an, std::queue<ANode*> &succ);
 
-		Node* getClosestNodeId(float3 &f);
-
 		/* overload */
 		float heuristic(ANode *an1, ANode *an2);
 
 		/* Add a path to a unit or group */
-		bool addPath(int group, float3 &start, float3 &goal);
+		bool addPath(CGroup&, float3 &start, float3 &goal);
 
 		/* Reset the map nodes */
 		void resetMap(int thread);
@@ -153,7 +154,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		void calcGraph();
 
 		/* Start pathfinding */
-		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, int group, float radius = EPSILON);
+		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup&, float radius = EPSILON);
 
 		/* Draw the map */
 		//void drawMap(int map);

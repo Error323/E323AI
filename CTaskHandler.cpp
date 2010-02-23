@@ -332,6 +332,9 @@ void CTaskHandler::removeTask(CGroup &group) {
 /************************* BUILD TASK *************************/
 /**************************************************************/
 void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &group, float3 &pos) {
+	if (ai->pathfinder->getClosestNode(pos) == NULL)
+		return;
+
 	BuildTask *buildTask = new BuildTask(ai);
 	buildTask->pos       = pos;
 	buildTask->bt        = build;
@@ -410,11 +413,15 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister, float &travelTime) {
 /************************* FACTORY TASK ***********************/
 /**************************************************************/
 void CTaskHandler::addFactoryTask(CGroup &group) {
+	float3 pos = group.firstUnit()->pos();
+	if (ai->pathfinder->getClosestNode(pos) == NULL)
+		return;
+
 	FactoryTask *factoryTask = new FactoryTask(ai);
 	// NOTE: currently if factories are joined into one group then assisters 
 	// will assist the first factory only
 	//factoryTask->pos = group.pos();
-	factoryTask->pos = group.units.begin()->second->pos();
+	factoryTask->pos = pos;
 	factoryTask->reg(*this); // register task in a task handler
 	factoryTask->addGroup(group);
 
@@ -490,6 +497,8 @@ void CTaskHandler::FactoryTask::setWait(bool on) {
 /************************* ASSIST TASK ************************/
 /**************************************************************/
 void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
+	if (ai->pathfinder->getClosestNode(toAssist.pos) == NULL)
+		return;
 	AssistTask *assistTask = new AssistTask(ai);
 	assistTask->assist     = &toAssist;
 	assistTask->pos        = toAssist.pos;
@@ -551,13 +560,16 @@ void CTaskHandler::AssistTask::update() {
 /************************* ATTACK TASK ************************/
 /**************************************************************/
 void CTaskHandler::addAttackTask(int target, CGroup &group) {
+	float3 pos = ai->cbc->GetUnitPos(target);
+	if (ai->pathfinder->getClosestNode(pos) == NULL)
+		return;
 	const UnitDef *ud = ai->cbc->GetUnitDef(target);
 	
 	if (ud == NULL) return;
 
 	AttackTask *attackTask = new AttackTask(ai);
 	attackTask->target     = target;
-	attackTask->pos        = ai->cbc->GetUnitPos(target);
+	attackTask->pos        = pos;
 	attackTask->enemy      = ud->humanName;
 	attackTask->reg(*this); // register task in a task handler
 	attackTask->addGroup(group);
