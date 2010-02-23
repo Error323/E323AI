@@ -124,8 +124,9 @@ void CEconomy::addUnitOnCreated(CUnit &unit) {
 		CGroup *group = requestGroup();
 		group->addUnit(unit);
 		takenMexes[group->key] = group->pos();
-		CUnit *builder = ai->unittable->getUnit((group->units.begin())->second->builtBy);
-		takenMexes.erase(builder->group->key);
+		CUnit *builder = ai->unittable->getUnit(group->firstUnit()->builtBy);
+		if (builder)
+			takenMexes.erase(builder->group->key);
 	}
 }
 
@@ -138,7 +139,7 @@ void CEconomy::addUnitOnFinished(CUnit &unit) {
 		group->addUnit(unit);
 		ai->tasks->addFactoryTask(*group);
 		
-		/* TODO: put same factories in a single group. This requiers refactoring of task
+		/* TODO: put same factories in a single group. This requires refactoring of task
 		assisting, because when factory is dead assising tasks continue working on ex. factory
 		position.
 
@@ -154,7 +155,7 @@ void CEconomy::addUnitOnFinished(CUnit &unit) {
 		ai->unittable->factories[unit.key] = &unit;
 	}
 
-	else if (c&BUILDER && c&MOBILE) {
+	else if ((c&BUILDER) && (c&MOBILE)) {
 		CGroup *group = requestGroup();
 		group->addUnit(unit);
 	}
