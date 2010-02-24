@@ -171,14 +171,16 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 	/*
 	if (!ai->cb->UnitBeingBuilt(damaged) && (rng.RandInt(9) % 2 || ai->unittable->idle[damaged])) {
 		CUnit* unit = ai->unittable->getUnit(damaged);
+
+		const unsigned int cats = unit->type->cats;
 		
-		if ((unit->type->cats&(MOBILE|ATTACKER)) || (unit->type->cats&(MOBILE|BUILDER))) {
+		if ((cats&(MOBILE|ATTACKER)) || (cats&(MOBILE|BUILDER))) {
 			float3 epos = ai->cbc->GetUnitPos(attacker);
 			if (unit->group && unit->group->pos().distance2D(epos) < 300.0f) {
-				const ATask* task = ai->tasks->getTask(*unit->group);
+				ATask* task = ai->tasks->getTask(*unit->group);
 				if (!task || (task->t != ATTACK && task->t != FACTORY_BUILD)) {
-					if (task)
-						ai->tasks->removeTask(*unit->group);
+					if (task && task->active)
+						task->remove();
 					ai->tasks->addAttackTask(attacker, *unit->group);
 				}
 			}
