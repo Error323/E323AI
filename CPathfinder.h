@@ -10,6 +10,7 @@
 
 #include "ARegistrar.h"
 #include "AAStar.h"
+#include "CThreatMap.h"
 
 #define MOVE_BUFFER 2
 
@@ -142,7 +143,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		bool addPath(CGroup&, float3 &start, float3 &goal);
 
 		/* Reset the map nodes */
-		void resetMap(int thread);
+		void resetMap(ThreatMapType tm_type);
 
 		/* Calculate the nodes */
 		void calcNodes();

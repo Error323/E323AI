@@ -96,6 +96,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	draw = false;
 
 	this->REAL = HEIGHT2REAL*HEIGHT2SLOPE;
+	
 	LOG_II("CPathfinder::CPathfinder Heightmap dimensions " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
 	LOG_II("CPathfinder::CPathfinder Pathmap dimensions   " << XX << "x" << ZZ)
 
@@ -265,15 +266,19 @@ void CPathfinder::calcGraph() {
 	}
 }
 
-void CPathfinder::resetMap(int thread) {
+void CPathfinder::resetMap(ThreatMapType tm_type) {
 	PROFILE(pf-grouppath-resetmap)
 
 	int idSlopeMap = 0;
+	float *map = ai->threatmap->getMap(tm_type);
+
+	if (!map)
+		return;
 	
 	for(unsigned int id = 0; id < graphSize; id++) {
 		Node *n = CPathfinder::graph[id];
 		n->reset();
-		n->w = ai->threatmap->map[id] + sm[idSlopeMap] * 5.0f;
+		n->w = map[id] + sm[idSlopeMap] * 5.0f;
 		idSlopeMap += I_MAP_RES;
 	}
 }
@@ -438,7 +443,10 @@ bool CPathfinder::addPath(CGroup &group, float3 &start, float3 &goal) {
 	activeMap = group.moveType;
 	std::vector<float3> path;
 	/* Reset the nodes of this map using threads */
-	resetMap(0);
+	if (activeMap < 0)
+		resetMap(TMT_AIR);
+	else
+		resetMap(TMT_SURFACE);
 
 	/* If we found a path, add it */
 	bool success = getPath(start, goal, path, group);
