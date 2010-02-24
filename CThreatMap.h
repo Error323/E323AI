@@ -6,6 +6,12 @@
 
 class AIClasses;
 
+enum ThreatMapType {
+	TMT_AIR = 0,
+	TMT_SURFACE,
+	TMT_UNDERWATER
+};
+
 class CThreatMap {
 	public:
 		CThreatMap(AIClasses *ai);
