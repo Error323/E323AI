@@ -43,7 +43,7 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 		if (ofs.good()) {
 			std::cout << "Logging to file: " << fileName << "\n";
 			ofs << "Version: " << AI_VERSION << "\n";
-			ofs << "Developer: " << AI_CREDITS << "\n";
+			ofs << "Developers: " << AI_CREDITS << "\n";
 			ofs << "Markers: ";
 			std::map<logLevel, std::string>::iterator i;
 			for (i = logDesc.begin(); i != logDesc.end(); i++)
@@ -58,13 +58,13 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 			logType -= CLogger::LOG_FILE;
 		}
 	}
-
-	#ifdef DEBUG
+/*
+#ifdef DEBUG
 	if (lt & CLogger::LOG_SCREEN) {
 		std::cout << "Logging to screen:\n";
 	}
-	#endif
-
+#endif
+*/
 	if (lt & CLogger::LOG_SPRING) {
 		ai->cb->SendTextMsg("Logging to spring", 0);
 	}
@@ -91,13 +91,13 @@ void CLogger::log(logLevel level, std::string &msg) {
 			ofs.close();
 		}
 	}
-
-	#ifdef DEBUG
+/*
+#ifdef DEBUG
 	if (logType & CLogger::LOG_SCREEN) {
 		std::cout << output;
 	}
-	#endif
-
+#endif
+*/
 	if ((logType & CLogger::LOG_SPRING) && level == ERROR) {
 		ai->cb->SendTextMsg(msg.c_str(), 0);
 	}
