@@ -18,19 +18,22 @@ class CThreatMap {
 		~CThreatMap();
 
 		void update(int frame);
-		float getThreat(float3 &center, float radius);
+		float getThreat(float3 &center, float radius, ThreatMapType type = TMT_SURFACE);
+		float *getMap(ThreatMapType);
+		
 		int X, Z;
-		float *map;
 		int RES;
 
 	private:
 		AIClasses *ai;	
-		int   *units;
-
-		void draw();
-		float totalPower;
+		int *units;
 		float REAL;
+		std::map<ThreatMapType,float> totalPower;
+		std::map<ThreatMapType,float*> maps;
+
 		float gauss(float x, float sigma, float mu);
+		void reset();
+		void draw(ThreatMapType type = TMT_SURFACE);
 };
 
 #endif

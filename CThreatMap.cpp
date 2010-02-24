@@ -1,54 +1,82 @@
 #include "CThreatMap.h"
 
 #include <math.h>
-#include <map>
 
 #include "CAI.h"
 #include "CUnitTable.h"
+#include "CIntel.h"
 #include "CUnit.h"
 #include "MathUtil.h"
 
 CThreatMap::CThreatMap(AIClasses *ai) {
 	this->ai = ai;
-	this->X  = ai->cb->GetMapWidth() / (HEIGHT2SLOPE*I_MAP_RES);
-	this->Z  = ai->cb->GetMapHeight() / (HEIGHT2SLOPE*I_MAP_RES);
-	REAL     = HEIGHT2SLOPE*HEIGHT2REAL*I_MAP_RES;
-	map      = new float[X*Z];
+	X = ai->cb->GetMapWidth() / (HEIGHT2SLOPE*I_MAP_RES);
+	Z = ai->cb->GetMapHeight() / (HEIGHT2SLOPE*I_MAP_RES);
+	REAL = HEIGHT2SLOPE * HEIGHT2REAL * I_MAP_RES;
 	
 	units = &ai->unitIDs[0]; // save about 4x32KB of memory
 
-	for (int i = 0; i < X*Z; i++)
-		map[i] = 1.0f;
+	maps[TMT_AIR] = new float[X*Z];
+	maps[TMT_SURFACE] = new float[X*Z];
+
+	reset();
 }
 
 CThreatMap::~CThreatMap() {
-	delete[] map;
+	std::map<ThreatMapType,float*>::iterator i;
+	for (i = maps.begin(); i != maps.end(); i++)
+		delete[] i->second;
 }
 
-float CThreatMap::getThreat(float3 &center, float radius) {
+void CThreatMap::reset() {
+	float *map;
+	std::map<ThreatMapType,float*>::iterator i;
+	for (i = maps.begin(); i != maps.end(); i++) {
+		totalPower[i->first] = 0.0f;
+		map = i->second;
+		for (int i = 0; i < X*Z; i++)
+			map[i] = 1.0f;
+	}
+}
+
+float *CThreatMap::getMap(ThreatMapType type) {
+	std::map<ThreatMapType,float*>::iterator i = maps.find(type);
+	if (i == maps.end())
+		return NULL;
+	return i->second;
+}
+
+float CThreatMap::getThreat(float3 &center, float radius, ThreatMapType type) {
 	int i = center.z / REAL;
 	int j = center.x / REAL;
-	if (radius == 0.0f)
+	float *map = maps[type];
+	
+	if (radius < EPS)
 		return map[ID(j,i)];
+	
 	int R = ceil(radius / REAL);
 	float power = 0.0f;
 	for (int z = -R; z <= R; z++) {
-		int zz = z+i;
+		int zz = z + i;
+		
 		if (zz > Z-1 || zz < 0)
 			continue;
+		
 		for (int x = -R; x <= R; x++) {
 			int xx = x+j;
 			if (xx < X-1 && xx >= 0)
 				power += map[ID(xx,zz)];
 		}
 	}
+	
 	return power/(2.0f*R*M_PI);
 }
 
 void CThreatMap::update(int frame) {
-	totalPower = 0.0f;
-	for (int i = 0; i < X*Z; i++)
-		map[i] = 1.0f;
+	std::list<ThreatMapType> activeTypes;
+	std::list<ThreatMapType>::iterator tmi;
+
+	reset();
 
 	int numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS_AI);
 	if (numUnits > MAX_UNITS_AI)
@@ -56,87 +84,58 @@ void CThreatMap::update(int frame) {
 
 	/* Add enemy threats */
 	for (int i = 0; i < numUnits; i++) {
-		const UnitDef  *ud = ai->cbc->GetUnitDef(units[i]);
+		const int uid = units[i];
+		const UnitDef  *ud = ai->cbc->GetUnitDef(uid);
 		const UnitType *ut = UT(ud->id);
 		
-		/* Don't let air be part of the threatmap */
-		if ((ut->cats&ATTACKER) && (ut->cats&AIR) && (ut->cats&MOBILE))
+		if (!(ut->cats&ATTACKER) || ai->cbc->IsUnitParalyzed(uid) || ai->cbc->UnitBeingBuilt(uid))
+			continue;
+		
+		if ((ut->cats&AIR) && !(ut->cats&ASSAULT))
 			continue;
 
-		/* Ignore paralyzed units */
-		if (ai->cbc->IsUnitParalyzed(units[i]))
-			continue;
+		activeTypes.clear();
 
-		if ((ut->cats&ATTACKER) && !(ut->cats&AIR) && !ai->cbc->UnitBeingBuilt(units[i])) {
-			const float3  upos = ai->cbc->GetUnitPos(units[i]);
-			const float uRealX = upos.x/REAL;
-			const float uRealZ = upos.z/REAL;
-			const float range = (ud->maxWeaponRange+100.0f)/REAL;
-			float       powerT = ai->cbc->GetUnitPower(units[i]);
-			const float power = ut->cats&COMMANDER ? powerT/20.0f : powerT;
-			float3 pos(0.0f, 0.0f, 0.0f);
+		if (ut->cats&ANTIAIR)
+			activeTypes.push_back(TMT_AIR);
+		// NOTE: assuming DEFENSE unit can shoot ground units
+		if (((ut->cats&AIR) && (ut->cats&ASSAULT)) || (ut->cats&LAND && ((ut->cats&DEFENSE) || !(ut->cats&ANTIAIR))))
+			activeTypes.push_back(TMT_SURFACE);
+		/*
+		if (ut->cats&TORPEDO)
+			activeTypes.push_back(TMT_UNDERWATER);
+		*/
+		const float3  upos = ai->cbc->GetUnitPos(uid);
+		const float uRealX = upos.x/REAL;
+		const float uRealZ = upos.z/REAL;
+		const float  range = (ud->maxWeaponRange + 100.0f)/REAL;
+		float       powerT = ai->cbc->GetUnitPower(uid);
+		const float  power = ut->cats&COMMANDER ? powerT/20.0f : powerT;
+		float3 pos(0.0f, 0.0f, 0.0f);
 
-			const int R = (int) ceil(range);
-			for (int z = -R; z <= R; z++) {
-				for (int x = -R; x <= R; x++) {
-					pos.x = x;
-					pos.z = z;
-					if (pos.Length2D() <= range) {
-						pos.x += uRealX;
-						pos.z += uRealZ;
-						const unsigned int mx = (unsigned int) round(pos.x);
-						const unsigned int mz = (unsigned int) round(pos.z);
-						if (mx < X && mz < Z)
-							map[ID(mx,mz)] += power;
+		const int R = (int) ceil(range);
+		for (int z = -R; z <= R; z++) {
+			for (int x = -R; x <= R; x++) {
+				pos.x = x;
+				pos.z = z;
+				if (pos.Length2D() <= range) {
+					pos.x += uRealX;
+					pos.z += uRealZ;
+					const unsigned int mx = (unsigned int) round(pos.x);
+					const unsigned int mz = (unsigned int) round(pos.z);
+					if (mx < X && mz < Z) {
+						for (tmi = activeTypes.begin(); tmi != activeTypes.end(); tmi++) {
+							maps[*tmi][ID(mx,mz)] += power;
+						}
 					}
 				}
 			}
-			totalPower += power;
+		}
+		
+		for (tmi = activeTypes.begin(); tmi != activeTypes.end(); tmi++) {
+			totalPower[*tmi] += power;
 		}
 	}
-
-	/* Add friendlies, this encourages flanking */
-//	std::map<int, CUnit*>::iterator i;
-//	for (i = ai->unittable->activeUnits.begin(); i != ai->unittable->activeUnits.end(); i++) {
-//		const UnitDef  *ud = i->second->def;
-//		const UnitType *ut = i->second->type;
-//		
-//		/* Don't let air be part of the threatmap */
-//		if ((ut->cats&ATTACKER) && (ut->cats&AIR) && (ut->cats&MOBILE))
-//			continue;
-//
-//		/* Ignore paralyzed units */
-//		if (ai->cbc->IsUnitParalyzed(i->first))
-//			continue;
-//
-//		if ((ut->cats&ATTACKER)) {
-//			const float3  upos = i->second->pos();
-//			const float uRealX = upos.x/REAL;
-//			const float uRealZ = upos.z/REAL;
-//			const float range = (ud->maxWeaponRange+100.0f)/REAL;
-//			float       powerT = ud->power;
-//			const float power = 0.1f * (ut->cats&COMMANDER ? powerT/20.0f : powerT);
-//			float3 pos(0.0f, 0.0f, 0.0f);
-//
-//			const int R = (int) ceil(range);
-//			for (int z = -R; z <= R; z++) {
-//				for (int x = -R; x <= R; x++) {
-//					pos.x = x;
-//					pos.z = z;
-//					if (pos.Length2D() <= range) {
-//						pos.x += uRealX;
-//						pos.z += uRealZ;
-//						const unsigned int mx = (unsigned int) round(pos.x);
-//						const unsigned int mz = (unsigned int) round(pos.z);
-//						if (mx < X && mz < Z)
-//							map[ID(mx,mz)] += power;
-//					}
-//				}
-//			}
-//			totalPower += power;
-//		}
-//	}
-//	draw();
 }
 
 float CThreatMap::gauss(float x, float sigma, float mu) {
@@ -145,13 +144,16 @@ float CThreatMap::gauss(float x, float sigma, float mu) {
 	return a * b;
 }
 
-void CThreatMap::draw() {
+void CThreatMap::draw(ThreatMapType type) {
+	float *map = maps[type];
+	float total = totalPower[type];
+	
 	for (int z = 0; z < Z; z++) {
 		for (int x = 0; x < X; x++) {
-			if (map[ID(x,z)] > 1.0f+EPSILON) {
+			if (map[ID(x,z)] > 1.0f + EPSILON) {
 				float3 p0(x*REAL, ai->cb->GetElevation(x*REAL,z*REAL), z*REAL);
 				float3 p1(p0);
-				p1.y += (map[ID(x,z)]/totalPower) * 300.0f;
+				p1.y += (map[ID(x,z)]/total) * 300.0f;
 				ai->cb->CreateLineFigure(p0, p1, 4, 10.0, DRAW_TIME, 5);
 			}
 		}
