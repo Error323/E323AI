@@ -348,21 +348,11 @@ float3 CTaskHandler::getPos(CGroup &group) {
 	return groupToTask[group.key]->pos;
 }
 
-const ATask* CTaskHandler::getTask(CGroup &group) {
-	if (groupToTask.find(group.key) == groupToTask.end())
+ATask* CTaskHandler::getTask(CGroup &group) {
+	std::map<int, ATask*>::iterator i = groupToTask.find(group.key);
+	if (i == groupToTask.end())
 		return NULL;
-	
-	return groupToTask[group.key];
-}
-
-void CTaskHandler::removeTask(CGroup &group) {
-	int key = group.key;
-	
-	if (groupToTask.find(key) == groupToTask.end())
-		return;
-	
-	groupToTask[key]->remove();
-	groupToTask.erase(key);
+	return i->second;
 }
 
 /**************************************************************/
@@ -625,8 +615,6 @@ void CTaskHandler::AttackTask::update() {
 
 	/* If the target is destroyed, remove the task, unreg groups */
 	if (ai->cbc->GetUnitHealth(target) <= 0.0f) {
-		if (isMoving)
-			ai->pathfinder->remove(*group);
 		remove();
 		return;
 	}
@@ -701,7 +689,6 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 	sqLeg = (float)range * i / units;
 	sqLeg *= sqLeg;
 	mergeTask->range = sqrt(sqLeg + sqLeg);
-	//mergeTask->range = 200.0f;
 
 	LOG_II((*mergeTask))
 

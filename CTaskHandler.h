@@ -206,10 +206,7 @@ class CTaskHandler: public ARegistrar {
 		/* Add a fresh factory task */
 		void addFactoryTask(CGroup &group);
 
-		/* Remove a task (is not used) */
-		void removeTask(CGroup &group);
-
-		const ATask* getTask(CGroup &group);
+		ATask* getTask(CGroup &group);
 
 		/* Get the group destination */
 		float3 getPos(CGroup &group);
