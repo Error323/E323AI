@@ -282,18 +282,24 @@ float CPathfinder::getETA(CGroup &group, float3 &pos, float radius) {
 	float dist;
 	float travelTime;
 	float3 gpos = group.pos();
-	// TODO: better use categories, and check STATIC flag, but it is inconvenient 
-	// to get them currently
-	if (group.moveType < 0) {
-		// FIXME: should we consider "radius" here?
-		if (gpos.distance2D(pos) < group.buildRange)
-			travelTime = 0.0f;
-		else
-			travelTime = std::numeric_limits<float>::max();
+	
+	if (group.moveType < 0 || group.speed < EPS) {
+		travelTime = std::numeric_limits<float>::max();
+		unsigned int cats = group.firstUnit()->type->cats;
+		if (cats&STATIC) {
+			if (cats&BUILDER) {
+				// FIXME: should we consider "radius" here?
+				if (gpos.distance2D(pos) < group.buildRange)
+					travelTime = 0.0f;
+			}
+		} else if (cats & AIR) {
+			travelTime = gpos.distance2D(pos) - radius;
+		}
 	} else {
 		dist = ai->cb->GetPathLength(gpos, pos, group.moveType) - radius;
 		travelTime = (dist / group.speed);
 	}
+	
 	return travelTime;
 }
 

@@ -6,6 +6,7 @@
 #define MAX_INT   2147483647
 #define MAX_FLOAT float(MAX_INT)
 #define EPSILON   1/MAX_FLOAT
+#define EPS 0.0001f
 
 #define ERRORVECTOR float3(-1.0f,0.0f,0.0f)
 #define ZEROVECTOR  float3(0.0f,0.0f,0.0f)
