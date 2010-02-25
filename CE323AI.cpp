@@ -168,25 +168,51 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 	// but next it should return to its current job, so we need to delay 
 	// current task which is impossible while there is no task queue per unit
 	// group (curently we have a single task per group)
-	/*
-	if (!ai->cb->UnitBeingBuilt(damaged) && (rng.RandInt(9) % 2 || ai->unittable->idle[damaged])) {
-		CUnit* unit = ai->unittable->getUnit(damaged);
 
-		const unsigned int cats = unit->type->cats;
-		
-		if ((cats&(MOBILE|ATTACKER)) || (cats&(MOBILE|BUILDER))) {
+	if (ai->cb->UnitBeingBuilt(damaged) || ai->cb->IsUnitParalyzed(damaged) || ai->cb->GetUnitHealth(damaged) < EPS) 
+		return;
+	if (attacker < 0)
+		return;
+	if (ai->cbc->GetUnitHealth(attacker) < EPS)
+		return;
+
+	CUnit* unit = ai->unittable->getUnit(damaged);
+	if (!unit)
+		return; // invalid unit
+	if (!unit->group)
+		return; // unit is not under AI control
+
+	const unsigned int cats = unit->type->cats;
+	if (cats&MOBILE) {
+		/*
+		bool attack = false;
+		if (cats&(ATTACKER|BUILDER)) {
+			const UnitDef *eud = ai->cbc->GetUnitDef(attacker);
+			if (!eud)
+				return;
+			const unsigned int ecats = UC(eud->id);
 			float3 epos = ai->cbc->GetUnitPos(attacker);
-			if (unit->group && unit->group->pos().distance2D(epos) < 300.0f) {
-				ATask* task = ai->tasks->getTask(*unit->group);
-				if (!task || (task->t != ATTACK && task->t != FACTORY_BUILD)) {
-					if (task && task->active)
-						task->remove();
-					ai->tasks->addAttackTask(attacker, *unit->group);
+			float range = cats&BUILDER ? unit->group->buildRange: unit->group->range;
+			if (unit->group->pos().distance2D(epos) < 1.1f*range) {
+				// always strikeback if attacker is a scouter or less powerful
+				if ((ecats&SCOUTER) || ai->threatmap->getThreat(epos, 0.0f) <= unit->group->strength) {
+					ATask* task = ai->tasks->getTask(*unit->group);
+					if (!task || (task->t != ATTACK && task->t != FACTORY_BUILD)) {
+						if (task && task->active)
+							task->remove();
+						attack = true;
+					}
 				}
 			}
 		}
+		
+		if (attack) {
+			ai->tasks->addAttackTask(attacker, *unit->group);
+		} else {
+			// TODO: run away or continue its task depending on group style
+		}
+		*/
 	}
-	*/
 }
 
 /* Called on move fail e.g. can't reach point */
@@ -245,9 +271,10 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 		case AI_EVENT_UNITCAPTURED:
 			/* Unit lost */
 			if ((cte->oldteam) == ai->team) {
-				UnitDestroyed(cte->unit, 0);
 				CUnit *unit = ai->unittable->getUnit(cte->unit);
-
+				
+				UnitDestroyed(cte->unit, 0);
+				
 				LOG_II("CE323AI::UnitCaptured " << (*unit))
 			}
 			break;
