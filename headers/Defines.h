@@ -28,8 +28,9 @@
 #define CONFIG_TEMPLATE "template-config.cfg"
 
 /* Misc macro's */
-#define UD(u) (ai->cb->GetUnitDef(u))
-#define UT(u) (&(ai->unittable->units[u]))
+#define UD(udid) (ai->cb->GetUnitDef(udid))
+#define UT(udid) (&(ai->unittable->units[udid]))
+#define UC(udid) (ai->unittable->units[udid].cats)
 #define ID(x,z) ((z)*X+(x))
 #define ID_GRAPH(x,z) ((z)*XX+(x))
 
