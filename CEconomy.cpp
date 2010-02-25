@@ -1,6 +1,7 @@
 #include "CEconomy.h"
 
 #include <cfloat>
+#include <limits>
 
 #include "headers/HEngine.h"
 
@@ -302,7 +303,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 }
 
 float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
-	float bestDist = FLT_MAX;
+	float bestDist = std::numeric_limits<float>::max();
 	float3 bestSpot = ZeroVector;
 	float3 gpos = group.pos();
 	float radius = ai->cb->GetExtractorRadius();
@@ -312,7 +313,7 @@ float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
 	for (i = GameMap::metalspots.begin(); i != GameMap::metalspots.end(); i++) {
 		// TODO: compare with actual group properties
 		if (i->y < 0.0f)
-			continue;
+			continue; // MEx is under water
 		
 		bool taken = false;
 		for (j = takenMexes.begin(); j != takenMexes.end(); j++) {
@@ -321,7 +322,18 @@ float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
 				break;
 			}
 		}
-		if (taken) continue;
+		if (taken) continue; // already taken or scheduled by current AI
+
+		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], *i, 1.1f * radius);
+		for (int u = 0; u < numUnits; u++) {
+			const int uid = ai->unitIDs[u];
+			const UnitDef *ud = ai->cb->GetUnitDef(uid);
+			if (UC(ud->id)&MEXTRACTOR) {
+				taken = true;
+				break;
+			}
+		}
+		if (taken) continue; // already taken by ally team
 
 		float dist = (gpos - *i).Length2D();
 		if (dist < bestDist) {
@@ -329,6 +341,7 @@ float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
 			bestSpot = *i;
 		}
 	}
+
 	if (bestSpot != ZeroVector)
 		takenMexes[group.key] = bestSpot;
 
