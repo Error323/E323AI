@@ -64,10 +64,11 @@ class ATask: public ARegistrar {
 		/* Scan and micro for resources */
 		bool resourceScan();
 
-		void repairScan();
+		/* Scan and micro for damaged units */
+		bool repairScan();
 
 		/* Scan and micro for enemy targets */
-		void enemyScan(bool scout);
+		bool enemyScan(bool scout);
 
 		/* Update this task */
 		virtual void update() = 0;

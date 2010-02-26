@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <math.h>
+#include <limits>
 
 #include "CAI.h"
 #include "CUnitTable.h"
@@ -72,21 +73,21 @@ void ATask::addGroup(CGroup &g) {
 	group->abilities(true);
 }
 
-void ATask::enemyScan(bool scout) {
+bool ATask::enemyScan(bool scout) {
 	PROFILE(tasks-enemyscan)
 	
 	std::multimap<float, int> candidates;
 	float3 gpos = group->pos();
-	int enemyids[MAX_ENEMIES];
-	int numEnemies = ai->cbc->GetEnemyUnits(&enemyids[0], gpos, scout ? 3.0f * group->range: 1.1f * group->range, MAX_ENEMIES);
 	
+	int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], gpos, scout ? 3.0f * group->range: 1.1f * group->range, MAX_ENEMIES);
 	for (int i = 0; i < numEnemies; i++) {
-		const UnitDef *ud = ai->cbc->GetUnitDef(enemyids[i]);
-		UnitType *ut = UT(ud->id);
-		float3 epos = ai->cbc->GetUnitPos(enemyids[i]);
+		const int euid = ai->unitIDs[i];
+		const UnitDef *ud = ai->cbc->GetUnitDef(euid);
+		const unsigned int ecats = UC(ud->id);
+		float3 epos = ai->cbc->GetUnitPos(euid);
 		float dist = gpos.distance2D(epos);
-		if (!(ut->cats&AIR) && !(ai->cbc->IsUnitCloaked(enemyids[i])))
-			candidates.insert(std::pair<float,int>(dist, enemyids[i]));
+		if (!(ecats&AIR) && !ai->cbc->IsUnitCloaked(euid))
+			candidates.insert(std::pair<float,int>(dist, euid));
 	}
 
 	if (!candidates.empty()) {
@@ -94,7 +95,6 @@ void ATask::enemyScan(bool scout) {
 		std::multimap<float,int>::iterator i = candidates.begin();
 		if (scout) {
 			while (i != candidates.end()) {
-				//const UnitDef *ud = ai->cbc->GetUnitDef(i->second);
 				float3 epos = ai->cbc->GetUnitPos(i->second);
 				threat = ai->threatmap->getThreat(epos, 400.0f);
 				if (threat <= 1.1f && group->strength >= ai->cbc->GetUnitPower(i->second))
@@ -105,25 +105,32 @@ void ATask::enemyScan(bool scout) {
 				group->attack(i->second);
 				group->micro(true);
 				LOG_II("ATask::enemyScan scout " << (*group) << " is microing enemy target Unit(" << i->second << ") with threat =" << threat)
+				return true;
 			}
 		}
 		else {
 			group->attack(i->second);
 			group->micro(true);
 			LOG_II("ATask::enemyScan group " << (*group) << " is microing enemy targets")
+			return true;
 		}
 	}
+
+	return false;
 }
 
 bool ATask::resourceScan() {
 	PROFILE(tasks-resourcescan)
 	
+	bool isFeature = true;
 	int bestFeature = -1;
 	float bestDist = std::numeric_limits<float>::max();
 	// NOTE: do not use group->los because it is too small and do not 
 	// correspond to real map units
 	float radius = group->buildRange;
 	float3 gpos = group->pos();
+
+	assert(radius > EPS);
 
 	// reclaim features when we can store metal only...
 	if (!ai->economy->mexceeding) {
@@ -148,11 +155,13 @@ bool ATask::resourceScan() {
 		const int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], gpos, radius, MAX_ENEMIES);
 		for (int i = 0; i < numEnemies; i++) {
 			const int uid = ai->unitIDs[i];
+			
 			if (ai->cbc->IsUnitCloaked(uid))
 				continue;
+			
 			const UnitDef *ud = ai->cbc->GetUnitDef(uid);
-			UnitType *ut = UT(ud->id);
-			if ((ut->cats&STATIC) && ud->weapons.empty()) {
+			const unsigned int cats = UC(ud->id);
+			if ((cats&STATIC) && ud->weapons.empty()) {
 				float3 epos = ai->cbc->GetUnitPos(uid);
 				float dist = gpos.distance2D(epos);
 				if (dist < bestDist) {
@@ -161,10 +170,11 @@ bool ATask::resourceScan() {
 				}
 			}
 		}
+		isFeature = false;
 	}			
 	
 	if (bestFeature != -1) {
-		group->reclaim(bestFeature);
+		group->reclaim(bestFeature, isFeature);
 		group->micro(true);
 		LOG_II("ATask::resourceScan group " << (*group) << " is reclaiming")
 		return true;
@@ -173,21 +183,26 @@ bool ATask::resourceScan() {
 	return false;
 }
 
-void ATask::repairScan() {
+bool ATask::repairScan() {
 	PROFILE(tasks-repairscan)
 	
 	if (ai->economy->mstall || ai->economy->estall)
-		return;
+		return false;
+	
 	int bestUnit = -1;
 	float bestScore = 0.0f;
 	float radius = group->buildRange;
 	float3 gpos = group->pos();
 
-	const int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], gpos, 2.0f * radius);
+	const int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], gpos, 2.0f * radius, MAX_FEATURES);
 	for (int i = 0; i < numUnits; i++) {
 		const int uid = ai->unitIDs[i];
+		
+		if (ai->cb->UnitBeingBuilt(uid))
+			continue;
+		
 		const float healthDamage = ai->cb->GetUnitMaxHealth(uid) - ai->cb->GetUnitHealth(uid);
-		if (healthDamage > 0.0001f && !ai->cb->UnitBeingBuilt(uid)) {
+		if (healthDamage > EPS) {
 			// TODO: somehow limit number of repairing builders per unit
 			const UnitDef *ud = ai->cb->GetUnitDef(uid);
 			const float score = healthDamage + (CUnit::isDefense(ud) ? 10000.0f: 0.0f) + (CUnit::isStatic(ud) ? 5000.0f: 0.0f);
@@ -201,8 +216,11 @@ void ATask::repairScan() {
 	if (bestUnit != -1) {
 		group->repair(bestUnit);
 		group->micro(true);
-		LOG_II("ATask::repairScan group " << (*group) << " is repairing")		
+		LOG_II("ATask::repairScan group " << (*group) << " is repairing")
+		return true;
 	}
+
+	return false;
 }
 
 std::ostream& operator<<(std::ostream &out, const ATask &atask) {
@@ -393,7 +411,7 @@ void CTaskHandler::BuildTask::update() {
 		if (group->isIdle())
 			group->micro(false); // if idle, our micro is done
 		else
-	    	return; // if microing, break
+			return; // if microing, break
 	}
 
 	/* See if we can build yet */
@@ -422,13 +440,16 @@ void CTaskHandler::BuildTask::update() {
 }
 
 bool CTaskHandler::BuildTask::assistable(CGroup &assister, float &travelTime) {
-	if (bt == BUILD_AG_DEFENSE && assisters.size() >= 2) return false;
+	if ((bt == BUILD_AG_DEFENSE && assisters.size() >= 2) || isMoving)
+		return false;
+	
 	float buildSpeed = group->buildSpeed;
 	std::list<ATask*>::iterator i;
 	for (i = assisters.begin(); i != assisters.end(); i++)
 		buildSpeed += (*i)->group->buildSpeed;
 
 	float3 gpos = group->pos();
+	//float3 gpos = pos;
 	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
 	
 	/* travelTime + 5 seconds to make it worth the trip */
@@ -541,7 +562,7 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 }
 
 void CTaskHandler::AssistTask::remove(ARegistrar &group) {
-	LOG_II("AssistTask::remove by group(" << (*(dynamic_cast<CGroup*>(&group))) << ")")
+	LOG_II("AssistTask::remove by Group(" << group.key << ")")
 	
 	//assert(this->group == &group);
 
@@ -620,7 +641,7 @@ void CTaskHandler::AttackTask::update() {
 	}
 
 	CUnit* unit = group->firstUnit();
-	bool builder = unit->type->cats&BUILDER && !(unit->type->cats&ATTACKER);
+	bool builder = (unit->type->cats&BUILDER) && !(unit->type->cats&ATTACKER);
 
 	if (isMoving) {
 		/* Keep tracking the target */
@@ -644,8 +665,10 @@ void CTaskHandler::AttackTask::update() {
 	/* See if we can attack a target we found on our path */
 	if (!group->isMicroing()) {
 		if (builder)
-		    resourceScan(); // builders should not be too agressive
-		if (unit->type->cats&SCOUTER)
+			resourceScan(); // builders should not be too aggressive
+		// TODO: attack group can have scouts also, we need to prevent
+		// assigning scout tasks to attack group
+		else if (unit->type->cats&SCOUTER)
 			enemyScan(true);
 		else
 			enemyScan(false);
@@ -660,7 +683,8 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 	int range = 0;
 	int units = 0;
 	std::map<int,CGroup*>::iterator j;
-	float maxSlope = MAX_FLOAT;
+	float minSlope = std::numeric_limits<float>::max();
+	float maxPower = std::numeric_limits<float>::min();
 	float sqLeg;
 	
 	MergeTask *mergeTask = new MergeTask(ai);
@@ -674,16 +698,17 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 		j->second->micro(false);
 		j->second->abilities(true);
 		groupToTask[j->first] = mergeTask;
-		range += j->second->size;
+		range += j->second->size + FOOTPRINT2REAL;
 		units += j->second->units.size();
-		if (j->second->maxSlope < maxSlope) {
-			maxSlope = j->second->maxSlope;
+		if (j->second->maxSlope < (minSlope + EPS) && maxPower < j->second->strength) {
+			minSlope = j->second->maxSlope;
+			maxPower = j->second->strength;
 			mergeTask->pos = j->second->pos();
 		}
 	}
 	
-	// TODO: actually range should increase from the smallest to calculated 
-	// here as long as more groups are joined
+	// TODO: actually merge range should increase from the smallest to 
+	// calculated here as long as more groups are joined
 	for(i = 1; units > i * i; i++);
 	i *= i;
 	sqLeg = (float)range * i / units;
@@ -707,13 +732,16 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 
 void CTaskHandler::MergeTask::remove() {
 	LOG_II("MergeTask::remove " << (*this))
+	
 	std::map<int,CGroup*>::iterator g;
+	
 	for (g = groups.begin(); g != groups.end(); g++) {
 		g->second->unreg(*this);
 		g->second->busy = false;
 		g->second->micro(false);
 		g->second->abilities(false);
 		ai->pathfinder->remove(*(g->second));
+		// TODO: remove from taskhandler->groupToTask
 	}
 	
 	std::list<ARegistrar*>::iterator j;
@@ -728,10 +756,12 @@ void CTaskHandler::MergeTask::remove(ARegistrar &group) {
 	groups.erase(group.key);
 	group.unreg(*this);
 	// TODO: cleanup other data of group?
+	// TODO: remove from taskhandler->groupToTask
 }
 		
 void CTaskHandler::MergeTask::update() {
 	PROFILE(tasks-merge)
+	
 	std::vector<CGroup*> mergable;
 
 	/* See which groups can be merged already */
