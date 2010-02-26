@@ -14,20 +14,25 @@
 int CGroup::counter = 0;
 
 void CGroup::addUnit(CUnit &unit) {
-	LOG_II("CGroup::add " << unit)
+	LOG_II("CGroup::addUnit " << unit)
 
-	if (unit.group == this)
-		return; // already registered
-
-	recalcProperties(&unit);
-
+	if (unit.group) {
+		if (unit.group == this) {
+			LOG_WW("CGroup::addUnit already registered in Group(" << key << ")")
+			return; // already registered
+		} else {
+			// NOTE: unit can only exist in one and only group
+			unit.group->remove(unit);
+		}
+	}
+	
+	assert(unit.group == NULL);
+	
 	units[unit.key] = &unit;
 	unit.reg(*this);
-	// NOTE: unit can only exist in one and only group
-	if (unit.group)
-		unit.group->remove(unit);
-	assert(unit.group == NULL);
 	unit.group = this;
+	
+	recalcProperties(&unit);
 
 	// TODO: if group is busy invoke new unit to community process?
 }
@@ -65,7 +70,7 @@ void CGroup::remove(ARegistrar &unit) {
 	
 	CUnit *unit2 = units[unit.key];
 	unit2->group = NULL;
-	unit.unreg(*this);
+	unit2->unreg(*this);
 	units.erase(unit.key);
 
 	/* If no more units remain in this group, remove the group */
@@ -82,23 +87,22 @@ void CGroup::remove(ARegistrar &unit) {
 	}
 }
 
-void CGroup::reclaim(int entity) {
-	float3 pos = ERRORVECTOR;
-	const UnitDef* ud = ai->cbc->GetUnitDef(entity);
-	if (ud) {
-		if (ud->isFeature)
-			pos = ai->cb->GetFeaturePos(entity);
-	}
-	else
+void CGroup::reclaim(int entity, bool feature) {
+	float3 pos;
+	
+	if (feature) {
 		pos = ai->cb->GetFeaturePos(entity);
-
+		if (pos == ZEROVECTOR)
+			return;
+	}
+		
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); i++) {
 		if (i->second->def->canReclaim) {
-			if (pos.x < 0)
-				i->second->reclaim(entity);
-			else			
+			if (feature)
 				i->second->reclaim(pos, 16.0f);
+			else
+				i->second->reclaim(entity);
 		}
 	}
 }
@@ -109,7 +113,6 @@ void CGroup::repair(int target) {
 		if (i->second->def->canRepair)
 			i->second->repair(target);
 	}
-	
 }
 
 void CGroup::abilities(bool on) {
@@ -175,7 +178,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 	if(unit == NULL)
 		return;
 
-    if (unit->builtBy > 0) {
+    if (unit->builtBy >= 0) {
 		techlvl = std::max<int>(techlvl, unit->techlvl);
 	}
 
@@ -221,14 +224,14 @@ float3 CGroup::pos() {
 }
 
 int CGroup::maxLength() {
-	return size + 200;
+	return size + units.size() * FOOTPRINT2REAL;
 }
 
 void CGroup::assist(ATask &t) {
 	switch(t.t) {
 		case BUILD: {
 			CTaskHandler::BuildTask *task = dynamic_cast<CTaskHandler::BuildTask*>(&t);
-			CUnit *unit  = task->group->units.begin()->second;
+			CUnit *unit  = task->group->firstUnit();
 			guard(unit->key);
 			break;
 		}
@@ -242,7 +245,7 @@ void CGroup::assist(ATask &t) {
 
 		case FACTORY_BUILD: {
 			CTaskHandler::FactoryTask *task = dynamic_cast<CTaskHandler::FactoryTask*>(&t);
-			CUnit *unit  = task->group->units.begin()->second;
+			CUnit *unit  = task->group->firstUnit();
 			guard(unit->key);
 			break;
 		}

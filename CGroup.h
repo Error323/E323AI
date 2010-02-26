@@ -68,7 +68,7 @@ class CGroup: public ARegistrar {
 		std::map<int, CUnit*> units;
 
 		/* Reclaim an entity (unit, feature etc.) */
-		void reclaim(int entity);
+		void reclaim(int entity, bool feature = true);
 
 		void repair(int target);
 
