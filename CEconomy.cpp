@@ -216,7 +216,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				bool canBuildMMaker = (eIncome - eUsage) >= METAL2ENERGY || eexceeding;
 				if (goal != ZeroVector) {
 					bool tooSmallIncome = mIncome < 3.0f;
-					bool isComm  = unit->def->isCommander;
+					bool isComm = unit->def->isCommander;
 					if (tooSmallIncome || !isComm || ai->pathfinder->getETA(group, goal) < 30*10) {
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, i->second, group, goal);
 					}
@@ -324,7 +324,7 @@ float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
 		}
 		if (taken) continue; // already taken or scheduled by current AI
 
-		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], *i, 1.1f * radius);
+		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], *i, 1.5f * radius);
 		for (int u = 0; u < numUnits; u++) {
 			const int uid = ai->unitIDs[u];
 			const UnitDef *ud = ai->cb->GetUnitDef(uid);
