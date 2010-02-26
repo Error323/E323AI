@@ -5,6 +5,7 @@ v3.18.1 [2010-02-22]
 * builders are more aggressive now and will reclaim nearby enemy structures even when metal is nowhere to store
 * fixed too narrow builder reclaiming area
 * great speedup in loading metal spots data
+* fixed categorization file for BA mod for Core side
 
 v3.18.0 [2010-02-20]
 * categorization file is generated now along with config file on new mod
@@ -53,4 +54,4 @@ v3.13.1 [2010-01-11]
 * no watermaps support yet
 
 For the rest changelog please visit our forum thread:
-http://springrts.com/phpbb/viewtopic.php?f=15 
+http://springrts.com/phpbb/viewtopic.php?f=15&t=19450
