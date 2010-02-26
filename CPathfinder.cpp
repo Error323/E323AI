@@ -309,16 +309,16 @@ float CPathfinder::getETA(CGroup &group, float3 &pos, float radius) {
 }
 
 void CPathfinder::updateFollowers() {
-	std::map<int, std::vector<float3> >::iterator path;
+	std::map<int, std::vector<float3>>::iterator path;
 	std::map<int, CUnit*>::iterator u;
 	unsigned groupnr = 0;
 	repathGroup = -1;
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		unsigned segment     = 1;
-		int     waypoint     = std::min<int>(MOVE_BUFFER, path->second.size()-segment-1);
+		int waypoint         = std::min<int>(MOVE_BUFFER, path->second.size()-segment-1);
 		CGroup *group        = groups[path->first];
-		float maxGroupLength = group->maxLength();
+		float maxGroupLength = 2.0f * group->maxLength();
 		std::map<float, CUnit*> M;
 		/* Go through all the units in a group */
 		for (u = group->units.begin(); u != group->units.end(); u++) {
@@ -370,10 +370,12 @@ void CPathfinder::updateFollowers() {
 			if (lateralDisp > maxGroupLength) {
 				regrouping[group->key] = true;
 			}
-			else if (lateralDisp < maxGroupLength*0.6f) {
+			else if (lateralDisp < maxGroupLength*0.7f) {
 				regrouping[group->key] = false;
 			}
-		} else regrouping[group->key] = false;
+		} else {
+			regrouping[group->key] = false;
+		}
 
 		/* If not under fine control, advance on the path */
 		if (!group->isMicroing() && !regrouping[group->key])
