@@ -30,6 +30,7 @@ class CUnit: public ARegistrar {
 		UnitType *type;
 		int builtBy;
 		int techlvl;
+		CGroup *group; // group unit belongs to
 
 		/* Remove the unit from everywhere registered */
 		void remove();
@@ -95,8 +96,6 @@ class CUnit: public ARegistrar {
 		bool isOn();
 
 		float3 pos();
-
-		CGroup *group; // group unit belongs to
 
 		/* Get best facing */
 		facing getBestFacing(float3 &pos);

@@ -501,7 +501,7 @@ void CUnitTable::getBuildables(UnitType *ut, unsigned include, unsigned exclude,
 		}
 	}
 	if (candidates.empty())
-		LOG_WW("CUnitTable::getBuildables no candidates found INCLUDE("<<debugCategories(include)<<") EXCLUDE("<<debugCategories(exclude)<<")")
+		LOG_WW("CUnitTable::getBuildables no candidates found INCLUDE("<<debugCategories(include)<<") EXCLUDE("<<debugCategories(exclude)<<") for unitdef(" << ut->def->humanName << ")")
 }
 
 UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
