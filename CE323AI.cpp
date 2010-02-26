@@ -154,7 +154,7 @@ void CE323AI::UnitIdle(int uid) {
 	if(ai->unittable->unitsUnderPlayerControl.find(uid) != ai->unittable->unitsUnderPlayerControl.end()) {
 		ai->unittable->unitsUnderPlayerControl.erase(uid);
 		assert(unit->group == NULL);
-		LOG_II("CE323AI::PlayerCommand no " << (*unit))
+		LOG_II("CE323AI::UnitControlledByAI " << (*unit))
 		// re-assigning unit to appropriate group
 		UnitFinished(uid);
 		return;
@@ -217,8 +217,10 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 
 /* Called on move fail e.g. can't reach point */
 void CE323AI::UnitMoveFailed(int uid) {
-	//CUnit *unit = ai->unittable->getUnit(uid);
-	//unit->moveRandom(50.0f);
+	/*
+	CUnit *unit = ai->unittable->getUnit(uid);
+	unit->moveRandom(50.0f);
+	*/
 }
 
 
@@ -262,6 +264,7 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 				UnitCreated(cte->unit, -1);
 				UnitFinished(cte->unit);
 				
+				// NOTE: getting "unit" for logging only
 				CUnit *unit = ai->unittable->getUnit(cte->unit);
 
 				LOG_II("CE323AI::UnitGiven " << (*unit))
@@ -271,6 +274,7 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 		case AI_EVENT_UNITCAPTURED:
 			/* Unit lost */
 			if ((cte->oldteam) == ai->team) {
+				// NOTE: getting "unit" for logging only
 				CUnit *unit = ai->unittable->getUnit(cte->unit);
 				
 				UnitDestroyed(cte->unit, 0);
@@ -315,18 +319,17 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 						CUnit* unit = ai->unittable->getUnit(pce->units[i]);
 						if(unit->group) {
 							// remove unit from group so it will not receive 
-							// AI commands anymore
+							// AI commands anymore...
 							unit->unreg(*unit->group); // this prevent a crash when unit destroyed in player mode
 							unit->group->remove(*unit);
-								
 						}							
 						// NOTE: i think the following two lines have almost
-						// no sense cause current AI design does not deal
+						// no sense because current AI design does not deal
 						// with units not assigned to any group
 						unit->micro(false);
 						ai->unittable->idle[unit->key] = false; // because player controls it
 						ai->unittable->unitsUnderPlayerControl[unit->key] = unit;
-						LOG_II("CE323AI::PlayerCommand " << (*unit))
+						LOG_II("CE323AI::UnitControlledByPlayer " << (*unit))
 					}
 				}
 			}
