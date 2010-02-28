@@ -168,136 +168,137 @@ void CEconomy::addUnitOnFinished(CUnit &unit) {
 
 void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsigned exclude) {
 	ATask *task = canAssist(bt, group);
-	if (task != NULL)
+	if (task != NULL) {
 		ai->tasks->addAssistTask(*task, group);
-	else {
-		/* Retrieve the allowed buildable units */
-		CUnit *unit = group.firstUnit();
-		std::multimap<float, UnitType*> candidates;
-		ai->unittable->getBuildables(unit->type, include, exclude, candidates);
+		return;
+	}
 
-		if (candidates.empty()) 
-			return;
+	/* Retrieve the allowed buildable units */
+	CUnit *unit = group.firstUnit();
+	std::multimap<float, UnitType*> candidates;
+	
+	ai->unittable->getBuildables(unit->type, include, exclude, candidates);
+	if (candidates.empty())
+		return; // builder can build nothing we need
 
-		/* Determine which of these we can afford */
-		std::multimap<float, UnitType*>::iterator i = candidates.begin();
-		int iterations = candidates.size() / (ai->cfgparser->getTotalStates() + 1 - state);
-		bool affordable = false;
-		while(iterations >= 0) {
-			if (canAffordToBuild(group.firstUnit()->type, i->second))
-				affordable = true;
+	/* Determine which of these we can afford */
+	std::multimap<float, UnitType*>::iterator i = candidates.begin();
+	int iterations = candidates.size() / (ai->cfgparser->getTotalStates() + 1 - state);
+	bool affordable = false;
+	while(iterations >= 0) {
+		if (canAffordToBuild(unit->type, i->second))
+			affordable = true;
+		else
+			break;
+
+		if (i == --candidates.end())
+			break;
+		iterations--;
+		i++;
+	}
+	
+	/* Determine the location where to build */
+	float3 pos = group.pos();
+	float3 goal = pos;
+
+	/* Perform the build */
+	switch(bt) {
+		case BUILD_EPROVIDER: {
+			if (windmap && ai->cb->GetCurWind() >= 10.0f)
+				ai->tasks->addBuildTask(bt, i->second, group, goal);
+			else if (i->second->cats&WIND)
+				ai->tasks->addBuildTask(bt, (++candidates.begin())->second, group, goal);
 			else
-				break;
-
-			if (i == --candidates.end())
-				break;
-			iterations--;
-			i++;
+				ai->tasks->addBuildTask(bt, i->second, group, goal);
+			break;
 		}
-		
-		/* Determine the location where to build */
-		float3 pos = group.pos();
-		float3 goal = pos;
 
-		/* Perform the build */
-		switch(bt) {
-			case BUILD_EPROVIDER: {
-				if (windmap && ai->cb->GetCurWind() >= 10.0f)
-					ai->tasks->addBuildTask(bt, i->second, group, goal);
-				else if (i->second->cats&WIND)
-					ai->tasks->addBuildTask(bt, (++candidates.begin())->second, group, goal);
-				else
-					ai->tasks->addBuildTask(bt, i->second, group, goal);
-				break;
-			}
-
-			case BUILD_MPROVIDER: {
-				goal = getClosestOpenMetalSpot(group);
-				bool canBuildMMaker = (eIncome - eUsage) >= METAL2ENERGY || eexceeding;
-				if (goal != ZeroVector) {
-					bool tooSmallIncome = mIncome < 3.0f;
-					bool isComm = unit->def->isCommander;
-					if (tooSmallIncome || !isComm || ai->pathfinder->getETA(group, goal) < 30*10) {
-						ai->tasks->addBuildTask(BUILD_MPROVIDER, i->second, group, goal);
-					}
-					else if (areMMakersEnabled && canBuildMMaker) {
-						UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
-						if (mmaker != NULL)
-							ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
-					}
+		case BUILD_MPROVIDER: {
+			goal = getClosestOpenMetalSpot(group);
+			bool canBuildMMaker = (eIncome - eUsage) >= METAL2ENERGY || eexceeding;
+			if (goal != ZeroVector) {
+				bool tooSmallIncome = mIncome < 3.0f;
+				bool isComm = unit->def->isCommander;
+				if (tooSmallIncome || !isComm || ai->pathfinder->getETA(group, goal) < 30*10) {
+					ai->tasks->addBuildTask(BUILD_MPROVIDER, i->second, group, goal);
 				}
 				else if (areMMakersEnabled && canBuildMMaker) {
 					UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 					if (mmaker != NULL)
 						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
 				}
-				else {
-					buildOrAssist(group, BUILD_EPROVIDER, EMAKER|LAND);
-				}
-				break;
 			}
+			else if (areMMakersEnabled && canBuildMMaker) {
+				UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
+				if (mmaker != NULL)
+					ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
+			}
+			else {
+				buildOrAssist(group, BUILD_EPROVIDER, EMAKER|LAND);
+			}
+			break;
+		}
 
-			case BUILD_MSTORAGE: case BUILD_ESTORAGE: {
-				/* Start building storage after enough ingame time */
-				if (!taskInProgress(bt) && ai->cb->GetCurrentFrame() > 30*60*7) {
-					pos = ai->defensematrix->getBestDefendedPos(0);
-					ai->tasks->addBuildTask(bt, i->second, group, pos);
-				}
-				break;
+		case BUILD_MSTORAGE: case BUILD_ESTORAGE: {
+			/* Start building storage after enough ingame time */
+			if (!taskInProgress(bt) && ai->cb->GetCurrentFrame() > 30*60*7) {
+				pos = ai->defensematrix->getBestDefendedPos(0);
+				ai->tasks->addBuildTask(bt, i->second, group, pos);
 			}
+			break;
+		}
 
-			case FACTORY_BUILD: {
-				int numFactories = ai->unittable->factories.size();
-				if (numFactories > 1)
-					pos = ai->defensematrix->getBestDefendedPos(numFactories);
-				float m = mNow/mStorage;
-				switch(state) {
-					case 0: case 1: case 2: {
-						if (m > 0.7f && !taskInProgress(bt) && affordable)
-							ai->tasks->addBuildTask(bt, i->second, group, pos);
-						break;
-					}
-					case 3: {
-						if (m > 0.6f && !taskInProgress(bt))
-							ai->tasks->addBuildTask(bt, i->second, group, pos);
-						break;
-					}
-					case 4: {
-						if (m > 0.5f && !taskInProgress(bt))
-							ai->tasks->addBuildTask(bt, i->second, group, pos);
-						break;
-					}
-					case 5: {
-						if (m > 0.4f && !taskInProgress(bt))
-							ai->tasks->addBuildTask(bt, i->second, group, pos);
-						break;
-					}
-					case 6: {
-						if (m > 0.3f && !taskInProgress(bt))
-							ai->tasks->addBuildTask(bt, i->second, group, pos);
-						break;
-					}
-					default: {
-						if (m > 0.2f && !taskInProgress(bt))
-							ai->tasks->addBuildTask(bt, i->second, group, pos);
-					}
+		case FACTORY_BUILD: {
+			int numFactories = ai->unittable->factories.size();
+			if (numFactories > 1)
+				pos = ai->defensematrix->getBestDefendedPos(numFactories);
+			float m = mNow/mStorage;
+			switch(state) {
+				case 0: case 1: case 2: {
+					if (m > 0.7f && !taskInProgress(bt) && affordable)
+						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					break;
 				}
-				break;
-			}
-			
-			case BUILD_AG_DEFENSE: case BUILD_AA_DEFENSE: {
-				if (!taskInProgress(bt)) {
-					pos = ai->defensematrix->getDefenseBuildSite(i->second);
-					ai->tasks->addBuildTask(bt, i->second, group, pos);
+				case 3: {
+					if (m > 0.6f && !taskInProgress(bt))
+						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					break;
 				}
-				break;
+				case 4: {
+					if (m > 0.5f && !taskInProgress(bt))
+						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					break;
+				}
+				case 5: {
+					if (m > 0.4f && !taskInProgress(bt))
+						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					break;
+				}
+				case 6: {
+					if (m > 0.3f && !taskInProgress(bt))
+						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					break;
+				}
+				default: {
+					if (m > 0.2f && !taskInProgress(bt))
+						ai->tasks->addBuildTask(bt, i->second, group, pos);
+				}
 			}
+			break;
+		}
+		
+		case BUILD_AG_DEFENSE: case BUILD_AA_DEFENSE: {
+			if (!taskInProgress(bt)) {
+				pos = ai->defensematrix->getDefenseBuildSite(i->second);
+				ai->tasks->addBuildTask(bt, i->second, group, pos);
+			}
+			break;
+		}
 
-			default: {
-				if (affordable && !taskInProgress(bt))
-					ai->tasks->addBuildTask(bt, i->second, group, goal);
-				break;
-			}
+		default: {
+			if (affordable && !taskInProgress(bt))
+				ai->tasks->addBuildTask(bt, i->second, group, goal);
+			break;
 		}
 	}
 }
