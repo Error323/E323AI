@@ -28,13 +28,16 @@ GameMap::GameMap(AIClasses *ai) {
 	CalcMapHeightFeatures();
 	if (GameMap::metalspots.empty())
 		CalcMetalSpots();
+	if (GameMap::geospots.empty())
+		CalcGeoSpots();
 }
 
 void GameMap::CalcMetalSpots() {
 	PROFILE(metalspots)
+
 	const int METAL2REAL = 32.0f;
-	int X = int(ai->cb->GetMapWidth()/4);
-	int Z = int(ai->cb->GetMapHeight()/4);
+	int X = int(ai->cb->GetMapWidth() / 4);
+	int Z = int(ai->cb->GetMapHeight() / 4);
 	int R = int(round(ai->cb->GetExtractorRadius() / METAL2REAL));
 	const unsigned char *metalmapData = ai->cb->GetMetalMap();
 	unsigned char *metalmap;
@@ -142,20 +145,32 @@ void GameMap::CalcMetalSpots() {
 		}
 	}
 
+	delete[] metalmap;
+
 	std::string maptype;
 	if(IsMetalMap())
 		maptype = "speedmetal";
 	else if (nonMetalCount == 0)
-		maptype = "no metalmap";
+		maptype = "non-metalmap";
 	else
 		maptype = "normal metalmap";
-	LOG_II("GameMap::CalcMetalSpots Maptype: "<<maptype)
-	LOG_II("GameMap::CalcMetalSpots found "<<GameMap::metalspots.size()<<" metal spots")
-	LOG_II("GameMap::CalcMetalSpots minMetal( "<<minMetal<<") maxMetal("<<maxMetal<<") avgMetal("<<avgMetal<<")")
-
-	delete[] metalmap;
+	
+	LOG_II("GameMap::CalcMetalSpots Maptype: " << maptype)
+	LOG_II("GameMap::CalcMetalSpots found " << GameMap::metalspots.size() << " metal spots")
+	LOG_II("GameMap::CalcMetalSpots minMetal(" << minMetal << ") maxMetal(" << maxMetal << ") avgMetal(" << avgMetal << ")")
 }
 
+void GameMap::CalcGeoSpots() {
+	const int numFeatures = ai->cb->GetFeatures(&ai->unitIDs[0], ai->unitIDs.size());
+	for (int i = 0; i < numFeatures; i++) {
+		const int fid = ai->unitIDs[i];
+		const FeatureDef *fd = ai->cb->GetFeatureDef(fid);
+		if (fd->geoThermal) {
+			geospots.push_back(ai->cb->GetFeaturePos(fid));
+		}
+	}
+	LOG_II("GameMap::CalcGeoSpots found " << geospots.size() << " geothermal spots");
+}
 
 void GameMap::CalcMapHeightFeatures() {
 	// Compute some height features

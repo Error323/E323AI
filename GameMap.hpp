@@ -14,7 +14,7 @@ class AIClasses;
 class GameMap {
 	public:
 		GameMap(AIClasses*);
-		~GameMap(){}
+		~GameMap() {}
 
 		/** @return float, height variance */
 		float GetHeightVariance() { return heightVariance; }
