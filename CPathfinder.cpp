@@ -315,76 +315,78 @@ void CPathfinder::updateFollowers() {
 	repathGroup = -1;
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
-		unsigned segment     = 1;
-		int waypoint         = std::min<int>(MOVE_BUFFER, path->second.size()-segment-1);
-		CGroup *group        = groups[path->first];
+		CGroup *group = groups[path->first];
+		bool enableRegrouping = group->units.size() < GROUP_CRITICAL_MASS;
+		unsigned int segment = 1;
+		int waypoint = std::min<int>(MOVE_BUFFER, path->second.size() - segment - 1);
 		float maxGroupLength = 2.0f * group->maxLength();
 		std::map<float, CUnit*> M;
 		/* Go through all the units in a group */
 		for (u = group->units.begin(); u != group->units.end(); u++) {
 			CUnit *unit = u->second;
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
+			float l1, l2;
 			float length = 0.0f;
 			int s1 = 0, s2 = 1;
 			float3 upos = unit->pos();
 			/* Go through the path to determine the unit's segment on the path
 			 */
-			for (segment = 1; segment < path->second.size()-waypoint; segment++) {
-				float3 d1  = upos - path->second[segment-1];
-				float3 d2  = upos - path->second[segment];
-				float l1 = d1.Length2D();
-				float l2 = d2.Length2D();
+			for (segment = 1; segment < path->second.size() - waypoint; segment++) {
+				if (segment == 1)
+					l1 = upos.distance2D(path->second[segment - 1]);
+				else
+					l1 = l2;
+				l2 = upos.distance2D(path->second[segment]);
+				
 				/* When the dist between the unit and the segment is
-				 * increasing: break 
-				 */
-				length  += (path->second[s1] - path->second[s2]).Length2D();
+				 * increasing: break */
+				length += (path->second[s1] - path->second[s2]).Length2D();
 				if (l1 > sl1 || l2 > sl2) break;
-				s1       = segment-1;
+				s1       = segment - 1;
 				s2       = segment;
 				sl1      = l1; 
 				sl2      = l2; 
 			}
+			
 			segment--;
 
-			/* Now calculate the projection of upos onto the line spanned by
-			 * s2-s1 
-			 */
-			float3 uP = (path->second[s1] - path->second[s2]);
-			uP.y = 0.0f;
-			uP.Normalize();
-			float3 up = upos - path->second[s2];
-			/* proj_P(x) = (x dot u) * u */
-			float3 uproj = uP * (up.x * uP.x + up.z * uP.z);
-			/* calc pos on total path */
-			float uposonpath = length - uproj.Length2D();
-			/* A map sorts on key (low to high) by default */
-			M[uposonpath] = unit;
+			if (enableRegrouping) {
+				/* Now calculate the projection of upos onto the line spanned by
+				 * s2-s1 */
+				float3 uP = (path->second[s1] - path->second[s2]);
+				uP.y = 0.0f;
+				uP.Normalize();
+				float3 up = upos - path->second[s2];
+				/* proj_P(x) = (x dot u) * u */
+				float3 uproj = uP * (up.x * uP.x + up.z * uP.z);
+				/* calc pos on total path */
+				float uposonpath = length - uproj.Length2D();
+				/* A map sorts on key (low to high) by default */
+				M[uposonpath] = unit;
+			}
 		}
 
 		/* Regroup when they are getting to much apart from eachother */
 		if (M.size() > 1) {
-			float rearval = M.begin()->first;
-
-			std::map<float,CUnit*>::iterator i = --M.end();
-			float lateralDisp = i->first - rearval;
+			float lateralDisp = M.rbegin()->first - M.begin()->first;
 			if (lateralDisp > maxGroupLength) {
 				regrouping[group->key] = true;
-			}
-			else if (lateralDisp < maxGroupLength*0.7f) {
+			} else if (lateralDisp < maxGroupLength*0.6f) {
 				regrouping[group->key] = false;
 			}
 		} else {
 			regrouping[group->key] = false;
 		}
 
-		/* If not under fine control, advance on the path */
-		if (!group->isMicroing() && !regrouping[group->key])
-			group->move(path->second[segment+waypoint]);
-
-		/* If regrouping, finish that first */
-		else if (!group->isMicroing() && regrouping[group->key]) {
-			float3 gpos = group->pos();
-			group->move(gpos);
+		if (!group->isMicroing()) {
+			if (!regrouping[group->key]) {
+				/* If not under fine control, advance on the path */
+				group->move(path->second[segment + waypoint]);
+			} else {
+				/* If regrouping, finish that first */
+				float3 gpos = group->pos();
+				group->move(gpos);
+			}
 		}
 
 		/* See who will get their path updated by updatePaths() */
@@ -418,6 +420,9 @@ void CPathfinder::updatePaths() {
 }
 
 void CPathfinder::remove(ARegistrar &obj) {
+	if (groups.find(obj.key) == groups.end())
+		return;
+
 	CGroup *group = dynamic_cast<CGroup*>(&obj);
 	LOG_II("CPathfinder::remove " << (*group))
 	paths.erase(group->key);
