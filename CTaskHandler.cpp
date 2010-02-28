@@ -6,7 +6,6 @@
 #include <math.h>
 #include <limits>
 
-#include "CAI.h"
 #include "CUnitTable.h"
 #include "CWishList.h"
 #include "CPathfinder.h"
@@ -96,7 +95,7 @@ bool ATask::enemyScan(bool scout) {
 		if (scout) {
 			while (i != candidates.end()) {
 				float3 epos = ai->cbc->GetUnitPos(i->second);
-				threat = ai->threatmap->getThreat(epos, 400.0f);
+				threat = ai->threatmap->getThreat(epos, 300.0f);
 				if (threat <= 1.1f && group->strength >= ai->cbc->GetUnitPower(i->second))
 					break;
 				i++;
@@ -223,6 +222,29 @@ bool ATask::repairScan() {
 	return false;
 }
 
+int ATask::lifeFrames() const {
+	return ai->cb->GetCurrentFrame() - bornFrame;
+}
+
+float ATask::lifeTime() const {
+	return (float)(ai->cb->GetCurrentFrame() - bornFrame) / 30.0f;
+}
+
+void ATask::update() {
+	if (!active) return;
+
+	// validate task when moving to goal only...
+	if (validateInterval > 0 && isMoving) {
+		int lifetime = lifeFrames();
+		if (lifetime >= nextValidateFrame) {
+			if (!validate())
+				remove();
+			else
+				nextValidateFrame = lifetime + validateInterval;
+		}
+	}
+}
+
 std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 	std::stringstream ss;
 	switch(atask.t) {
@@ -230,7 +252,7 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 			const CTaskHandler::BuildTask *task = dynamic_cast<const CTaskHandler::BuildTask*>(&atask);
 			ss << "BuildTask(" << task->key << ") " << CTaskHandler::buildStr[task->bt];
 			ss << "(" << task->toBuild->def->humanName << ") ETA(" << task->eta << ")";
-			ss << " timer("<<task->timer<<") "<<(*(task->group));
+			ss << " timer("<<task->lifeFrames()<<") "<<(*(task->group));
 		} break;
 
 		case ASSIST: {
@@ -384,7 +406,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 	buildTask->pos       = pos;
 	buildTask->bt        = build;
 	buildTask->toBuild   = toBuild;
-	buildTask->eta       = int((ai->pathfinder->getETA(group, pos)+100)*1.3f);
+	buildTask->eta       = int((ai->pathfinder->getETA(group, pos) + 100) * 1.3f);
 	buildTask->reg(*this); // register task in a task handler
 	buildTask->addGroup(group);
 
@@ -400,12 +422,28 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 		buildTask->active = true;
 }
 
+bool CTaskHandler::BuildTask::validate() {
+	if (toBuild->cats&MEXTRACTOR) {
+		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], pos, 1.5f * ai->cb->GetExtractorRadius());
+		for (int i = 0; i < numUnits; i++) {
+			const int uid = ai->unitIDs[i];
+			const UnitDef *ud = ai->cb->GetUnitDef(uid);
+			if (UC(ud->id)&MEXTRACTOR) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 void CTaskHandler::BuildTask::update() {
 	PROFILE(tasks-build)
 	
-	float3 gpos = group->pos();
+	ATask::update();
 
-	timer += MULTIPLEXER;
+	if (!active) return;
+	
+	float3 gpos = group->pos();
 
 	if (group->isMicroing()) {
 		if (group->isIdle())
@@ -418,8 +456,8 @@ void CTaskHandler::BuildTask::update() {
 	if (isMoving) {
 		if (gpos.distance2D(pos) <= group->buildRange) {
 			group->build(pos, toBuild);
-			ai->pathfinder->remove(*group);
 			isMoving = false;
+			ai->pathfinder->remove(*group);
 		}
 		/* See if we can suck wreckages */
 		else if (!group->isMicroing()) {
@@ -432,7 +470,7 @@ void CTaskHandler::BuildTask::update() {
 	if (!isMoving) { 
 		if (ai->economy->hasFinishedBuilding(*group))
 			remove();
-		else if (timer > eta && !ai->economy->hasBegunBuilding(*group)) {
+		else if (lifeFrames() > eta && !ai->economy->hasBegunBuilding(*group)) {
 			LOG_WW("BuildTask::update assuming buildpos blocked for group "<<(*group))
 			remove();
 		}
@@ -476,6 +514,7 @@ void CTaskHandler::addFactoryTask(CGroup &group) {
 	factoryTask->isMoving = false; // assuming factory is not moving
 	factoryTask->reg(*this); // register task in a task handler
 	factoryTask->addGroup(group);
+	factoryTask->validateInterval = 0;
 
 	activeFactoryTasks[factoryTask->key] = factoryTask;
 	activeTasks[factoryTask->key] = factoryTask;
@@ -499,6 +538,11 @@ bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 
 void CTaskHandler::FactoryTask::update() {
 	PROFILE(tasks-factory)
+	
+	ATask::update();
+
+	if (!active) return;
+
 	std::map<int,CUnit*>::iterator i;
 	CUnit *factory;
 	
@@ -546,6 +590,7 @@ void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 	assistTask->pos        = toAssist.pos;
 	assistTask->addGroup(group);
 	assistTask->reg(*this); // register task in a task handler
+	assistTask->validateInterval = 0;
 
 	toAssist.assisters.push_back(assistTask);
 
@@ -581,6 +626,11 @@ void CTaskHandler::AssistTask::remove() {
 
 void CTaskHandler::AssistTask::update() {
 	PROFILE(tasks-assist)
+	
+	ATask::update();
+
+	if (!active) return;
+	
 	float3 grouppos = group->pos();
 	float3 dist = grouppos - pos;
 	float range = (assist->t == ATTACK) ? group->range : group->buildRange;
@@ -628,9 +678,22 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 		attackTask->active = true;
 }
 
+bool CTaskHandler::AttackTask::validate() {
+	CUnit *unit = group->firstUnit();
+	if (unit->type->cats&SCOUTER) {
+		if (ai->threatmap->getThreat(ai->cbc->GetUnitPos(target), 300.0f) > 1.1f)
+			return false;
+	}
+	return true;
+}
+
 void CTaskHandler::AttackTask::update() {
 	PROFILE(tasks-attack)
 	
+	ATask::update();
+
+	if (!active) return;
+
 	if (group->isMicroing() && group->isIdle())
 		group->micro(false);
 
@@ -691,6 +754,7 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 	mergeTask->groups = groups;
 	mergeTask->pos = float3(0.0f, 0.0f, 0.0f);
 	mergeTask->reg(*this); // register task in a task handler
+	mergeTask->validateInterval = 0;
 	
 	for (j = groups.begin(); j != groups.end(); j++) {
 		j->second->reg(*mergeTask);
@@ -707,7 +771,7 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 		}
 	}
 	
-	// TODO: actually merge range should increase from the smallest to 
+	// NOTE: actually merge range should increase from the smallest to 
 	// calculated here as long as more groups are joined
 	for(i = 1; units > i * i; i++);
 	i *= i;
@@ -762,6 +826,10 @@ void CTaskHandler::MergeTask::remove(ARegistrar &group) {
 void CTaskHandler::MergeTask::update() {
 	PROFILE(tasks-merge)
 	
+	ATask::update();
+
+	if (!active) return;
+
 	std::vector<CGroup*> mergable;
 
 	/* See which groups can be merged already */
@@ -770,7 +838,8 @@ void CTaskHandler::MergeTask::update() {
 		CGroup *group = g->second;
 		if (pos.distance2D(group->pos()) <= range) {
 			mergable.push_back(group);
-			//ai->pathfinder->remove(*group);
+			if (group->units.size() >= GROUP_CRITICAL_MASS)
+				ai->pathfinder->remove(*group);
 		}
 	}
 	
