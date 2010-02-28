@@ -27,6 +27,7 @@ float3 CIntel::getEnemyVector() {
 
 void CIntel::init() {
 	numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
+	// FIXME: when commanders are spawned with wrap gate assert raises
 	assert(numUnits > 0);
 	enemyvector = float3(0.0f, 0.0f, 0.0f);
 	for (int i = 0; i < numUnits; i++) {
