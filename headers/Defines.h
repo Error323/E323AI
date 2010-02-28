@@ -61,6 +61,9 @@
 /* Max number of idle scout groups to prevent building unnecessary scouts */
 #define MAX_IDLE_SCOUT_GROUPS 3
 
+/* Critical number of units per group where pathfinding stalls the game */
+#define GROUP_CRITICAL_MASS 14
+
 /* Number of multiplex iterations */
 #define MULTIPLEXER 10 
 
