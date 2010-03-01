@@ -56,25 +56,28 @@ void CMilitary::remove(ARegistrar &group) {
 void CMilitary::addUnit(CUnit &unit) {
 	LOG_II("CMilitary::addUnit " << unit)
 	
+	assert(unit.group == NULL);
+
 	unsigned int c = unit.type->cats;
 
 	if (c&MOBILE) {
+		CGroup *group;
 		if (c&SCOUTER) {
 			/* A scout is initially alone */
-			CGroup *group = requestGroup(SCOUT);
-			group->addUnit(unit);
+			group = requestGroup(SCOUT);
 		}
 		else {
 			/* If there is a new factory, or the current group is busy, request
-			 * a new group 
-			 */
-			if (assemblingGroups.find(unit.builtBy) == assemblingGroups.end() 
-			|| assemblingGroups[unit.builtBy]->busy) {
-				CGroup *group = requestGroup(ENGAGE);
+			   a new group  */
+			std::map<int,CGroup*>::iterator i = assemblingGroups.find(unit.builtBy);
+			if (i == assemblingGroups.end()	|| i->second->busy) {
+				group = requestGroup(ENGAGE);
 				assemblingGroups[unit.builtBy] = group;
+			} else {
+				group = i->second;
 			}
-			assemblingGroups[unit.builtBy]->addUnit(unit);
 		}
+		group->addUnit(unit);
 	}
 }
 
@@ -140,13 +143,13 @@ void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &tar
 		occupiedTargets.push_back(j->second->target);
 
 	std::vector<int> all;
-	all.insert(all.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
+	//all.insert(all.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
 	all.insert(all.end(), ai->intel->factories.begin(), ai->intel->factories.end());
 	all.insert(all.end(), ai->intel->attackers.begin(), ai->intel->attackers.end());
-	all.insert(all.end(), ai->intel->rest.begin(), ai->intel->rest.end());
-	all.insert(all.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
+	//all.insert(all.end(), ai->intel->rest.begin(), ai->intel->rest.end());
+	//all.insert(all.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
 	all.insert(all.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
-	all.insert(all.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
+	//all.insert(all.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
 
 	for (size_t i = 0; i < all.size(); i++) {
 		int target = all[i];
@@ -244,8 +247,23 @@ void CMilitary::update(int frame) {
 
 	/* Merge the scout groups that were not strong enough */
 	if (mergeScouts.size() >= 2) {
-		// TODO: do not merge groups which are too far from each other
-		ai->tasks->addMergeTask(mergeScouts);
+		std::map<int,CGroup*> merge;
+		for (std::map<int,CGroup*>::iterator base = mergeScouts.begin(); base != mergeScouts.end(); base++) {
+			for (std::map<int,CGroup*>::iterator compare = mergeScouts.begin(); compare != mergeScouts.end(); compare++) {
+				if (base->second->key != compare->second->key) {
+					if (base->second->pos().distance2D(compare->second->pos()) < 1000.0f) {
+						merge[base->first] = base->second;
+						merge[compare->first] = compare->second;
+					}
+				}
+				if (!merge.empty())
+					break;
+			}
+		}
+		
+		if (!merge.empty())
+			ai->tasks->addMergeTask(merge);
+
 		mergeScouts.clear();
 	}
 
@@ -312,7 +330,7 @@ void CMilitary::update(int frame) {
 		ai->tasks->addMergeTask(mergeGroups);
 		mergeGroups.clear();
 	}
-
+	
 	/* Always have enough scouts */
 	if (activeScoutGroups.size() < ai->cfgparser->getMinScouts())
 		// TODO: LAND cat should vary between LAND|SEA|AIR actually depending
