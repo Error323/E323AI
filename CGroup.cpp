@@ -14,7 +14,7 @@
 int CGroup::counter = 0;
 
 void CGroup::addUnit(CUnit &unit) {
-	LOG_II("CGroup::addUnit " << unit)
+	LOG_II("CGroup::addUnit " << unit << " to Group(" << key << ")")
 
 	if (unit.group) {
 		if (unit.group == this) {
@@ -56,15 +56,14 @@ void CGroup::remove() {
 	}
 	units.clear();
 	
-	//assert(records.empty());
+	assert(records.empty());
 
-	// TODO: we can remove the following line when we're sure CMilitary,
-	// CEconomy and CPathfinder removes their links from CGroup.records
+	// TODO: remove next line when prev assertion is never raised
 	records.clear();
 }
 
 void CGroup::remove(ARegistrar &unit) {
-	LOG_II("CGroup::remove unit(" << unit.key << ")")
+	LOG_II("CGroup::remove Unit(" << unit.key << ") from Group(" << key << ")")
 
 	assert(units.find(unit.key) != units.end());
 	
@@ -76,8 +75,7 @@ void CGroup::remove(ARegistrar &unit) {
 	/* If no more units remain in this group, remove the group */
 	if (units.empty()) {
 		remove();
-	}
-	else {
+	} else {
 		/* Recalculate properties of the current group */
 		recalcProperties(NULL, true);
 		std::map<int, CUnit*>::iterator i;
@@ -336,7 +334,7 @@ CUnit* CGroup::firstUnit() {
 
 std::ostream& operator<<(std::ostream &out, const CGroup &group) {
 	std::stringstream ss;
-	ss << "Group(" << group.key << "):" << " range(" << group.range << "), buildRange(" << group.buildRange << "), los(" << group.los << "), amount(" << group.units.size() << ") [";
+	ss << "Group(" << group.key << "):" << " range(" << group.range << "), buildRange(" << group.buildRange << "), los(" << group.los << "), speed(" << group.speed << "), strength(" << group.strength << "), amount(" << group.units.size() << ") [";
 	std::map<int, CUnit*>::const_iterator i = group.units.begin();
 	for (i = group.units.begin(); i != group.units.end(); i++) {
 		ss << (*i->second) << ", ";
