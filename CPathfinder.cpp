@@ -316,11 +316,23 @@ void CPathfinder::updateFollowers() {
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		CGroup *group = groups[path->first];
+		
+		if (group->isMicroing()) {
+			groupnr++;
+			continue;
+		}
+		
 		bool enableRegrouping = group->units.size() < GROUP_CRITICAL_MASS;
 		unsigned int segment = 1;
 		int waypoint = std::min<int>(MOVE_BUFFER, path->second.size() - segment - 1);
-		float maxGroupLength = 2.0f * group->maxLength();
 		std::map<float, CUnit*> M;
+		float maxGroupLength = group->maxLength();
+		
+		if (maxGroupLength < 200.0f)
+			maxGroupLength += 200.0f;
+		else
+			maxGroupLength *= 2.0f;
+	
 		/* Go through all the units in a group */
 		for (u = group->units.begin(); u != group->units.end(); u++) {
 			CUnit *unit = u->second;
@@ -377,16 +389,14 @@ void CPathfinder::updateFollowers() {
 		} else {
 			regrouping[group->key] = false;
 		}
-
-		if (!group->isMicroing()) {
-			if (!regrouping[group->key]) {
-				/* If not under fine control, advance on the path */
-				group->move(path->second[segment + waypoint]);
-			} else {
-				/* If regrouping, finish that first */
-				float3 gpos = group->pos();
-				group->move(gpos);
-			}
+		
+		if (!regrouping[group->key]) {
+			/* If not under fine control, advance on the path */
+			group->move(path->second[segment + waypoint]);
+		} else {
+			/* If regrouping, finish that first */
+			float3 gpos = group->pos();
+			group->move(gpos);
 		}
 
 		/* See who will get their path updated by updatePaths() */
@@ -400,7 +410,7 @@ void CPathfinder::updatePaths() {
 	update++;
 
 	/* nothing to update */
-	if (groups.find(repathGroup) == groups.end())
+	if (repathGroup < 0 || groups.find(repathGroup) == groups.end())
 		return;
 
 	/* group has no real task */
