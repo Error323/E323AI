@@ -325,7 +325,7 @@ float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
 		}
 		if (taken) continue; // already taken or scheduled by current AI
 
-		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], *i, 1.5f * radius);
+		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], *i, 1.1f * radius);
 		for (int u = 0; u < numUnits; u++) {
 			const int uid = ai->unitIDs[u];
 			const UnitDef *ud = ai->cb->GetUnitDef(uid);
