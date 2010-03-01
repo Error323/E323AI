@@ -17,8 +17,11 @@ void CUnit::remove(ARegistrar &reg) {
 		// remove from CUnitTable, CGroup
 		regobj->remove(reg);
 	}
+	
 	assert(records.empty());
-	//records.clear();
+	
+	// TODO: remove next line when prev assertion is never raised
+	records.clear();
 }
 
 float3 CUnit::pos() {
