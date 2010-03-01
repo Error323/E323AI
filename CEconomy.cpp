@@ -117,6 +117,8 @@ void CEconomy::remove(ARegistrar &group) {
 	std::list<ARegistrar*>::iterator i;
 	for (i = records.begin(); i != records.end(); i++)
 		(*i)->remove(group);
+
+	group.unreg(*this);
 }
 
 void CEconomy::addUnitOnCreated(CUnit &unit) {
