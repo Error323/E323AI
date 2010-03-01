@@ -197,7 +197,7 @@ bool ATask::repairScan() {
 	for (int i = 0; i < numUnits; i++) {
 		const int uid = ai->unitIDs[i];
 		
-		if (ai->cb->UnitBeingBuilt(uid))
+		if (ai->cb->UnitBeingBuilt(uid) || group->firstUnit()->key == uid)
 			continue;
 		
 		const float healthDamage = ai->cb->GetUnitMaxHealth(uid) - ai->cb->GetUnitHealth(uid);
@@ -424,7 +424,7 @@ void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &grou
 
 bool CTaskHandler::BuildTask::validate() {
 	if (toBuild->cats&MEXTRACTOR) {
-		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], pos, 1.5f * ai->cb->GetExtractorRadius());
+		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], pos, 1.1f * ai->cb->GetExtractorRadius());
 		for (int i = 0; i < numUnits; i++) {
 			const int uid = ai->unitIDs[i];
 			const UnitDef *ud = ai->cb->GetUnitDef(uid);
@@ -679,11 +679,19 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 }
 
 bool CTaskHandler::AttackTask::validate() {
+	if (pos.distance2D(group->pos()) > 600.0f)
+		return true; // too far to panic
+
 	CUnit *unit = group->firstUnit();
 	if (unit->type->cats&SCOUTER) {
 		if (ai->threatmap->getThreat(ai->cbc->GetUnitPos(target), 300.0f) > 1.1f)
 			return false;
 	}
+	
+	if (ai->cbc->IsUnitCloaked(target)) {
+		return false;
+	}
+
 	return true;
 }
 

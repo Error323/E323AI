@@ -148,8 +148,6 @@ class CTaskHandler: public ARegistrar {
 
 			/* overload */
 			void remove(ARegistrar& group);
-			
-			//void reset(ATask &task);
 		};
 
 		struct AttackTask: public ATask {
