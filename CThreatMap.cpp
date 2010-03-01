@@ -86,6 +86,10 @@ void CThreatMap::update(int frame) {
 	for (int i = 0; i < numUnits; i++) {
 		const int uid = units[i];
 		const UnitDef  *ud = ai->cbc->GetUnitDef(uid);
+		
+		if (ud == NULL)
+			continue;
+
 		const UnitType *ut = UT(ud->id);
 		
 		if (!(ut->cats&ATTACKER) || ai->cbc->IsUnitParalyzed(uid) || ai->cbc->UnitBeingBuilt(uid))
