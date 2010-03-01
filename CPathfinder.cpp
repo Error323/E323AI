@@ -309,7 +309,7 @@ float CPathfinder::getETA(CGroup &group, float3 &pos, float radius) {
 }
 
 void CPathfinder::updateFollowers() {
-	std::map<int, std::vector<float3>>::iterator path;
+	std::map<int, std::vector<float3> >::iterator path;
 	std::map<int, CUnit*>::iterator u;
 	unsigned groupnr = 0;
 	repathGroup = -1;
