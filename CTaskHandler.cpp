@@ -78,10 +78,12 @@ bool ATask::enemyScan(bool scout) {
 	std::multimap<float, int> candidates;
 	float3 gpos = group->pos();
 	
-	int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], gpos, scout ? 3.0f * group->range: 1.1f * group->range, MAX_ENEMIES);
+	int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], gpos, scout ? 3.0f * group->range: 2.0f * group->range, MAX_ENEMIES);
 	for (int i = 0; i < numEnemies; i++) {
 		const int euid = ai->unitIDs[i];
 		const UnitDef *ud = ai->cbc->GetUnitDef(euid);
+		if (ud == NULL)
+			continue;
 		const unsigned int ecats = UC(ud->id);
 		float3 epos = ai->cbc->GetUnitPos(euid);
 		float dist = gpos.distance2D(epos);
@@ -92,25 +94,30 @@ bool ATask::enemyScan(bool scout) {
 	if (!candidates.empty()) {
 		float threat = 0.0f;
 		std::multimap<float,int>::iterator i = candidates.begin();
-		if (scout) {
-			while (i != candidates.end()) {
-				float3 epos = ai->cbc->GetUnitPos(i->second);
-				threat = ai->threatmap->getThreat(epos, 300.0f);
-				if (threat <= 1.1f && group->strength >= ai->cbc->GetUnitPower(i->second))
+		while (i != candidates.end()) {
+			const UnitDef *ud = ai->cbc->GetUnitDef(i->second);
+			const unsigned int ecats = UC(ud->id);
+			float3 epos = ai->cbc->GetUnitPos(i->second);
+			threat = ai->threatmap->getThreat(epos, scout ? 300.0f: 0.0f);
+			if (scout) {
+				// scouts like safe places and very hate enemy scouts
+				if (threat <= 1.1f || (ecats&SCOUTER && group->strength > ai->cbc->GetUnitPower(i->second)))
 					break;
-				i++;
+			} else {
+				// attack groups won't chase enemy souts, they like real tough job
+				if (group->strength >= threat && !(ecats&SCOUTER))
+					break;
 			}
-			if (i != candidates.end()) {
-				group->attack(i->second);
-				group->micro(true);
-				LOG_II("ATask::enemyScan scout " << (*group) << " is microing enemy target Unit(" << i->second << ") with threat =" << threat)
-				return true;
-			}
+			i++;
 		}
-		else {
+		
+		if (i != candidates.end()) {
 			group->attack(i->second);
 			group->micro(true);
-			LOG_II("ATask::enemyScan group " << (*group) << " is microing enemy targets")
+			if (scout)
+				LOG_II("ATask::enemyScan scout " << (*group) << " is microing enemy target Unit(" << i->second << ") with threat =" << threat)
+			else
+				LOG_II("ATask::enemyScan group " << (*group) << " is microing enemy targets")
 			return true;
 		}
 	}
@@ -527,7 +534,7 @@ void CTaskHandler::addFactoryTask(CGroup &group) {
 
 bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 	if (assisters.size() >= std::min(ai->cfgparser->getState() * 2, FACTORY_ASSISTERS) || 
-		!group->units.begin()->second->def->canBeAssisted) {
+		!group->firstUnit()->def->canBeAssisted) {
 		return false;
 	}
 	else {
@@ -585,6 +592,7 @@ void CTaskHandler::FactoryTask::setWait(bool on) {
 void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
 	if (ai->pathfinder->getClosestNode(toAssist.pos) == NULL)
 		return;
+	
 	AssistTask *assistTask = new AssistTask(ai);
 	assistTask->assist     = &toAssist;
 	assistTask->pos        = toAssist.pos;
@@ -679,12 +687,24 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 }
 
 bool CTaskHandler::AttackTask::validate() {
-	if (pos.distance2D(group->pos()) > 600.0f)
+	CUnit *unit = group->firstUnit();
+	bool scoutGroup = unit->type->cats&SCOUTER;
+	float targetDistance = pos.distance2D(group->pos());
+
+	if (!scoutGroup && lifeTime() > 20.0f) {
+		const UnitDef *eud = ai->cbc->GetUnitDef(target);
+		if (eud) {
+			const unsigned int ecats = UC(eud->id);
+			if (ecats&SCOUTER)
+				return false; // do not chase scouts too long
+		}
+	}
+	
+	if (targetDistance > 600.0f)
 		return true; // too far to panic
 
-	CUnit *unit = group->firstUnit();
-	if (unit->type->cats&SCOUTER) {
-		if (ai->threatmap->getThreat(ai->cbc->GetUnitPos(target), 300.0f) > 1.1f)
+	if (scoutGroup) {
+		if (ai->threatmap->getThreat(ai->cbc->GetUnitPos(target), 300.0f) > group->strength)
 			return false;
 	}
 	
