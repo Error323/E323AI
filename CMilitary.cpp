@@ -28,7 +28,7 @@ CMilitary::~CMilitary()
 void CMilitary::remove(ARegistrar &group) {
 	LOG_II("CMilitary::remove group(" << group.key << ")")
 	
-	// NOTE: we do not destory groups to prevent unnecessary memory allocations
+	// NOTE: we do not destroy group to prevent unnecessary memory allocations
 	free.push(lookup[group.key]); // remember index of free group
 	
 	lookup.erase(group.key);
@@ -118,14 +118,29 @@ int CMilitary::selectTarget(float3 &ourPos, float radius, bool scout, std::vecto
 	int target = -1;
 	float estimate = std::numeric_limits<float>::max();
 	float factor = scout ? 10000 : 1;
+	float unitDamageK;
 
 	/* First sort the targets on distance */
 	for (unsigned i = 0; i < targets.size(); i++) {
 		int tempTarget = targets[i];
+		const UnitDef *ud = ai->cbc->GetUnitDef(tempTarget);
 
+		if (ud == NULL || ai->cbc->IsUnitCloaked(tempTarget))
+			continue;
+
+		float unitMaxHealth = ai->cbc->GetUnitMaxHealth(tempTarget);
+		if (unitMaxHealth > EPS)
+			unitDamageK = (unitMaxHealth - ai->cbc->GetUnitHealth(tempTarget)) / unitMaxHealth;
+		else
+			unitDamageK = 0.0f;
+		
+		const unsigned int ecats = UC(ud->id);
 		float3 epos = ai->cbc->GetUnitPos(tempTarget);
-		float dist = (epos - ourPos).Length2D();
-		dist += (factor * ai->threatmap->getThreat(epos, radius));
+		float dist = ourPos.distance2D(epos);
+		dist += (factor * ai->threatmap->getThreat(epos, radius)) - unitDamageK * 150.0f;
+		if (!scout) {
+			if (ecats&SCOUTER) dist += 10000.0f;
+		}
 		
 		if(dist < estimate) {
 			estimate = dist;
@@ -136,49 +151,42 @@ int CMilitary::selectTarget(float3 &ourPos, float radius, bool scout, std::vecto
 	return target;
 }
 
-void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &targets2) {
-	occupiedTargets.clear();
+void CMilitary::prepareTargets(std::vector<int> &all, std::vector<int> &harass) {
 	std::map<int, CTaskHandler::AttackTask*>::iterator j;
+	std::vector<int> targets;
+
+	occupiedTargets.clear();
 	for (j = ai->tasks->activeAttackTasks.begin(); j != ai->tasks->activeAttackTasks.end(); j++)
 		occupiedTargets.push_back(j->second->target);
-
-	std::vector<int> all;
-	//all.insert(all.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
-	all.insert(all.end(), ai->intel->factories.begin(), ai->intel->factories.end());
-	all.insert(all.end(), ai->intel->attackers.begin(), ai->intel->attackers.end());
-	//all.insert(all.end(), ai->intel->rest.begin(), ai->intel->rest.end());
-	//all.insert(all.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
-	all.insert(all.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
-	//all.insert(all.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
-
-	for (size_t i = 0; i < all.size(); i++) {
-		int target = all[i];
-		bool isOccupied = false;
-		for (size_t j = 0; j < occupiedTargets.size(); j++) {
-			if (target == occupiedTargets[j]) {
-				isOccupied = true;
-				break;
-			}
-		}
-
-		if (isOccupied) 
-			continue;
-
-		targets1.push_back(target);
+	
+	targets.insert(targets.end(), ai->intel->factories.begin(), ai->intel->factories.end());
+	targets.insert(targets.end(), ai->intel->attackers.begin(), ai->intel->attackers.end());
+	targets.insert(targets.end(), ai->intel->rest.begin(), ai->intel->rest.end());
+	targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
+	if (targets.empty()) {
+		targets.insert(targets.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
+		targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
+		targets.insert(targets.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
 	}
 
-	std::vector<int> harras;
-	// TODO: put radars on the fist place when appropriate tag will be 
-	// introduced
-	harras.insert(harras.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
-	harras.insert(harras.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
-	harras.insert(harras.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
-	harras.insert(harras.end(), ai->intel->factories.begin(), ai->intel->factories.end());
-	harras.insert(harras.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
+	filterOccupiedTargets(targets, all);
+	targets.clear();
+
+	targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
+	targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
+	targets.insert(targets.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
+	targets.insert(targets.end(), ai->intel->factories.begin(), ai->intel->factories.end());
+	targets.insert(targets.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
 	
-	for (size_t i = 0; i < harras.size(); i++) {
-		int target = harras[i];
+	filterOccupiedTargets(targets, harass);
+	targets.clear();
+}
+
+void CMilitary::filterOccupiedTargets(std::vector<int> &source, std::vector<int> &dest) {
+	for (size_t i = 0; i < source.size(); i++) {
 		bool isOccupied = false;
+		int target = source[i];
+		
 		for (size_t j = 0; j < occupiedTargets.size(); j++) {
 			if (target == occupiedTargets[j]) {
 				isOccupied = true;
@@ -186,10 +194,8 @@ void CMilitary::prepareTargets(std::vector<int> &targets1, std::vector<int> &tar
 			}
 		}
 
-		if (isOccupied) 
-			continue;
-
-		targets2.push_back(target);
+		if (!isOccupied) 
+			dest.push_back(target);
 	}
 }
 
@@ -241,8 +247,10 @@ void CMilitary::update(int frame) {
 		}
 
 		// prevent merging of more than 2 groups
+		/*
 		if(mergeScouts.size() >= 2)
 			break;
+		*/
 	}
 
 	/* Merge the scout groups that were not strong enough */

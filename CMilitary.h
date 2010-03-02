@@ -37,7 +37,7 @@ class CMilitary: public ARegistrar {
 	private:
 		AIClasses *ai;
 
-		void prepareTargets(std::vector<int> &all, std::vector<int> &harras);
+		void prepareTargets(std::vector<int> &all, std::vector<int> &harass);
 
 		/* Current group per factory <factory, CGroup*> */
 		std::map<int, CGroup*> assemblingGroups;
@@ -65,6 +65,8 @@ class CMilitary: public ARegistrar {
 
 		/* Select a target */
 		int selectTarget(float3 &ourPos, float radius, bool scout, std::vector<int> &targets);
+
+		void filterOccupiedTargets(std::vector<int> &source, std::vector<int> &dest);
 
 		/* Request a unit for building using a roulette wheel system */
 		unsigned requestUnit();
