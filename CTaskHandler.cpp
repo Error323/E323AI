@@ -639,20 +639,25 @@ void CTaskHandler::AssistTask::update() {
 
 	if (!active) return;
 	
-	float3 grouppos = group->pos();
-	float3 dist = grouppos - pos;
-	float range = (assist->t == ATTACK) ? group->range : group->buildRange;
 	if (assist->t == BUILD && group->isMicroing() && group->isIdle())
 		group->micro(false);
 
-	if (isMoving && dist.Length2D() <= range) {
-		group->assist(*assist);
-		ai->pathfinder->remove(*group);
-		isMoving = false;
-	}
-	/* See if we can suck wreckages */
-	else if (isMoving && assist->t == BUILD && !group->isMicroing()) {
-		resourceScan();
+	if (isMoving) {
+		pos = assist->pos; // because task target could be mobile
+
+		float3 grouppos = group->pos();
+		float3 dist = grouppos - pos;
+		float range = (assist->t == ATTACK) ? group->range : group->buildRange;
+
+		if (dist.Length2D() <= range) {
+			group->assist(*assist);
+			ai->pathfinder->remove(*group);
+			isMoving = false;
+		} else if(assist->t == BUILD && !group->isMicroing()) {
+			/* See if we can suck wreckages */
+			resourceScan();
+		}
+
 	}
 }
 
