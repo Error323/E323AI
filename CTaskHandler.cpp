@@ -704,7 +704,7 @@ bool CTaskHandler::AttackTask::validate() {
 		return true; // too far to panic
 
 	if (scoutGroup) {
-		if (ai->threatmap->getThreat(ai->cbc->GetUnitPos(target), 300.0f) > group->strength)
+		if (ai->threatmap->getThreat(pos, 300.0f) > group->strength)
 			return false;
 	}
 	
