@@ -216,18 +216,38 @@ void CMilitary::update(int frame) {
 		if (group->busy || !ai->unittable->canPerformTask(*group->firstUnit()))
 			continue;
 
+		float3 pos = group->pos();
+
 		// NOTE: if once target is not found it will never appear during
 		// current loop execution
 		if (target >= 0) {
-			float3 pos = group->pos();
 			target = selectTarget(pos, 300.0f, true, harras);
 			/* There are no harras targets available */
 			if (target < 0)
 				target = selectTarget(pos, 300.0f, true, all);
 		}
 
-		/* Nothing available */
+		/* Nothing available,  */
 		if (target < 0) {
+			// assist in destroying nearby scout targets...
+			if (!ai->tasks->activeAttackTasks.empty()) {
+				float minDist = std::numeric_limits<float>::max();
+				ATask* task = NULL;
+				std::map<int, CTaskHandler::AttackTask*>::iterator i;
+				for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
+					float targetDist = i->second->pos.distance2D(pos);
+					if (targetDist < minDist) {
+						task = i->second;
+						minDist = targetDist;
+					}
+				}
+				if (task && minDist < 600.0f) {
+					ai->tasks->addAssistTask(*task, *group);
+					mergeGroups.erase(group->key);
+					break;
+				}
+			}
+
 			if (group->units.size() < MAX_SCOUTS_IN_GROUP)
 				mergeScouts[group->key] = group;
 		}
@@ -298,9 +318,7 @@ void CMilitary::update(int frame) {
 
 		/* There are no targets available, assist an attack */
 		if (target == -1) {
-			// FIXME: there is a chance that group with one unit only
-			// will go assisting attack task, which is LOL
-			if (!ai->tasks->activeAttackTasks.empty()) {
+			if (!ai->tasks->activeAttackTasks.empty() && group->units.size() > 3) {
 				float minStrength = std::numeric_limits<float>::max();
 				ATask* task = NULL;
 				std::map<int, CTaskHandler::AttackTask*>::iterator i;
