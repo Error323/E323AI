@@ -133,7 +133,7 @@ void CE323AI::UnitFinished(int uid) {
 		ai->unittable->builders[unit->builtBy] = true;
 
 	/* Eco unit */
-	if (!(c&ATTACKER) || c&COMMANDER)
+	if (!(c&ATTACKER) || c&COMMANDER || c&MEXTRACTOR)
 		ai->economy->addUnitOnFinished(*unit);
 	/* Military unit */
 	else
