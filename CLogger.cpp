@@ -20,7 +20,6 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 
 	if (lt & CLogger::LOG_FILE) {
 		std::string mapname = std::string(ai->cb->GetMapName());
-		mapname.resize(mapname.size() - 4);
 
 		time_t now1;
 		time(&now1);
