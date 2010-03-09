@@ -40,6 +40,13 @@ void CUnit::reset(int uid, int bid) {
 	this->group = NULL;
 }
 
+bool CUnit::isEconomy() {
+	static const unsigned int economic = 
+		FACTORY|BUILDER|ASSISTER|RESURRECTOR|COMMANDER|MEXTRACTOR|MMAKER|EMAKER|
+		MSTORAGE|ESTORAGE|WIND|TIDAL;
+	return type->cats&economic;
+}
+
 bool CUnit::reclaim(float3 pos, float radius) {
 	Command c = createPosCommand(CMD_RECLAIM, pos, radius);
 	if (c.id != 0) {

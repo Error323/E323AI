@@ -128,12 +128,11 @@ void CE323AI::UnitFinished(int uid) {
 
 	LOG_II("CE323AI::UnitFinished " << (*unit))
 
-	unsigned int c = unit->type->cats;
 	if (unit->builtBy >= 0)
 		ai->unittable->builders[unit->builtBy] = true;
 
 	/* Eco unit */
-	if (!(c&ATTACKER) || c&COMMANDER || c&MEXTRACTOR)
+	if (unit->isEconomy())
 		ai->economy->addUnitOnFinished(*unit);
 	/* Military unit */
 	else

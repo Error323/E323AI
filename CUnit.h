@@ -6,6 +6,7 @@
 
 #include "ARegistrar.h"
 #include "headers/HEngine.h"
+#include "headers/Defines.h"
 
 class AIClasses;
 class UnitType;
@@ -42,6 +43,9 @@ class CUnit: public ARegistrar {
 		void reset(int uid, int bid);
 
 		int queueSize();
+
+		/* Determine if this unit belongs to economic tracker */
+		bool isEconomy();
 
 		/* Attack a unit */
 		bool attack(int target, bool enqueue = false);
