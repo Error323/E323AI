@@ -135,8 +135,10 @@ void CE323AI::UnitFinished(int uid) {
 	if (unit->isEconomy())
 		ai->economy->addUnitOnFinished(*unit);
 	/* Military unit */
-	else
+	else if(unit->type->cats&ATTACKER)
 		ai->military->addUnit(*unit);
+	else
+		LOG_WW("CE323AI::UnitFinished invalid unit " << *unit)
 }
 
 /* Called on a destroyed unit */
@@ -181,9 +183,9 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 	if (!unit->group)
 		return; // unit is not under AI control
 
+	/*
 	const unsigned int cats = unit->type->cats;
 	if (cats&MOBILE) {
-		/*
 		bool attack = false;
 		if (cats&(ATTACKER|BUILDER)) {
 			const UnitDef *eud = ai->cbc->GetUnitDef(attacker);
@@ -210,8 +212,8 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 		} else {
 			// TODO: run away or continue its task depending on group style
 		}
-		*/
 	}
+	*/
 }
 
 /* Called on move fail e.g. can't reach point */
