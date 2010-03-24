@@ -16,6 +16,7 @@
 #include "CGroup.h"
 #include "CScopedTimer.h"
 #include "CRNG.h"
+#include "Util.hpp"
 
 void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai                = new AIClasses();
@@ -66,7 +67,8 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 }
 
 void CE323AI::ReleaseAI() {
-	LOG_II(CScopedTimer::profile())
+    std::string filename(util::GetAbsFileName(ai->cb, LOG_FOLDER + std::string("timings.dat")));
+    CScopedTimer::toFile(filename);
 
 	delete ai->defensematrix;
 	delete ai->military;
@@ -386,7 +388,6 @@ void CE323AI::Update() {
 	/* Rotate through the different update events to distribute computations */
 	switch(aiframe % MULTIPLEXER) {
 		case 0: { /* update incomes */
-			PROFILE(eco-incomes)
 			ai->economy->updateIncomes();
 		}
 		break;
@@ -427,7 +428,7 @@ void CE323AI::Update() {
 		break;
 
 		case 7: { /* update economy */
-			PROFILE(eco-update)
+			PROFILE(economy)
 			ai->economy->update(localFrame);
 		}
 		break;
@@ -438,7 +439,6 @@ void CE323AI::Update() {
 		}
 
 		case 9: { /* update unit table */
-			PROFILE(unittable)
 			ai->unittable->update();
 		}
 		break;

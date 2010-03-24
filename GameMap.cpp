@@ -33,8 +33,6 @@ GameMap::GameMap(AIClasses *ai) {
 }
 
 void GameMap::CalcMetalSpots() {
-	PROFILE(metalspots)
-
 	const int METAL2REAL = 32.0f;
 	int X = int(ai->cb->GetMapWidth() / 4);
 	int Z = int(ai->cb->GetMapHeight() / 4);

@@ -2,12 +2,17 @@
 #define SCOPEDTIMER_HDR
 
 #include <string>
-#include <sstream>
-#include <iomanip>
 #include <map>
-#include <limits>
+#include <vector>
+#include <fstream>
+#include <iostream>
+#include <algorithm>
+#include <math.h>
 
 #define USE_SDL_TIMER
+
+// Time interval in minutes
+#define TIME_INTERVAL 1800
 
 #ifdef USE_SDL_TIMER
 	#include <SDL_timer.h>
@@ -18,7 +23,7 @@
 #define MAX_STR_LENGTH 30
 
 #ifdef DEBUG
-	#define PROFILE(x) CScopedTimer t(std::string((#x)));
+	#define PROFILE(x) CScopedTimer t(std::string(#x), ai->cb->GetCurrentFrame());
 #else
 	#define PROFILE(x)
 #endif
@@ -26,13 +31,20 @@
 
 class CScopedTimer {
 	public:
-		CScopedTimer(const std::string& s): task(s) {
-			if (times.find(task) == times.end()) {
-				times[task] = 0;
-				counters[task] = 0;
-				maxtimes[task] = 0;
-				mintimes[task] = std::numeric_limits<unsigned>::max();
+		CScopedTimer(const std::string& s, unsigned int frames): task(s) {
+			if (std::find(tasks.begin(), tasks.end(), task) == tasks.end())
+				tasks.push_back(s);
+
+			unsigned int time = frames / counter;
+			if (time > TIME_INTERVAL)
+				counter += ceil(time/TIME_INTERVAL);
+
+			if (timings.find(counter) == timings.end()) {
+				std::map<std::string, unsigned int> M;
+				M[task] = 0;
+				timings[counter] = M;
 			}
+
 #ifdef USE_SDL_TIMER
 			t1 = SDL_GetTicks();
 #else
@@ -47,55 +59,50 @@ class CScopedTimer {
 			t2 = clock();
 #endif
 			t3 = t2 - t1;
-			times[task] += t3;
-			if (t3 > 0) // we are not interested in 0 timings
-				mintimes[task] = std::min<unsigned>(mintimes[task], t3);
-			maxtimes[task] = std::max<unsigned>(maxtimes[task], t3);
-			sum += t3;
-			counters[task]++;
+			timings[counter][task] += t3;
 		}
 
-		static std::string profile() {
-			std::stringstream ss;
-			ss << "[CScopedTimer] milliseconds\n";
-			for (int i = 0; i < MAX_STR_LENGTH; i++)
-				ss << " ";
-			ss << "PCT\tAVG\tMIN\tMAX\tTOT\n";
+		static void toFile(const std::string& filename) {
+			std::ofstream ofs;
+			ofs.open(filename.c_str(), std::ios::trunc);
+			if (ofs.good()) {
+				// labels
+				ofs << "time";
+				for (unsigned int i = 0; i < tasks.size(); i++)
+					ofs << "\t" << tasks[i];
+				ofs << "\n";
 
-			std::map<std::string, unsigned>::iterator i;
-			for (i = times.begin(); i != times.end(); i++) {
-				int x = i->second / float(sum) * 10000;
-				float pct = x / 100.0f;
-				x = i->second / float(counters[i->first]) * 100;
-				float avg = x / 100.0f;
-				ss << "  " << i->first;
-				for (unsigned j = i->first.size()+2; j < MAX_STR_LENGTH; j++)
-					ss << " ";
-#ifndef USE_SDL_TIMER
-				if(mintimes[i->first] == std::numeric_limits<unsigned>::max())
-					mintimes[i->first] = 0;
-				mintimes[i->first] = unsigned(((float)mintimes[i->first] / CLOCKS_PER_SEC) * 1000.0f);
-				maxtimes[i->first] = unsigned(((float)maxtimes[i->first] / CLOCKS_PER_SEC) * 1000.0f);
-				i->second = unsigned(((float)i->second / CLOCKS_PER_SEC) * 1000.0f);
-#endif
-				ss << pct << "%\t" << avg << "\t" << mintimes[i->first] << "\t" << maxtimes[i->first] << "\t" << i->second << "\t" << "\n";
+				// data for gnuplot
+				std::map<unsigned int, std::map<std::string, unsigned int> >::iterator i;
+				for (i = timings.begin(); i != timings.end(); i++) {
+					ofs << i->first;
+					for (unsigned int j = 0; j < tasks.size(); j++) {
+						ofs << "\t";
+						if (i->second.find(tasks[j]) == i->second.end())
+							ofs << 0;
+						else
+							ofs << i->second[tasks[j]];
+					}
+					ofs << "\n";
+				}
+
+				ofs.flush();
+				ofs.close();
+				std::cout << "Writing timings to: " << filename << " succeeded!\n";
 			}
-			ss << "\n";
-			return ss.str();
+			else
+				std::cout << "Writing timings to: " << filename << " failed!\n";
 		}
 
 		
 
 	private:
 		const std::string task;
-		unsigned t1;
-		unsigned t2;
-		unsigned t3;
+		unsigned t1, t2, t3;
 
-		static unsigned sum; // total time for all timers
-		static std::map<std::string, unsigned> times;
-		static std::map<std::string, unsigned> counters;
-		static std::map<std::string, unsigned> mintimes,maxtimes;
+		static std::map<unsigned int, std::map<std::string, unsigned int> > timings;
+		static std::vector<std::string> tasks;
+		static unsigned int counter;
 };
 
 #endif

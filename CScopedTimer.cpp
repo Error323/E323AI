@@ -1,7 +1,5 @@
 #include "CScopedTimer.h"
 
-std::map<std::string, unsigned> CScopedTimer::times;
-std::map<std::string, unsigned> CScopedTimer::counters;
-std::map<std::string, unsigned> CScopedTimer::mintimes;
-std::map<std::string, unsigned> CScopedTimer::maxtimes;
-unsigned CScopedTimer::sum = 0;
+std::map<unsigned int, std::map<std::string, unsigned int> > CScopedTimer::timings;
+std::vector<std::string> CScopedTimer::tasks;
+unsigned int CScopedTimer::counter = 1;

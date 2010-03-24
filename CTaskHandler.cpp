@@ -73,7 +73,7 @@ void ATask::addGroup(CGroup &g) {
 }
 
 bool ATask::enemyScan(bool scout) {
-	PROFILE(tasks-enemyscan)
+	//PROFILE(tasks-enemyscan)
 	
 	std::multimap<float, int> candidates;
 	float3 gpos = group->pos();
@@ -126,7 +126,7 @@ bool ATask::enemyScan(bool scout) {
 }
 
 bool ATask::resourceScan() {
-	PROFILE(tasks-resourcescan)
+	//PROFILE(tasks-resourcescan)
 	
 	bool isFeature = true;
 	int bestFeature = -1;
@@ -190,7 +190,7 @@ bool ATask::resourceScan() {
 }
 
 bool ATask::repairScan() {
-	PROFILE(tasks-repairscan)
+	//PROFILE(tasks-repairscan)
 	
 	if (ai->economy->mstall || ai->economy->estall)
 		return false;
@@ -444,7 +444,7 @@ bool CTaskHandler::BuildTask::validate() {
 }
 
 void CTaskHandler::BuildTask::update() {
-	PROFILE(tasks-build)
+	//PROFILE(tasks-build)
 	
 	ATask::update();
 
@@ -544,7 +544,7 @@ bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 }
 
 void CTaskHandler::FactoryTask::update() {
-	PROFILE(tasks-factory)
+	//PROFILE(tasks-factory)
 	
 	ATask::update();
 
@@ -633,7 +633,7 @@ void CTaskHandler::AssistTask::remove() {
 }
 
 void CTaskHandler::AssistTask::update() {
-	PROFILE(tasks-assist)
+	//PROFILE(tasks-assist)
 	
 	ATask::update();
 
@@ -721,7 +721,7 @@ bool CTaskHandler::AttackTask::validate() {
 }
 
 void CTaskHandler::AttackTask::update() {
-	PROFILE(tasks-attack)
+	//PROFILE(tasks-attack)
 	
 	ATask::update();
 
@@ -857,7 +857,7 @@ void CTaskHandler::MergeTask::remove(ARegistrar &group) {
 }
 		
 void CTaskHandler::MergeTask::update() {
-	PROFILE(tasks-merge)
+	//PROFILE(tasks-merge)
 	
 	ATask::update();
 

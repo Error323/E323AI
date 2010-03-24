@@ -267,8 +267,6 @@ void CPathfinder::calcGraph() {
 }
 
 void CPathfinder::resetMap(ThreatMapType tm_type) {
-	PROFILE(pf-grouppath-resetmap)
-
 	int idSlopeMap = 0;
 	float *map = ai->threatmap->getMap(tm_type);
 
@@ -520,7 +518,6 @@ void CPathfinder::drawNode(Node *n) {
 }
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup &group, float radius) {
-	PROFILE(pf-grouppath-getpath)
 	start = getClosestNode(s);
 	goal = getClosestNode(g);
 
