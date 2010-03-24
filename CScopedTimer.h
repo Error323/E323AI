@@ -11,7 +11,7 @@
 
 #define USE_SDL_TIMER
 
-// Time interval in minutes
+// Time interval in logic frames
 #define TIME_INTERVAL 1800
 
 #ifdef USE_SDL_TIMER
@@ -35,9 +35,9 @@ class CScopedTimer {
 			if (std::find(tasks.begin(), tasks.end(), task) == tasks.end())
 				tasks.push_back(s);
 
-			unsigned int time = frames / counter;
+			float time = frames / float(counter);
 			if (time > TIME_INTERVAL)
-				counter += ceil(time/TIME_INTERVAL);
+				counter += int(ceilf(time/TIME_INTERVAL));
 
 			if (timings.find(counter) == timings.end()) {
 				std::map<std::string, unsigned int> M;
