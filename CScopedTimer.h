@@ -37,7 +37,7 @@ class CScopedTimer {
 
 			float time = frames / float(counter);
 			if (time > TIME_INTERVAL)
-				counter += int(ceilf(time/TIME_INTERVAL));
+				counter += int(floorf(time/TIME_INTERVAL));
 
 			if (timings.find(counter) == timings.end()) {
 				std::map<std::string, unsigned int> M;
