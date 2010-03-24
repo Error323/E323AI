@@ -575,7 +575,7 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	Node *n = dynamic_cast<Node*>(an);
-	for (size_t u = 0; u < n->neighbours[activeMap].size(); u++)
+	for (size_t u = 0, N = n->neighbours[activeMap].size(); u < N; u++)
 		succ.push(CPathfinder::graph[n->neighbours[activeMap][u]]);
 }
 
