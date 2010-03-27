@@ -434,7 +434,7 @@ void CE323AI::Update() {
 		break;
 
 		case 8: { /* update taskhandler */
-			PROFILE(tasks)
+			//PROFILE(tasks)
 			ai->tasks->update();
 		}
 

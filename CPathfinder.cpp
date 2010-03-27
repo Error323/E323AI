@@ -267,6 +267,7 @@ void CPathfinder::calcGraph() {
 }
 
 void CPathfinder::resetMap(ThreatMapType tm_type) {
+	//PROFILE(resetmap)
 	int idSlopeMap = 0;
 	float *map = ai->threatmap->getMap(tm_type);
 
@@ -518,6 +519,7 @@ void CPathfinder::drawNode(Node *n) {
 }
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup &group, float radius) {
+	//PROFILE(A*)
 	start = getClosestNode(s);
 	goal = getClosestNode(g);
 
@@ -563,17 +565,19 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGrou
 }
 
 float CPathfinder::heuristic(ANode *an1, ANode *an2) {
+	// tie breaker, gives preference to existing paths
+	static const float p = 1.0f / (XX*ZZ) + 1.0f;
 	Node *n1 = dynamic_cast<Node*>(an1);
 	Node *n2 = dynamic_cast<Node*>(an2);
 	int dx1 = n1->x - n2->x;
 	int dz1 = n1->z - n2->z;
-	return sqrt(float(dx1*dx1 + dz1*dz1))*1.000001f;
+	return sqrt(float(dx1*dx1 + dz1*dz1))*p;
 }
 
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
-	Node *n = dynamic_cast<Node*>(an);
-	for (size_t u = 0, N = n->neighbours[activeMap].size(); u < N; u++)
-		succ.push(CPathfinder::graph[n->neighbours[activeMap][u]]);
+	std::vector<unsigned short int> &V = dynamic_cast<Node*>(an)->neighbours[activeMap];
+	for (size_t u = 0, N = V.size(); u < N; u++)
+		succ.push(CPathfinder::graph[V[u]]);
 }
 
 void CPathfinder::drawGraph(int map) {
