@@ -22,12 +22,7 @@
 
 #define MAX_STR_LENGTH 30
 
-#ifdef DEBUG
-	#define PROFILE(x) CScopedTimer t(std::string(#x), ai->cb->GetCurrentFrame());
-#else
-	#define PROFILE(x)
-#endif
-
+#define PROFILE(x) CScopedTimer t(std::string(#x), ai->cb->GetCurrentFrame());
 
 class CScopedTimer {
 	public:
