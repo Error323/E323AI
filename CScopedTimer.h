@@ -12,15 +12,13 @@
 #define USE_SDL_TIMER
 
 // Time interval in logic frames
-#define TIME_INTERVAL 1800
+#define TIME_INTERVAL 300
 
 #ifdef USE_SDL_TIMER
 	#include <SDL_timer.h>
 #else
 	#include <time.h>
 #endif
-
-#define MAX_STR_LENGTH 30
 
 #define PROFILE(x) CScopedTimer t(std::string(#x), ai->cb->GetCurrentFrame());
 
