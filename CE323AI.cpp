@@ -399,13 +399,13 @@ void CE323AI::Update() {
 		break;
 
 		case 2: { /* update the path itself of a group */
-			PROFILE(pf-grouppath)
+			PROFILE(A*)
 			ai->pathfinder->updatePaths();
 		}
 		break;
 
 		case 3: { /* update the groups following a path */
-			PROFILE(pf-followers)
+			PROFILE(following)
 			ai->pathfinder->updateFollowers();
 		}
 		break;
@@ -434,7 +434,7 @@ void CE323AI::Update() {
 		break;
 
 		case 8: { /* update taskhandler */
-			PROFILE(tasks)
+			PROFILE(taskhandler)
 			ai->tasks->update();
 		}
 
