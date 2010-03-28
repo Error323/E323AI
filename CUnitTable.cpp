@@ -343,7 +343,7 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->canResurrect)
 		cats |= RESURRECTOR;
 
-	if ((!ud->buildOptions.empty() && !ud->canmove) || ud->TEDClassString == "PLANT") {
+	if (!ud->buildOptions.empty() && !ud->canmove) {
 		cats |= FACTORY;
 
 		std::map<int, std::string>::iterator j;
