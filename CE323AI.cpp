@@ -145,6 +145,7 @@ void CE323AI::UnitFinished(int uid) {
 
 /* Called on a destroyed unit */
 void CE323AI::UnitDestroyed(int uid, int attacker) {
+	PROFILE(unitdestroyed)
 	CUnit *unit = ai->unittable->getUnit(uid);
 	LOG_II("CE323AI::UnitDestroyed " << (*unit))
 	unit->remove();
