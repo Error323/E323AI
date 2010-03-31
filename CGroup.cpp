@@ -14,14 +14,14 @@
 int CGroup::counter = 0;
 
 void CGroup::addUnit(CUnit &unit) {
-	LOG_II("CGroup::addUnit " << unit << " to Group(" << key << ")")
 
 	if (unit.group) {
 		if (unit.group == this) {
-			LOG_WW("CGroup::addUnit already registered in Group(" << key << ")")
+			LOG_EE("CGroup::addUnit " << unit << " already registered in " << (*this))
 			return; // already registered
 		} else {
 			// NOTE: unit can only exist in one and only group
+			LOG_EE("CGroup::addUnit " << unit << " still in group " << (*(unit.group)))
 			unit.group->remove(unit);
 		}
 	}
@@ -34,6 +34,7 @@ void CGroup::addUnit(CUnit &unit) {
 	
 	recalcProperties(&unit);
 
+	LOG_II("CGroup::addUnit " << unit << " to " << (*this))
 	// TODO: if group is busy invoke new unit to community process?
 }
 
@@ -63,7 +64,7 @@ void CGroup::remove() {
 }
 
 void CGroup::remove(ARegistrar &unit) {
-	LOG_II("CGroup::remove Unit(" << unit.key << ") from Group(" << key << ")")
+	LOG_II("CGroup::remove Unit(" << unit.key << ") from " << (*this))
 
 	assert(units.find(unit.key) != units.end());
 	
