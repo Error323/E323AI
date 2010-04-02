@@ -22,7 +22,10 @@ class CGroup: public ARegistrar {
 			reset();
 			counter++;
 		}
-		CGroup() {};
+		CGroup(): ARegistrar(counter, std::string("group")) {
+			counter++;
+		};
+
 		~CGroup() {};
 
 		/* Group counter */
@@ -121,10 +124,9 @@ class CGroup: public ARegistrar {
 		friend std::ostream& operator<<(std::ostream &out, const CGroup &group);
 
 		RegistrarType regtype() { return REGT_GROUP; }
-
-	private:
 		AIClasses *ai;
 
+	private:
 		void recalcProperties(CUnit *unit, bool reset = false);
 };
 

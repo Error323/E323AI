@@ -42,15 +42,6 @@ class CMilitary: public ARegistrar {
 		/* Current group per factory <factory, CGroup*> */
 		std::map<int, CGroup*> assemblingGroups;
 
-		/* The group container */
-		std::vector<CGroup*> groups;
-
-		/* The <unitid, vectoridx> table */
-		std::map<int, int>  lookup;
-
-		/* The free slots (CUnit instances that are zombie-ish) */
-		std::stack<int>     free;
-
 		/* The ingame scout groups */
 		std::map<int, CGroup*> activeScoutGroups;
 

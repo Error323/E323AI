@@ -20,8 +20,8 @@ void CGroup::addUnit(CUnit &unit) {
 			LOG_EE("CGroup::addUnit " << unit << " already registered in " << (*this))
 			return; // already registered
 		} else {
-			// NOTE: unit can only exist in one and only group
-			LOG_EE("CGroup::addUnit " << unit << " still in group " << (*(unit.group)))
+			// NOTE: unit can exist in one and only group
+			LOG_II("CGroup::addUnit " << unit << " still in group " << (*(unit.group)))
 			unit.group->remove(unit);
 		}
 	}
@@ -150,6 +150,7 @@ bool CGroup::isIdle() {
 }
 
 void CGroup::reset() {
+	assert(units.empty());
 	recalcProperties(NULL, true);
 	busy = false;
 	micro(false);

@@ -89,15 +89,6 @@ class CEconomy: public ARegistrar {
 
 		std::map<int, float3> takenMexes;
 
-		/* The group container */
-		std::vector<CGroup*> groups;
-
-		/* The <unitid, vectoridx> table */
-		std::map<int, int>  lookup;
-
-		/* The free slots (CUnit instances that are zombie-ish) */
-		std::stack<int>     free;
-
 		/* Active groups ingame */
 		std::map<int, CGroup*> activeGroups;
 

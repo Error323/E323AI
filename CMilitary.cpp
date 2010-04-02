@@ -14,6 +14,7 @@
 #include "CWishList.h"
 #include "CUnitTable.h"
 #include "CConfigParser.h"
+#include "ReusableObjectFactory.hpp"
 
 CMilitary::CMilitary(AIClasses *ai): ARegistrar(200, std::string("military")) {
 	this->ai = ai;
@@ -21,36 +22,22 @@ CMilitary::CMilitary(AIClasses *ai): ARegistrar(200, std::string("military")) {
 
 CMilitary::~CMilitary()
 {
-	for(int i = 0; i < groups.size(); i++)
-		delete groups[i];	
 }
 
-void CMilitary::remove(ARegistrar &group) {
-	LOG_II("CMilitary::remove group(" << group.key << ")")
+void CMilitary::remove(ARegistrar &object) {
+	CGroup *group = dynamic_cast<CGroup*>(&object);
+	LOG_II("CMilitary::remove group(" << (*group) << ")")
 	
 	// NOTE: we do not destroy group to prevent unnecessary memory allocations
-	free.push(lookup[group.key]); // remember index of free group
 	
-	lookup.erase(group.key);
-	activeScoutGroups.erase(group.key);
-	activeAttackGroups.erase(group.key);
-	mergeScouts.erase(group.key);
-	mergeGroups.erase(group.key);
+	activeScoutGroups.erase(group->key);
+	activeAttackGroups.erase(group->key);
+	mergeScouts.erase(group->key);
+	mergeGroups.erase(group->key);
+	assemblingGroups.erase(group->key);
 	
-	for (std::map<int,CGroup*>::iterator i = assemblingGroups.begin(); i != assemblingGroups.end(); i++) {
-		if (i->second->key == group.key) {
-			assemblingGroups.erase(group.key);
-			break;
-		}
-	}
-	
-	// NOTE: CMilitary is registered inside group, so the next lines 
-	// are senseless because records.size() == 0 always
-	std::list<ARegistrar*>::iterator i;
-	for (i = records.begin(); i != records.end(); i++)
-		(*i)->remove(group);
-
-	group.unreg(*this);
+	group->unreg(*this);
+	ReusableObjectFactory<CGroup>::Release(group);
 }
 
 void CMilitary::addUnit(CUnit &unit) {
@@ -82,24 +69,9 @@ void CMilitary::addUnit(CUnit &unit) {
 }
 
 CGroup* CMilitary::requestGroup(groupType type) {
-	int index = 0;
-	CGroup *group = NULL;
-
-	/* Create a new slot */
-	if (free.empty()) {
-		group = new CGroup(ai);
-		groups.push_back(group);
-		index = groups.size() - 1;
-	}
-	/* Use top free slot from stack */
-	else {
-		index = free.top(); free.pop();
-		group = groups[index];
-		group->reset();
-	}
-
-	lookup[group->key] = index;
-	
+	CGroup *group = ReusableObjectFactory<CGroup>::Instance();
+	group->ai = ai;
+	group->reset();
 	group->reg(*this);
 
 	switch(type) {

@@ -18,6 +18,7 @@
 #include "CConfigParser.h"
 #include "CIntel.h"
 #include "GameMap.hpp"
+#include "ReusableObjectFactory.hpp"
 
 CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	this->ai = ai;
@@ -35,8 +36,6 @@ CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 
 CEconomy::~CEconomy()
 {
-	for(int i = 0; i < groups.size(); i++)
-		delete groups[i];	
 }
 
 void CEconomy::init(CUnit &unit) {
@@ -81,44 +80,24 @@ bool CEconomy::hasFinishedBuilding(CGroup &group) {
 }
 
 CGroup* CEconomy::requestGroup() {
-	CGroup *group = NULL;
-	int index     = 0;
-
-	/* Create a new slot */
-	if (free.empty()) {
-		group = new CGroup(ai);
-		groups.push_back(group);
-		index = groups.size()-1;
-	}
-
-	/* Use top free slot from stack */
-	else {
-		index = free.top(); free.pop();
-		group = groups[index];
-		group->reset();
-	}
-
-	lookup[group->key] = index;
+	CGroup *group = ReusableObjectFactory<CGroup>::Instance();
+	group->ai = ai;
+	group->reset();
 	group->reg(*this);
-	activeGroups[group->key] = group;
 
+	activeGroups[group->key] = group;
 	return group;
 }
 
-void CEconomy::remove(ARegistrar &group) {
-	LOG_II("CEconomy::remove group(" << group.key << ")")
-	free.push(lookup[group.key]);
-	lookup.erase(group.key);
-	activeGroups.erase(group.key);
-	takenMexes.erase(group.key);
+void CEconomy::remove(ARegistrar &object) {
+	CGroup *group = dynamic_cast<CGroup*>(&object);
+	LOG_II("CEconomy::remove group(" << (*group) << ")")
 
-	// NOTE: CEconomy is registered inside group, so the next lines 
-	// are senseless because records.size() == 0 always
-	std::list<ARegistrar*>::iterator i;
-	for (i = records.begin(); i != records.end(); i++)
-		(*i)->remove(group);
+	activeGroups.erase(group->key);
+	takenMexes.erase(group->key);
 
-	group.unreg(*this);
+	group->unreg(*this);
+	ReusableObjectFactory<CGroup>::Release(group);
 }
 
 void CEconomy::addUnitOnCreated(CUnit &unit) {
