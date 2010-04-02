@@ -1,5 +1,11 @@
 E323AI changelog
 ----------------
+v3.19.0 [2010-04-02]
+* builders now also repair
+* implemented factory pattern
+* solved crash in CGroup.cpp
+* don't build on mexspots taken by allies
+* better profiler, outputs to "timings.dat"
 
 v3.18.1 [2010-02-22]
 * builders are more aggressive now and will reclaim nearby enemy structures even when metal is nowhere to store
