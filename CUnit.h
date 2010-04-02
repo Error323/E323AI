@@ -20,7 +20,11 @@ enum quadrant {NORTH_WEST, NORTH_EAST, SOUTH_WEST, SOUTH_EAST};
 
 class CUnit: public ARegistrar {
 	public:
-		CUnit(): ARegistrar() {}
+		CUnit(): ARegistrar() {
+			def = NULL;
+			type = NULL;
+			builtBy = 0;
+		}
 		CUnit(AIClasses *ai, int uid, int bid): ARegistrar(uid) {
 			this->ai = ai;
 			reset(uid, bid);
@@ -116,9 +120,9 @@ class CUnit: public ARegistrar {
 		/* output stream */
 		friend std::ostream& operator<<(std::ostream &out, const CUnit &unit);
 
-	private:
 		AIClasses *ai;
 
+	private:
 		bool microing;
 
 		Command createPosCommand(int cmd, float3 pos, float radius = -1.0f, facing f = NONE);

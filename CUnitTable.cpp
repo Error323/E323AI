@@ -8,6 +8,7 @@
 #include "CUnit.h"
 #include "CConfigParser.h"
 #include "Util.hpp"
+#include "ReusableObjectFactory.hpp"
 
 std::map<std::string, unitCategory> CUnitTable::str2cat;
 std::map<unitCategory, std::string> CUnitTable::cat2str;
@@ -120,8 +121,6 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 
 CUnitTable::~CUnitTable()
 {
-	for(int i = 0; i < ingameUnits.size(); i++)
-		delete ingameUnits[i];
 }
 
 void CUnitTable::generateCategorizationFile(const char *fileName) {
@@ -148,52 +147,35 @@ void CUnitTable::generateCategorizationFile(const char *fileName) {
 	LOG_II("Generated categorizations " << fileName)
 }
 
-void CUnitTable::remove(ARegistrar &unit) {
-	LOG_II("CUnitTable::remove unit(" << unit.key << ")")
-	free.push(lookup[unit.key]);
-	lookup.erase(unit.key);
-	builders.erase(unit.key);
-	idle.erase(unit.key);
-	metalMakers.erase(unit.key);
-	factoriesBuilding.erase(unit.key);
-	activeUnits.erase(unit.key);
-	factories.erase(unit.key);
-	defenses.erase(unit.key);
-	unitsAliveTime.erase(unit.key);
-	energyStorages.erase(unit.key);
-	unitsUnderPlayerControl.erase(unit.key);
-	unit.unreg(*this);
+void CUnitTable::remove(ARegistrar &object) {
+	CUnit *unit = dynamic_cast<CUnit*>(&object);
+	LOG_II("CUnitTable::remove unit(" << (*unit) << ")")
+	builders.erase(unit->key);
+	idle.erase(unit->key);
+	metalMakers.erase(unit->key);
+	factoriesBuilding.erase(unit->key);
+	activeUnits.erase(unit->key);
+	factories.erase(unit->key);
+	defenses.erase(unit->key);
+	unitsAliveTime.erase(unit->key);
+	energyStorages.erase(unit->key);
+	unitsUnderPlayerControl.erase(unit->key);
+	unit->unreg(*this);
+	ReusableObjectFactory<CUnit>::Release(unit);
 }
 
 CUnit* CUnitTable::getUnit(int uid) {
-	std::map<int, int>::iterator i = lookup.find(uid);
-	if (i != lookup.end())
-		return ingameUnits[i->second];
-	return NULL;
+	std::map<int, CUnit*>::iterator u = activeUnits.find(uid);
+	if (u == activeUnits.end())
+		return NULL;
+	else
+		return u->second;
 }
 
 CUnit* CUnitTable::requestUnit(int uid, int bid) {
-	CUnit *unit = NULL;
-	int index   = 0;
-
-	/* Create a new slot */
-	if (free.empty()) {
-		unit = new CUnit(ai, uid, bid);
-		ingameUnits.push_back(unit);
-		index = ingameUnits.size() - 1;
-		LOG_II("CUnitTable::requestUnit new " << (*unit))
-	}
-
-	/* Use top free slot from stack */
-	else {
-		index = free.top(); free.pop();
-		unit  = ingameUnits[index];
-		assert(unit->group == NULL);
-		unit->reset(uid, bid);
-		LOG_II("CUnitTable::requestUnit existing " << (*unit))
-	}
-
-	lookup[uid] = index;
+	CUnit *unit = ReusableObjectFactory<CUnit>::Instance();
+	unit->ai = ai;
+	unit->reset(uid, bid);
 	unit->reg(*this);
 	if (bid > 0) builders[bid] = false;
 	activeUnits[uid] = unit;

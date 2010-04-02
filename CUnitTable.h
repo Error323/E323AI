@@ -99,15 +99,6 @@ class CUnitTable: public ARegistrar {
 
 		char buf[255];
 
-		/* The unit container */
-		std::vector<CUnit*> ingameUnits;
-
-		/* The <unitid, vectoridx> table */
-		std::map<int, int> lookup;
-
-		/* The free slots (CUnit instances that are zombie-ish) */
-		std::stack<int>    free;
-
 		/* Build the lists buildby and canbuild per unit */
 		void buildTechTree();
 

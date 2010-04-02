@@ -33,16 +33,16 @@ Object* ReusableObjectFactory<Object>::Instance() {
 
 	if (free.empty()) {
 		object = new Object();
-#ifdef DEBUG
-		std::cout << "ReusableObjectFactory::Instance " << (*object) << " created" << std::endl;
-#endif
+//#ifdef DEBUG
+//		std::cout << "ReusableObjectFactory::Instance " << (*object) << " created" << std::endl;
+//#endif
 	}
 	else {
 		object = free.front();
 		free.pop_front();
-#ifdef DEBUG
-		std::cout << "ReusableObjectFactory::Instance " << (*object) << " reused" << std::endl;
-#endif
+//#ifdef DEBUG
+//		std::cout << "ReusableObjectFactory::Instance " << (*object) << " reused" << std::endl;
+//#endif
 	}
 
 	return object;
@@ -51,9 +51,9 @@ Object* ReusableObjectFactory<Object>::Instance() {
 template<class Object>
 void ReusableObjectFactory<Object>::Release(Object* object) {
 	free.push_back(object);
-#ifdef DEBUG
-	std::cout << "ReusableObjectFactory::Release " << (*object) << " released" << std::endl;
-#endif
+//#ifdef DEBUG
+//	std::cout << "ReusableObjectFactory::Release " << (*object) << " released" << std::endl;
+//#endif
 }
 
 #endif
