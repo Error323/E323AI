@@ -184,7 +184,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 	}
 
 	// NOTE: aircraft & static units do not have movedata
-	MoveData *md = ai->cb->GetUnitDef(unit->key)->movedata;
+	MoveData *md = unit->def->movedata;
     if (md) {
     	if (md->maxSlope <= maxSlope) {
 			// TODO: rename moveType into pathType because this is not the same
