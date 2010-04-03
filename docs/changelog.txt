@@ -1,5 +1,8 @@
 E323AI changelog
 ----------------
+v3.19.1 [2010-04-03]
+* Fixed two crashes
+
 v3.19.0 [2010-04-02]
 * builders now also repair
 * implemented factory pattern
