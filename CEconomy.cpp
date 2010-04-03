@@ -366,7 +366,9 @@ void CEconomy::update(int frame) {
 			}
 			/* If we don't have a factory, build one */
 			if (ai->unittable->factories.empty()) {
-				buildOrAssist(*group, BUILD_FACTORY, ai->intel->allowedFactories.front()|TECH1);
+				unsigned int factory = getNextFactoryToBuild(unit, maxTechLevel);
+				if (factory > 0)
+					buildOrAssist(*group, BUILD_FACTORY, factory);
 				if (group->busy) continue;
 			}
 			/* If we are exceeding and don't have estorage yet, build estorage */
@@ -396,17 +398,9 @@ void CEconomy::update(int frame) {
 				if (group->busy) continue;
 			}
 			/* See if this unit can build desired factory */
-			for(int techlevel = 1; techlevel <= maxTechLevel; techlevel++) {
-				for(std::list<unitCategory>::iterator f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
-					int factory = *f|techlevel;
-					if(ai->unittable->canBuild(unit->type, factory))
-						if(!ai->unittable->gotFactory(factory)) {
-							buildOrAssist(*group, BUILD_FACTORY, factory);
-							break;
-						}
-				}
-				if (group->busy) break;
-			}
+			unsigned int factory = getNextFactoryToBuild(unit, maxTechLevel);
+			if (factory > 0)
+				buildOrAssist(*group, BUILD_FACTORY, factory);
 			if (group->busy) continue;
 			/* See if we can build defense */
 			if (ai->defensematrix->getClusters() > ai->unittable->defenses.size()) {
@@ -680,4 +674,17 @@ bool CEconomy::canAffordToBuild(UnitType *builder, UnitType *utToBuild) {
 	mRequest          = mPrediction < 0.0f;
 	eRequest          = ePrediction < 0.0f;
 	return (mPrediction >= 0.0f && ePrediction >= 0.0f && mNow/mStorage >= 0.1f);
+}
+
+unsigned int CEconomy::getNextFactoryToBuild(CUnit *unit, int maxteachlevel) {
+	for(int techlevel = TECH1; techlevel <= maxteachlevel; techlevel++) {
+		for(std::list<unitCategory>::iterator f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
+			int factory = *f|techlevel;
+			if(ai->unittable->canBuild(unit->type, factory))
+				if(!ai->unittable->gotFactory(factory)) {
+					return factory;
+				}
+		}
+	}
+	return 0;
 }

@@ -121,6 +121,9 @@ class CEconomy: public ARegistrar {
 
 		/* See if a buildtask is in progress */
 		bool taskInProgress(buildType bt);
+
+		/* Get next allowed factory to build */
+		unsigned int getNextFactoryToBuild(CUnit *unit, int maxteachlevel);
 };
 
 #endif
