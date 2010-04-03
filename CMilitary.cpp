@@ -336,29 +336,34 @@ void CMilitary::update(int frame) {
 		mergeGroups.clear();
 	}
 	
+	bool gotAirFactory = ai->unittable->gotFactory(AIR);
+
 	/* Always have enough scouts */
-	if (activeScoutGroups.size() < ai->cfgparser->getMinScouts())
-		// TODO: LAND cat should vary between LAND|SEA|AIR actually depending
-		// on map type
-		ai->wishlist->push(LAND | SCOUTER, HIGH);
+	if (activeScoutGroups.size() < ai->cfgparser->getMinScouts()) {
+		if(gotAirFactory)
+			// TODO: tweak this
+			ai->wishlist->push(AIR | MOBILE | SCOUTER, HIGH);
+		ai->wishlist->push(LAND | MOBILE | SCOUTER, HIGH);			
+	}
 
 	/* Always build some unit */
-	ai->wishlist->push(requestUnit(), NORMAL);
+	if(gotAirFactory)
+		// TODO: tweak this
+		ai->wishlist->push(requestUnit(AIR), NORMAL);	
+	ai->wishlist->push(requestUnit(LAND), NORMAL);
 }
 
-unsigned CMilitary::requestUnit() {
+unsigned CMilitary::requestUnit(unsigned int basecat) {
 	float r = rng.RandFloat();
 	std::multimap<float, unitCategory>::iterator i;
 	float sum = 0.0f;
 	for (i = ai->intel->roulette.begin(); i != ai->intel->roulette.end(); i++) {
 		sum += i->first;
 		if (r <= sum) {
-			// TODO: LAND cat should vary between LAND|SEA|AIR actually 
-			// depending on map type
-			return LAND | MOBILE | i->second;
+			return basecat | MOBILE | i->second;
 		}
 	}
-	return LAND | MOBILE | ASSAULT; // unreachable code :)
+	return basecat | MOBILE | ASSAULT; // unreachable code :)
 }
 
 int CMilitary::idleScoutGroupsNum() {

@@ -60,7 +60,7 @@ class CMilitary: public ARegistrar {
 		void filterOccupiedTargets(std::vector<int> &source, std::vector<int> &dest);
 
 		/* Request a unit for building using a roulette wheel system */
-		unsigned requestUnit();
+		unsigned requestUnit(unsigned int basecat);
 
 		char buf[1024];
 };
