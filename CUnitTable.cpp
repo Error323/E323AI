@@ -93,6 +93,9 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	std::map<int, UnitType*>::iterator l;
 	std::string buildBy, canBuild;
 
+	// NOTE: -1 movetype means a graph for aircraft
+	moveTypes[-1] = NULL;
+
 	for (j = units.begin(); j != units.end(); j++) {
 		utParent = &(j->second);
 		MoveData* movedata = utParent->def->movedata;

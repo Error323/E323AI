@@ -49,7 +49,6 @@ void CEconomy::init(CUnit &unit) {
 	//float solarProf = utSolar->energyMake / utSolar->cost;
 	mStart = utCommander->def->metalMake;
 	eStart = utCommander->def->energyMake;
-	type   = ai->gamemap->IsKbotMap() ? KBOT : VEHICLE;
 	initialized = true;
 }
 		
@@ -332,15 +331,13 @@ float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
 
 void CEconomy::update(int frame) {
 	int builderGroupsNum = 0;
+	int maxTechLevel = ai->cfgparser->getMaxTechLevel();
 
 	/* See if we can improve our eco by controlling metalmakers */
 	controlMetalMakers();
 
 	/* If we are stalling, do something about it */
 	preventStalling();
-
-	/* Determine the allowed factory not yet in our arsenal */
-	unsigned factory = getAllowedFactory();
 
 	/* Update idle worker groups */
 	std::map<int, CGroup*>::iterator i;
@@ -369,7 +366,7 @@ void CEconomy::update(int frame) {
 			}
 			/* If we don't have a factory, build one */
 			if (ai->unittable->factories.empty()) {
-				buildOrAssist(*group, BUILD_FACTORY, type|TECH1);
+				buildOrAssist(*group, BUILD_FACTORY, ai->intel->allowedFactories.front()|TECH1);
 				if (group->busy) continue;
 			}
 			/* If we are exceeding and don't have estorage yet, build estorage */
@@ -398,11 +395,19 @@ void CEconomy::update(int frame) {
 				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
 				if (group->busy) continue;
 			}
-			/* See if this unit can build our desired factory */
-			if (factory > 0) {
-				buildOrAssist(*group, BUILD_FACTORY, factory);
-				if (group->busy) continue;
+			/* See if this unit can build desired factory */
+			for(int techlevel = 1; techlevel <= maxTechLevel; techlevel++) {
+				for(std::list<unitCategory>::iterator f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
+					int factory = *f|techlevel;
+					if(ai->unittable->canBuild(unit->type, factory))
+						if(!ai->unittable->gotFactory(factory)) {
+							buildOrAssist(*group, BUILD_FACTORY, factory);
+							break;
+						}
+				}
+				if (group->busy) break;
 			}
+			if (group->busy) continue;
 			/* See if we can build defense */
 			if (ai->defensematrix->getClusters() > ai->unittable->defenses.size()) {
 				buildOrAssist(*group, BUILD_AG_DEFENSE, DEFENSE, ANTIAIR);
@@ -459,39 +464,6 @@ void CEconomy::update(int frame) {
 		ai->wishlist->push(BUILDER, HIGH);
 	else if (builderGroupsNum < ai->cfgparser->getMaxWorkers())
 		ai->wishlist->push(BUILDER, NORMAL);
-}
-
-unsigned CEconomy::getAllowedFactory() {
-	int maxTech = ai->cfgparser->getMaxTechLevel();
-	int primary = type;
-	int secondary = type == KBOT ? VEHICLE : KBOT;
-	int tertiary = HOVER;
-
-	// TODO: make universal detection of what factory we can build per tech level
-	for (int i = 0; i < maxTech; i++) {
-		// assuming TECH1 = 1, TECH2 = 2, TECH3 = 4
-		unsigned tech = 1 << i;
-		
-		/* There is no tech3 vehicle */
-		
-		if (tech == TECH3 && !ai->unittable->gotFactory(KBOT|tech))
-			return KBOT|tech;
-
-		if (!ai->unittable->gotFactory(primary|tech))
-			return type|tech;
-
-		if (!ai->unittable->gotFactory(secondary|tech))
-			return secondary|tech;
-
-		// TODO: make next decision on map terrain analysis
-		bool isT1 = tech == TECH1;
-		bool isHooverMap = ai->gamemap->IsHooverMap();
-		bool isNewFactory = !ai->unittable->gotFactory(tertiary|tech);
-		if (isT1 && isHooverMap && isNewFactory)
-			return tertiary|tech;
-	}
-
-	return 0;
 }
 
 bool CEconomy::taskInProgress(buildType bt) {

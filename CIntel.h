@@ -2,6 +2,7 @@
 #define INTEL_H
 
 #include <vector>
+#include <list>
 #include <map>
 
 #include "headers/Defines.h"
@@ -30,6 +31,8 @@ class CIntel {
 
 		std::multimap<float,unitCategory> roulette;
 
+		std::list<unitCategory> allowedFactories;
+
 		int numUnits;
 
 
@@ -44,10 +47,9 @@ class CIntel {
 
 		/* Reset enemy unit counters */
 		void resetCounters();
-
 		/* Count enemy units */
 		void updateCounts(unsigned c);
-
+		/* Get unit category counterpart (can be implemented via map) */
 		unitCategory counter(unitCategory c);
 
 };

@@ -133,7 +133,7 @@ void CPathfinder::Node::serialize(std::ostream &os) {
 
 bool CPathfinder::isBlocked(int x, int z, int movetype) {
 	MoveData *md = ai->unittable->moveTypes[movetype];
-	if (md == NULL) 
+	if (md == NULL)
 		return false;
 
 	int smidx = ID(x,z);
@@ -257,6 +257,7 @@ void CPathfinder::calcGraph() {
 						if (!isBlocked(xx, zz, map))
 							parent->neighbours[map].push_back(ID_GRAPH(xx/I_MAP_RES,zz/I_MAP_RES));
 					}
+					
 					if (s[0] && s[1] && s[2] && s[3] && s[4] && s[5] && s[6] && s[7]) {
 						break;
 					}
@@ -267,7 +268,6 @@ void CPathfinder::calcGraph() {
 }
 
 void CPathfinder::resetMap(ThreatMapType tm_type) {
-	//PROFILE(resetmap)
 	int idSlopeMap = 0;
 	float *map = ai->threatmap->getMap(tm_type);
 

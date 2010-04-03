@@ -4,6 +4,7 @@
 #include "CUnitTable.h"
 #include "CUnit.h"
 #include "CMilitary.h"
+#include "GameMap.hpp"
 
 CIntel::CIntel(AIClasses *ai) {
 	this->ai = ai;
@@ -27,7 +28,7 @@ float3 CIntel::getEnemyVector() {
 
 void CIntel::init() {
 	numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
-	// FIXME: when commanders are spawned with wrap gate assert raises
+	// FIXME: when commanders are spawned with wrap gate option enabled then assert raises
 	assert(numUnits > 0);
 	enemyvector = float3(0.0f, 0.0f, 0.0f);
 	for (int i = 0; i < numUnits; i++) {
@@ -35,6 +36,24 @@ void CIntel::init() {
 	}
 	enemyvector /= numUnits;
 	LOG_II("Number of enemies: " << numUnits)
+	
+	if(ai->gamemap->IsWaterMap()) {
+		allowedFactories.push_back(HOVER);
+	}
+	else {
+		if(ai->gamemap->IsKbotMap()) {
+			allowedFactories.push_back(KBOT);
+			allowedFactories.push_back(VEHICLE);
+		} else {
+			allowedFactories.push_back(VEHICLE);
+			allowedFactories.push_back(KBOT);
+		}
+		
+		if(ai->gamemap->IsHooverMap())
+			allowedFactories.push_back(HOVER);
+	}
+	// TODO: do not build air on too small maps?
+	allowedFactories.push_back(AIR);
 }
 
 void CIntel::update(int frame) {

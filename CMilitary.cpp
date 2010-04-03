@@ -26,23 +26,23 @@ CMilitary::~CMilitary()
 
 void CMilitary::remove(ARegistrar &object) {
 	CGroup *group = dynamic_cast<CGroup*>(&object);
-	LOG_II("CMilitary::remove " << (*group))
 	
-	// NOTE: we do not destroy group to prevent unnecessary memory allocations
+	LOG_II("CMilitary::remove " << (*group))
 	
 	activeScoutGroups.erase(group->key);
 	activeAttackGroups.erase(group->key);
 	mergeScouts.erase(group->key);
 	mergeGroups.erase(group->key);
-
+	
 	for (std::map<int,CGroup*>::iterator i = assemblingGroups.begin(); i != assemblingGroups.end(); i++) {
 		if (i->second->key == group->key) {
 			assemblingGroups.erase(i->first);
 			break;
 		}
 	}
-	
+
 	group->unreg(*this);
+
 	ReusableObjectFactory<CGroup>::Release(group);
 }
 
