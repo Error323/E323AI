@@ -36,6 +36,7 @@ class CE323AI: public IGlobalAI {
 	private:
 		bool isRunning;
 		int attachedAtFrame; // frame when AI was attached
+		static int instances;
 		AIClasses *ai;
 };
 

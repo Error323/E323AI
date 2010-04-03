@@ -3,57 +3,97 @@
 
 #include <list>
 #include <iostream>
+#include <typeinfo>
 
 template<class Object> class ReusableObjectFactory {
 public:
 	ReusableObjectFactory() {}
-	~ReusableObjectFactory();
+	~ReusableObjectFactory() {}
 
 	static Object* Instance();
 	static void Release(Object*);
+	static void Shutdown();
+	static void Free();
  
 private:
 	static std::list<Object*> free;
+	static std::list<Object*> objects;
 };
 
 template<class Object>
 std::list<Object*> ReusableObjectFactory<Object>::free;
 
 template<class Object>
-ReusableObjectFactory<Object>::~ReusableObjectFactory() {
+std::list<Object*> ReusableObjectFactory<Object>::objects;
+
+template<class Object>
+void ReusableObjectFactory<Object>::Shutdown() {
+	std::cout << "ReusableObjectFactory<" 
+	          << typeid(Object).name()
+			  << ">::Shutdown Releasing "
+	          << (objects.size()) 
+			  << " objects, " 
+	          << (objects.size()*sizeof(Object)) 
+			  << " bytes"
+	          << std::endl;
+
 	typename std::list<Object*>::iterator i;
-	for (i = free.begin(); i != free.end(); i++)
+	for (i = objects.begin(); i != objects.end(); i++)
 		delete *i;
+
+	objects.clear();
 	free.clear();
 }
  
+template<class Object>
+void ReusableObjectFactory<Object>::Free() {
+	std::cout << "ReusableObjectFactory<" 
+	          << typeid(Object).name()
+			  << ">::Free Releasing "
+	          << (free.size()) 
+			  << " objects, " 
+	          << (free.size()*sizeof(Object)) 
+			  << " bytes"
+	          << std::endl;
+
+	typename std::list<Object*>::iterator i;
+	for (i = free.begin(); i != free.end(); i++) {
+		objects.remove(*i);
+		delete *i;
+	}
+
+	free.clear();
+}
+
 template<class Object>
 Object* ReusableObjectFactory<Object>::Instance() {
 	Object* object;
 
 	if (free.empty()) {
 		object = new Object();
-//#ifdef DEBUG
-//		std::cout << "ReusableObjectFactory::Instance " << (*object) << " created" << std::endl;
-//#endif
+		objects.push_back(object);
 	}
 	else {
 		object = free.front();
 		free.pop_front();
-//#ifdef DEBUG
-//		std::cout << "ReusableObjectFactory::Instance " << (*object) << " reused" << std::endl;
-//#endif
 	}
 
+	//std::cout << "ReusableObjectFactory<" 
+	//          << typeid(Object).name() 
+	//          << ">::Instance " 
+	//          << (*object) 
+	//          << std::endl;
 	return object;
 }
  
 template<class Object>
 void ReusableObjectFactory<Object>::Release(Object* object) {
 	free.push_back(object);
-//#ifdef DEBUG
-//	std::cout << "ReusableObjectFactory::Release " << (*object) << " released" << std::endl;
-//#endif
+	//std::cout << "ReusableObjectFactory<" 
+	//          << typeid(Object).name() 
+	//          << ">::Release " 
+	//          << (*object) 
+	//          << std::endl;
 }
 
 #endif

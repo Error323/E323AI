@@ -91,7 +91,7 @@ CGroup* CEconomy::requestGroup() {
 
 void CEconomy::remove(ARegistrar &object) {
 	CGroup *group = dynamic_cast<CGroup*>(&object);
-	LOG_II("CEconomy::remove group(" << (*group) << ")")
+	LOG_II("CEconomy::remove " << (*group))
 
 	activeGroups.erase(group->key);
 	takenMexes.erase(group->key);

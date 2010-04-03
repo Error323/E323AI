@@ -26,7 +26,7 @@ CMilitary::~CMilitary()
 
 void CMilitary::remove(ARegistrar &object) {
 	CGroup *group = dynamic_cast<CGroup*>(&object);
-	LOG_II("CMilitary::remove group(" << (*group) << ")")
+	LOG_II("CMilitary::remove " << (*group))
 	
 	// NOTE: we do not destroy group to prevent unnecessary memory allocations
 	
@@ -73,6 +73,7 @@ CGroup* CMilitary::requestGroup(groupType type) {
 	group->ai = ai;
 	group->reset();
 	group->reg(*this);
+	LOG_II("CMilitary::requestGroup " << (*group))
 
 	switch(type) {
 		case SCOUT:

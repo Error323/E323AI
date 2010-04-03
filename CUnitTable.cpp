@@ -149,7 +149,7 @@ void CUnitTable::generateCategorizationFile(const char *fileName) {
 
 void CUnitTable::remove(ARegistrar &object) {
 	CUnit *unit = dynamic_cast<CUnit*>(&object);
-	LOG_II("CUnitTable::remove unit(" << (*unit) << ")")
+	LOG_II("CUnitTable::remove " << (*unit))
 	builders.erase(unit->key);
 	idle.erase(unit->key);
 	metalMakers.erase(unit->key);

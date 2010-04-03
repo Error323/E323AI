@@ -17,8 +17,12 @@
 #include "CScopedTimer.h"
 #include "CRNG.h"
 #include "Util.hpp"
+#include "ReusableObjectFactory.hpp"
+
+int CE323AI::instances = 0;
 
 void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
+	instances++;
 	ai                = new AIClasses();
 	ai->cb            = callback->GetAICallback();
 	ai->cbc           = callback->GetCheatInterface();
@@ -67,8 +71,13 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 }
 
 void CE323AI::ReleaseAI() {
-    std::string filename(util::GetAbsFileName(ai->cb, LOG_FOLDER + std::string("timings.dat")));
-    CScopedTimer::toFile(filename);
+	instances--;
+	if (instances == 0) {
+		std::string filename(util::GetAbsFileName(ai->cb, LOG_FOLDER + std::string("timings.dat")));
+		CScopedTimer::toFile(filename);
+		ReusableObjectFactory<CGroup>::Shutdown();
+		ReusableObjectFactory<CUnit>::Shutdown();
+	}
 
 	delete ai->defensematrix;
 	delete ai->military;
@@ -91,9 +100,8 @@ void CE323AI::ReleaseAI() {
 
 /* Called when units are spawned in a factory or when game starts */
 void CE323AI::UnitCreated(int uid, int bid) {
-	LOG_II("CE323AI::UnitCreated(uid=" << uid << ", bid=" << bid << ")")
-
 	CUnit *unit = ai->unittable->requestUnit(uid, bid);
+	LOG_II("CE323AI::UnitCreated " << (*unit))
 
 	if (unit->def->isCommander && !ai->economy->isInitialized()) {
 		ai->economy->init(*unit);

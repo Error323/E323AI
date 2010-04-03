@@ -82,7 +82,7 @@ EXPORT(int) init(int teamId, const struct SSkirmishAICallback* callback) {
 }
 
 EXPORT(int) release(int teamId) {
-	if (myAIs.count(teamId) == 0) {
+	if (myAIs.find(teamId) == myAIs.end()) {
 		// the map has no AI for this team.
 		// raise an error, since it's probably a mistake if we're trying to
 		// release a team that's not initialized.
@@ -101,7 +101,7 @@ EXPORT(int) handleEvent(int teamId, int topic, const void* data) {
 	if (teamId < 0) {
 		// events sent to team -1 will always be to the AI object itself,
 		// not to a particular team.
-	} else if (myAIs.count(teamId) > 0) {
+	} else if (myAIs.find(teamId) != myAIs.end()) {
 		// allow the AI instance to handle the event.
 		return myAIs[teamId]->handleEvent(topic, data);
 	}

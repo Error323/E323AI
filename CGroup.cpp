@@ -63,15 +63,15 @@ void CGroup::remove() {
 	records.clear();
 }
 
-void CGroup::remove(ARegistrar &unit) {
-	LOG_II("CGroup::remove Unit(" << unit.key << ") from " << (*this))
+void CGroup::remove(ARegistrar &object) {
+	CUnit *unit = dynamic_cast<CUnit*>(&object);
+	LOG_II("CGroup::remove " << (*unit) << " from " << (*this))
 
-	assert(units.find(unit.key) != units.end());
+	assert(units.find(unit->key) != units.end());
 	
-	CUnit *unit2 = units[unit.key];
-	unit2->group = NULL;
-	unit2->unreg(*this);
-	units.erase(unit.key);
+	unit->group = NULL;
+	unit->unreg(*this);
+	units.erase(unit->key);
 
 	/* If no more units remain in this group, remove the group */
 	if (units.empty()) {
@@ -150,6 +150,7 @@ bool CGroup::isIdle() {
 }
 
 void CGroup::reset() {
+	LOG_II("CGroup::reset " << (*this))
 	assert(units.empty());
 	recalcProperties(NULL, true);
 	busy = false;
