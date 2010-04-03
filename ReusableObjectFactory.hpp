@@ -30,11 +30,11 @@ template<class Object>
 void ReusableObjectFactory<Object>::Shutdown() {
 	std::cout << "ReusableObjectFactory<" 
 	          << typeid(Object).name()
-			  << ">::Shutdown Releasing "
+	          << ">::Shutdown Releasing "
 	          << (objects.size()) 
-			  << " objects, " 
+	          << " objects, " 
 	          << (objects.size()*sizeof(Object)) 
-			  << " bytes"
+	          << " bytes"
 	          << std::endl;
 
 	typename std::list<Object*>::iterator i;
@@ -49,11 +49,11 @@ template<class Object>
 void ReusableObjectFactory<Object>::Free() {
 	std::cout << "ReusableObjectFactory<" 
 	          << typeid(Object).name()
-			  << ">::Free Releasing "
+	          << ">::Free Releasing "
 	          << (free.size()) 
-			  << " objects, " 
+	          << " objects, " 
 	          << (free.size()*sizeof(Object)) 
-			  << " bytes"
+	          << " bytes"
 	          << std::endl;
 
 	typename std::list<Object*>::iterator i;
