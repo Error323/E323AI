@@ -34,7 +34,13 @@ void CMilitary::remove(ARegistrar &object) {
 	activeAttackGroups.erase(group->key);
 	mergeScouts.erase(group->key);
 	mergeGroups.erase(group->key);
-	assemblingGroups.erase(group->key);
+
+	for (std::map<int,CGroup*>::iterator i = assemblingGroups.begin(); i != assemblingGroups.end(); i++) {
+		if (i->second->key == group->key) {
+			assemblingGroups.erase(i->first);
+			break;
+		}
+	}
 	
 	group->unreg(*this);
 	ReusableObjectFactory<CGroup>::Release(group);
