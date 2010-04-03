@@ -133,6 +133,12 @@ void CE323AI::UnitCreated(int uid, int bid) {
 /* Called when units are finished in a factory and able to move */
 void CE323AI::UnitFinished(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
+	
+	if(!unit) {
+		LOG_EE("CE323AI::UnitFinished unregistered Unit(" << uid << ")")
+		return;
+	}
+
 	ai->unittable->unitsAliveTime[uid] = 0;
 	ai->unittable->idle[uid] = true;
 
@@ -289,9 +295,9 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 				// NOTE: getting "unit" for logging only
 				CUnit *unit = ai->unittable->getUnit(cte->unit);
 				
-				UnitDestroyed(cte->unit, 0);
-				
 				LOG_II("CE323AI::UnitCaptured " << (*unit))
+
+				UnitDestroyed(cte->unit, 0);
 			}
 			break;
 
