@@ -1,13 +1,20 @@
 E323AI changelog
 ----------------
+v3.20.0 [2010-xx-xx]
+* initial aircraft support
+* universal selection of factory to build
+
 v3.19.1 [2010-04-03]
-* Fixed two crashes
+* fixed couple of crashes
 
 v3.19.0 [2010-04-02]
-* builders now also repair
+* builders can now repair damaged units
+* prevented useless expansion on metal maps
+* fixed a crash when factory with moving assisters was destroyed
+* fixed a crash when unit was captured
+* fixed a crash connected with economy units with weapons
+* completely fixed building MExes near allied MExes
 * implemented factory pattern
-* solved crash in CGroup.cpp
-* don't build on mexspots taken by allies
 * better profiler, outputs to "timings.dat"
 
 v3.18.1 [2010-02-22]
