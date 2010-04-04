@@ -62,6 +62,8 @@ void CIntel::update(int frame) {
 	attackers.clear();
 	metalMakers.clear();
 	energyMakers.clear();
+	navalUnits.clear();
+	underwaterUnits.clear();
 	restUnarmedUnits.clear();
 	rest.clear();
 	resetCounters();
@@ -69,35 +71,42 @@ void CIntel::update(int frame) {
 	numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
 	
 	for (int i = 0; i < numUnits; i++) {
-		const UnitDef *ud = ai->cbc->GetUnitDef(units[i]);
+		const int uid = units[i];
+		const UnitDef *ud = ai->cbc->GetUnitDef(uid);
 		UnitType      *ut = UT(ud->id);
 		unsigned int    c = ut->cats;
 		bool armed = !ud->weapons.empty();
 
 		/* Ignore units being built and cloaked units */
-		if ((ai->cbc->UnitBeingBuilt(units[i]) && (armed || !(c&STATIC)))
-		|| 	ai->cbc->IsUnitCloaked(units[i]))
+		if ((ai->cbc->UnitBeingBuilt(uid) && (armed || !(c&STATIC)))
+		|| 	ai->cbc->IsUnitCloaked(uid))
 			continue;
 		
-		if (c&ATTACKER && !(c&AIR)) {
-			attackers.push_back(units[i]);
+		if (c&SEA && ai->cbc->GetUnitPos(uid).y < 0.0f) {
+			underwaterUnits.push_back(uid);
+		}
+		else if (!(c&(LAND|AIR)) && c&SEA) {
+			navalUnits.push_back(uid);
+		}
+		else if (c&ATTACKER && !(c&AIR)) {
+			attackers.push_back(uid);
 		}
 		else if (c&FACTORY) {
-			factories.push_back(units[i]);
+			factories.push_back(uid);
 		}
 		else if (c&BUILDER && c&MOBILE && !(c&AIR)) {
-			mobileBuilders.push_back(units[i]);
+			mobileBuilders.push_back(uid);
 		}
 		else if (c&MEXTRACTOR || c&MMAKER) {
-			metalMakers.push_back(units[i]);
+			metalMakers.push_back(uid);
 		}
 		else if (c&EMAKER) {
-			energyMakers.push_back(units[i]);
+			energyMakers.push_back(uid);
 		}
 		else if (!armed)
-			restUnarmedUnits.push_back(units[i]);
+			restUnarmedUnits.push_back(uid);
 		else {
-			rest.push_back(units[i]);
+			rest.push_back(uid);
 		}
 
 		if (c&ATTACKER && c&MOBILE)
