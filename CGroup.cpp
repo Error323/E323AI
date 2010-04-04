@@ -306,6 +306,10 @@ bool CGroup::canReach(float3 &pos) {
 	return true;
 }
 
+bool canReach(float3 &from, float3 &to) {
+	return true;
+}
+
 bool CGroup::canAttack(int uid) {
 	// TODO: if at least one unit can shoot target then return true
 	return true;
