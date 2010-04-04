@@ -75,6 +75,7 @@ void ATask::addGroup(CGroup &g) {
 bool ATask::enemyScan(bool scout) {
 	//PROFILE(tasks-enemyscan)
 	
+	const CUnit *unit = group->firstUnit();
 	std::multimap<float, int> candidates;
 	float3 gpos = group->pos();
 	
@@ -87,8 +88,9 @@ bool ATask::enemyScan(bool scout) {
 		const unsigned int ecats = UC(ud->id);
 		float3 epos = ai->cbc->GetUnitPos(euid);
 		float dist = gpos.distance2D(epos);
-		if (!(ecats&AIR) && !ai->cbc->IsUnitCloaked(euid))
-			candidates.insert(std::pair<float,int>(dist, euid));
+		if (!ai->cbc->IsUnitCloaked(euid))
+			if (!((unit->type->cats&ANTIAIR) ^ (ecats&AIR)))
+				candidates.insert(std::pair<float,int>(dist, euid));
 	}
 
 	if (!candidates.empty()) {
