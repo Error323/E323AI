@@ -5,6 +5,7 @@
 #include "headers/HEngine.h"
 
 class AIClasses;
+class CGroup;
 
 enum ThreatMapType {
 	TMT_AIR = 0,
@@ -19,6 +20,7 @@ class CThreatMap {
 
 		void update(int frame);
 		float getThreat(float3 &center, float radius, ThreatMapType type = TMT_SURFACE);
+		float getThreat(float3 &center, float radius, CGroup *group);
 		float *getMap(ThreatMapType);
 		
 		int X, Z;

@@ -6,6 +6,7 @@
 #include "CUnitTable.h"
 #include "CIntel.h"
 #include "CUnit.h"
+#include "CGroup.h"
 #include "MathUtil.h"
 
 CThreatMap::CThreatMap(AIClasses *ai) {
@@ -70,6 +71,18 @@ float CThreatMap::getThreat(float3 &center, float radius, ThreatMapType type) {
 	}
 	
 	return power/(2.0f*R*M_PI);
+}
+
+float CThreatMap::getThreat(float3 &center, float radius, CGroup *group) {
+	unsigned int cats = group->firstUnit()->type->cats;
+	ThreatMapType type;
+	
+	if (cats&LAND)
+		type = TMT_SURFACE;
+	else
+		type = TMT_AIR;
+	
+	return getThreat(center, radius, type);
 }
 
 void CThreatMap::update(int frame) {
