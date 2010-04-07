@@ -41,8 +41,8 @@ class CScopedTimer {
 
 			if (std::find(tasks.begin(), tasks.end(), task) == tasks.end()) {
 				tasknr = tasks.size();
-				cb->SetDebugGraphLineLabel(tasknr, task.c_str());
 				cb->SetDebugGraphLineColor(tasknr, colors[tasknr%8]);
+				cb->SetDebugGraphLineLabel(tasknr, task.c_str());
 				tasks.push_back(s);
 			}
 
@@ -50,6 +50,9 @@ class CScopedTimer {
 		}
 
 		~CScopedTimer() {
+			if (!cb->IsDebugDrawerEnabled())
+				return;
+
 			t2 = SDL_GetTicks();
 			t3 = t2 - t1;
 			cb->AddDebugGraphPoint(tasknr, cb->GetCurrentFrame(), t3);
