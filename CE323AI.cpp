@@ -61,6 +61,11 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->military      = new CMilitary(ai);
 	ai->defensematrix = new CDefenseMatrix(ai);
 
+	/* Set the new graph stuff */
+#ifdef SPRING_PROFILER
+	ai->cb->SetDebugGraphPos(-0.4f, 0.4f);
+	ai->cb->SetDebugGraphSize(0.8f, 0.5f);
+#endif
 
 	/*
 	ai->uploader->AddString("aiversion", AI_VERSION_NR);

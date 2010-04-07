@@ -9,26 +9,57 @@
 #include <algorithm>
 #include <math.h>
 
-#define USE_SDL_TIMER
+#include <SDL_timer.h>
+
+#include "headers/Defines.h"
+#include "headers/HAIInterface.h"
+#include "headers/HEngine.h"
+
+#define SPRING_PROFILER
+#define PROFILE(x) CScopedTimer t(std::string(#x), ai->cb);
 
 // Time interval in logic frames
 #define TIME_INTERVAL 300
 
-#ifdef USE_SDL_TIMER
-	#include <SDL_timer.h>
-#else
-	#include <time.h>
-#endif
-
-#define PROFILE(x) CScopedTimer t(std::string(#x), ai->cb->GetCurrentFrame());
+static const float3 colors[] = {
+	float3(1.0f, 0.0f, 0.0f),
+	float3(0.0f, 1.0f, 0.0f),
+	float3(0.0f, 0.0f, 1.0f),
+	float3(1.0f, 1.0f, 0.0f),
+	float3(0.0f, 1.0f, 1.0f),
+	float3(1.0f, 0.0f, 1.0f),
+	float3(0.0f, 0.0f, 0.0f),
+	float3(1.0f, 1.0f, 1.0f)
+};
 
 class CScopedTimer {
 	public:
-		CScopedTimer(const std::string& s, unsigned int frames): task(s) {
+#ifdef SPRING_PROFILER
+		CScopedTimer(const std::string& s, IAICallback *_cb): cb(_cb), task(s) {
+			if (!cb->IsDebugDrawerEnabled())
+				return;
+
+			if (std::find(tasks.begin(), tasks.end(), task) == tasks.end()) {
+				tasknr = tasks.size();
+				cb->SetDebugGraphLineLabel(tasknr, task.c_str());
+				cb->SetDebugGraphLineColor(tasknr, colors[tasknr%8]);
+				tasks.push_back(s);
+			}
+
+			t1 = SDL_GetTicks();
+		}
+
+		~CScopedTimer() {
+			t2 = SDL_GetTicks();
+			t3 = t2 - t1;
+			cb->AddDebugGraphPoint(tasknr, cb->GetCurrentFrame(), t3);
+		}
+#else
+		CScopedTimer(const std::string& s, IAICallback *_cb): task(s), cb(_cb) {
 			if (std::find(tasks.begin(), tasks.end(), task) == tasks.end())
 				tasks.push_back(s);
 
-			float time = frames / float(counter);
+			float time = cb->GetCurrentFrame() / float(counter);
 			if (time > TIME_INTERVAL)
 				counter += int(floorf(time/TIME_INTERVAL));
 
@@ -38,22 +69,15 @@ class CScopedTimer {
 				timings[counter] = M;
 			}
 
-#ifdef USE_SDL_TIMER
 			t1 = SDL_GetTicks();
-#else
-			t1 = clock();
-#endif
 		}
 
 		~CScopedTimer() {
-#ifdef USE_SDL_TIMER
 			t2 = SDL_GetTicks();
-#else
-			t2 = clock();
-#endif
 			t3 = t2 - t1;
 			timings[counter][task] += t3;
 		}
+#endif
 
 		static void toFile(const std::string& filename) {
 			std::ofstream ofs;
@@ -90,8 +114,9 @@ class CScopedTimer {
 		
 
 	private:
+		IAICallback *cb;
 		const std::string task;
-		unsigned t1, t2, t3;
+		unsigned t1, t2, t3, tasknr;
 
 		static std::map<unsigned int, std::map<std::string, unsigned int> > timings;
 		static std::vector<std::string> tasks;
