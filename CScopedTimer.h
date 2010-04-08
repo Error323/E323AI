@@ -40,9 +40,9 @@ class CScopedTimer {
 				return;
 
 			if (std::find(tasks.begin(), tasks.end(), task) == tasks.end()) {
-				tasknr = tasks.size();
-				cb->SetDebugGraphLineColor(tasknr, colors[tasknr%8]);
-				cb->SetDebugGraphLineLabel(tasknr, task.c_str());
+				tasknrs[task] = tasks.size();
+				cb->SetDebugGraphLineColor(tasknrs[task], colors[tasknrs[task]%8]);
+				cb->SetDebugGraphLineLabel(tasknrs[task], task.c_str());
 				tasks.push_back(s);
 			}
 
@@ -55,7 +55,7 @@ class CScopedTimer {
 
 			t2 = SDL_GetTicks();
 			t3 = t2 - t1;
-			cb->AddDebugGraphPoint(tasknr, cb->GetCurrentFrame(), t3);
+			cb->AddDebugGraphPoint(tasknrs[task], cb->GetCurrentFrame(), t3);
 		}
 #else
 		CScopedTimer(const std::string& s, IAICallback *_cb): task(s), cb(_cb) {
@@ -123,6 +123,7 @@ class CScopedTimer {
 
 		static std::map<unsigned int, std::map<std::string, unsigned int> > timings;
 		static std::vector<std::string> tasks;
+		static std::map<std::string, int> tasknrs;
 		static unsigned int counter;
 };
 
