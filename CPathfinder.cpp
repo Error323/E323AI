@@ -13,11 +13,11 @@
 #include "Util.hpp"
 #include "CScopedTimer.h"
 
-#include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
+class CAIAI;
 
 
-
-extern std::map<int, CAIGlobalAI*> myAIs;
+// see AIExport.cpp
+extern std::map<int, CAIAI*> myAIs;
 
 std::vector<CPathfinder::Node*> CPathfinder::graph;
 

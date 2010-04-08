@@ -28,8 +28,7 @@
 // AI interface stuff
 #include "ExternalAI/Interface/SSkirmishAILibrary.h"
 #include "ExternalAI/Interface/SSkirmishAICallback.h"
-#include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
-//#include "../AI/Wrappers/CUtils/Util.h"
+#include "LegacyCpp/AIAI.h"
 #include "Game/GameVersion.h"
 
 // E323AI stuff
@@ -38,75 +37,84 @@
 
 // NOTE: myAIs is not static cause we need to count AI instances
 
-// teamId -> AI map
-std::map<int, CAIGlobalAI*> myAIs;
+// skirmishAIId -> AI map
+static std::map<int, CAIAI*> myAIs;
 
 // filled in init() of the first instance of this AI
 static const char* aiVersion = NULL;
 
-// callbacks for all the teams controlled by this Skirmish AI
-static std::map<int, const struct SSkirmishAICallback*> teamId_callback;
+// callbacks for all the instances controlled by this Skirmish AI
+static std::map<int, const struct SSkirmishAICallback*> skirmishAIId_callback;
 
 
-EXPORT(enum LevelOfSupport) getLevelOfSupportFor(int teamId,
+
+EXPORT(enum LevelOfSupport) getLevelOfSupportFor(
+		const char* aiShortName, const char* aiVersion,
 		const char* engineVersionString, int engineVersionNumber,
 		const char* aiInterfaceShortName, const char* aiInterfaceVersion) {
-	
-	if (strcmp(engineVersionString, SpringVersion::GetFull().c_str()) == 0 &&
-			engineVersionNumber <= ENGINE_VERSION_NUMBER) {
+
+	const char* springVersion = SpringVersion::GetFull().c_str();
+	const int cmp = strcmp(engineVersionString, springVersion);
+
+	if (cmp == 0 && engineVersionNumber <= ENGINE_VERSION_NUMBER) {
 		return LOS_Working;
 	}
 
 	return LOS_None;
 }
 
-EXPORT(int) init(int teamId, const struct SSkirmishAICallback* callback) {
-	if (myAIs.count(teamId) > 0) {
-		// the map already has an AI for this team.
-		// raise an error, since it's probably a mistake if we're trying
-		// to reinitialise a team that already had init() called on it.
+EXPORT(int) init(int skirmishAIId, const struct SSkirmishAICallback* callback) {
+
+	if (myAIs.count(skirmishAIId) > 0) {
+		// the map has no AI for this skirmishAIId.
+		// raise an error, since it's probably a mistake if we are trying to
+		// release a skirmishAIId that's not initialized.
 		return -1;
 	}
 
 	if (aiVersion == NULL) {
-		aiVersion = callback->Clb_SkirmishAI_Info_getValueByKey(teamId, SKIRMISH_AI_PROPERTY_VERSION);
+		aiVersion = skirmishAIId_callback[skirmishAIId]->SkirmishAI_Info_getValueByKey(skirmishAIId, SKIRMISH_AI_PROPERTY_VERSION);
 	}
 
-	teamId_callback[teamId] = callback;
+	skirmishAIId_callback[skirmishAIId] = callback;
 
-	// CAIGlobalAI is the Legacy C++ wrapper
-	myAIs[teamId] = new CAIGlobalAI(teamId, new CE323AI());
+	// CAIAI is the Legacy C++ wrapper
+	myAIs[skirmishAIId] = new CAIAI(new CE323AI());
 
 	// signal: everything went ok
 	return 0;
 }
 
-EXPORT(int) release(int teamId) {
-	if (myAIs.find(teamId) == myAIs.end()) {
-		// the map has no AI for this team.
+EXPORT(int) release(int skirmishAIId) {
+
+	if (myAIs.find(skirmishAIId) == myAIs.end()) {
+		// the map has no AI for this skirmishAIId.
 		// raise an error, since it's probably a mistake if we're trying to
 		// release a team that's not initialized.
 		return -1;
 	}
 
-	delete myAIs[teamId];
-	myAIs[teamId] = NULL;
-	myAIs.erase(teamId);
+	delete myAIs[skirmishAIId];
+	myAIs[skirmishAIId] = NULL;
+	myAIs.erase(skirmishAIId);
+
+	skirmishAIId_callback.erase(skirmishAIId);
 
 	// signal: everything went ok
 	return 0;
 }
 
-EXPORT(int) handleEvent(int teamId, int topic, const void* data) {
-	if (teamId < 0) {
-		// events sent to team -1 will always be to the AI object itself,
-		// not to a particular team.
-	} else if (myAIs.find(teamId) != myAIs.end()) {
+EXPORT(int) handleEvent(int skirmishAIId, int topic, const void* data) {
+
+	if (skirmishAIId < 0) {
+		// events sent to skirmishAIId -1 will always be to the AI object itself,
+		// not to a particular skirmishAIId.
+	} else if (myAIs.find(skirmishAIId) != myAIs.end()) {
 		// allow the AI instance to handle the event.
-		return myAIs[teamId]->handleEvent(topic, data);
+		return myAIs[skirmishAIId]->handleEvent(topic, data);
 	}
 
-	// no AI for that team, so return error.
+	// no AI for that skirmishAIId, so return error.
 	return -1;
 }
 
@@ -116,6 +124,6 @@ const char* aiexport_getVersion() {
 	return aiVersion;
 }
 
-const char* aiexport_getMyOption(int teamId, const char* key) {
-	return teamId_callback[teamId]->Clb_SkirmishAI_OptionValues_getValueByKey(teamId, key);
+const char* aiexport_getMyOption(int skirmishAIId, const char* key) {
+	return skirmishAIId_callback[skirmishAIId]->SkirmishAI_OptionValues_getValueByKey(skirmishAIId, key);
 }

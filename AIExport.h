@@ -35,6 +35,7 @@
 #	error SYNCIFY should not be defined when building Skirmish AIs
 #endif
 
+
 #include "ExternalAI/Interface/aidefines.h"
 #include "ExternalAI/Interface/ELevelOfSupport.h"
 
@@ -45,18 +46,17 @@ struct SSkirmishAICallback;
 
 // static AI library methods (optional to implement)
 EXPORT(enum LevelOfSupport) getLevelOfSupportFor(
-	int teamId,
-	const char* engineVersionString, int engineVersionNumber,
-	const char* aiInterfaceShortName, const char* aiInterfaceVersion);
+		const char* aiShortName, const char* aiVersion,
+		const char* engineVersionString, int engineVersionNumber,
+		const char* aiInterfaceShortName, const char* aiInterfaceVersion);
 
-// team instance functions
-EXPORT(int) init(int teamId, const struct SSkirmishAICallback* callback);
-EXPORT(int) release(int teamId);
-EXPORT(int) handleEvent(int teamId, int topic, const void* data);
+// instance functions
+EXPORT(int) init(int skirmishAIId, const struct SSkirmishAICallback* callback);
+EXPORT(int) release(int skirmishAIId);
+EXPORT(int) handleEvent(int skirmishAIId, int topic, const void* data);
 
 // methods from here on are for AI internal use only
-const char* aiexport_getMyInfo(const char* key);
 const char* aiexport_getVersion();
-const char* aiexport_getMyOption(int teamId, const char* key);
+const char* aiexport_getMyOption(int skirmishAIId, const char* key);
 
 #endif // _AIEXPORT_H
