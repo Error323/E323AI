@@ -58,5 +58,6 @@ EXPORT(int) handleEvent(int skirmishAIId, int topic, const void* data);
 // methods from here on are for AI internal use only
 const char* aiexport_getVersion();
 const char* aiexport_getMyOption(int skirmishAIId, const char* key);
+size_t aiexport_getNumAIInstances();
 
 #endif // _AIEXPORT_H

@@ -12,12 +12,9 @@
 #include "MathUtil.h"
 #include "Util.hpp"
 #include "CScopedTimer.h"
+#include "AIExport.h"
 
-class CAIAI;
 
-
-// see AIExport.cpp
-extern std::map<int, CAIAI*> myAIs;
 
 std::vector<CPathfinder::Node*> CPathfinder::graph;
 
@@ -104,8 +101,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 }
 
 CPathfinder::~CPathfinder() {
-	if(myAIs.size() > 1)
-		return; // there are another instances of current AI type
+	if(aiexport_getNumAIInstances() > 1)
+		return; // there are other instances of the current AI type
 
 	for (unsigned int i = 0; i < CPathfinder::graph.size(); i++)
 		delete CPathfinder::graph[i];

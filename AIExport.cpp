@@ -73,7 +73,7 @@ EXPORT(int) init(int skirmishAIId, const struct SSkirmishAICallback* callback) {
 	}
 
 	if (aiVersion == NULL) {
-		aiVersion = skirmishAIId_callback[skirmishAIId]->SkirmishAI_Info_getValueByKey(skirmishAIId, SKIRMISH_AI_PROPERTY_VERSION);
+		aiVersion = callback->SkirmishAI_Info_getValueByKey(skirmishAIId, SKIRMISH_AI_PROPERTY_VERSION);
 	}
 
 	skirmishAIId_callback[skirmishAIId] = callback;
@@ -126,4 +126,8 @@ const char* aiexport_getVersion() {
 
 const char* aiexport_getMyOption(int skirmishAIId, const char* key) {
 	return skirmishAIId_callback[skirmishAIId]->SkirmishAI_OptionValues_getValueByKey(skirmishAIId, key);
+}
+
+size_t aiexport_getNumAIInstances() {
+	return myAIs.size();
 }
