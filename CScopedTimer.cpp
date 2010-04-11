@@ -1,6 +1,5 @@
 #include "CScopedTimer.h"
 
 std::map<std::string, int> CScopedTimer::tasknrs;
-std::map<unsigned int, std::map<std::string, unsigned int> > CScopedTimer::timings;
+std::map<std::string, int> CScopedTimer::counters;
 std::vector<std::string> CScopedTimer::tasks;
-unsigned int CScopedTimer::counter = 1;

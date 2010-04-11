@@ -62,10 +62,8 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->defensematrix = new CDefenseMatrix(ai);
 
 	/* Set the new graph stuff */
-#ifdef SPRING_PROFILER
-	ai->cb->SetDebugGraphPos(-0.4f, -0.4f);
-	ai->cb->SetDebugGraphSize(0.8f, 0.6f);
-#endif
+	ai->cb->DebugDrawerSetGraphPos(-0.4f, -0.4f);
+	ai->cb->DebugDrawerSetGraphSize(0.8f, 0.6f);
 
 	/*
 	ai->uploader->AddString("aiversion", AI_VERSION_NR);
@@ -78,10 +76,6 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 void CE323AI::ReleaseAI() {
 	instances--;
 	if (instances == 0) {
-#ifndef SPRING_PROFILER
-		std::string filename(util::GetAbsFileName(ai->cb, LOG_FOLDER + std::string("timings.dat")));
-		CScopedTimer::toFile(filename);
-#endif
 		ReusableObjectFactory<CGroup>::Shutdown();
 		ReusableObjectFactory<CUnit>::Shutdown();
 	}

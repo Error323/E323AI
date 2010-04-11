@@ -15,7 +15,6 @@
 #include "headers/HAIInterface.h"
 #include "headers/HEngine.h"
 
-#define SPRING_PROFILER
 #define PROFILE(x) CScopedTimer t(std::string(#x), ai->cb);
 
 // Time interval in logic frames
@@ -34,97 +33,43 @@ static const float3 colors[] = {
 
 class CScopedTimer {
 	public:
-#ifdef SPRING_PROFILER
 		CScopedTimer(const std::string& s, IAICallback *_cb): cb(_cb), task(s) {
-			if (!cb->IsDebugDrawerEnabled())
+			initialized = cb->IsDebugDrawerEnabled();
+			if (!initialized)
 				return;
 
 			if (std::find(tasks.begin(), tasks.end(), task) == tasks.end()) {
 				tasknrs[task] = tasks.size();
-				cb->SetDebugGraphLineColor(tasknrs[task], colors[tasknrs[task]%8]);
-				cb->SetDebugGraphLineLabel(tasknrs[task], task.c_str());
-				tasks.push_back(s);
+				cb->DebugDrawerSetGraphLineColor(tasknrs[task], colors[tasknrs[task]%8]);
+				cb->DebugDrawerSetGraphLineLabel(tasknrs[task], task.c_str());
+				tasks.push_back(task);
+				counters[task] = 0;
 			}
 
+			counters[task]++;
 			t1 = SDL_GetTicks();
 		}
 
 		~CScopedTimer() {
-			if (!cb->IsDebugDrawerEnabled())
+			t2 = SDL_GetTicks();
+
+			if (!initialized)
 				return;
 
-			t2 = SDL_GetTicks();
-			t3 = t2 - t1;
-			cb->AddDebugGraphPoint(tasknrs[task], cb->GetCurrentFrame(), t3);
+			cb->DebugDrawerAddGraphPoint(tasknrs[task], cb->GetCurrentFrame(), (t2-t1));
+			if (counters[task] >= 50)
+				cb->DebugDrawerDelGraphPoints(tasknrs[task], 1);
 		}
-#else
-		CScopedTimer(const std::string& s, IAICallback *_cb): task(s), cb(_cb) {
-			if (std::find(tasks.begin(), tasks.end(), task) == tasks.end())
-				tasks.push_back(s);
-
-			float time = cb->GetCurrentFrame() / float(counter);
-			if (time > TIME_INTERVAL)
-				counter += int(floorf(time/TIME_INTERVAL));
-
-			if (timings.find(counter) == timings.end()) {
-				std::map<std::string, unsigned int> M;
-				M[task] = 0;
-				timings[counter] = M;
-			}
-
-			t1 = SDL_GetTicks();
-		}
-
-		~CScopedTimer() {
-			t2 = SDL_GetTicks();
-			t3 = t2 - t1;
-			timings[counter][task] += t3;
-		}
-#endif
-
-		static void toFile(const std::string& filename) {
-			std::ofstream ofs;
-			ofs.open(filename.c_str(), std::ios::trunc);
-			if (ofs.good()) {
-				// labels
-				ofs << "time";
-				for (unsigned int i = 0; i < tasks.size(); i++)
-					ofs << "\t" << tasks[i];
-				ofs << "\n";
-
-				// data for gnuplot
-				std::map<unsigned int, std::map<std::string, unsigned int> >::iterator i;
-				for (i = timings.begin(); i != timings.end(); i++) {
-					ofs << i->first;
-					for (unsigned int j = 0; j < tasks.size(); j++) {
-						ofs << "\t";
-						if (i->second.find(tasks[j]) == i->second.end())
-							ofs << 0;
-						else
-							ofs << i->second[tasks[j]];
-					}
-					ofs << "\n";
-				}
-
-				ofs.flush();
-				ofs.close();
-				std::cout << "Writing timings to: " << filename << " succeeded!\n";
-			}
-			else
-				std::cout << "Writing timings to: " << filename << " failed!\n";
-		}
-
-		
 
 	private:
 		IAICallback *cb;
 		const std::string task;
-		unsigned t1, t2, t3, tasknr;
+		unsigned t1, t2;
+		bool initialized;
 
-		static std::map<unsigned int, std::map<std::string, unsigned int> > timings;
 		static std::vector<std::string> tasks;
 		static std::map<std::string, int> tasknrs;
-		static unsigned int counter;
+		static std::map<std::string, int> counters;
 };
 
 #endif
