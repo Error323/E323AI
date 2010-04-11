@@ -29,12 +29,16 @@ float3 CIntel::getEnemyVector() {
 void CIntel::init() {
 	numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
 	// FIXME: when commanders are spawned with wrap gate option enabled then assert raises
-	assert(numUnits > 0);
-	enemyvector = float3(0.0f, 0.0f, 0.0f);
-	for (int i = 0; i < numUnits; i++) {
-		enemyvector += ai->cbc->GetUnitPos(units[i]);
+	if (numUnits > 0) {
+		enemyvector = ZeroVector;
+		for (int i = 0; i < numUnits; i++) {
+			enemyvector += ai->cbc->GetUnitPos(units[i]);
+		}
+		enemyvector /= numUnits;
 	}
-	enemyvector /= numUnits;
+	else {
+		enemyvector = float3(1.0f, 1.0f, 1.0f);
+	}
 	LOG_II("Number of enemies: " << numUnits)
 	
 	if(ai->gamemap->IsWaterMap()) {
