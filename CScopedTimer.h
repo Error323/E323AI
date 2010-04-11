@@ -4,10 +4,7 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <fstream>
-#include <iostream>
 #include <algorithm>
-#include <math.h>
 
 #include <SDL_timer.h>
 
@@ -39,15 +36,15 @@ class CScopedTimer {
 				return;
 
 			if (std::find(tasks.begin(), tasks.end(), task) == tasks.end()) {
-				tasknrs[task] = tasks.size();
-				cb->DebugDrawerSetGraphLineColor(tasknrs[task], colors[tasknrs[task]%8]);
-				cb->DebugDrawerSetGraphLineLabel(tasknrs[task], task.c_str());
+				taskIDs[task] = tasks.size();
+				cb->DebugDrawerSetGraphLineColor(taskIDs[task], colors[taskIDs[task]%8]);
+				cb->DebugDrawerSetGraphLineLabel(taskIDs[task], task.c_str());
 				tasks.push_back(task);
+				curTime[task] = cb->GetCurrentFrame();
+				prevTime[task] = 0;
 			}
 
 			t1 = SDL_GetTicks();
-			
-			counter++;
 		}
 
 		~CScopedTimer() {
@@ -56,9 +53,19 @@ class CScopedTimer {
 			if (!initialized)
 				return;
 
-			cb->DebugDrawerAddGraphPoint(tasknrs[task], counter, (t2-t1));
-			if (counter >= TIME_INTERVAL)
-				cb->DebugDrawerDelGraphPoints(tasknrs[task], 1);
+			unsigned int curFrame = cb->GetCurrentFrame();
+			for (size_t i = 0; i < tasks.size(); i++) {
+				if (tasks[i] == task) {
+					cb->DebugDrawerAddGraphPoint(taskIDs[task], curFrame, (t2-t1));
+					prevTime[task] = t2-t1;
+				}
+				else {
+					cb->DebugDrawerAddGraphPoint(taskIDs[tasks[i]], curFrame, prevTime[tasks[i]]);
+				}
+
+				if ((curFrame - curTime[tasks[i]]) >= TIME_INTERVAL)
+					cb->DebugDrawerDelGraphPoints(taskIDs[tasks[i]], 1);
+			}
 		}
 
 	private:
@@ -68,8 +75,8 @@ class CScopedTimer {
 		bool initialized;
 
 		static std::vector<std::string> tasks;
-		static std::map<std::string, int> tasknrs;
-		static unsigned int counter;
+		static std::map<std::string, int> taskIDs;
+		static std::map<std::string, unsigned int> curTime, prevTime;
 };
 
 #endif
