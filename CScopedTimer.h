@@ -18,7 +18,7 @@
 #define PROFILE(x) CScopedTimer t(std::string(#x), ai->cb);
 
 // Time interval in logic frames
-#define TIME_INTERVAL 300
+#define TIME_INTERVAL 1000
 
 static const float3 colors[] = {
 	float3(1.0f, 0.0f, 0.0f),
@@ -43,11 +43,11 @@ class CScopedTimer {
 				cb->DebugDrawerSetGraphLineColor(tasknrs[task], colors[tasknrs[task]%8]);
 				cb->DebugDrawerSetGraphLineLabel(tasknrs[task], task.c_str());
 				tasks.push_back(task);
-				counters[task] = 0;
 			}
 
-			counters[task]++;
 			t1 = SDL_GetTicks();
+			
+			counter++;
 		}
 
 		~CScopedTimer() {
@@ -56,8 +56,8 @@ class CScopedTimer {
 			if (!initialized)
 				return;
 
-			cb->DebugDrawerAddGraphPoint(tasknrs[task], cb->GetCurrentFrame(), (t2-t1));
-			if (counters[task] >= 50)
+			cb->DebugDrawerAddGraphPoint(tasknrs[task], counter, (t2-t1));
+			if (counter >= TIME_INTERVAL)
 				cb->DebugDrawerDelGraphPoints(tasknrs[task], 1);
 		}
 
@@ -69,7 +69,7 @@ class CScopedTimer {
 
 		static std::vector<std::string> tasks;
 		static std::map<std::string, int> tasknrs;
-		static std::map<std::string, int> counters;
+		static unsigned int counter;
 };
 
 #endif
