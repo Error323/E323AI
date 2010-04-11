@@ -30,8 +30,9 @@ class CThreatMap {
 		AIClasses *ai;	
 		int *units;
 		float REAL;
-		std::map<ThreatMapType,float> totalPower;
+		std::map<ThreatMapType,float> maxPower;
 		std::map<ThreatMapType,float*> maps;
+		std::map<ThreatMapType,int> handles;
 
 		float gauss(float x, float sigma, float mu);
 		void reset();
