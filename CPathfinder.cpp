@@ -267,18 +267,32 @@ void CPathfinder::calcGraph() {
 	}
 }
 
-void CPathfinder::resetMap(ThreatMapType tm_type) {
+void CPathfinder::resetMap(CGroup &group, ThreatMapType tm_type) {
 	int idSlopeMap = 0;
-	float *map = ai->threatmap->getMap(tm_type);
+	float *threatMap = ai->threatmap->getMap(tm_type);
 
-	if (!map)
-		return;
-	
-	for(unsigned int id = 0; id < graphSize; id++) {
-		Node *n = CPathfinder::graph[id];
-		n->reset();
-		n->w = map[id] + sm[idSlopeMap] * 5.0f;
-		idSlopeMap += I_MAP_RES;
+	if (!threatMap) {
+		for(unsigned int id = 0; id < graphSize; id++) {
+			Node *n = CPathfinder::graph[id];
+			n->reset();
+			if (group.cats&LAND) {
+				n->w = 1.0f + sm[idSlopeMap] * 2.0f;
+				idSlopeMap += I_MAP_RES;
+			} else {
+				n->w = 1.0f;
+			}
+		}
+	} else {
+		for(unsigned int id = 0; id < graphSize; id++) {
+			Node *n = CPathfinder::graph[id];
+			n->reset();
+			if (group.cats&LAND) {
+				n->w = threatMap[id] + sm[idSlopeMap] * 5.0f;
+				idSlopeMap += I_MAP_RES;
+			}
+			else
+				n->w = threatMap[id] + 1.0f;				
+		}
 	}
 }
 
@@ -287,7 +301,7 @@ float CPathfinder::getETA(CGroup &group, float3 &pos, float radius) {
 	float travelTime;
 	float3 gpos = group.pos();
 	
-	if (group.moveType < 0 || group.speed < EPS) {
+	if (group.pathType < 0 || group.speed < EPS) {
 		travelTime = std::numeric_limits<float>::max();
 		unsigned int cats = group.firstUnit()->type->cats;
 		if (cats&STATIC) {
@@ -300,7 +314,7 @@ float CPathfinder::getETA(CGroup &group, float3 &pos, float radius) {
 			travelTime = gpos.distance2D(pos) - radius;
 		}
 	} else {
-		dist = ai->cb->GetPathLength(gpos, pos, group.moveType) - radius;
+		dist = ai->cb->GetPathLength(gpos, pos, group.pathType) - radius;
 		travelTime = (dist / group.speed);
 	}
 	
@@ -321,7 +335,6 @@ void CPathfinder::updateFollowers() {
 			continue;
 		}
 		
-		bool enableRegrouping = group->units.size() < GROUP_CRITICAL_MASS;
 		unsigned int segment = 1;
 		int waypoint = std::min<int>(MOVE_BUFFER, path->second.size() - segment - 1);
 		std::map<float, CUnit*> M;
@@ -332,6 +345,11 @@ void CPathfinder::updateFollowers() {
 		else
 			maxGroupLength *= 2.0f;
 	
+		// NOTE: for aircraft only Browler type units can regroup
+		bool enableRegrouping = 
+			group->units.size() < GROUP_CRITICAL_MASS 
+			&& (!(group->cats&AIR) || (group->cats&ASSAULT));
+		
 		/* Go through all the units in a group */
 		for (u = group->units.begin(); u != group->units.end(); u++) {
 			CUnit *unit = u->second;
@@ -455,16 +473,28 @@ bool CPathfinder::addGroup(CGroup &group) {
 	return success;
 }
 
+bool CPathfinder::pathExists(CGroup &group, const float3 &s, const float3 &g) {
+	activeMap = group.pathType;
+
+	resetMap(group);
+	
+	this->start = getClosestNode(s);
+	this->goal = getClosestNode(g);
+	
+	return (start != NULL && goal != NULL && findPath());
+}
+
 bool CPathfinder::addPath(CGroup &group, float3 &start, float3 &goal) {
-	activeMap = group.moveType;
-	std::vector<float3> path;
-	/* Reset the nodes of this map using threads */
+	activeMap = group.pathType;
+	
+	// reset the nodes...
 	if (activeMap < 0)
-		resetMap(TMT_AIR);
+		resetMap(group, TMT_AIR);
 	else
-		resetMap(TMT_SURFACE);
+		resetMap(group, TMT_SURFACE);
 
 	/* If we found a path, add it */
+	std::vector<float3> path;
 	bool success = getPath(start, goal, path, group);
 
 	/* Add it when not empty */
@@ -474,7 +504,7 @@ bool CPathfinder::addPath(CGroup &group, float3 &start, float3 &goal) {
 	return success;
 }
 
-CPathfinder::Node* CPathfinder::getClosestNode(float3 &f) {
+CPathfinder::Node* CPathfinder::getClosestNode(const float3 &f) {
 	if(f == ERRORVECTOR)
 		return NULL;
 
@@ -520,12 +550,12 @@ void CPathfinder::drawNode(Node *n) {
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup &group, float radius) {
 	//PROFILE(A*)
-	start = getClosestNode(s);
-	goal = getClosestNode(g);
+	this->start = getClosestNode(s);
+	this->goal = getClosestNode(g);
 
 	std::list<ANode*> nodepath;
 	
-	bool success = (start != NULL && goal != NULL && (findPath(nodepath)));
+	bool success = (start != NULL && goal != NULL && (findPath(&nodepath)));
 	if (success) {
 		/* Insert a pre-waypoint at the starting of the path */
 		int waypoint = std::min<int>(4, nodepath.size()-1);
