@@ -14,6 +14,7 @@
 #include "CWishList.h"
 #include "CUnitTable.h"
 #include "CConfigParser.h"
+#include "CDefenseMatrix.h"
 #include "ReusableObjectFactory.hpp"
 
 CMilitary::CMilitary(AIClasses *ai): ARegistrar(200, std::string("military")) {
@@ -61,7 +62,7 @@ void CMilitary::addUnit(CUnit &unit) {
 		}
 		else {
 			/* If there is a new factory, or the current group is busy, request
-			   a new group  */
+			   a new group */
 			std::map<int,CGroup*>::iterator i = assemblingGroups.find(unit.builtBy);
 			if (i == assemblingGroups.end()	|| i->second->busy) {
 				group = requestGroup(ENGAGE);
@@ -93,11 +94,13 @@ CGroup* CMilitary::requestGroup(groupType type) {
 	return group;
 }
 
-int CMilitary::selectTarget(float3 &ourPos, float radius, bool scout, std::vector<int> &targets) {
+int CMilitary::selectTarget(CGroup &group, float radius, std::vector<int> &targets) {
+	bool scout = group.cats&SCOUT;
 	int target = -1;
 	float estimate = std::numeric_limits<float>::max();
 	float factor = scout ? 10000 : 1;
 	float unitDamageK;
+	float3 ourPos = group.pos();
 
 	/* First sort the targets on distance */
 	for (unsigned i = 0; i < targets.size(); i++) {
@@ -105,6 +108,8 @@ int CMilitary::selectTarget(float3 &ourPos, float radius, bool scout, std::vecto
 		const UnitDef *ud = ai->cbc->GetUnitDef(tempTarget);
 
 		if (ud == NULL || ai->cbc->IsUnitCloaked(tempTarget))
+			continue;
+		if (!group.canAttack(tempTarget))
 			continue;
 
 		float unitMaxHealth = ai->cbc->GetUnitMaxHealth(tempTarget);
@@ -118,7 +123,8 @@ int CMilitary::selectTarget(float3 &ourPos, float radius, bool scout, std::vecto
 		float dist = ourPos.distance2D(epos);
 		dist += (factor * ai->threatmap->getThreat(epos, radius)) - unitDamageK * 150.0f;
 		if (!scout) {
-			if (ecats&SCOUTER) dist += 10000.0f;
+			if (ecats&SCOUTER && !ai->defensematrix->isPosInBounds(epos))
+				dist += 10000.0f;
 		}
 		
 		if(dist < estimate) {
@@ -138,13 +144,15 @@ void CMilitary::prepareTargets(std::vector<int> &all, std::vector<int> &harass) 
 	for (j = ai->tasks->activeAttackTasks.begin(); j != ai->tasks->activeAttackTasks.end(); j++)
 		occupiedTargets.push_back(j->second->target);
 	
-	targets.insert(targets.end(), ai->intel->factories.begin(), ai->intel->factories.end());
 	targets.insert(targets.end(), ai->intel->attackers.begin(), ai->intel->attackers.end());
-	targets.insert(targets.end(), ai->intel->rest.begin(), ai->intel->rest.end());
-	targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
+	targets.insert(targets.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
+	targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
+	targets.insert(targets.end(), ai->intel->defenseAntiAir.begin(), ai->intel->defenseAntiAir.end());
 	if (targets.empty()) {
-		targets.insert(targets.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
-		targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
+		targets.insert(targets.end(), ai->intel->defenseGround.begin(), ai->intel->defenseGround.end());
+		targets.insert(targets.end(), ai->intel->rest.begin(), ai->intel->rest.end());
+		targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
+		targets.insert(targets.end(), ai->intel->factories.begin(), ai->intel->factories.end());
 		targets.insert(targets.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
 	}
 
@@ -154,8 +162,10 @@ void CMilitary::prepareTargets(std::vector<int> &all, std::vector<int> &harass) 
 	targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
 	targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
 	targets.insert(targets.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
-	targets.insert(targets.end(), ai->intel->factories.begin(), ai->intel->factories.end());
 	targets.insert(targets.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
+	if (targets.empty()) {
+		targets.insert(targets.end(), ai->intel->factories.begin(), ai->intel->factories.end());
+	}
 	
 	filterOccupiedTargets(targets, harass);
 	targets.clear();
@@ -179,6 +189,7 @@ void CMilitary::filterOccupiedTargets(std::vector<int> &source, std::vector<int>
 }
 
 void CMilitary::update(int frame) {
+	bool hasScoutTargets = false;
 	int target = 0;
 
 	std::vector<int> all, harras;
@@ -200,10 +211,10 @@ void CMilitary::update(int frame) {
 		// NOTE: if once target is not found it will never appear during
 		// current loop execution
 		if (target >= 0) {
-			target = selectTarget(pos, 300.0f, true, harras);
+			target = selectTarget(*group, 300.0f, harras);
 			/* There are no harras targets available */
 			if (target < 0)
-				target = selectTarget(pos, 300.0f, true, all);
+				target = selectTarget(*group, 300.0f, all);
 		}
 
 		/* Nothing available,  */
@@ -234,14 +245,18 @@ void CMilitary::update(int frame) {
 			float3 tpos = ai->cbc->GetUnitPos(target);
 			float threat = ai->threatmap->getThreat(tpos, 0.0f);
 			if (threat < group->strength) {
+				hasScoutTargets = true;
 				mergeScouts.erase(group->key);
 				ai->tasks->addAttackTask(target, *group);
 				break;
 			}
 			else {
 				//LOG_II("CMilitary::update target at (" << tpos << ") is too dangerous (threat=" << threat << ") for scout Group(" << group->key << "):strength(" << group->strength << ")")
-				if (group->units.size() < MAX_SCOUTS_IN_GROUP)
-					mergeScouts[group->key] = group;
+				if ((threat / group->strength) <= MAX_SCOUTS_IN_GROUP) {
+					hasScoutTargets = true;
+					if (group->units.size() < MAX_SCOUTS_IN_GROUP)
+						mergeScouts[group->key] = group;
+				}
 			}
 		}
 
@@ -293,7 +308,7 @@ void CMilitary::update(int frame) {
 
 		/* Select a target */
 		float3 pos = group->pos();
-		int target = selectTarget(pos, 0.0f, false, all);
+		int target = selectTarget(*group, 0.0f, all);
 
 		/* There are no targets available, assist an attack */
 		if (target == -1) {
@@ -339,7 +354,7 @@ void CMilitary::update(int frame) {
 	bool gotAirFactory = ai->unittable->gotFactory(AIR);
 
 	/* Always have enough scouts */
-	if (activeScoutGroups.size() < ai->cfgparser->getMinScouts()) {
+	if (hasScoutTargets && activeScoutGroups.size() < ai->cfgparser->getMinScouts()) {
 		if(gotAirFactory)
 			// TODO: tweak this
 			ai->wishlist->push(AIR | MOBILE | SCOUTER, HIGH);
