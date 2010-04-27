@@ -17,7 +17,7 @@ CDefenseMatrix::CDefenseMatrix(AIClasses *ai) {
 }
 
 float3 CDefenseMatrix::getBestDefendedPos(int n) {
-	n = std::min<int>(n, clusters.size()-1);
+	n = std::min<int>(n, clusters.size() - 1);
 	std::multimap<float, Cluster*>::iterator i;
 	int j = 0;
 	for (i = clusters.begin(); i != clusters.end(); i++) {
@@ -79,7 +79,7 @@ int CDefenseMatrix::getClusters() {
 	int bigClusters = 0;
 	std::multimap<float, Cluster*>::iterator i;
 	for (i = clusters.begin(); i != clusters.end(); i++) {
-		if (i->second->members.size() >= 2)
+		if (i->second->members.size() >= 1)
 			bigClusters++;
 	}
 	return bigClusters;
@@ -105,7 +105,7 @@ void CDefenseMatrix::update() {
 	}
 
 	/* Calculate cumulative defensive power */
-	float  sumDefPower = 0.0f;
+	float sumDefPower = 0.0f;
 	std::map<int, CUnit*>::iterator l;
 	for (l = ai->unittable->defenses.begin(); l != ai->unittable->defenses.end(); l++)
 		sumDefPower += ai->cb->GetUnitPower(l->first);
@@ -178,6 +178,15 @@ float CDefenseMatrix::getValue(CUnit *unit) {
 	return unit->type->cost;
 }
 
+bool CDefenseMatrix::isPosInBounds(float3 &pos) {
+	std::multimap<float, Cluster*>::iterator i;
+	for (i = clusters.begin(); i != clusters.end(); i++) {
+		if(i->second->center.distance2D(pos) <= 320.0f)
+			return true;
+	}
+	return false;	
+}
+
 void CDefenseMatrix::draw() {
 	std::multimap<float, Cluster*>::iterator i;
 	for (i = clusters.begin(); i != clusters.end(); i++) {
@@ -199,3 +208,4 @@ void CDefenseMatrix::draw() {
 		ai->cb->SetFigureColor(group, 0.0f, 0.0f, i->first/totalValue, 1.0f);
 	}
 }
+
