@@ -61,6 +61,9 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->military      = new CMilitary(ai);
 	ai->defensematrix = new CDefenseMatrix(ai);
 
+	/* Set the new graph stuff */
+	ai->cb->DebugDrawerSetGraphPos(-0.4f, -0.4f);
+	ai->cb->DebugDrawerSetGraphSize(0.8f, 0.6f);
 
 	/*
 	ai->uploader->AddString("aiversion", AI_VERSION_NR);
@@ -72,9 +75,8 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 
 void CE323AI::ReleaseAI() {
 	instances--;
+	
 	if (instances == 0) {
-		std::string filename(util::GetAbsFileName(ai->cb, LOG_FOLDER + std::string("timings.dat")));
-		CScopedTimer::toFile(filename);
 		ReusableObjectFactory<CGroup>::Shutdown();
 		ReusableObjectFactory<CUnit>::Shutdown();
 	}
@@ -159,7 +161,6 @@ void CE323AI::UnitFinished(int uid) {
 
 /* Called on a destroyed unit */
 void CE323AI::UnitDestroyed(int uid, int attacker) {
-	PROFILE(unitdestroyed)
 	CUnit *unit = ai->unittable->getUnit(uid);
 	LOG_II("CE323AI::UnitDestroyed " << (*unit))
 	unit->remove();
@@ -362,19 +363,19 @@ void CE323AI::Update() {
 	// NOTE: if AI is attached at game start Update() is called since 1st game frame.
 	// By current time all player commanders are already spawned and that's good because 
 	// we calculate number of enemies in CIntel::init()
-	const int frame = ai->cb->GetCurrentFrame();
+	const int currentFrame = ai->cb->GetCurrentFrame();
 	
-	if (frame < 0)
+	if (currentFrame < 0)
 		return; // some shit happened with engine? (stolen from AAI)
 
 	// NOTE: AI can be attached in mid-game state with /aicontrol command
 	int localFrame;
 
 	if (attachedAtFrame < 0) {
-		attachedAtFrame = frame - 1;
+		attachedAtFrame = currentFrame - 1;
 	}
 	
-	localFrame = frame - attachedAtFrame;
+	localFrame = currentFrame - attachedAtFrame;
 
 	if(localFrame == 1)
 		ai->intel->init();
