@@ -29,14 +29,13 @@
 #include "ExternalAI/Interface/SSkirmishAILibrary.h"
 #include "ExternalAI/Interface/SSkirmishAICallback.h"
 #include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
-//#include "../AI/Wrappers/CUtils/Util.h"
 #include "Game/GameVersion.h"
 
 // E323AI stuff
 #include "AIExport.h"
 #include "CE323AI.h"
 
-// NOTE: myAIs is not static cause we need to count AI instances
+// NOTE: myAIs is not static cause we need to count AI instances from outside
 
 // teamId -> AI map
 std::map<int, CAIGlobalAI*> myAIs;
