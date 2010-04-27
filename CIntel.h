@@ -14,7 +14,7 @@ class CUnit;
 class CIntel {
 	public:
 		CIntel(AIClasses *ai);
-		~CIntel(){};
+		~CIntel() {};
 
 		void update(int frame);
 		void init();
@@ -30,17 +30,17 @@ class CIntel {
 		std::vector<int> underwaterUnits;
 		std::vector<int> restUnarmedUnits;
 		std::vector<int> rest;
+		std::vector<int> defenseGround;
+		std::vector<int> defenseAntiAir;
 
 		std::multimap<float,unitCategory> roulette;
 
 		std::list<unitCategory> allowedFactories;
 
-		int numUnits;
-
-
 	private:
 		AIClasses *ai;
 
+		bool initialized;
 		int *units;
 		std::map<unitCategory,unsigned> counts;
 		std::vector<unitCategory> selector;
@@ -53,7 +53,6 @@ class CIntel {
 		void updateCounts(unsigned c);
 		/* Get unit category counterpart (can be implemented via map) */
 		unitCategory counter(unitCategory c);
-
 };
 
 #endif

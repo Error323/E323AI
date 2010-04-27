@@ -17,9 +17,13 @@ CIntel::CIntel(AIClasses *ai) {
 	selector.push_back(ARTILLERY);
 	selector.push_back(ANTIAIR);
 	selector.push_back(AIR);
+	
 	for (size_t i = 0; i < selector.size(); i++)
 		counts[selector[i]] = 1;
-	numUnits = 1;
+	
+	enemyvector = float3(1.0f, 1.0f, 1.0f);
+
+	initialized = false;
 }
 
 float3 CIntel::getEnemyVector() {
@@ -27,16 +31,28 @@ float3 CIntel::getEnemyVector() {
 }
 
 void CIntel::init() {
-	numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
-	// FIXME: when commanders are spawned with wrap gate option enabled then assert raises
-	assert(numUnits > 0);
-	enemyvector = float3(0.0f, 0.0f, 0.0f);
-	for (int i = 0; i < numUnits; i++) {
-		enemyvector += ai->cbc->GetUnitPos(units[i]);
-	}
-	enemyvector /= numUnits;
-	LOG_II("Number of enemies: " << numUnits)
+	if (initialized) return;
 	
+	int numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
+	// FIXME: when commanders are spawned with wrap gate option enabled then assert raises
+	if (numUnits > 0) {
+		enemyvector = ZeroVector;
+		for (int i = 0; i < numUnits; i++) {
+			enemyvector += ai->cbc->GetUnitPos(units[i]);
+		}
+		enemyvector /= numUnits;
+	}
+
+	LOG_II("Number of enemy units: " << numUnits)
+	
+	/* FIXME:
+		I faced situation that on maps with less land there is a direct
+		path to enemy unit, but algo below starts to play a non-land game. 
+		I could not think up an apporpiate algo to avoid this. I though tracing
+		a path in the beginning of the game from my commander to enemy would 
+		be ok, but commander is an amphibious unit. It is not trivial stuff 
+		without external helpers in config files.
+	*/
 	if(ai->gamemap->IsWaterMap()) {
 		allowedFactories.push_back(HOVER);
 	}
@@ -54,6 +70,8 @@ void CIntel::init() {
 	}
 	// TODO: do not build air on too small maps?
 	allowedFactories.push_back(AIR);
+
+	initialized = true;
 }
 
 void CIntel::update(int frame) {
@@ -66,9 +84,12 @@ void CIntel::update(int frame) {
 	underwaterUnits.clear();
 	restUnarmedUnits.clear();
 	rest.clear();
+	defenseGround.clear();
+	defenseAntiAir.clear();
+	
 	resetCounters();
 
-	numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
+	int numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
 	
 	for (int i = 0; i < numUnits; i++) {
 		const int uid = units[i];
@@ -88,6 +109,12 @@ void CIntel::update(int frame) {
 		else if (!(c&(LAND|AIR)) && c&SEA) {
 			navalUnits.push_back(uid);
 		}
+		else if (c&(STATIC|ANTIAIR)) {
+			defenseAntiAir.push_back(uid);
+		}
+		else if (c&(STATIC|DEFENSE)) {
+			defenseGround.push_back(uid);
+		}
 		else if (c&ATTACKER && !(c&AIR)) {
 			attackers.push_back(uid);
 		}
@@ -97,7 +124,7 @@ void CIntel::update(int frame) {
 		else if (c&BUILDER && c&MOBILE && !(c&AIR)) {
 			mobileBuilders.push_back(uid);
 		}
-		else if (c&MEXTRACTOR || c&MMAKER) {
+		else if (c&(MEXTRACTOR|MMAKER)) {
 			metalMakers.push_back(uid);
 		}
 		else if (c&EMAKER) {
