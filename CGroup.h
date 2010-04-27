@@ -12,7 +12,7 @@ class AIClasses;
 class UnitType;
 
 /* NOTE: CGroup silently assumes that waterunits will not be merged with
- * non-water units as a group, aswell as builders with attackers
+ * non-water units as a group, as well as builders with attackers
  */
 class CGroup: public ARegistrar {
 	public:
@@ -29,11 +29,13 @@ class CGroup: public ARegistrar {
 
 		/* Group counter */
 		static int counter;
-		/* Tech level */
+		/* Group category tags */
+		unsigned int cats;
+		/* Max tech level of all units in a group */
 		int techlvl;
-		/* movetype, the movetype with the smallest slope */
-		int moveType;
-		/* corresponding maxSlope */
+		/* Path type with the smallest slope */
+		int pathType;
+		/* Corresponding maxSlope */
 		float maxSlope;
 		/* The group strength */
 		float strength;
@@ -96,10 +98,10 @@ class CGroup: public ARegistrar {
 		void unwait();
 		/* Get the maximal lateral dispersion */
 		int maxLength();
-		/* Is position reachable by group (can be dropped at position)? */
-		bool canReach(float3 &pos);
-		/* Is position reachable from remote position by group? */
-		bool canReach(float3 &from, float3 &to);
+		/* Can unit exists at this point? */
+		bool canTouch(const float3&);
+		/* Is position reachable by group */
+		bool canReach(const float3&);
 		/* Can group attack another unit? */
 		bool canAttack(int uid);
 
@@ -114,6 +116,8 @@ class CGroup: public ARegistrar {
 	private:
 		/* Recalculate group properties based on new unit */
 		void recalcProperties(CUnit *unit, bool reset = false);
+
+		void mergeCats(unsigned int);
 };
 
 #endif
