@@ -57,7 +57,7 @@ void ATask::remove() {
 
 // called on Group removing
 void ATask::remove(ARegistrar &group) {
-	LOG_II("ATask::remove by group(" << (*(dynamic_cast<CGroup*>(&group))) << ")")
+	LOG_II("ATask::remove by " << (*(dynamic_cast<CGroup*>(&group))))
 
 	remove();
 }
@@ -84,6 +84,8 @@ bool ATask::enemyScan(bool scout) {
 		const int euid = ai->unitIDs[i];
 		const UnitDef *ud = ai->cbc->GetUnitDef(euid);
 		if (ud == NULL)
+			continue;
+		if (!group->canAttack(euid))
 			continue;
 		const unsigned int ecats = UC(ud->id);
 		float3 epos = ai->cbc->GetUnitPos(euid);
@@ -367,12 +369,14 @@ void CTaskHandler::remove(ARegistrar &task) {
 	}
 }
 
+/*
 void CTaskHandler::getGroupsPos(std::vector<CGroup*> &groups, float3 &pos) {
 	pos.x = pos.y = pos.z = 0.0f;
 	for (unsigned i = 0; i < groups.size(); i++)
 		pos += groups[i]->pos();
 	pos /= groups.size();
 }
+*/
 
 void CTaskHandler::update() {
 	/* delete obsolete tasks from memory */
@@ -402,6 +406,15 @@ ATask* CTaskHandler::getTask(CGroup &group) {
 	if (i == groupToTask.end())
 		return NULL;
 	return i->second;
+}
+
+ATask* CTaskHandler::getTaskByTarget(int uid) {
+	std::map<int, AttackTask*>::iterator i;
+	for (i = activeAttackTasks.begin(); i != activeAttackTasks.end(); i++) {
+		if (i->second->target == uid)
+			return i->second;
+	}
+	return NULL;
 }
 
 /**************************************************************/
@@ -694,8 +707,7 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 }
 
 bool CTaskHandler::AttackTask::validate() {
-	CUnit *unit = group->firstUnit();
-	bool scoutGroup = unit->type->cats&SCOUTER;
+	bool scoutGroup = group->cats&SCOUTER;
 	float targetDistance = pos.distance2D(group->pos());
 
 	if (!scoutGroup && lifeTime() > 20.0f) {
@@ -764,9 +776,7 @@ void CTaskHandler::AttackTask::update() {
 	if (!group->isMicroing()) {
 		if (builder)
 			resourceScan(); // builders should not be too aggressive
-		// TODO: attack group can have scouts also, we need to prevent
-		// assigning scout tasks to attack group
-		else if (unit->type->cats&SCOUTER)
+		else if (group->cats&SCOUTER)
 			enemyScan(true);
 		else
 			enemyScan(false);
