@@ -53,7 +53,7 @@ class AAStar {
 				}
 		};
 
-		bool findPath(std::list<ANode*> &path);
+		bool findPath(std::list<ANode*> *path = NULL);
 
 	protected:
 		void init();
