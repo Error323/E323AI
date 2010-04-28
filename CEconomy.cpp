@@ -235,27 +235,27 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 			float m = mNow/mStorage;
 			switch(state) {
 				case 0: case 1: case 2: {
-					if (m > 0.7f && !taskInProgress(bt) && affordable)
+					if (m > 0.45f && !taskInProgress(bt) && affordable)
 						ai->tasks->addBuildTask(bt, i->second, group, pos);
 					break;
 				}
 				case 3: {
-					if (m > 0.6f && !taskInProgress(bt))
-						ai->tasks->addBuildTask(bt, i->second, group, pos);
-					break;
-				}
-				case 4: {
-					if (m > 0.5f && !taskInProgress(bt))
-						ai->tasks->addBuildTask(bt, i->second, group, pos);
-					break;
-				}
-				case 5: {
 					if (m > 0.4f && !taskInProgress(bt))
 						ai->tasks->addBuildTask(bt, i->second, group, pos);
 					break;
 				}
-				case 6: {
+				case 4: {
+					if (m > 0.35f && !taskInProgress(bt))
+						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					break;
+				}
+				case 5: {
 					if (m > 0.3f && !taskInProgress(bt))
+						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					break;
+				}
+				case 6: {
+					if (m > 0.25f && !taskInProgress(bt))
 						ai->tasks->addBuildTask(bt, i->second, group, pos);
 					break;
 				}
