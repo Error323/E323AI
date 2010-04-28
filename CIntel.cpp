@@ -106,7 +106,7 @@ void CIntel::update(int frame) {
 		if (c&SEA && ai->cbc->GetUnitPos(uid).y < 0.0f) {
 			underwaterUnits.push_back(uid);
 		}
-		else if (!(c&LAND|AIR) && c&SEA) {
+		else if (!(c&(LAND|AIR)) && c&SEA) {
 			navalUnits.push_back(uid);
 		}
 		else if ((c&STATIC) && (c&ANTIAIR)) {
