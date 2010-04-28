@@ -15,6 +15,7 @@
 #include "CConfigParser.h"
 #include "CThreatMap.h"
 #include "CScopedTimer.h"
+#include "CDefenseMatrix.h"
 
 /**************************************************************/
 /************************* ATASK ******************************/
@@ -104,8 +105,8 @@ bool ATask::enemyScan(bool scout) {
 			float3 epos = ai->cbc->GetUnitPos(i->second);
 			threat = ai->threatmap->getThreat(epos, scout ? 300.0f: 0.0f);
 			if (scout) {
-				// scouts like safe places and very hate enemy scouts
-				if (threat <= 1.1f || (ecats&SCOUTER && group->strength > ai->cbc->GetUnitPower(i->second)))
+				// scouts like safe places
+				if (threat <= 1.1f /*|| (ecats&SCOUTER && group->strength > ai->cbc->GetUnitPower(i->second))*/)
 					break;
 			} else {
 				// attack groups won't chase enemy souts, they like real tough job
@@ -553,7 +554,11 @@ bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 		return false;
 	}
 	else {
-		ai->wishlist->push(BUILDER, HIGH);
+		// SLOGIC: why we need to push a new builder? Firt of all, this breaks
+		// builder limit set in config file. Secondly, assisting task involves
+		// a builder which has nothing to do better. Right? So, commented out 
+		// by now.
+		//ai->wishlist->push(BUILDER, HIGH);
 		return true;
 	}
 }
@@ -571,10 +576,11 @@ void CTaskHandler::FactoryTask::update() {
 	for(i = group->units.begin(); i != group->units.end(); i++) {
 		factory = i->second;
 		if (ai->unittable->idle[factory->key] && !ai->wishlist->empty(factory->key)) {
-			UnitType *ut = ai->wishlist->top(factory->key); ai->wishlist->pop(factory->key);
-			factory->factoryBuild(ut);
-			ai->unittable->factoriesBuilding[factory->key] = ut;
-			ai->unittable->idle[factory->key] = false;
+			Wish w = ai->wishlist->top(factory->key);
+			ai->wishlist->pop(factory->key);
+			if (factory->factoryBuild(w.ut)) {
+				ai->unittable->unitsBuilding[factory->key] = w;
+			}
 		}
 	}
 }
@@ -714,8 +720,8 @@ bool CTaskHandler::AttackTask::validate() {
 		const UnitDef *eud = ai->cbc->GetUnitDef(target);
 		if (eud) {
 			const unsigned int ecats = UC(eud->id);
-			if (ecats&SCOUTER)
-				return false; // do not chase scouts too long
+			if (ecats&SCOUTER && !ai->defensematrix->isPosInBounds(pos))
+				return false; // don't chase scouts too long if they are out of base
 		}
 	}
 	

@@ -103,16 +103,18 @@ void CE323AI::ReleaseAI() {
 /* Called when units are spawned in a factory or when game starts */
 void CE323AI::UnitCreated(int uid, int bid) {
 	CUnit *unit = ai->unittable->requestUnit(uid, bid);
+	
 	LOG_II("CE323AI::UnitCreated " << (*unit))
 
 	if (unit->def->isCommander && !ai->economy->isInitialized()) {
 		ai->economy->init(*unit);
 	}
 
+	// HACK: for metal extractors only
 	ai->economy->addUnitOnCreated(*unit);
 
 	if (bid < 0)
-		return; // unit was spawned from nowhere (e.g. commander)
+		return; // unit was spawned from nowhere (e.g. commander), or given by another player
 
 	unsigned int c = unit->type->cats;
 	if (c&MOBILE) {
@@ -120,8 +122,8 @@ void CE323AI::UnitCreated(int uid, int bid) {
 		// if builder is a mobile unit (like Consul in BA) then do not 
 		// assign move command...
 		if (builder->type->cats&STATIC) {
-			// NOTE: factories should be already rotated in proper direction to prevent
-			// units going outside the map
+			// NOTE: factories should be already rotated in proper direction 
+			// to prevent units going outside the map
 			if (c&AIR)
 				unit->moveRandom(500.0f, true);
 			else if (c&BUILDER)
@@ -130,6 +132,14 @@ void CE323AI::UnitCreated(int uid, int bid) {
 				unit->moveForward(400.0f);
 		}
 	}
+
+	// TODO: check if UnitIdle for factory/builder is called after 
+	// UnitCreated then we do not need "unitsUnderConstruction" map
+	std::map<int, Wish>::iterator it = ai->unittable->unitsBuilding.find(bid);
+	if (it != ai->unittable->unitsBuilding.end())
+		ai->unittable->unitsUnderConstruction[uid] = it->second.goalCats;
+	else	
+		ai->unittable->unitsUnderConstruction[uid] = 0;
 }
 
 /* Called when units are finished in a factory and able to move */
@@ -140,14 +150,16 @@ void CE323AI::UnitFinished(int uid) {
 		LOG_EE("CE323AI::UnitFinished unregistered Unit(" << uid << ")")
 		return;
 	}
+	else
+		LOG_II("CE323AI::UnitFinished " << (*unit))
 
 	ai->unittable->unitsAliveTime[uid] = 0;
 	ai->unittable->idle[uid] = true;
 
-	LOG_II("CE323AI::UnitFinished " << (*unit))
-
-	if (unit->builtBy >= 0)
+	if (unit->builtBy >= 0) {
+		// mark builder has finished its job
 		ai->unittable->builders[unit->builtBy] = true;
+	}
 
 	/* Eco unit */
 	if (unit->isEconomy())
@@ -157,6 +169,10 @@ void CE323AI::UnitFinished(int uid) {
 		ai->military->addUnit(*unit);
 	else
 		LOG_WW("CE323AI::UnitFinished invalid unit " << *unit)
+
+	// NOTE: very important to place this line AFTER registering a unit in
+	// either economy or military blocks
+	ai->unittable->unitsUnderConstruction.erase(uid);
 }
 
 /* Called on a destroyed unit */
@@ -174,11 +190,15 @@ void CE323AI::UnitIdle(int uid) {
 		ai->unittable->unitsUnderPlayerControl.erase(uid);
 		assert(unit->group == NULL);
 		LOG_II("CE323AI::UnitControlledByAI " << (*unit))
-		// re-assigning unit to appropriate group
+		// re-assign unit to appropriate group
 		UnitFinished(uid);
 		return;
 	}
+	
 	ai->unittable->idle[uid] = true;
+	
+	if (unit->type->cats&(BUILDER|FACTORY))
+		ai->unittable->unitsBuilding.erase(uid);
 }
 
 /* Called when unit is damaged */

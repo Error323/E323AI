@@ -156,13 +156,14 @@ void CUnitTable::remove(ARegistrar &object) {
 	builders.erase(unit->key);
 	idle.erase(unit->key);
 	metalMakers.erase(unit->key);
-	factoriesBuilding.erase(unit->key);
 	activeUnits.erase(unit->key);
 	factories.erase(unit->key);
 	defenses.erase(unit->key);
 	unitsAliveTime.erase(unit->key);
 	energyStorages.erase(unit->key);
 	unitsUnderPlayerControl.erase(unit->key);
+	unitsUnderConstruction.erase(unit->key);
+	unitsBuilding.erase(unit->key);
 	unit->unreg(*this);
 	ReusableObjectFactory<CUnit>::Release(unit);
 }
@@ -180,7 +181,8 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 	unit->ai = ai;
 	unit->reset(uid, bid);
 	unit->reg(*this);
-	if (bid > 0) builders[bid] = false;
+	if (bid > 0)
+		builders[bid] = false;
 	activeUnits[uid] = unit;
 	idle[bid] = false;
 	idle[uid] = false;
@@ -209,9 +211,9 @@ void CUnitTable::update() {
 }
 
 bool CUnitTable::canPerformTask(CUnit &unit) {
-	// TODO: this is a temporarily hack until we make all groups behaviour via
+	// TODO: this is a temporary hack until we make all groups behaviour via
 	// tasks. Currently for most of static groups this is wrong
-	if (unit.type->cats & STATIC)
+	if (unit.type->cats&STATIC)
 		return false;
 	/* lifetime of more then 5 seconds */
 	return unitsAliveTime.find(unit.key) != unitsAliveTime.end() && unitsAliveTime[unit.key] > 30*5;
