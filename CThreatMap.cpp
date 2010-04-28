@@ -167,6 +167,7 @@ void CThreatMap::update(int frame) {
 			maxPower[*tmi] = std::max<float>(power, maxPower[*tmi]);
 		}
 	}
+
 	if (ai->cb->IsDebugDrawerEnabled()) {
 		std::map<ThreatMapType,int>::iterator i;
 		for (i = handles.begin(); i != handles.end(); i++) {
