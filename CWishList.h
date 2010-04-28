@@ -11,6 +11,31 @@
 class AIClasses;
 class UnitType;
 
+struct Wish {
+	unsigned int goalCats;
+	buildPriority p;
+	UnitType *ut;
+
+	Wish() {
+		goalCats = 0;
+		p = NORMAL;
+		ut = NULL;
+	}
+	Wish(UnitType *ut, buildPriority p, unsigned int gcats) {
+		this->ut = ut;
+		this->p  = p;
+		this->goalCats = gcats;
+	}
+
+	bool operator< (const Wish &w) const {
+		return p > w.p;
+	}
+
+	bool operator== (const Wish &w) const {
+		return p == w.p;
+	}
+};
+
 class CWishList {
 	public:
 		CWishList(AIClasses *ai);
@@ -26,27 +51,9 @@ class CWishList {
 		bool empty(int factory);
 
 		/* View the top unit from the wishlist */
-		UnitType* top(int factory);
+		Wish top(int factory);
 
 	private:
-		struct Wish {
-			buildPriority p;
-			UnitType *ut;
-
-			Wish(UnitType *ut, buildPriority p) {
-				this->ut = ut;
-				this->p  = p;
-			}
-
-			bool operator< (const Wish &w) const {
-				return p > w.p;
-			}
-
-			bool operator== (const Wish &w) const {
-				return p == w.p;
-			}
-		};
-
 		void unique(std::vector<Wish> &vector);
 
 		std::map<int, std::vector<Wish> > wishlist;  /* <factory type, wishes> */
