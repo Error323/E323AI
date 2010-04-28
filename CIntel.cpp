@@ -106,16 +106,16 @@ void CIntel::update(int frame) {
 		if (c&SEA && ai->cbc->GetUnitPos(uid).y < 0.0f) {
 			underwaterUnits.push_back(uid);
 		}
-		else if (!(c&(LAND|AIR)) && c&SEA) {
+		else if (!(c&LAND|AIR) && c&SEA) {
 			navalUnits.push_back(uid);
 		}
-		else if (c&(STATIC|ANTIAIR)) {
+		else if ((c&STATIC) && (c&ANTIAIR)) {
 			defenseAntiAir.push_back(uid);
 		}
-		else if (c&(STATIC|DEFENSE)) {
+		else if ((c&STATIC) && (c&DEFENSE)) {
 			defenseGround.push_back(uid);
 		}
-		else if (c&ATTACKER && !(c&AIR)) {
+		else if ((c&ATTACKER) && !(c&AIR)) {
 			attackers.push_back(uid);
 		}
 		else if (c&FACTORY) {
@@ -136,7 +136,7 @@ void CIntel::update(int frame) {
 			rest.push_back(uid);
 		}
 
-		if (c&ATTACKER && c&MOBILE)
+		if ((c&ATTACKER) && (c&MOBILE))
 			updateCounts(c);
 	}
 }
