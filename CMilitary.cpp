@@ -14,6 +14,7 @@
 #include "CWishList.h"
 #include "CUnitTable.h"
 #include "CConfigParser.h"
+#include "CDefenseMatrix.h"
 #include "ReusableObjectFactory.hpp"
 
 CMilitary::CMilitary(AIClasses *ai): ARegistrar(200, std::string("military")) {
@@ -26,23 +27,23 @@ CMilitary::~CMilitary()
 
 void CMilitary::remove(ARegistrar &object) {
 	CGroup *group = dynamic_cast<CGroup*>(&object);
-	LOG_II("CMilitary::remove " << (*group))
 	
-	// NOTE: we do not destroy group to prevent unnecessary memory allocations
+	LOG_II("CMilitary::remove " << (*group))
 	
 	activeScoutGroups.erase(group->key);
 	activeAttackGroups.erase(group->key);
 	mergeScouts.erase(group->key);
 	mergeGroups.erase(group->key);
-
+	
 	for (std::map<int,CGroup*>::iterator i = assemblingGroups.begin(); i != assemblingGroups.end(); i++) {
 		if (i->second->key == group->key) {
 			assemblingGroups.erase(i->first);
 			break;
 		}
 	}
-	
+
 	group->unreg(*this);
+
 	ReusableObjectFactory<CGroup>::Release(group);
 }
 
@@ -54,14 +55,19 @@ void CMilitary::addUnit(CUnit &unit) {
 	unsigned int c = unit.type->cats;
 
 	if (c&MOBILE) {
+		unsigned int wishedCats = ai->unittable->unitsUnderConstruction[unit.key];
 		CGroup *group;
+		
+		if (c&SCOUTER && wishedCats && !(wishedCats&SCOUTER))
+			c &= ~SCOUTER; // scouter was not requested
+
 		if (c&SCOUTER) {
 			/* A scout is initially alone */
 			group = requestGroup(SCOUT);
 		}
 		else {
 			/* If there is a new factory, or the current group is busy, request
-			   a new group  */
+			   a new group */
 			std::map<int,CGroup*>::iterator i = assemblingGroups.find(unit.builtBy);
 			if (i == assemblingGroups.end()	|| i->second->busy) {
 				group = requestGroup(ENGAGE);
@@ -93,11 +99,13 @@ CGroup* CMilitary::requestGroup(groupType type) {
 	return group;
 }
 
-int CMilitary::selectTarget(float3 &ourPos, float radius, bool scout, std::vector<int> &targets) {
+int CMilitary::selectTarget(CGroup &group, float radius, std::vector<int> &targets) {
+	bool scout = group.cats&SCOUTER;
 	int target = -1;
 	float estimate = std::numeric_limits<float>::max();
-	float factor = scout ? 10000 : 1;
+	float factor = scout ? 10000.0f : 1.0f;
 	float unitDamageK;
+	float3 ourPos = group.pos();
 
 	/* First sort the targets on distance */
 	for (unsigned i = 0; i < targets.size(); i++) {
@@ -105,6 +113,8 @@ int CMilitary::selectTarget(float3 &ourPos, float radius, bool scout, std::vecto
 		const UnitDef *ud = ai->cbc->GetUnitDef(tempTarget);
 
 		if (ud == NULL || ai->cbc->IsUnitCloaked(tempTarget))
+			continue;
+		if (!group.canAttack(tempTarget))
 			continue;
 
 		float unitMaxHealth = ai->cbc->GetUnitMaxHealth(tempTarget);
@@ -118,7 +128,8 @@ int CMilitary::selectTarget(float3 &ourPos, float radius, bool scout, std::vecto
 		float dist = ourPos.distance2D(epos);
 		dist += (factor * ai->threatmap->getThreat(epos, radius)) - unitDamageK * 150.0f;
 		if (!scout) {
-			if (ecats&SCOUTER) dist += 10000.0f;
+			if (ecats&SCOUTER && !ai->defensematrix->isPosInBounds(epos))
+				dist += 10000.0f;
 		}
 		
 		if(dist < estimate) {
@@ -137,24 +148,33 @@ void CMilitary::prepareTargets(std::vector<int> &all, std::vector<int> &harass) 
 	occupiedTargets.clear();
 	for (j = ai->tasks->activeAttackTasks.begin(); j != ai->tasks->activeAttackTasks.end(); j++)
 		occupiedTargets.push_back(j->second->target);
-	
-	targets.insert(targets.end(), ai->intel->factories.begin(), ai->intel->factories.end());
+		
 	targets.insert(targets.end(), ai->intel->attackers.begin(), ai->intel->attackers.end());
-	targets.insert(targets.end(), ai->intel->rest.begin(), ai->intel->rest.end());
-	targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
+	targets.insert(targets.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
+	targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
+	targets.insert(targets.end(), ai->intel->defenseAntiAir.begin(), ai->intel->defenseAntiAir.end());
 	if (targets.empty()) {
-		targets.insert(targets.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
-		targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
+		targets.insert(targets.end(), ai->intel->defenseGround.begin(), ai->intel->defenseGround.end());
+		targets.insert(targets.end(), ai->intel->rest.begin(), ai->intel->rest.end());
+		targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
+		targets.insert(targets.end(), ai->intel->factories.begin(), ai->intel->factories.end());
 		targets.insert(targets.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
 	}
 
 	filterOccupiedTargets(targets, all);
 	targets.clear();
 
+	// NOTE: harass tasks can overlap with all tasks because scouter units are
+	// usually faster
+	occupiedTargets.clear();
+	for (j = ai->tasks->activeAttackTasks.begin(); j != ai->tasks->activeAttackTasks.end(); j++) {
+		if (j->second->group->cats&SCOUTER)
+			occupiedTargets.push_back(j->second->target);
+	}
+	
 	targets.insert(targets.end(), ai->intel->mobileBuilders.begin(), ai->intel->mobileBuilders.end());
 	targets.insert(targets.end(), ai->intel->metalMakers.begin(), ai->intel->metalMakers.end());
 	targets.insert(targets.end(), ai->intel->energyMakers.begin(), ai->intel->energyMakers.end());
-	targets.insert(targets.end(), ai->intel->factories.begin(), ai->intel->factories.end());
 	targets.insert(targets.end(), ai->intel->restUnarmedUnits.begin(), ai->intel->restUnarmedUnits.end());
 	
 	filterOccupiedTargets(targets, harass);
@@ -179,6 +199,7 @@ void CMilitary::filterOccupiedTargets(std::vector<int> &source, std::vector<int>
 }
 
 void CMilitary::update(int frame) {
+	int busyScoutGroups = 0;
 	int target = 0;
 
 	std::vector<int> all, harras;
@@ -189,48 +210,28 @@ void CMilitary::update(int frame) {
 	
 	/* Give idle scouting groups a new attack plan */
 	for (i = activeScoutGroups.begin(); i != activeScoutGroups.end(); i++) {
+		bool assistNearbyTask = false;	
+		
 		CGroup *group = i->second;
-
+		
 		/* This group is busy, don't bother */
-		if (group->busy || !ai->unittable->canPerformTask(*group->firstUnit()))
+		if (group->busy || !ai->unittable->canPerformTask(*group->firstUnit())) {
+			busyScoutGroups++;
 			continue;
+		}		
 
-		float3 pos = group->pos();
-
-		// NOTE: if once target is not found it will never appear during
+		// NOTE: once target is not found it will never appear during
 		// current loop execution
 		if (target >= 0) {
-			target = selectTarget(pos, 300.0f, true, harras);
+			target = selectTarget(*group, 300.0f, harras);
 			/* There are no harras targets available */
 			if (target < 0)
-				target = selectTarget(pos, 300.0f, true, all);
+				target = selectTarget(*group, 300.0f, all);
 		}
+		else
+			assistNearbyTask = true;
 
-		/* Nothing available,  */
-		if (target < 0) {
-			// assist in destroying nearby scout targets...
-			if (!ai->tasks->activeAttackTasks.empty()) {
-				float minDist = std::numeric_limits<float>::max();
-				ATask* task = NULL;
-				std::map<int, CTaskHandler::AttackTask*>::iterator i;
-				for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
-					float targetDist = i->second->pos.distance2D(pos);
-					if (targetDist < minDist) {
-						task = i->second;
-						minDist = targetDist;
-					}
-				}
-				if (task && minDist < 600.0f) {
-					ai->tasks->addAssistTask(*task, *group);
-					mergeGroups.erase(group->key);
-					break;
-				}
-			}
-
-			if (group->units.size() < MAX_SCOUTS_IN_GROUP)
-				mergeScouts[group->key] = group;
-		}
-		else {
+		if (!assistNearbyTask) {
 			float3 tpos = ai->cbc->GetUnitPos(target);
 			float threat = ai->threatmap->getThreat(tpos, 0.0f);
 			if (threat < group->strength) {
@@ -239,10 +240,47 @@ void CMilitary::update(int frame) {
 				break;
 			}
 			else {
-				//LOG_II("CMilitary::update target at (" << tpos << ") is too dangerous (threat=" << threat << ") for scout Group(" << group->key << "):strength(" << group->strength << ")")
-				if (group->units.size() < MAX_SCOUTS_IN_GROUP)
-					mergeScouts[group->key] = group;
+				if ((threat / group->strength) <= MAX_SCOUTS_IN_GROUP) {
+					if (group->units.size() < MAX_SCOUTS_IN_GROUP
+					&& activeScoutGroups.size() > 1)
+						mergeScouts[group->key] = group;
+					else
+						assistNearbyTask = true;
+				}
+				else
+					assistNearbyTask = true;
 			}
+		}
+
+		if (assistNearbyTask) {
+			// try to assist in destroying nearby scout targets...
+			if (!ai->tasks->activeAttackTasks.empty()) {
+				float minDist = std::numeric_limits<float>::max();
+				float3 pos = group->pos();
+				ATask* task = NULL;
+				std::map<int, CTaskHandler::AttackTask*>::iterator i;
+				for (i = ai->tasks->activeAttackTasks.begin(); i != ai->tasks->activeAttackTasks.end(); i++) {
+					if (!(i->second->group->cats&SCOUTER))
+						continue;
+					float targetDist = i->second->pos.distance2D(pos);
+					if (targetDist < minDist) {
+						task = i->second;
+						minDist = targetDist;
+					}
+				}
+				if (task && minDist < 1000.0f) {
+					ai->tasks->addAssistTask(*task, *group);
+					mergeScouts.erase(group->key);
+					break;
+				}
+			}
+
+			/* SLOGIC: do not merge without need!
+			if (group->units.size() < MAX_SCOUTS_IN_GROUP)
+				mergeScouts[group->key] = group;
+			*/
+		}
+		else {
 		}
 
 		// prevent merging of more than 2 groups
@@ -293,7 +331,7 @@ void CMilitary::update(int frame) {
 
 		/* Select a target */
 		float3 pos = group->pos();
-		int target = selectTarget(pos, 0.0f, false, all);
+		int target = selectTarget(*group, 0.0f, all);
 
 		/* There are no targets available, assist an attack */
 		if (target == -1) {
@@ -336,29 +374,36 @@ void CMilitary::update(int frame) {
 		mergeGroups.clear();
 	}
 	
-	/* Always have enough scouts */
-	if (activeScoutGroups.size() < ai->cfgparser->getMinScouts())
-		// TODO: LAND cat should vary between LAND|SEA|AIR actually depending
-		// on map type
-		ai->wishlist->push(LAND | SCOUTER, HIGH);
+	bool gotAirFactory = ai->unittable->gotFactory(AIR);
+	
+	// if all scouts are busy create some more...
+	if (busyScoutGroups == activeScoutGroups.size()) {
+		buildPriority priority = activeScoutGroups.size() < ai->cfgparser->getMinScouts() ? HIGH: NORMAL;
+		/*
+		if(gotAirFactory)
+			ai->wishlist->push(AIR | MOBILE | SCOUTER, priority);
+		*/
+		ai->wishlist->push(LAND | MOBILE | SCOUTER, priority);
+	} 
 
 	/* Always build some unit */
-	ai->wishlist->push(requestUnit(), NORMAL);
+	if(gotAirFactory)
+		// TODO: tweak this
+		ai->wishlist->push(requestUnit(AIR), NORMAL);	
+	ai->wishlist->push(requestUnit(LAND), NORMAL);
 }
 
-unsigned CMilitary::requestUnit() {
+unsigned CMilitary::requestUnit(unsigned int basecat) {
 	float r = rng.RandFloat();
 	std::multimap<float, unitCategory>::iterator i;
 	float sum = 0.0f;
 	for (i = ai->intel->roulette.begin(); i != ai->intel->roulette.end(); i++) {
 		sum += i->first;
 		if (r <= sum) {
-			// TODO: LAND cat should vary between LAND|SEA|AIR actually 
-			// depending on map type
-			return LAND | MOBILE | i->second;
+			return basecat | MOBILE | i->second;
 		}
 	}
-	return LAND | MOBILE | ASSAULT; // unreachable code :)
+	return basecat | MOBILE | ASSAULT; // unreachable code :)
 }
 
 int CMilitary::idleScoutGroupsNum() {

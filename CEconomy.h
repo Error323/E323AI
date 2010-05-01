@@ -98,9 +98,6 @@ class CEconomy: public ARegistrar {
 		/* Is this a windmap ? */
 		bool windmap;
 
-		/* Primary unit category (KBOT or VEHICLE) */
-		unitCategory type;
-
 		/* updateIncomes counter */
 		unsigned int incomes;
 
@@ -122,11 +119,11 @@ class CEconomy: public ARegistrar {
 		/* build or assist on a certain task */
 		void buildOrAssist(CGroup &group, buildType bt, unsigned include, unsigned exclude = 0);
 
-		/* Determine which factory we don't have yet */
-		unsigned getAllowedFactory();
-
 		/* See if a buildtask is in progress */
 		bool taskInProgress(buildType bt);
+
+		/* Get next allowed factory to build */
+		unsigned int getNextFactoryToBuild(CUnit *unit, int maxteachlevel);
 };
 
 #endif

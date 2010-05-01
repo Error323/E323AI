@@ -9,6 +9,7 @@
 #include "ARegistrar.h"
 #include "headers/Defines.h"
 #include "headers/HEngine.h"
+#include "CWishList.h"
 
 class CUnit;
 class AIClasses;
@@ -50,16 +51,17 @@ class CUnitTable: public ARegistrar {
 		std::map<int, MoveData*>  moveTypes;
 
 		/* Ingame units, set in eco module */
-		std::map<int, bool>       idle;
-		std::map<int, bool>       builders;
-		std::map<int, CUnit*>     metalMakers;
-		std::map<int, UnitType*>  factoriesBuilding;
-		std::map<int, CUnit*>     activeUnits;
-		std::map<int, CUnit*>     factories;
-		std::map<int, CUnit*>     defenses;
-		std::map<int, CUnit*>     energyStorages;
-		std::map<int, int>        unitsAliveTime;
-		std::map<int, CUnit*>     unitsUnderPlayerControl;
+		std::map<int, bool>         idle;
+		std::map<int, bool>         builders;
+		std::map<int, CUnit*>       metalMakers;
+		std::map<int, CUnit*>       activeUnits;
+		std::map<int, CUnit*>       factories;
+		std::map<int, CUnit*>       defenses;
+		std::map<int, CUnit*>       energyStorages;
+		std::map<int, int>          unitsAliveTime;
+		std::map<int, CUnit*>       unitsUnderPlayerControl;
+		std::map<int, unsigned int> unitsUnderConstruction; // key = <unit_id>, value = <cats_from_wishlist>
+		std::map<int, Wish>         unitsBuilding; // key = <unit_id>, value = <wish>
 
 		/* unitCategories in string format, see Defines.h */
 		static std::map<unitCategory, std::string> cat2str;

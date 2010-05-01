@@ -15,6 +15,7 @@
 #include "CConfigParser.h"
 #include "CThreatMap.h"
 #include "CScopedTimer.h"
+#include "CDefenseMatrix.h"
 
 /**************************************************************/
 /************************* ATASK ******************************/
@@ -57,7 +58,7 @@ void ATask::remove() {
 
 // called on Group removing
 void ATask::remove(ARegistrar &group) {
-	LOG_II("ATask::remove by group(" << (*(dynamic_cast<CGroup*>(&group))) << ")")
+	LOG_II("ATask::remove by " << (*(dynamic_cast<CGroup*>(&group))))
 
 	remove();
 }
@@ -75,6 +76,7 @@ void ATask::addGroup(CGroup &g) {
 bool ATask::enemyScan(bool scout) {
 	//PROFILE(tasks-enemyscan)
 	
+	const CUnit *unit = group->firstUnit();
 	std::multimap<float, int> candidates;
 	float3 gpos = group->pos();
 	
@@ -84,11 +86,14 @@ bool ATask::enemyScan(bool scout) {
 		const UnitDef *ud = ai->cbc->GetUnitDef(euid);
 		if (ud == NULL)
 			continue;
+		if (!group->canAttack(euid))
+			continue;
 		const unsigned int ecats = UC(ud->id);
 		float3 epos = ai->cbc->GetUnitPos(euid);
 		float dist = gpos.distance2D(epos);
-		if (!(ecats&AIR) && !ai->cbc->IsUnitCloaked(euid))
-			candidates.insert(std::pair<float,int>(dist, euid));
+		if (!ai->cbc->IsUnitCloaked(euid))
+			if (!((unit->type->cats&ANTIAIR) ^ (ecats&AIR)))
+				candidates.insert(std::pair<float,int>(dist, euid));
 	}
 
 	if (!candidates.empty()) {
@@ -100,8 +105,8 @@ bool ATask::enemyScan(bool scout) {
 			float3 epos = ai->cbc->GetUnitPos(i->second);
 			threat = ai->threatmap->getThreat(epos, scout ? 300.0f: 0.0f);
 			if (scout) {
-				// scouts like safe places and very hate enemy scouts
-				if (threat <= 1.1f || (ecats&SCOUTER && group->strength > ai->cbc->GetUnitPower(i->second)))
+				// scouts like safe places
+				if (threat <= 1.1f /*|| (ecats&SCOUTER && group->strength > ai->cbc->GetUnitPower(i->second))*/)
 					break;
 			} else {
 				// attack groups won't chase enemy souts, they like real tough job
@@ -365,12 +370,14 @@ void CTaskHandler::remove(ARegistrar &task) {
 	}
 }
 
+/*
 void CTaskHandler::getGroupsPos(std::vector<CGroup*> &groups, float3 &pos) {
 	pos.x = pos.y = pos.z = 0.0f;
 	for (unsigned i = 0; i < groups.size(); i++)
 		pos += groups[i]->pos();
 	pos /= groups.size();
 }
+*/
 
 void CTaskHandler::update() {
 	/* delete obsolete tasks from memory */
@@ -400,6 +407,15 @@ ATask* CTaskHandler::getTask(CGroup &group) {
 	if (i == groupToTask.end())
 		return NULL;
 	return i->second;
+}
+
+ATask* CTaskHandler::getTaskByTarget(int uid) {
+	std::map<int, AttackTask*>::iterator i;
+	for (i = activeAttackTasks.begin(); i != activeAttackTasks.end(); i++) {
+		if (i->second->target == uid)
+			return i->second;
+	}
+	return NULL;
 }
 
 /**************************************************************/
@@ -538,7 +554,11 @@ bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 		return false;
 	}
 	else {
-		ai->wishlist->push(BUILDER, HIGH);
+		// SLOGIC: why we need to push a new builder? Firt of all, this breaks
+		// builder limit set in config file. Secondly, assisting task involves
+		// a builder which has nothing to do better. Right? So, commented out 
+		// by now.
+		//ai->wishlist->push(BUILDER, HIGH);
 		return true;
 	}
 }
@@ -556,10 +576,11 @@ void CTaskHandler::FactoryTask::update() {
 	for(i = group->units.begin(); i != group->units.end(); i++) {
 		factory = i->second;
 		if (ai->unittable->idle[factory->key] && !ai->wishlist->empty(factory->key)) {
-			UnitType *ut = ai->wishlist->top(factory->key); ai->wishlist->pop(factory->key);
-			factory->factoryBuild(ut);
-			ai->unittable->factoriesBuilding[factory->key] = ut;
-			ai->unittable->idle[factory->key] = false;
+			Wish w = ai->wishlist->top(factory->key);
+			ai->wishlist->pop(factory->key);
+			if (factory->factoryBuild(w.ut)) {
+				ai->unittable->unitsBuilding[factory->key] = w;
+			}
 		}
 	}
 }
@@ -692,16 +713,15 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 }
 
 bool CTaskHandler::AttackTask::validate() {
-	CUnit *unit = group->firstUnit();
-	bool scoutGroup = unit->type->cats&SCOUTER;
+	bool scoutGroup = group->cats&SCOUTER;
 	float targetDistance = pos.distance2D(group->pos());
 
 	if (!scoutGroup && lifeTime() > 20.0f) {
 		const UnitDef *eud = ai->cbc->GetUnitDef(target);
 		if (eud) {
 			const unsigned int ecats = UC(eud->id);
-			if (ecats&SCOUTER)
-				return false; // do not chase scouts too long
+			if (ecats&SCOUTER && !ai->defensematrix->isPosInBounds(pos))
+				return false; // don't chase scouts too long if they are out of base
 		}
 	}
 	
@@ -762,9 +782,7 @@ void CTaskHandler::AttackTask::update() {
 	if (!group->isMicroing()) {
 		if (builder)
 			resourceScan(); // builders should not be too aggressive
-		// TODO: attack group can have scouts also, we need to prevent
-		// assigning scout tasks to attack group
-		else if (unit->type->cats&SCOUTER)
+		else if (group->cats&SCOUTER)
 			enemyScan(true);
 		else
 			enemyScan(false);

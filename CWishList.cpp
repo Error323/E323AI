@@ -15,7 +15,6 @@ void CWishList::push(unsigned categories, buildPriority p) {
 	std::map<int, CUnit*>::iterator itFac = ai->unittable->factories.begin();
 	UnitType *fac;
 	for (;itFac != ai->unittable->factories.end(); itFac++) {
-		//fac = UT(ai->cb->GetUnitDef(itFac->first)->id);
 		fac = itFac->second->type;
 		std::multimap<float, UnitType*> candidates;
 		ai->unittable->getBuildables(fac, categories, 0, candidates);
@@ -42,7 +41,7 @@ void CWishList::push(unsigned categories, buildPriority p) {
 				i++;
 			}
 			
-			wishlist[fac->id].push_back(Wish(i->second, p));
+			wishlist[fac->id].push_back(Wish(i->second, p, categories));
 			unique(wishlist[fac->id]);
 			std::stable_sort(wishlist[fac->id].begin(), wishlist[fac->id].end());
 		}
@@ -53,21 +52,20 @@ void CWishList::push(unsigned categories, buildPriority p) {
 	}
 }
 
-UnitType* CWishList::top(int factory) {
-	UnitType *fac = UT(ai->cb->GetUnitDef(factory)->id);
-	Wish *w = &(wishlist[fac->id].front());
-	return w->ut;
+Wish CWishList::top(int factory) {
+	const UnitDef *udef = ai->cb->GetUnitDef(factory);
+	return wishlist[udef->id].front();
 }
 
 void CWishList::pop(int factory) {
-	UnitType *fac = UT(ai->cb->GetUnitDef(factory)->id);
-	wishlist[fac->id].erase(wishlist[fac->id].begin());
+	const UnitDef *udef = ai->cb->GetUnitDef(factory);
+	wishlist[udef->id].erase(wishlist[udef->id].begin());
 }
 
 bool CWishList::empty(int factory) {
 	std::map<int, std::vector<Wish> >::iterator itList;
-	UnitType *fac = UT(ai->cb->GetUnitDef(factory)->id);
-	itList = wishlist.find(fac->id);
+	const UnitDef *udef = ai->cb->GetUnitDef(factory);
+	itList = wishlist.find(udef->id);
 	return itList == wishlist.end() || itList->second.empty();
 }
 

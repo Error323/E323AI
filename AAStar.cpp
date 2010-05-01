@@ -6,7 +6,7 @@ void AAStar::init() {
 	visited = 0;
 }
 
-bool AAStar::findPath(std::list<ANode*>& path) {
+bool AAStar::findPath(std::list<ANode*>* path) {
 	float g;
 	ANode *x, *y;
 
@@ -21,7 +21,8 @@ bool AAStar::findPath(std::list<ANode*>& path) {
 		x = open.top(); open.pop();
 
 		if (x == goal) {
-			tracePath(x, path);
+			if (path)
+				tracePath(x, *path);
 			return true;
 		}
 

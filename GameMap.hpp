@@ -33,6 +33,7 @@ class GameMap {
 		bool IsKbotMap() { return heightVariance > KBOT_VEH_THRESHOLD; }
 		bool IsVehicleMap() { return !IsKbotMap(); }
 		bool IsHooverMap() { return waterAmount > 0.2f; }
+		bool IsWaterMap() { return waterAmount > 0.7f; }
 		bool IsMetalMap() { return metalCount > nonMetalCount && avgMetal > 80; }
 		bool IsNonMetalMap() { return metalCount == 0; }
 

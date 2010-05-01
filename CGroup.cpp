@@ -172,8 +172,9 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		los        = 0.0f;
 		busy       = false;
 		maxSlope   = 1.0f;
-		moveType   = -1; // emulate NONE
-		techlvl    = 1;
+		pathType   = -1; // emulate NONE
+		techlvl    = TECH1;
+		cats       = 0;
 	}
 
 	if(unit == NULL)
@@ -187,8 +188,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 	MoveData *md = unit->def->movedata;
     if (md) {
     	if (md->maxSlope <= maxSlope) {
-			// TODO: rename moveType into pathType because this is not the same
-			moveType = md->pathType;
+			pathType = md->pathType;
 			maxSlope = md->maxSlope;
 		}
 	}
@@ -200,6 +200,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 	buildRange = std::max<float>(unit->def->buildDistance, buildRange);
 	speed = std::min<float>(ai->cb->GetUnitSpeed(unit->key), speed);
 	los = std::max<float>(unit->def->losRadius, los);
+	mergeCats(unit->type->cats);
 }
 
 void CGroup::merge(CGroup &group) {
@@ -301,13 +302,39 @@ void CGroup::guard(int target, bool enqueue) {
 		i->second->guard(target, enqueue);
 }
 
-bool CGroup::canReach(float3 &pos) {
-	// TODO: what movetype should we use?
-	return true;
+bool CGroup::canTouch(const float3 &goal) {
+	return !ai->pathfinder->isBlocked(goal.x, goal.z, pathType);
+}
+
+bool CGroup::canReach(const float3 &goal) {
+	if (!canTouch(goal))
+		return false;
+	if (pathType < 0)
+		return true;
+
+	float3 gpos = pos();
+	
+	return ai->pathfinder->pathExists(*this, gpos, goal);
 }
 
 bool CGroup::canAttack(int uid) {
-	// TODO: if at least one unit can shoot target then return true
+	const UnitDef *ud = ai->cbc->GetUnitDef(uid);
+	if (!ud)
+		return false;
+	const unsigned int ecats = UC(ud->id);
+	float3 epos = ai->cbc->GetUnitPos(uid);
+	
+	// FIXME: group can have ANTIAIR + some attacker tags
+	if ((cats&ANTIAIR) && !(ecats&AIR))
+		return false;
+
+	if ((cats&LAND) && epos.y < 0.0f)
+		return false;
+
+	// TODO: submarine units can't shoot land units
+
+	// TODO: add more tweaks based on physical weapon possibilities
+
 	return true;
 }
 
@@ -334,6 +361,21 @@ CUnit* CGroup::firstUnit() {
 	return units.begin()->second;
 }
 
+
+void CGroup::mergeCats(unsigned int newcats) {
+	if (cats == 0)
+		cats = newcats;
+	else {
+		static unsigned int nonMergableCats[] = {SCOUTER, SEA, LAND, AIR, STATIC, MOBILE};
+		unsigned int oldcats = cats;
+		cats |= newcats;
+		for (int i = 0; i < sizeof(nonMergableCats) / sizeof(unsigned int); i++) {
+			unsigned int tempCat = nonMergableCats[i];
+			if (!(oldcats&tempCat) && cats&tempCat)
+				cats &= ~tempCat;
+		}
+	}
+}
 
 std::ostream& operator<<(std::ostream &out, const CGroup &group) {
 	std::stringstream ss;

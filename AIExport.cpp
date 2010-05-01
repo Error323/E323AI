@@ -35,7 +35,7 @@
 #include "AIExport.h"
 #include "CE323AI.h"
 
-// NOTE: myAIs is not static cause we need to count AI instances
+// NOTE: myAIs is not static cause we need to count AI instances from outside
 
 // skirmishAIId -> AI map
 static std::map<int, CAIAI*> myAIs;

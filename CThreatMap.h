@@ -5,9 +5,11 @@
 #include "headers/HEngine.h"
 
 class AIClasses;
+class CGroup;
 
 enum ThreatMapType {
-	TMT_AIR = 0,
+	TMT_NONE = 0,
+	TMT_AIR,
 	TMT_SURFACE,
 	TMT_UNDERWATER
 };
@@ -19,6 +21,7 @@ class CThreatMap {
 
 		void update(int frame);
 		float getThreat(float3 &center, float radius, ThreatMapType type = TMT_SURFACE);
+		float getThreat(float3 &center, float radius, CGroup *group);
 		float *getMap(ThreatMapType);
 		
 		int X, Z;
@@ -28,8 +31,9 @@ class CThreatMap {
 		AIClasses *ai;	
 		int *units;
 		float REAL;
-		std::map<ThreatMapType,float> totalPower;
+		std::map<ThreatMapType,float> maxPower;
 		std::map<ThreatMapType,float*> maps;
+		std::map<ThreatMapType,int> handles;
 
 		float gauss(float x, float sigma, float mu);
 		void reset();

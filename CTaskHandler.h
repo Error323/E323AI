@@ -30,7 +30,6 @@ class ATask: public ARegistrar {
 			bornFrame = ai->cb->GetCurrentFrame();
 			validateInterval = 5 * 30;
 			nextValidateFrame = validateInterval;
-			
 		}
 		~ATask() {}
 
@@ -219,6 +218,8 @@ class CTaskHandler: public ARegistrar {
 
 		ATask* getTask(CGroup &group);
 
+		ATask* getTaskByTarget(int);
+
 		/* Get the group destination */
 		float3 getPos(CGroup &group);
 
@@ -236,7 +237,7 @@ class CTaskHandler: public ARegistrar {
 		std::map<int, ATask*> groupToTask;
 
 		/* Calculate avg range and pos of groups */
-		static void getGroupsPos(std::vector<CGroup*> &groups, float3 &pos);
+		//static void getGroupsPos(std::vector<CGroup*> &groups, float3 &pos);
 };
 
 #endif

@@ -13,7 +13,7 @@ class CUnit;
 class CGroup;
 class AIClasses;
 
-enum groupType{SCOUT, ENGAGE};
+enum groupType{SCOUT, ENGAGE, BOMBER};
 
 class CMilitary: public ARegistrar {
 	public:
@@ -55,12 +55,12 @@ class CMilitary: public ARegistrar {
 		std::map<int,CGroup*> mergeScouts, mergeGroups;
 
 		/* Select a target */
-		int selectTarget(float3 &ourPos, float radius, bool scout, std::vector<int> &targets);
+		int selectTarget(CGroup &group, float radius, std::vector<int> &targets);
 
 		void filterOccupiedTargets(std::vector<int> &source, std::vector<int> &dest);
 
 		/* Request a unit for building using a roulette wheel system */
-		unsigned requestUnit();
+		unsigned requestUnit(unsigned int basecat);
 
 		char buf[1024];
 };

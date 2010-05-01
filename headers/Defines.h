@@ -64,6 +64,9 @@
 /* Critical number of units per group where pathfinding stalls the game */
 #define GROUP_CRITICAL_MASS 14
 
+/* Max unit weapon range to be considered by threatmap algo */
+#define MAX_WEAPON_RANGE_FOR_TM 1000.0f
+
 /* Number of multiplex iterations */
 #define MULTIPLEXER 10 
 
