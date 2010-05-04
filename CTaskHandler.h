@@ -208,7 +208,7 @@ class CTaskHandler: public ARegistrar {
 		void addAssistTask(ATask &task, CGroup &group);
 
 		/* Add a fresh attack task */
-		void addAttackTask(int target, CGroup &group);
+		bool addAttackTask(int target, CGroup &group);
 
 		/* Add a fresh merge task */
 		void addMergeTask(std::map<int,CGroup*> &groups);

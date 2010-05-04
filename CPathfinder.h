@@ -12,8 +12,11 @@
 #include "AAStar.h"
 #include "CThreatMap.h"
 
+// how far a unit can advance on its path?
 #define MOVE_BUFFER 2
-
+// number of frames to give a group for regrouping
+#define FRAMES_TO_REGROUP 30
+// cache version (stored in file header)
 #define CACHE_VERSION "CACHEv03"
 
 class CGroup;
@@ -125,10 +128,10 @@ class CPathfinder: public AAStar, public ARegistrar {
 		std::map<int, std::vector<float3> > paths;
 
 		/* The groups */
-		std::map<int, CGroup*> groups;
+		std::map<int, CGroup*> groups; // key = <group_id>
 
 		/* Regrouping */
-		std::map<int, bool> regrouping;
+		std::map<int, int> regrouping; // key = <group_id>, value = <frame_number>
 
 		/* draw the path ? */
 		bool draw;

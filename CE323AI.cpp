@@ -61,10 +61,6 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->military      = new CMilitary(ai);
 	ai->defensematrix = new CDefenseMatrix(ai);
 
-	/* Set the new graph stuff */
-	ai->cb->DebugDrawerSetGraphPos(-0.4f, -0.4f);
-	ai->cb->DebugDrawerSetGraphSize(0.8f, 0.6f);
-
 	/*
 	ai->uploader->AddString("aiversion", AI_VERSION_NR);
 	ai->uploader->AddString("ainame",    AI_NAME);
@@ -110,7 +106,7 @@ void CE323AI::UnitCreated(int uid, int bid) {
 		ai->economy->init(*unit);
 	}
 
-	// HACK: for metal extractors only
+	// HACK: for metal extractors & geoplants only
 	ai->economy->addUnitOnCreated(*unit);
 
 	if (bid < 0)

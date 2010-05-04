@@ -105,7 +105,7 @@ class CUnitTable: public ARegistrar {
 		void buildTechTree();
 
 		/* Generate the categorizations config file */
-		void generateCategorizationFile(const char *fileName);
+		void generateCategorizationFile(std::string &fileName);
 
 		/* Categorize the units, see defines.h for categories */
 		unsigned int categorizeUnit(UnitType *ut);

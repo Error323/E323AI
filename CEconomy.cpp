@@ -94,8 +94,10 @@ void CEconomy::remove(ARegistrar &object) {
 
 	activeGroups.erase(group->key);
 	takenMexes.erase(group->key);
+	takenGeo.erase(group->key);
 
 	group->unreg(*this);
+	
 	ReusableObjectFactory<CGroup>::Release(group);
 }
 
@@ -109,6 +111,14 @@ void CEconomy::addUnitOnCreated(CUnit &unit) {
 		if (builder)
 			takenMexes.erase(builder->group->key);
 	}
+	else if(unit.type->def->needGeo) {
+		CGroup *group = requestGroup();
+		group->addUnit(unit);
+		takenGeo[group->key] = group->pos();	
+		CUnit *builder = ai->unittable->getUnit(group->firstUnit()->builtBy);
+		if (builder)
+			takenGeo.erase(builder->group->key);
+	}
 }
 
 void CEconomy::addUnitOnFinished(CUnit &unit) {
@@ -121,7 +131,7 @@ void CEconomy::addUnitOnFinished(CUnit &unit) {
 		ai->tasks->addFactoryTask(*group);
 		
 		/* TODO: put same factories in a single group. This requires refactoring of task
-		assisting, because when factory is dead assising tasks continue working on ex. factory
+		assisting, because when factory is dead assisting tasks continue working on ex. factory
 		position.
 
 		CUnit *factory = CUnitTable::getUnitByDef(ai->unittable->factories, unit.def);
@@ -161,9 +171,11 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 	if (candidates.empty())
 		return; // builder can build nothing we need
 
+	int alternativesCount = candidates.size();
+
 	/* Determine which of these we can afford */
 	std::multimap<float, UnitType*>::iterator i = candidates.begin();
-	int iterations = candidates.size() / (ai->cfgparser->getTotalStates() + 1 - state);
+	int iterations = candidates.size() / (ai->cfgparser->getTotalStates() - state + 1);
 	bool affordable = false;
 	while(iterations >= 0) {
 		if (canAffordToBuild(unit->type, i->second))
@@ -184,12 +196,35 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 	/* Perform the build */
 	switch(bt) {
 		case BUILD_EPROVIDER: {
-			if (windmap && ai->cb->GetCurWind() >= 10.0f)
-				ai->tasks->addBuildTask(bt, i->second, group, goal);
-			else if (i->second->cats&WIND)
-				ai->tasks->addBuildTask(bt, (++candidates.begin())->second, group, goal);
-			else
-				ai->tasks->addBuildTask(bt, i->second, group, goal);
+			if ((i->second->def->windGenerator > EPS) && alternativesCount > 1) {
+	        	if (!windmap || ai->cb->GetCurWind() < 10.0f) {
+	        		// select first non-wind emaker...
+	        		i = candidates.begin();
+	        		while (i != candidates.end() && (i->second->cats&WIND))
+	        			i++;
+					if (i == candidates.end())
+						// all emakers are based on wind power
+						i--;
+	        	}
+			}
+			
+			if (i->second->def->needGeo && alternativesCount > 1) {
+				float e = eNow/eStorage;
+				goal = getClosestOpenGeoSpot(group);
+				if (goal == ZeroVector || (e > 0.15f && ai->pathfinder->getETA(group, goal) > 30*15)) {
+					// build anything another...
+	        		i = candidates.begin();
+	        		while (i != candidates.end() && (i->second->cats&WIND || i->second->def->needGeo))
+	        			i++;
+					if (i == candidates.end())
+						// all emakers are geo- or wind-based
+						i--;
+					goal = pos;
+				}
+			}
+
+			ai->tasks->addBuildTask(bt, i->second, group, goal);
+
 			break;
 		}
 
@@ -200,18 +235,18 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				bool tooSmallIncome = mIncome < 3.0f;
 				bool isComm = unit->def->isCommander;
 				if (tooSmallIncome || !isComm || ai->pathfinder->getETA(group, goal) < 30*10) {
-					ai->tasks->addBuildTask(BUILD_MPROVIDER, i->second, group, goal);
+					ai->tasks->addBuildTask(bt, i->second, group, goal);
 				}
 				else if (areMMakersEnabled && canBuildMMaker) {
 					UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 					if (mmaker != NULL)
-						ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
+						ai->tasks->addBuildTask(bt, mmaker, group, pos);
 				}
 			}
 			else if (areMMakersEnabled && canBuildMMaker) {
 				UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 				if (mmaker != NULL)
-					ai->tasks->addBuildTask(BUILD_MPROVIDER, mmaker, group, pos);
+					ai->tasks->addBuildTask(bt, mmaker, group, pos);
 			}
 			else {
 				buildOrAssist(group, BUILD_EPROVIDER, EMAKER|LAND);
@@ -283,21 +318,26 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 	}
 }
 
-float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
+float3 CEconomy::getBestSpot(CGroup &group, std::list<float3> &resources, std::map<int, float3> &tracker, bool metal) {
 	float bestDist = std::numeric_limits<float>::max();
 	float3 bestSpot = ZeroVector;
 	float3 gpos = group.pos();
-	float radius = ai->cb->GetExtractorRadius();
+	float radius;
+	
+	if (metal)
+		radius = ai->cb->GetExtractorRadius();
+	else
+		radius = 16.0f;
 
 	std::list<float3>::iterator i;
 	std::map<int, float3>::iterator j;
-	for (i = GameMap::metalspots.begin(); i != GameMap::metalspots.end(); i++) {
+	for (i = resources.begin(); i != resources.end(); i++) {
 		// TODO: compare with actual group properties
 		if (i->y < 0.0f)
-			continue; // MEx is under water
+			continue; // spot is under water
 		
 		bool taken = false;
-		for (j = takenMexes.begin(); j != takenMexes.end(); j++) {
+		for (j = tracker.begin(); j != tracker.end(); j++) {
 			if ((*i - j->second).Length2D() < radius) {
 				taken = true;
 				break;
@@ -309,14 +349,16 @@ float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
 		for (int u = 0; u < numUnits; u++) {
 			const int uid = ai->unitIDs[u];
 			const UnitDef *ud = ai->cb->GetUnitDef(uid);
-			if (UC(ud->id)&MEXTRACTOR) {
-				taken = true;
-				break;
-			}
+			if (metal)
+				taken = UC(ud->id) & MEXTRACTOR;
+			else
+				taken = ud->needGeo;
+			if (taken) break;
 		}
 		if (taken) continue; // already taken by ally team
 
 		float dist = (gpos - *i).Length2D();
+		dist += 1000.0f * group.getThreat(*i, 300.0f);
 		if (dist < bestDist) {
 			bestDist = dist;
 			bestSpot = *i;
@@ -324,9 +366,18 @@ float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
 	}
 
 	if (bestSpot != ZeroVector)
-		takenMexes[group.key] = bestSpot;
+		// TODO: improper place for this
+		tracker[group.key] = bestSpot;
 
 	return bestSpot;
+}
+
+float3 CEconomy::getClosestOpenMetalSpot(CGroup &group) {
+	return getBestSpot(group, GameMap::metalspots, takenMexes, true);
+}
+
+float3 CEconomy::getClosestOpenGeoSpot(CGroup &group) {
+	return getBestSpot(group, GameMap::geospots, takenGeo, false);
 }
 
 void CEconomy::update(int frame) {

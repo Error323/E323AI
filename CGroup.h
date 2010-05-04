@@ -108,6 +108,9 @@ class CGroup: public ARegistrar {
 		bool canAdd(CUnit *unit);
 		
 		bool canMerge(CGroup *group);
+		
+		float getThreat(float3 &target, float radius = 0.0f);
+
 		/* Overloaded */
 		RegistrarType regtype() { return REGT_GROUP; }
 		/* output stream */

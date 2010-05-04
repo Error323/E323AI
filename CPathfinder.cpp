@@ -26,7 +26,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	// NOTE: X and Z are in slope map resolution units
 	this->X    = int(ai->cb->GetMapWidth()/HEIGHT2SLOPE);
 	this->Z    = int(ai->cb->GetMapHeight()/HEIGHT2SLOPE);
-	// NOTE: XX and ZZ are in graph map resolution units
+	// NOTE: XX and ZZ are in pathgraph map resolution units
 	this->XX   = this->X / I_MAP_RES;
 	this->ZZ   = this->Z / I_MAP_RES;
 	graphSize = XX * ZZ;
@@ -322,22 +322,27 @@ float CPathfinder::getETA(CGroup &group, float3 &pos, float radius) {
 }
 
 void CPathfinder::updateFollowers() {
+	const int currentFrame = ai->cb->GetCurrentFrame();
+	
+	unsigned int groupnr = 0;
 	std::map<int, std::vector<float3> >::iterator path;
 	std::map<int, CUnit*>::iterator u;
-	unsigned groupnr = 0;
+	std::map<float, CUnit*> M; // key = <distance>
+	
 	repathGroup = -1;
+	
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); path++) {
 		CGroup *group = groups[path->first];
 		
-		if (group->isMicroing()) {
+		if (group->isMicroing()
+		|| (currentFrame - regrouping[group->key]) <= FRAMES_TO_REGROUP) {
 			groupnr++;
 			continue;
 		}
 		
-		unsigned int segment = 1;
-		int waypoint = std::min<int>(MOVE_BUFFER, path->second.size() - segment - 1);
-		std::map<float, CUnit*> M;
+		int segment = 1;
+		int waypoint = std::min<int>((group->cats&AIR) ? 2 * MOVE_BUFFER : MOVE_BUFFER, path->second.size() - segment - 1);
 		float maxGroupLength = group->maxLength();
 		
 		if (maxGroupLength < 200.0f)
@@ -345,11 +350,13 @@ void CPathfinder::updateFollowers() {
 		else
 			maxGroupLength *= 2.0f;
 	
-		// NOTE: for aircraft only Browler type units can regroup
+		// NOTE: among aircraft units only Brawler type units (ASSAULT) can regroup
 		bool enableRegrouping = 
 			group->units.size() < GROUP_CRITICAL_MASS 
-			&& (!(group->cats&AIR) || (group->cats&ASSAULT));
+			&& (!(group->cats&AIR) || (group->cats&(ASSAULT|SNIPER|ARTILLERY|ANTIAIR)) == ASSAULT);
 		
+		M.clear();
+
 		/* Go through all the units in a group */
 		for (u = group->units.begin(); u != group->units.end(); u++) {
 			CUnit *unit = u->second;
@@ -395,19 +402,19 @@ void CPathfinder::updateFollowers() {
 			}
 		}
 
-		/* Regroup when they are getting to much apart from eachother */
+		/* Regroup when units are getting to much apart from eachother */
 		if (M.size() > 1) {
 			float lateralDisp = M.rbegin()->first - M.begin()->first;
 			if (lateralDisp > maxGroupLength) {
-				regrouping[group->key] = true;
+				regrouping[group->key] = currentFrame;
 			} else if (lateralDisp < maxGroupLength*0.6f) {
-				regrouping[group->key] = false;
+				regrouping[group->key] = 0;
 			}
 		} else {
-			regrouping[group->key] = false;
+			regrouping[group->key] = 0;
 		}
 		
-		if (!regrouping[group->key]) {
+		if (regrouping[group->key] == 0) {
 			/* If not under fine control, advance on the path */
 			group->move(path->second[segment + waypoint]);
 		} else {
@@ -419,6 +426,7 @@ void CPathfinder::updateFollowers() {
 		/* See who will get their path updated by updatePaths() */
 		if (update % paths.size() == groupnr)
 			repathGroup = path->first;
+		
 		groupnr++;
 	}
 }
@@ -426,22 +434,28 @@ void CPathfinder::updateFollowers() {
 void CPathfinder::updatePaths() {
 	update++;
 
-	/* nothing to update */
-	if (repathGroup < 0 || groups.find(repathGroup) == groups.end())
+	// nothing to update
+	if (repathGroup < 0)
+		return;
+	
+	std::map<int, CGroup*>::iterator it = groups.find(repathGroup);
+	// group is absent
+	if (it == groups.end())
+		return;
+	CGroup *group = it->second;
+
+	// group has no real task
+	if (!group->busy)
 		return;
 
-	/* group has no real task */
-	if (!groups[repathGroup]->busy)
+	// group is not following main path
+	if (group->isMicroing())
 		return;
 
-	/* group is not following main path */
-	if (groups[repathGroup]->isMicroing())
-		return;
+	float3 start = group->pos();
+	float3 goal  = ai->tasks->getPos(*group);
 
-	float3 start = groups[repathGroup]->pos();
-	float3 goal  = ai->tasks->getPos(*groups[repathGroup]);
-
-    if (!addPath(*groups[repathGroup], start, goal)) {
+	if (!addPath(*groups[repathGroup], start, goal)) {
 		LOG_EE("CPathfinder::updatePaths failed for " << (*groups[repathGroup]))
 	}
 }
@@ -465,8 +479,8 @@ bool CPathfinder::addGroup(CGroup &group) {
 
 	if (success) {
 		LOG_II("CPathfinder::addGroup " << group)
-		regrouping[group.key] = true;
 		groups[group.key] = &group;
+		regrouping[group.key] = 0;
 		group.reg(*this);
 	}
 
@@ -496,8 +510,6 @@ bool CPathfinder::addPath(CGroup &group, float3 &start, float3 &goal) {
 	/* If we found a path, add it */
 	std::vector<float3> path;
 	bool success = getPath(start, goal, path, group);
-
-	/* Add it when not empty */
 	if (success && !path.empty())
 		paths[group.key] = path;
 

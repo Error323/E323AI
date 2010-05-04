@@ -77,13 +77,26 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	buildTechTree();
 
 	/* Determine the modname */
-	std::string modname(ai->cb->GetModName());
-	modname = modname.substr(0, modname.size()-4) + "-categorization.cfg";
-
+	std::string basename(ai->cb->GetModName());
+	basename.resize(basename.size() - 4); // remove extension
+	basename += "-categorization";
 	/* Parse or generate categories */
-	if (!ai->cfgparser->parseCategories(modname, units)) {
-		modname = util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER)+modname, false);
-		generateCategorizationFile(modname.c_str());
+	bool success = false;
+	// try to load categorization file per team ID first...
+	char tail[64];
+	sprintf(tail, "-%d.cfg", ai->team);
+	std::string filename;
+	filename = basename + tail;
+	if (ai->cb->GetFileSize(util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER) + filename, true).c_str())) {
+		success = ai->cfgparser->parseCategories(filename, units);
+	}
+	if (!success) {
+		// load ordinary categorization file...
+		filename = basename + ".cfg";
+		if (!ai->cfgparser->parseCategories(filename, units)) {
+			filename = util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER) + filename, false);
+			generateCategorizationFile(filename);
+		}
 	}
 
 	/* Generate the buildBy and canBuild lists per UnitType */
@@ -112,13 +125,13 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 			out << l->first;
 			buildBy += l->second->def->name + "(" + out.str() + "), ";
 		}
-		buildBy = buildBy.substr(0, buildBy.length()-2);
+		buildBy = buildBy.substr(0, buildBy.length() - 2);
 		for (l = utParent->canBuild.begin(); l != utParent->canBuild.end(); l++) {
 			std::stringstream out;
 			out << l->first;
 			canBuild += l->second->def->name + "(" + out.str() + "), ";
 		}
-		canBuild = canBuild.substr(0, canBuild.length()-2);
+		canBuild = canBuild.substr(0, canBuild.length() - 2);
 	}
 }
 
@@ -126,8 +139,8 @@ CUnitTable::~CUnitTable()
 {
 }
 
-void CUnitTable::generateCategorizationFile(const char *fileName) {
-	std::ofstream file(fileName, std::ios::trunc);
+void CUnitTable::generateCategorizationFile(std::string &fileName) {
+	std::ofstream file(fileName.c_str(), std::ios::trunc);
 	file << "# Unit Categorization for E323AI\n\n# Categories to choose from:\n";
 	std::map<unitCategory,std::string>::iterator i;
 	std::map<int, UnitType>::iterator j;
@@ -488,14 +501,16 @@ void CUnitTable::getBuildables(UnitType *ut, unsigned include, unsigned exclude,
 		}
 	}
 	if (candidates.empty())
-		LOG_WW("CUnitTable::getBuildables no candidates found INCLUDE("<<debugCategories(include)<<") EXCLUDE("<<debugCategories(exclude)<<") for unitdef(" << ut->def->humanName << ")")
+		LOG_WW("CUnitTable::getBuildables no candidates found INCLUDE(" << debugCategories(include) << ") EXCLUDE("<<debugCategories(exclude)<<") for unitdef(" << ut->def->humanName << ")")
 }
 
 UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
+	/*
 	std::vector<unitCategory> utcats;
 	for (unsigned int i = 0; i < cats.size(); i++)
 		if (c&cats[i])
 			utcats.push_back(cats[i]);
+	
 	std::map<int, UnitType*>::iterator j;
 	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); j++) {
 		bool qualifies = true;
@@ -506,7 +521,15 @@ UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
 		if (qualifies)
 			return j->second;
 	}
+	*/
+	std::map<int, UnitType*>::iterator it;
+	for (it = ut->canBuild.begin(); it != ut->canBuild.end(); it++) {
+		if ((it->second->cats & c) == c)
+			return it->second;
+	}
+
 	LOG_WW("CUnitTable::canBuild failed to build " << debugCategories(c))
+	
 	return NULL;
 }
 

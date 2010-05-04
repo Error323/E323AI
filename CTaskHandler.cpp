@@ -74,26 +74,20 @@ void ATask::addGroup(CGroup &g) {
 }
 
 bool ATask::enemyScan(bool scout) {
-	//PROFILE(tasks-enemyscan)
-	
-	const CUnit *unit = group->firstUnit();
-	std::multimap<float, int> candidates;
 	float3 gpos = group->pos();
+	std::multimap<float, int> candidates;
 	
 	int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], gpos, scout ? 3.0f * group->range: 2.0f * group->range, MAX_ENEMIES);
 	for (int i = 0; i < numEnemies; i++) {
 		const int euid = ai->unitIDs[i];
-		const UnitDef *ud = ai->cbc->GetUnitDef(euid);
-		if (ud == NULL)
-			continue;
+		
 		if (!group->canAttack(euid))
 			continue;
-		const unsigned int ecats = UC(ud->id);
+		
 		float3 epos = ai->cbc->GetUnitPos(euid);
 		float dist = gpos.distance2D(epos);
-		if (!ai->cbc->IsUnitCloaked(euid))
-			if (!((unit->type->cats&ANTIAIR) ^ (ecats&AIR)))
-				candidates.insert(std::pair<float,int>(dist, euid));
+			
+		candidates.insert(std::pair<float,int>(dist, euid));
 	}
 
 	if (!candidates.empty()) {
@@ -103,7 +97,7 @@ bool ATask::enemyScan(bool scout) {
 			const UnitDef *ud = ai->cbc->GetUnitDef(i->second);
 			const unsigned int ecats = UC(ud->id);
 			float3 epos = ai->cbc->GetUnitPos(i->second);
-			threat = ai->threatmap->getThreat(epos, scout ? 300.0f: 0.0f);
+			threat = group->getThreat(epos, scout ? 300.0f: 0.0f);
 			if (scout) {
 				// scouts like safe places
 				if (threat <= 1.1f /*|| (ecats&SCOUTER && group->strength > ai->cbc->GetUnitPower(i->second))*/)
@@ -122,7 +116,7 @@ bool ATask::enemyScan(bool scout) {
 			if (scout)
 				LOG_II("ATask::enemyScan scout " << (*group) << " is microing enemy target Unit(" << i->second << ") with threat =" << threat)
 			else
-				LOG_II("ATask::enemyScan group " << (*group) << " is microing enemy targets")
+				LOG_II("ATask::enemyScan engage " << (*group) << " is microing enemy targets")
 			return true;
 		}
 	}
@@ -269,7 +263,7 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 
 		case ASSIST: {
 			const CTaskHandler::AssistTask *task = dynamic_cast<const CTaskHandler::AssistTask*>(&atask);
-			ss << "AssistTask(" << task->key << ") assisting(" << (*task->assist) << ") ";
+			ss << "AssistTask(" << task->key << ") assisting Task(" << (task->assist->key) << ") ";
 			ss << (*(task->group));
 		} break;
 
@@ -685,13 +679,14 @@ void CTaskHandler::AssistTask::update() {
 /**************************************************************/
 /************************* ATTACK TASK ************************/
 /**************************************************************/
-void CTaskHandler::addAttackTask(int target, CGroup &group) {
+bool CTaskHandler::addAttackTask(int target, CGroup &group) {
+	const UnitDef *ud = ai->cbc->GetUnitDef(target);
+	if (ud == NULL) 
+		return false;
+
 	float3 pos = ai->cbc->GetUnitPos(target);
 	if (ai->pathfinder->getClosestNode(pos) == NULL)
-		return;
-	const UnitDef *ud = ai->cbc->GetUnitDef(target);
-	
-	if (ud == NULL) return;
+		return false;
 
 	AttackTask *attackTask = new AttackTask(ai);
 	attackTask->target     = target;
@@ -710,12 +705,14 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 		attackTask->remove();
 	else
 		attackTask->active = true;
+
+	return attackTask->active;
 }
 
 bool CTaskHandler::AttackTask::validate() {
 	bool scoutGroup = group->cats&SCOUTER;
 	float targetDistance = pos.distance2D(group->pos());
-
+	
 	if (!scoutGroup && lifeTime() > 20.0f) {
 		const UnitDef *eud = ai->cbc->GetUnitDef(target);
 		if (eud) {
@@ -725,11 +722,11 @@ bool CTaskHandler::AttackTask::validate() {
 		}
 	}
 	
-	if (targetDistance > 600.0f)
+	if (targetDistance > (3.0f * group->range))
 		return true; // too far to panic
 
 	if (scoutGroup) {
-		if (ai->threatmap->getThreat(pos, 300.0f) > group->strength)
+		if (group->getThreat(pos, 300.0f) > group->strength)
 			return false;
 	}
 	
@@ -782,10 +779,9 @@ void CTaskHandler::AttackTask::update() {
 	if (!group->isMicroing()) {
 		if (builder)
 			resourceScan(); // builders should not be too aggressive
-		else if (group->cats&SCOUTER)
-			enemyScan(true);
-		else
-			enemyScan(false);
+		else if (!(group->cats&AIR)) {
+			enemyScan(group->cats&SCOUTER);
+		}
 	}
 }
 
@@ -793,13 +789,12 @@ void CTaskHandler::AttackTask::update() {
 /************************* MERGE TASK *************************/
 /**************************************************************/
 void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
-	int i;
 	int range = 0;
 	int units = 0;
 	std::map<int,CGroup*>::iterator j;
 	float minSlope = std::numeric_limits<float>::max();
 	float maxPower = std::numeric_limits<float>::min();
-	float sqLeg;
+	
 	
 	MergeTask *mergeTask = new MergeTask(ai);
 	mergeTask->groups = groups;
@@ -822,13 +817,21 @@ void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
 		}
 	}
 	
-	// NOTE: actually merge range should increase from the smallest to 
-	// calculated here as long as more groups are joined
-	for(i = 1; units > i * i; i++);
-	i *= i;
-	sqLeg = (float)range * i / units;
-	sqLeg *= sqLeg;
-	mergeTask->range = sqrt(sqLeg + sqLeg);
+	unsigned int cats = groups.begin()->second->cats;
+	if ((cats&AIR) && !(cats&ASSAULT)) {
+		mergeTask->range = 1000.0f;		
+	}
+	else {
+		int i;
+		float sqLeg;
+		// NOTE: actually merge range should increase from the smallest to 
+		// calculated here as long as more groups are joined
+		for(i = 1; units > i * i; i++);
+		i *= i;
+		sqLeg = (float)range * i / units;
+		sqLeg *= sqLeg;
+		mergeTask->range = sqrt(sqLeg + sqLeg);
+	}
 
 	LOG_II((*mergeTask))
 
@@ -897,7 +900,7 @@ void CTaskHandler::MergeTask::update() {
 	/* We have at least two groups, now we can merge */
 	if (mergable.size() >= 2) {
 		CGroup *alpha = mergable[0];
-		for (unsigned j = 1; j < mergable.size(); j++) {
+		for (unsigned int j = 1; j < mergable.size(); j++) {
 			LOG_II("MergeTask::update merging " << (*mergable[j]) << " with " << (*alpha))
 			alpha->merge(*mergable[j]);
 		}

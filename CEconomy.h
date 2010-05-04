@@ -87,7 +87,7 @@ class CEconomy: public ARegistrar {
 		bool initialized;
 		AIClasses *ai;
 
-		std::map<int, float3> takenMexes;
+		std::map<int, float3> takenMexes, takenGeo;
 
 		/* Active groups ingame */
 		std::map<int, CGroup*> activeGroups;
@@ -107,8 +107,12 @@ class CEconomy: public ARegistrar {
 		/* See if we can help with a certain task */
 		ATask* canAssist(buildType t, CGroup &group);
 
+		float3 getBestSpot(CGroup &group, std::list<float3> &resources, std::map<int, float3> &tracker, bool metal);
+
 		/* Fills takenMexes also */
 		float3 getClosestOpenMetalSpot(CGroup &group);
+
+		float3 getClosestOpenGeoSpot(CGroup &group);
 
 		/* Prevent stalling */
 		void preventStalling();

@@ -86,6 +86,7 @@ void CIntel::update(int frame) {
 	rest.clear();
 	defenseGround.clear();
 	defenseAntiAir.clear();
+	commanders.clear();
 	
 	resetCounters();
 
@@ -103,7 +104,10 @@ void CIntel::update(int frame) {
 		|| 	ai->cbc->IsUnitCloaked(uid))
 			continue;
 		
-		if (c&SEA && ai->cbc->GetUnitPos(uid).y < 0.0f) {
+		if (c&COMMANDER) {
+			commanders.push_back(uid);
+		}
+		else if (c&SEA && ai->cbc->GetUnitPos(uid).y < 0.0f) {
 			underwaterUnits.push_back(uid);
 		}
 		else if (!(c&(LAND|AIR)) && c&SEA) {

@@ -91,7 +91,7 @@ void CGroup::reclaim(int entity, bool feature) {
 	
 	if (feature) {
 		pos = ai->cb->GetFeaturePos(entity);
-		if (pos == ZEROVECTOR)
+		if (pos == ZeroVector)
 			return;
 	}
 		
@@ -210,7 +210,7 @@ void CGroup::merge(CGroup &group) {
 		CUnit *unit = i->second; i++;
 		assert(unit->group == &group);
 		addUnit(*unit);
-	}	
+	}
 }
 
 float3 CGroup::pos() {
@@ -319,19 +319,24 @@ bool CGroup::canReach(const float3 &goal) {
 
 bool CGroup::canAttack(int uid) {
 	const UnitDef *ud = ai->cbc->GetUnitDef(uid);
-	if (!ud)
+	
+	if (ud == NULL || ai->cbc->IsUnitCloaked(uid))
 		return false;
+	
 	const unsigned int ecats = UC(ud->id);
 	float3 epos = ai->cbc->GetUnitPos(uid);
 	
-	// FIXME: group can have ANTIAIR + some attacker tags
-	if ((cats&ANTIAIR) && !(ecats&AIR))
+	if ((ecats&AIR) && !(cats&ANTIAIR))
 		return false;
-
-	if ((cats&LAND) && epos.y < 0.0f)
+	/*
+	if ((ecats&SUBMARINE) && !(cats&TORPEDO))
 		return false;
-
-	// TODO: submarine units can't shoot land units
+	*/
+	if (epos.y < 0.0f && (cats&(LAND|AIR)) /*&& !(cats&TORPEDO)*/)
+		return false;
+	
+	if ((ecats&LAND) && pos().y < 0.0f)
+		return false;
 
 	// TODO: add more tweaks based on physical weapon possibilities
 
@@ -339,19 +344,31 @@ bool CGroup::canAttack(int uid) {
 }
 
 bool CGroup::canAdd(CUnit *unit) {
-	// TODO:
+	// TODO: ?
 	return true;
 }
 		
 bool CGroup::canMerge(CGroup *group) {
-	/* TODO: can't merge: 
-	- static vs mobile
-	- water with non-water
-	- underwater with hovers?
-	- builders with non-builders?
-	- nukes with non-nukes
-	- lrpc with non-lrpc?
-	*/
+	static unsigned int nonMergableCats[] = {SEA, LAND, AIR, HOVER, ATTACKER, STATIC, MOBILE, BUILDER};
+
+	unsigned int c = cats&group->cats;
+	
+	if (c == 0)
+		return false;
+	
+	for (int i = 0; i < sizeof(nonMergableCats) / sizeof(unsigned int); i++) {
+		unsigned int tag = nonMergableCats[i];
+		if ((cats&tag) && !(c&tag))
+			return false;
+	}
+
+	// NOTE: aircraft units have more restricted merge rules
+	// TODO: refactor with introducing Group behaviour property?
+	if (cats&AIR) {
+		if ((cats&ASSAULT) && !(c&ASSAULT))
+			return false;
+	}
+	
 	return true;
 }
 
@@ -361,20 +378,23 @@ CUnit* CGroup::firstUnit() {
 	return units.begin()->second;
 }
 
-
 void CGroup::mergeCats(unsigned int newcats) {
 	if (cats == 0)
 		cats = newcats;
 	else {
-		static unsigned int nonMergableCats[] = {SCOUTER, SEA, LAND, AIR, STATIC, MOBILE};
+		static unsigned int nonXorCats[] = {SEA, LAND, AIR, STATIC, MOBILE, SCOUTER};
 		unsigned int oldcats = cats;
 		cats |= newcats;
-		for (int i = 0; i < sizeof(nonMergableCats) / sizeof(unsigned int); i++) {
-			unsigned int tempCat = nonMergableCats[i];
-			if (!(oldcats&tempCat) && cats&tempCat)
-				cats &= ~tempCat;
+		for (int i = 0; i < sizeof(nonXorCats) / sizeof(unsigned int); i++) {
+			unsigned int tag = nonXorCats[i];
+			if (!(oldcats&tag) && (cats&tag))
+				cats &= ~tag;
 		}
 	}
+}
+
+float CGroup::getThreat(float3 &target, float radius) {
+	return ai->threatmap->getThreat(target, radius, this);
 }
 
 std::ostream& operator<<(std::ostream &out, const CGroup &group) {

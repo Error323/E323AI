@@ -19,16 +19,6 @@ CThreatMap::CThreatMap(AIClasses *ai) {
 
 	maps[TMT_AIR] = new float[X*Z];
 	maps[TMT_SURFACE] = new float[X*Z];
-
-	handles[TMT_AIR] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_AIR], X, Z);
-	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_AIR], -0.95f, -0.5f);
-	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_AIR], 0.4f, 0.4f);
-	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_AIR], "Air ThreatMap");
-
-	handles[TMT_SURFACE] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_SURFACE], X, Z);
-	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_SURFACE],  0.55f, -0.5f);
-	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_SURFACE], 0.4f, 0.4f);
-	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_SURFACE], "Surface ThreatMap");
 	
 	reset();
 }
@@ -84,7 +74,7 @@ float CThreatMap::getThreat(float3 &center, float radius, ThreatMapType type) {
 }
 
 float CThreatMap::getThreat(float3 &center, float radius, CGroup *group) {
-	unsigned int cats = group->firstUnit()->type->cats;
+	unsigned int cats = group->cats;
 	ThreatMapType type;
 	
 	if (cats&LAND)
@@ -165,19 +155,6 @@ void CThreatMap::update(int frame) {
 		
 		for (tmi = activeTypes.begin(); tmi != activeTypes.end(); tmi++) {
 			maxPower[*tmi] = std::max<float>(power, maxPower[*tmi]);
-		}
-	}
-
-	if (ai->cb->IsDebugDrawerEnabled()) {
-		std::map<ThreatMapType,int>::iterator i;
-		for (i = handles.begin(); i != handles.end(); i++) {
-			float power = maxPower[i->first];
-			// normalize the data
-			for (int j = 0, N = X*Z; j < N; j++)
-				maps[i->first][j] /= power;
-
-			// update texturemap
-			ai->cb->DebugDrawerUpdateOverlayTexture(i->second, maps[i->first], 0, 0, X, Z);
 		}
 	}
 }

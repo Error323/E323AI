@@ -32,6 +32,7 @@ class CIntel {
 		std::vector<int> rest;
 		std::vector<int> defenseGround;
 		std::vector<int> defenseAntiAir;
+		std::vector<int> commanders;
 
 		std::multimap<float,unitCategory> roulette;
 
