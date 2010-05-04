@@ -6,8 +6,8 @@
 #include <cmath>
 #include <algorithm>
 
-#include "ExternalAI/IAICallback.h"
-#include "./Util.hpp"
+#include "headers/HAIInterface.h"
+#include "Util.hpp"
 
 namespace util {
 	std::string GetAbsFileName(IAICallback* cb, const std::string& relFileName, bool readonly) {
