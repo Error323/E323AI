@@ -1,5 +1,9 @@
 #include "CE323AI.h"
 
+#include <string>
+#include <algorithm>
+#include <cctype>
+
 #include "CAI.h"
 #include "CConfigParser.h"
 #include "GameMap.hpp"
@@ -21,6 +25,11 @@
 
 int CE323AI::instances = 0;
 
+CE323AI::CE323AI() {
+	isRunning = false;
+	attachedAtFrame = -1;
+}
+
 void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	instances++;
 	ai                = new AIClasses();
@@ -38,7 +47,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 		ai->cb->SendTextMsg("No usable config file available for this Mod/Game.", 0);
 		const std::string confFileLine = "A template can be found at: " + configfile;
 		ai->cb->SendTextMsg(confFileLine.c_str(), 0);
-		ai->cb->SendTextMsg("Shutting Down ...", 0);
+		ai->cb->SendTextMsg("Shutting down...", 0);
 
 		// we have to cleanup here, as ReleaseAI() will not be called
 		// in case of an error in InitAI().
@@ -51,7 +60,6 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	}
 
 	ai->gamemap       = new GameMap(ai);
-	
 	ai->economy       = new CEconomy(ai);
 	ai->wishlist      = new CWishList(ai);
 	ai->tasks         = new CTaskHandler(ai);
@@ -60,6 +68,12 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->intel         = new CIntel(ai);
 	ai->military      = new CMilitary(ai);
 	ai->defensematrix = new CDefenseMatrix(ai);
+
+#if !defined(BUILDING_AI_FOR_SPRING_0_81_2)	
+	/* Set the new graph stuff */
+	ai->cb->DebugDrawerSetGraphPos(-0.4f, -0.4f);
+	ai->cb->DebugDrawerSetGraphSize(0.8f, 0.6f);
+#endif
 
 	/*
 	ai->uploader->AddString("aiversion", AI_VERSION_NR);
@@ -149,7 +163,13 @@ void CE323AI::UnitFinished(int uid) {
 	else
 		LOG_II("CE323AI::UnitFinished " << (*unit))
 
-	ai->unittable->unitsAliveTime[uid] = 0;
+	// NOTE: commanders and factories should start actions earlier than
+	// usual units
+	if (unit->builtBy == -1 || (unit->type->cats&FACTORY))
+		ai->unittable->unitsAliveTime[uid] = NEW_UNIT_DELAY;
+	else
+		ai->unittable->unitsAliveTime[uid] = 0;
+			
 	ai->unittable->idle[uid] = true;
 
 	if (unit->builtBy >= 0) {
@@ -174,14 +194,21 @@ void CE323AI::UnitFinished(int uid) {
 /* Called on a destroyed unit */
 void CE323AI::UnitDestroyed(int uid, int attacker) {
 	CUnit *unit = ai->unittable->getUnit(uid);
-	LOG_II("CE323AI::UnitDestroyed " << (*unit))
-	unit->remove();
+	if (unit) {
+		LOG_II("CE323AI::UnitDestroyed " << (*unit))
+		unit->remove();
+	}
 }
 
 /* Called when unit is idle */
 void CE323AI::UnitIdle(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
-	//LOG_II("CE323AI::UnitIdle " << (*unit))
+	
+	if (unit == NULL) {
+		LOG_WW("CE323AI::UnitIdle unregistered Unit(" << uid << ")")
+		return;
+	}
+
 	if(ai->unittable->unitsUnderPlayerControl.find(uid) != ai->unittable->unitsUnderPlayerControl.end()) {
 		ai->unittable->unitsUnderPlayerControl.erase(uid);
 		assert(unit->group == NULL);
@@ -204,7 +231,7 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 	// current task which is impossible while there is no task queue per unit
 	// group (curently we have a single task per group)
 
-	if (ai->cb->UnitBeingBuilt(damaged) || ai->cb->IsUnitParalyzed(damaged) || ai->cb->GetUnitHealth(damaged) < EPS) 
+	if (ai->cb->UnitBeingBuilt(damaged) || ai->cb->IsUnitParalyzed(damaged) || ai->cb->GetUnitHealth(damaged) < EPS)
 		return;
 	if (attacker < 0)
 		return;
@@ -250,12 +277,22 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 	*/
 }
 
-/* Called on move fail e.g. can't reach point */
+/* Called on move fail e.g. can't reach the point */
 void CE323AI::UnitMoveFailed(int uid) {
-	/*
 	CUnit *unit = ai->unittable->getUnit(uid);
-	unit->moveRandom(50.0f);
-	*/
+	if (unit && (unit->type->cats&LAND)) {
+		// if unit is inside a factory then force moving...
+		float3 pos = ai->cb->GetUnitPos(unit->key);
+		std::map<int, CUnit*>::iterator it;
+		for (it = ai->unittable->factories.begin(); it != ai->unittable->factories.end(); it++) {
+			float distance = ai->cb->GetUnitPos(it->first).distance2D(pos);
+			if (distance < 16.0) {
+				unit->moveForward(200.0f);
+				if (ai->unittable->unitsAliveTime[uid] <= NEW_UNIT_DELAY)
+					ai->unittable->unitsAliveTime[uid] = 0;
+			}
+		}
+	}
 }
 
 
@@ -287,6 +324,66 @@ void CE323AI::EnemyDamaged(int damaged, int attacker, float damage, float3 dir) 
  ****************/
 
 void CE323AI::GotChatMsg(const char* msg, int player) {
+	static const char 
+		cmdPrefix[] = "!e323ai",
+		modTM[] = "threatmap",
+		modMil[] = "military",
+		modEco[] = "economy",
+		modPF[] = "pathfinder",
+		modDM[] = "defensematrix";
+
+	// NOTE: accept AI commands from spectators only
+	if (ai->cb->GetPlayerTeam(player) >= 0)
+		return;
+	
+	std::string line(msg);
+	std::transform(line.begin(), line.end(), line.begin(), ::tolower);
+
+	if (line.find(cmdPrefix) == 0) {
+		bool isDebugOn = false;
+		size_t pos = line.find_first_not_of(' ', sizeof(cmdPrefix) - 1);
+		if (pos == std::string::npos) {
+			if (ai->isMaster()) {
+				ai->cb->SendTextMsg("Usage: !e323ai <module>", 0);
+				ai->cb->SendTextMsg("where", 0);
+				ai->cb->SendTextMsg("\t<module> ::= pathfinder|military|threatmap|defensematrix", 0);
+				ai->cb->SendTextMsg("\t<module> ::= pf|mil|tm|dm", 0);
+			}
+			return;
+		}
+		
+		std::string cmd = line.substr(pos);
+		if (cmd == modTM || cmd == "tm") {
+			isDebugOn = ai->threatmap->switchDebugMode();
+			cmd.assign(modTM);
+		}
+		else if (cmd == modMil || cmd == "mil") {
+			isDebugOn = ai->military->switchDebugMode();
+			cmd.assign(modMil);
+		}
+		else if (cmd == modPF || cmd == "pf") {
+			isDebugOn = ai->pathfinder->switchDebugMode();
+			cmd.assign(modPF);
+		}
+		else if (cmd == modDM || cmd == "dm") {
+			isDebugOn = ai->defensematrix->switchDebugMode();
+			cmd.assign(modDM);
+		}
+		else {
+			line.assign("Module \"" + cmd + "\" is unknown or unsupported for visual debugging");
+			ai->cb->SendTextMsg(line.c_str(), 0);
+			return;
+		}
+		
+		line.assign("Debug mode is switched ");
+		if (isDebugOn)
+			line += "ON";
+		else
+			line += "OFF";
+		line += " for \"" + cmd + "\" module";
+
+		ai->cb->SendTextMsg(line.c_str(), 0);
+	}
 }
 
 int CE323AI::HandleEvent(int msg, const void* data) {
@@ -400,7 +497,7 @@ void CE323AI::Update() {
 		return;
 
 	// anyway show AI is loaded even if it is not playing actually...
-	if (localFrame == (800 + (ai->team*200))) {
+	if (localFrame == 800 && ai->isMaster()) {
 		LOG_SS("*** " << AI_VERSION << " ***");
 		LOG_SS("*** " << AI_CREDITS << " ***");
 		LOG_SS("*** " <<  AI_NOTES  << " ***");

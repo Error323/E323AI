@@ -85,6 +85,7 @@ CGroup* CEconomy::requestGroup() {
 	group->reg(*this);
 
 	activeGroups[group->key] = group;
+	
 	return group;
 }
 
@@ -125,32 +126,13 @@ void CEconomy::addUnitOnFinished(CUnit &unit) {
 	LOG_II("CEconomy::addUnitOnFinished " << unit)
 
 	unsigned c = unit.type->cats;
-	if (c&FACTORY) {
+
+	if (c&BUILDER) {
 		CGroup *group = requestGroup();
 		group->addUnit(unit);
-		ai->tasks->addFactoryTask(*group);
-		
-		/* TODO: put same factories in a single group. This requires refactoring of task
-		assisting, because when factory is dead assisting tasks continue working on ex. factory
-		position.
-
-		CUnit *factory = CUnitTable::getUnitByDef(ai->unittable->factories, unit.def);
-		if(factory && factory->group) {
-			factory->group->addUnit(unit);
-		} else {
-			CGroup *group = requestGroup();
-			group->addUnit(unit);
-			ai->tasks->addFactoryTask(*group);
-		}
-		*/
-		ai->unittable->factories[unit.key] = &unit;
+		if (c&FACTORY)
+			ai->unittable->factories[unit.key] = &unit;
 	}
-
-	else if ((c&BUILDER) && (c&MOBILE)) {
-		CGroup *group = requestGroup();
-		group->addUnit(unit);
-	}
-
 	else if (c&MMAKER) {
 		ai->unittable->metalMakers[unit.key] = &unit;
 	}
@@ -200,7 +182,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 	        	if (!windmap || ai->cb->GetCurWind() < 10.0f) {
 	        		// select first non-wind emaker...
 	        		i = candidates.begin();
-	        		while (i != candidates.end() && (i->second->cats&WIND))
+	        		while (i != candidates.end() && (i->second->def->windGenerator))
 	        			i++;
 					if (i == candidates.end())
 						// all emakers are based on wind power
@@ -214,7 +196,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				if (goal == ZeroVector || (e > 0.15f && ai->pathfinder->getETA(group, goal) > 30*15)) {
 					// build anything another...
 	        		i = candidates.begin();
-	        		while (i != candidates.end() && (i->second->cats&WIND || i->second->def->needGeo))
+	        		while (i != candidates.end() && (i->second->def->windGenerator || i->second->def->needGeo))
 	        			i++;
 					if (i == candidates.end())
 						// all emakers are geo- or wind-based
@@ -264,39 +246,59 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 		}
 
 		case FACTORY_BUILD: {
-			int numFactories = ai->unittable->factories.size();
-			if (numFactories > 1)
-				pos = ai->defensematrix->getBestDefendedPos(numFactories);
-			float m = mNow/mStorage;
-			switch(state) {
+			if (!taskInProgress(bt)) {
+				int numFactories = ai->unittable->factories.size();
+
+				bool build = numFactories <= 0;
+				/*
+				if (numFactories > 0) {
+					int maxTechLevel = ai->cfgparser->getMaxTechLevel();
+					unsigned int cats = getNextFactoryToBuild(unit, maxTechLevel);
+					if (cats > 0) {
+						cats |= FACTORY;
+						UnitType *ut = ai->unittable->getUnitTypeByCats(cats);
+						if (ut) {
+							if (ut->costMetal > EPS)
+								build = ((mNow / ut->costMetal) > 0.8f);
+							else
+								build = true;
+						}
+					}
+				}
+				*/				
+				
+				float m = mNow / mStorage;
+			
+				switch(state) {
 				case 0: case 1: case 2: {
-					if (m > 0.45f && !taskInProgress(bt) && affordable)
-						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					build = (m > 0.4f && affordable);
 					break;
 				}
 				case 3: {
-					if (m > 0.4f && !taskInProgress(bt))
-						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					build = (m > 0.4f);
 					break;
 				}
 				case 4: {
-					if (m > 0.35f && !taskInProgress(bt))
-						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					build = (m > 0.35f);
 					break;
 				}
 				case 5: {
-					if (m > 0.3f && !taskInProgress(bt))
-						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					build = (m > 0.3f);
 					break;
 				}
 				case 6: {
-					if (m > 0.25f && !taskInProgress(bt))
-						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					build = (m > 0.25f);
 					break;
 				}
 				default: {
-					if (m > 0.2f && !taskInProgress(bt))
-						ai->tasks->addBuildTask(bt, i->second, group, pos);
+					build = (m > 0.2f);
+				}
+				}
+
+				if (build) {
+					if (numFactories > 1)
+						pos = ai->defensematrix->getBestDefendedPos(numFactories);
+					ai->tasks->addBuildTask(bt, i->second, group, pos);
 				}
 			}
 			break;
@@ -396,12 +398,37 @@ void CEconomy::update(int frame) {
 		CGroup *group = i->second;
 		CUnit *unit = group->firstUnit();
 
-		// TODO: count only mobile groups? Should we count commander?
-		if (group->speed > 0.0001f)
+		if (group->cats&MOBILE)
 			builderGroupsNum++;
 
-		if (group->busy || !ai->unittable->canPerformTask(*unit)) continue;
+		if (group->busy || !ai->unittable->canPerformTask(*unit))
+			continue;
 
+		if (group->cats&FACTORY) {
+			ai->tasks->addFactoryTask(*group);
+		
+			/* TODO: put same factories in a single group. This requires refactoring of task
+			assisting, because when factory is dead assisting tasks continue working on ex. factory
+			position.
+
+			CUnit *factory = CUnitTable::getUnitByDef(ai->unittable->factories, unit.def);
+			if(factory && factory->group) {
+				factory->group->addUnit(unit);
+			} else {
+				CGroup *group = requestGroup();
+				group->addUnit(unit);
+				ai->tasks->addFactoryTask(*group);
+			}
+			*/
+			
+			continue;
+		}
+
+		if (group->cats&STATIC) {
+			LOG_WW("CEconomy::update AI can't handle static builders except factories")
+			continue;
+		}
+		
 		float3 pos = group->pos();
 
 		if (unit->def->isCommander) {
@@ -728,6 +755,7 @@ bool CEconomy::canAffordToBuild(UnitType *builder, UnitType *utToBuild) {
 }
 
 unsigned int CEconomy::getNextFactoryToBuild(CUnit *unit, int maxteachlevel) {
+	/*
 	for(int techlevel = TECH1; techlevel <= maxteachlevel; techlevel++) {
 		for(std::list<unitCategory>::iterator f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
 			int factory = *f|techlevel;
@@ -737,5 +765,17 @@ unsigned int CEconomy::getNextFactoryToBuild(CUnit *unit, int maxteachlevel) {
 				}
 		}
 	}
+	*/
+	
+	for(std::list<unitCategory>::iterator f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
+		for(int techlevel = maxteachlevel; techlevel >= TECH1; techlevel--) {
+		int factory = *f|techlevel;
+		if(ai->unittable->canBuild(unit->type, factory))
+			if(!ai->unittable->gotFactory(factory)) {
+				return factory;
+			}
+		}
+	}
+	
 	return 0;
 }

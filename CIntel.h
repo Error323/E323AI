@@ -7,6 +7,7 @@
 
 #include "headers/Defines.h"
 #include "headers/HEngine.h"
+#include "CMilitary.h"
 
 class AIClasses;
 class CUnit;
@@ -21,6 +22,7 @@ class CIntel {
 		bool enemyInbound();
 		float3 getEnemyVector();
 
+		// TODO: replace this shit below with universal cataloguer
 		std::vector<int> factories;
 		std::vector<int> attackers;
 		std::vector<int> mobileBuilders;
@@ -37,6 +39,8 @@ class CIntel {
 		std::multimap<float,unitCategory> roulette;
 
 		std::list<unitCategory> allowedFactories;
+
+		std::map<MilitaryGroupBehaviour, std::vector<std::vector<int>* > > targets;
 
 	private:
 		AIClasses *ai;

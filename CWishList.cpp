@@ -9,6 +9,11 @@
 
 CWishList::CWishList(AIClasses *ai) {
 	this->ai = ai;
+	maxWishlistSize = 0;
+}
+
+CWishList::~CWishList() {
+	LOG_II("CWishList::Stats MaxWishlistSize = " << maxWishlistSize)
 }
 
 void CWishList::push(unsigned categories, buildPriority p) {
@@ -18,7 +23,7 @@ void CWishList::push(unsigned categories, buildPriority p) {
 		fac = itFac->second->type;
 		std::multimap<float, UnitType*> candidates;
 		ai->unittable->getBuildables(fac, categories, 0, candidates);
-		if (!candidates.empty()) { 
+		if (!candidates.empty()) {
 			/* Initialize new std::vector */
 			if (wishlist.find(fac->id) == wishlist.end()) {
 				std::vector<Wish> L;
@@ -50,6 +55,8 @@ void CWishList::push(unsigned categories, buildPriority p) {
 			LOG_WW("CWishList::push failed for " << (*unit) << " categories: " << ai->unittable->debugCategories(categories))
 		}
 	}
+
+	maxWishlistSize = std::max<int>(maxWishlistSize, wishlist.size());
 }
 
 Wish CWishList::top(int factory) {

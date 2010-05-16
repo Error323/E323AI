@@ -39,20 +39,19 @@
 
 // teamId -> AI map
 std::map<int, CAIGlobalAI*> myAIs;
-
 // filled in init() of the first instance of this AI
 static const char* aiVersion = NULL;
-
 // callbacks for all the teams controlled by this Skirmish AI
 static std::map<int, const struct SSkirmishAICallback*> teamId_callback;
 
 
-EXPORT(enum LevelOfSupport) getLevelOfSupportFor(int teamId,
-		const char* engineVersionString, int engineVersionNumber,
-		const char* aiInterfaceShortName, const char* aiInterfaceVersion) {
-	
-	if (strcmp(engineVersionString, SpringVersion::GetFull().c_str()) == 0 &&
-			engineVersionNumber <= ENGINE_VERSION_NUMBER) {
+EXPORT(enum LevelOfSupport) getLevelOfSupportFor(
+	int teamId,
+	const char* engineVersionString, int engineVersionNumber,
+	const char* aiInterfaceShortName, const char* aiInterfaceVersion) {
+
+	if (strcmp(engineVersionString, SpringVersion::GetFull().c_str()) == 0
+	&& engineVersionNumber <= ENGINE_VERSION_NUMBER) {
 		return LOS_Working;
 	}
 

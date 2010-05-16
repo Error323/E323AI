@@ -153,7 +153,7 @@ void GameMap::CalcMetalSpots() {
 	else
 		maptype = "normal metalmap";
 	
-	LOG_II("GameMap::CalcMetalSpots Maptype: " << maptype)
+	LOG_II("GameMap::CalcMetalSpots map type: " << maptype)
 	LOG_II("GameMap::CalcMetalSpots found " << GameMap::metalspots.size() << " metal spots")
 	LOG_II("GameMap::CalcMetalSpots minMetal(" << minMetal << ") maxMetal(" << maxMetal << ") avgMetal(" << avgMetal << ")")
 }

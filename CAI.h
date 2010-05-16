@@ -21,7 +21,8 @@ class GameMap;
 class AIClasses {
 
 public:
-	AIClasses() { unitIDs.resize(MAX_UNITS); }
+	AIClasses();
+	bool isMaster();
 
 	IAICallback    *cb;
 	IAICheats      *cbc;
@@ -38,7 +39,9 @@ public:
 	CDefenseMatrix *defensematrix;
 	CLogger        *logger;
 	int            team;
-	std::vector<int> unitIDs; // temporary container for GetEnemyUnits(), GetFriendlyUnits() etc. results
+		// is it actually AI player id?
+	std::vector<int> unitIDs; 
+		// temporary container for GetEnemyUnits(), GetFriendlyUnits() etc. results
 };
 
 #endif

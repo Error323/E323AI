@@ -42,13 +42,13 @@ class ATask: public ARegistrar {
 		int nextValidateFrame; 
 			// next frame to execute task validation
 		task t;
-			// type of the task: BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD
+			// type of the task: BUILD, ASSIST, ATTACK, etc.
 		static int counter;
 			// task counter, used as task key; shared among all AI instances
 		std::list<ATask*> assisters;
 			// the assisters assisting this task
 		CGroup *group;
-			// the group involved; for Merge task is null
+			// the group involved; for Merge task it is master-group
 		bool isMoving;
 			// determine if all groups in this task are moving or not
 		float3 pos;
@@ -73,10 +73,11 @@ class ATask: public ARegistrar {
 		bool repairScan();
 
 		/* Scan and micro for enemy targets */
-		bool enemyScan(bool scout);
+		bool enemyScan();
 
 		int lifeFrames() const;
 		
+		/* Task lifetime in sec */
 		float lifeTime() const;
 
 		/* Update this task */
@@ -95,7 +96,7 @@ class ATask: public ARegistrar {
 class CTaskHandler: public ARegistrar {
 	public:
 		CTaskHandler(AIClasses *ai);
-		~CTaskHandler() {};
+		~CTaskHandler();
 
 		struct BuildTask: public ATask {
 			BuildTask(AIClasses *_ai): ATask(_ai) {t = BUILD;}
@@ -124,13 +125,12 @@ class CTaskHandler: public ARegistrar {
 
 			/* set the factorytask to wait including assisters */
 			void setWait(bool wait);
-
 			/* If a factory is idle, make sure it gets something to build */
 			void update();
 
 			bool assistable(CGroup &group);
-
-			//void reset(CUnit &factory);
+			/* overload */
+			bool validate();
 		};
 
 		struct AssistTask: public ATask {
@@ -141,10 +141,8 @@ class CTaskHandler: public ARegistrar {
 
 			/* Update the assist task */
 			void update();
-
 			/* overload */
 			void remove();
-
 			/* overload */
 			void remove(ARegistrar& group);
 		};
@@ -152,32 +150,36 @@ class CTaskHandler: public ARegistrar {
 		struct AttackTask: public ATask {
 			AttackTask(AIClasses *_ai): ATask(_ai) {t = ATTACK;}
 			
+			bool urgent;
+				// if task is urgent then disable enemy scanning while moving
 			int target;
 				// the target to attack
 			std::string enemy;
-
+				// enemy user name
 			/* Update the attack task */
 			void update();
-
+			/* overload */
 			bool validate();
-
-			//void reset(int target);
 		};
 
 		struct MergeTask: public ATask {
-			MergeTask(AIClasses *_ai): ATask(_ai) {t = MERGE;}
+			MergeTask(AIClasses *_ai): ATask(_ai) { t = MERGE; isRetreating = false; }
 
-			/* The minimal range at which groups can merge */
+			bool isRetreating;
+				// are groups retreating?
 			float range;
-
+				// the minimal range at which groups can merge
 			std::map<int, CGroup*> groups;
 
+			std::map<int, bool> mergable;
+
+			bool reelectMasterGroup();
 			/* Update the merge task */
 			void update();
-
+			/* overload */
+			bool validate();
 			/* overload */
 			void remove();
-
 			/* overload */
 			void remove(ARegistrar& group);
 		};
@@ -208,7 +210,7 @@ class CTaskHandler: public ARegistrar {
 		void addAssistTask(ATask &task, CGroup &group);
 
 		/* Add a fresh attack task */
-		bool addAttackTask(int target, CGroup &group);
+		bool addAttackTask(int target, CGroup &group, bool urgent = false);
 
 		/* Add a fresh merge task */
 		void addMergeTask(std::map<int,CGroup*> &groups);
@@ -228,16 +230,14 @@ class CTaskHandler: public ARegistrar {
 
 	private:
 		AIClasses *ai;
-		char buf[1024];
 
 		/* The active tasks to update */
 		std::map<int, ATask*> activeTasks;
-
 		/* The group to task table */
 		std::map<int, ATask*> groupToTask;
 
-		/* Calculate avg range and pos of groups */
-		//static void getGroupsPos(std::vector<CGroup*> &groups, float3 &pos);
+		int statsMaxTasks;
+		int statsMaxActiveTasks;
 };
 
 #endif

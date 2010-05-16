@@ -3,7 +3,6 @@
 #include "CAI.h"
 #include "CUnitTable.h"
 #include "CUnit.h"
-#include "CMilitary.h"
 #include "GameMap.hpp"
 
 CIntel::CIntel(AIClasses *ai) {
@@ -22,7 +21,29 @@ CIntel::CIntel(AIClasses *ai) {
 		counts[selector[i]] = 1;
 	
 	enemyvector = float3(1.0f, 1.0f, 1.0f);
+	
+	targets[ENGAGE].push_back(&commanders);
+	targets[ENGAGE].push_back(&attackers);
+	targets[ENGAGE].push_back(&energyMakers);
+	targets[ENGAGE].push_back(&metalMakers);
+	targets[ENGAGE].push_back(&defenseAntiAir);
+	targets[ENGAGE].push_back(&defenseGround);
+	targets[ENGAGE].push_back(&mobileBuilders);
+	targets[ENGAGE].push_back(&factories);
+	targets[ENGAGE].push_back(&restUnarmedUnits);
+	
+	targets[SCOUT].push_back(&mobileBuilders);
+	targets[SCOUT].push_back(&metalMakers);
+	targets[SCOUT].push_back(&energyMakers);
+	targets[SCOUT].push_back(&restUnarmedUnits);
 
+	targets[BOMBER].push_back(&defenseAntiAir);
+	targets[BOMBER].push_back(&defenseGround);
+	targets[BOMBER].push_back(&commanders);
+	targets[BOMBER].push_back(&factories);
+	targets[BOMBER].push_back(&energyMakers);
+	targets[BOMBER].push_back(&metalMakers);
+	
 	initialized = false;
 }
 

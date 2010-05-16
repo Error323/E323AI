@@ -8,7 +8,7 @@ class AIClasses;
 
 class CE323AI: public IGlobalAI {
 	public:
-		CE323AI():isRunning(false),attachedAtFrame(-1) {}
+		CE323AI();
 		~CE323AI() {}
 
 		void InitAI(IGlobalAICallback* callback, int team);
@@ -34,10 +34,14 @@ class CE323AI: public IGlobalAI {
 		void Update();
 
 	private:
-		bool isRunning;
-		int attachedAtFrame; // frame when AI was attached
-		static int instances;
 		AIClasses *ai;
+			// shared structure among other AI modules
+		bool isRunning;
+			// AI is fully initialized and running
+		int attachedAtFrame;
+			// frame when AI was attached
+		static int instances;
+			// number of AI isntanses
 };
 
 #endif

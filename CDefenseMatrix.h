@@ -24,7 +24,11 @@ class CDefenseMatrix {
 		/* Get the nth best defended pos */
 		float3 getBestDefendedPos(int n);
 		
-		bool isPosInBounds(float3 &pos);
+		bool isPosInBounds(float3 &pos) const;
+		/* Distance to defense matrix border */
+		float distance2D(float3 &pos) const;
+
+		bool switchDebugMode();
 
 	private:
 		/* A group with spacing s between each building such that s < n */
@@ -44,6 +48,7 @@ class CDefenseMatrix {
 			std::multimap<float, CUnit*> members;
 		};
 
+		bool drawMatrix;
 		int X, Z;
 		const float *hm; // heightmap
 		/* Total clustervalue */

@@ -51,8 +51,6 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		cat2str[EMAKER]      = "EMAKER";
 		cat2str[MSTORAGE]    = "MSTORAGE";
 		cat2str[ESTORAGE]    = "ESTORAGE";
-		cat2str[WIND]        = "WIND";
-		cat2str[TIDAL]       = "TIDAL";
 
 		/* ground types */
 		cat2str[KBOT]        = "KBOT";
@@ -71,6 +69,7 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		}
 	}
 
+	maxUnitPower = 0.0f;
 	numUnits = ai->cb->GetNumUnitDefs();
 
  	/* Build the techtree, note that this is actually a graph in XTA */
@@ -133,6 +132,8 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		}
 		canBuild = canBuild.substr(0, canBuild.length() - 2);
 	}
+
+	LOG_II("CUnitTable::CUnitTable Max unit power: " << maxUnitPower);
 }
 
 CUnitTable::~CUnitTable()
@@ -212,13 +213,10 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 }
 
 void CUnitTable::update() {
-	std::map<int,int>::iterator i;
+	std::map<int, int>::iterator i;
 	for (i = unitsAliveTime.begin(); i != unitsAliveTime.end(); i++) {
-		/* Ignore the commander so we start early */
-		if (activeUnits[i->first]->builtBy == -1) 
-			i->second += 500;
 		/* Makes sure new units are not instantly assigned tasks */
-		else if(!activeUnits[i->first]->isMicroing())
+		if(!activeUnits[i->first]->isMicroing())
 			i->second += MULTIPLEXER;
 	}
 }
@@ -226,10 +224,10 @@ void CUnitTable::update() {
 bool CUnitTable::canPerformTask(CUnit &unit) {
 	// TODO: this is a temporary hack until we make all groups behaviour via
 	// tasks. Currently for most of static groups this is wrong
-	if (unit.type->cats&STATIC)
+	if ((unit.type->cats&STATIC) && !(unit.type->cats&FACTORY))
 		return false;
 	/* lifetime of more then 5 seconds */
-	return unitsAliveTime.find(unit.key) != unitsAliveTime.end() && unitsAliveTime[unit.key] > 30*5;
+	return unitsAliveTime.find(unit.key) != unitsAliveTime.end() && unitsAliveTime[unit.key] > NEW_UNIT_DELAY;
 }
 
 void CUnitTable::buildTechTree() {
@@ -279,16 +277,25 @@ UnitType* CUnitTable::insertUnit(const UnitDef *ud) {
 	ut.def        = ud;
 	ut.id         = ud->id;
 	ut.cost       = ud->metalCost*METAL2ENERGY + ud->energyCost;
+	ut.costMetal  = ud->metalCost;
 	ut.energyMake = ud->energyMake - ud->energyUpkeep;
 	ut.metalMake  = ud->metalMake  - ud->metalUpkeep;
 	ut.dps        = calcUnitDps(&ut);
 	units[ud->id] = ut;
+	
+	if (maxUnitPower < ut.dps)
+		maxUnitPower = ut.dps;
+
 	return &units[ud->id];
 }
 
 bool CUnitTable::hasAntiAir(const std::vector<UnitDef::UnitDefWeapon> &weapons) {
 	for (unsigned int i = 0; i < weapons.size(); i++) {
 		const UnitDef::UnitDefWeapon *weapon = &weapons[i];
+		/*
+		weapon->def->canAttackGround
+		weapon->def->onlyTargetCategory 
+		*/
 		//FIXME: Still selects Brawlers and Rangers
 		if (weapon->def->tracks && !weapon->def->waterweapon && !weapon->def->stockpile)
 			return true;
@@ -391,13 +398,13 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if ((ud->energyMake - ud->energyUpkeep) / ut->cost > 0.002 ||
 		ud->tidalGenerator || ud->windGenerator)
 		cats |= EMAKER;
-
+/*
 	if (ud->windGenerator)
 		cats |= WIND;
 
 	if (ud->tidalGenerator)
 		cats |= TIDAL;
-
+*/
 	if (ud->extractsMetal)
 		cats |= MEXTRACTOR;
 	
@@ -505,30 +512,13 @@ void CUnitTable::getBuildables(UnitType *ut, unsigned include, unsigned exclude,
 }
 
 UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
-	/*
-	std::vector<unitCategory> utcats;
-	for (unsigned int i = 0; i < cats.size(); i++)
-		if (c&cats[i])
-			utcats.push_back(cats[i]);
-	
-	std::map<int, UnitType*>::iterator j;
-	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); j++) {
-		bool qualifies = true;
-		unsigned int cat = j->second->cats;
-		for (unsigned int i = 0; i < utcats.size(); i++)
-			if (!(utcats[i]&cat))
-				qualifies = false;
-		if (qualifies)
-			return j->second;
-	}
-	*/
 	std::map<int, UnitType*>::iterator it;
 	for (it = ut->canBuild.begin(); it != ut->canBuild.end(); it++) {
 		if ((it->second->cats & c) == c)
 			return it->second;
 	}
 
-	LOG_WW("CUnitTable::canBuild failed to build " << debugCategories(c))
+	//LOG_WW("CUnitTable::canBuild failed to build " << debugCategories(c))
 	
 	return NULL;
 }
@@ -545,6 +535,15 @@ CUnit* CUnitTable::getUnitByDef(std::map<int, CUnit*> &dic, int did) {
 		if(unit->def->id == did) {
 			return unit;
 		}
+	}
+	return NULL;
+}
+
+UnitType* CUnitTable::getUnitTypeByCats(unsigned int c) {
+	std::map<int, UnitType>::iterator it;
+	for (it = units.begin(); it != units.end(); it++) {
+		if ((it->second.cats&c) == c)
+			return &(it->second);
 	}
 	return NULL;
 }

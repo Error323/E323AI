@@ -39,7 +39,7 @@ struct Wish {
 class CWishList {
 	public:
 		CWishList(AIClasses *ai);
-		~CWishList() {}
+		~CWishList();
 
 		/* Insert a unit in the wishlist, sorted by priority p */
 		void push(unsigned int categories, buildPriority p);
@@ -54,11 +54,13 @@ class CWishList {
 		Wish top(int factory);
 
 	private:
+		AIClasses *ai;
+
+		int maxWishlistSize;
+
 		void unique(std::vector<Wish> &vector);
 
-		std::map<int, std::vector<Wish> > wishlist;  /* <factory type, wishes> */
-
-		AIClasses *ai;
+		std::map<int, std::vector<Wish> > wishlist; /* <factory type, wishes> */
 };
 
 #endif

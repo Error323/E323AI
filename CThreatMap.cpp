@@ -19,7 +19,21 @@ CThreatMap::CThreatMap(AIClasses *ai) {
 
 	maps[TMT_AIR] = new float[X*Z];
 	maps[TMT_SURFACE] = new float[X*Z];
+
+#if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
+	handles[TMT_AIR] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_AIR], X, Z);
+	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_AIR], -0.95f, -0.5f);
+	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_AIR], 0.4f, 0.4f);
+	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_AIR], "Air ThreatMap");
+
+	handles[TMT_SURFACE] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_SURFACE], X, Z);
+	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_SURFACE],  0.55f, -0.5f);
+	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_SURFACE], 0.4f, 0.4f);
+	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_SURFACE], "Surface ThreatMap");		
+#endif
 	
+	drawMap = TMT_NONE;
+
 	reset();
 }
 
@@ -70,7 +84,8 @@ float CThreatMap::getThreat(float3 &center, float radius, ThreatMapType type) {
 		}
 	}
 	
-	return power/(2.0f*R*M_PI);
+	//return power/(2.0f*R*M_PI);
+	return power / (R*R*M_PI);
 }
 
 float CThreatMap::getThreat(float3 &center, float radius, CGroup *group) {
@@ -92,13 +107,11 @@ void CThreatMap::update(int frame) {
 	reset();
 
 	int numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS_AI);
-	if (numUnits > MAX_UNITS_AI)
-		LOG_WW("CThreatMap::update " << numUnits << " > " << MAX_UNITS_AI)
 
 	/* Add enemy threats */
 	for (int i = 0; i < numUnits; i++) {
 		const int uid = units[i];
-		const UnitDef  *ud = ai->cbc->GetUnitDef(uid);
+		const UnitDef *ud = ai->cbc->GetUnitDef(uid);
 		
 		if (ud == NULL)
 			continue;
@@ -157,6 +170,23 @@ void CThreatMap::update(int frame) {
 			maxPower[*tmi] = std::max<float>(power, maxPower[*tmi]);
 		}
 	}
+
+#if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
+	if (ai->cb->IsDebugDrawerEnabled()) {
+		std::map<ThreatMapType,int>::iterator i;
+		for (i = handles.begin(); i != handles.end(); i++) {
+			float power = maxPower[i->first];
+			// normalize the data
+			for (int j = 0, N = X*Z; j < N; j++)
+				maps[i->first][j] /= power;
+			// update texturemap
+			ai->cb->DebugDrawerUpdateOverlayTexture(i->second, maps[i->first], 0, 0, X, Z);
+		}
+	}
+#endif
+
+	if (drawMap != TMT_NONE)
+		visualizeMap(drawMap);
 }
 
 float CThreatMap::gauss(float x, float sigma, float mu) {
@@ -165,7 +195,7 @@ float CThreatMap::gauss(float x, float sigma, float mu) {
 	return a * b;
 }
 
-void CThreatMap::draw(ThreatMapType type) {
+void CThreatMap::visualizeMap(ThreatMapType type) {
 	float *map = maps[type];
 	float total = maxPower[type];
 	
@@ -175,9 +205,18 @@ void CThreatMap::draw(ThreatMapType type) {
 				float3 p0(x*REAL, ai->cb->GetElevation(x*REAL,z*REAL), z*REAL);
 				float3 p1(p0);
 				p1.y += (map[ID(x,z)]/total) * 300.0f;
-				ai->cb->CreateLineFigure(p0, p1, 4, 10.0, DRAW_TIME, 5);
+				ai->cb->CreateLineFigure(p0, p1, 4, 10.0, MULTIPLEXER, 5);
 			}
 		}
 	}
 	ai->cb->SetFigureColor(5, 1.0f, 0.0f, 0.0f, 1.0f);
+}
+
+bool CThreatMap::switchDebugMode() {
+	int i = drawMap;
+	i++;
+	drawMap = (ThreatMapType)i;
+	if (drawMap >= TMT_LAST)
+		drawMap = TMT_NONE;
+	return drawMap != TMT_NONE;
 }

@@ -17,11 +17,12 @@ class AIClasses;
 /* Unit wrapper struct */
 class UnitType {
 public:
-    const UnitDef *def;                 /* As defined by spring */
+	const UnitDef *def;                 /* As defined by spring */
 	int id;                             /* Overloading the UnitDef id */
 	int techLevel;                      /* By looking at the factory cost in which it can be build */
 	float dps;                          /* A `briljant' measurement for the power of a unit :P */
 	float cost;                         /* Cost defined in energy units */
+	float costMetal;
 	float energyMake;                   /* Netto energy this unit provides */
 	float metalMake;                    /* Netto metal this unit provides */
 	unsigned int cats;                  /* Categories this unit belongs, Categories @ Defines.h */
@@ -44,11 +45,14 @@ class CUnitTable: public ARegistrar {
 		/* Total number of unit types (definitions) */
 		int numUnits;
 
+		/* Max unit power */
+		float maxUnitPower;
+
 		/* All units flattened in a map */
-		std::map<int, UnitType>   units;
+		std::map<int, UnitType> units;
 
 		/* movetypes, used by pathfinder */
-		std::map<int, MoveData*>  moveTypes;
+		std::map<int, MoveData*> moveTypes;
 
 		/* Ingame units, set in eco module */
 		std::map<int, bool>         idle;
@@ -87,6 +91,7 @@ class CUnitTable: public ARegistrar {
 		int factoryCount(unsigned c);
 		bool gotFactory(unsigned c);
 
+		UnitType* getUnitTypeByCats(unsigned int c);
 		static CUnit* getUnitByDef(std::map<int, CUnit*> &dic, const UnitDef *udef);
 		static CUnit* getUnitByDef(std::map<int, CUnit*> &dic, int did);
 		

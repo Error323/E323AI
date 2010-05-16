@@ -1,6 +1,7 @@
 #ifndef CGROUP_H
 #define CGROUP_H
 
+#include <limits>
 #include <map>
 
 #include "headers/HEngine.h"
@@ -11,9 +12,32 @@ class CUnit;
 class AIClasses;
 class UnitType;
 
-/* NOTE: CGroup silently assumes that waterunits will not be merged with
- * non-water units as a group, as well as builders with attackers
- */
+struct TargetsFilter {
+	unsigned int include, exclude;
+	int bestTarget; // can be updated after passing to selectTarget()
+	int candidatesLimit;
+	float threatRadius;
+	float threatCeiling;
+	float scoreCeiling; // can be updated after passing to selectTarget()
+	float threatFactor;
+	float threatValue; // can be updated after passing to selectTarget()
+	
+	TargetsFilter::TargetsFilter() {
+		reset();
+	}	
+
+	void reset() {
+		bestTarget = -1;
+		candidatesLimit = std::numeric_limits<int>::max();
+		include = std::numeric_limits<unsigned int>::max();
+		exclude = 0;
+		threatRadius = 0.0f;
+		scoreCeiling = threatCeiling = std::numeric_limits<float>::max();
+		threatFactor = 1.0f;
+		threatValue = 0.0f;
+	}
+};
+
 class CGroup: public ARegistrar {
 	public:
 		CGroup(AIClasses *ai): ARegistrar(counter, std::string("group")) {
@@ -43,9 +67,13 @@ class CGroup: public ARegistrar {
 		float speed;
 		/* The group's buildSpeed */
 		float buildSpeed;
+		
+		float cost;
+
+		float costMetal;
 		/* The group's footprint */
 		int size;
-		/* The group maxrange */
+		/* The group maxrange, buildrange */
 		float range, buildRange, los;
 		/* Is this group busy? */
 		bool busy;
@@ -79,7 +107,9 @@ class CGroup: public ARegistrar {
 		/* See if the group is microing */
 		bool isMicroing();
 		/* Get the position of the group center */
-		float3 pos();
+		float3 pos(bool force_valid = false);
+		/* Group radius when units are placed within a square */
+		float radius();
 
 		void assist(ATask &task);
 		
@@ -111,12 +141,21 @@ class CGroup: public ARegistrar {
 		
 		float getThreat(float3 &target, float radius = 0.0f);
 
+		int selectTarget(std::vector<int> &targets, std::map<int,bool> &occupied, TargetsFilter &tf);
+
+		int selectTarget(float search_radius, std::map<int,bool> &occupied, TargetsFilter &tf);
+
 		/* Overloaded */
 		RegistrarType regtype() { return REGT_GROUP; }
 		/* output stream */
 		friend std::ostream& operator<<(std::ostream &out, const CGroup &group);
 
 	private:
+		bool radiusUpdateRequied;
+			// when "radius" needs to be recalculated
+		float groupRadius;
+			// group radius (half of hypotenuse of square in which all units are inscribed)
+		
 		/* Recalculate group properties based on new unit */
 		void recalcProperties(CUnit *unit, bool reset = false);
 

@@ -4,7 +4,6 @@
 	#define _USE_MATH_DEFINES
 #endif
 #include <cmath>
-#include <algorithm>
 
 #include "headers/HAIInterface.h"
 #include "Util.hpp"

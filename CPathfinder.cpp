@@ -16,10 +16,10 @@
 #include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
 
 
-
 extern std::map<int, CAIGlobalAI*> myAIs;
 
 std::vector<CPathfinder::Node*> CPathfinder::graph;
+int CPathfinder::drawPathGraph = -2;
 
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder")) {
 	this->ai   = ai;
@@ -93,7 +93,6 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	}
 
 	//drawGraph(1);
-	draw = false;
 
 	this->REAL = HEIGHT2REAL*HEIGHT2SLOPE;
 	
@@ -201,16 +200,16 @@ void CPathfinder::calcGraph() {
 	std::map<int, MoveData*>::iterator k;
 	for (k = ai->unittable->moveTypes.begin(); k != ai->unittable->moveTypes.end(); k++) {
 		int map = k->first;
-		for (int x = 0; x < X; x+=I_MAP_RES) {
-			for (int z = 0; z < Z; z+=I_MAP_RES) {
+		for (int x = 0; x < X; x += I_MAP_RES) {
+			for (int z = 0; z < Z; z += I_MAP_RES) {
 				Node *parent = CPathfinder::graph[ID_GRAPH(x/I_MAP_RES,z/I_MAP_RES)];
-				if (isBlocked(x,z, map))
+				if (isBlocked(x, z, map))
 					continue;
 
 				bool s[] = {false, false, false, false, false, false, false, false};
-				for (size_t p = 0; p < surrounding.size(); p+=2) {
+				for (size_t p = 0; p < surrounding.size(); p += 2) {
 					int i = surrounding[p]; //z
-					int j = surrounding[p+1]; //x
+					int j = surrounding[p + 1]; //x
 					
 					int zz = i + z;
 					int xx = j + x;
@@ -426,7 +425,7 @@ void CPathfinder::updateFollowers() {
 		/* See who will get their path updated by updatePaths() */
 		if (update % paths.size() == groupnr)
 			repathGroup = path->first;
-		
+
 		groupnr++;
 	}
 }
@@ -458,6 +457,25 @@ void CPathfinder::updatePaths() {
 	if (!addPath(*groups[repathGroup], start, goal)) {
 		LOG_EE("CPathfinder::updatePaths failed for " << (*groups[repathGroup]))
 	}
+
+	if (drawPathGraph) {
+		/*
+		if (ai->cb->GetSelectedUnits(&ai->unitIDs[0], 1) > 0) {
+	    	CUnit *unit = ai->unittable->getUnit(ai->unitIDs[0]);
+	    	if (unit) {
+				int pathType;
+				MoveData *md = unit->def->movedata;
+				
+				if (md)
+					pathType = md->pathType;
+				else
+					pathType = -1;
+				
+				drawGraph(pathType);
+	    	}
+		}
+		*/
+	}
 }
 
 void CPathfinder::remove(ARegistrar &obj) {
@@ -473,7 +491,7 @@ void CPathfinder::remove(ARegistrar &obj) {
 }
 
 bool CPathfinder::addGroup(CGroup &group) {
-	float3 s = group.pos();
+	float3 s = group.pos(true);
 	float3 g = ai->tasks->getPos(group);
 	bool success = addPath(group, s, g);
 
@@ -516,12 +534,25 @@ bool CPathfinder::addPath(CGroup &group, float3 &start, float3 &goal) {
 	return success;
 }
 
-CPathfinder::Node* CPathfinder::getClosestNode(const float3 &f) {
+float3 CPathfinder::getClosestPos(const float3 &f, CGroup *group) {
+	CPathfinder::Node *node = getClosestNode(f, group);
+	if (node)
+		return node->toFloat3();
+	return ERRORVECTOR;
+}
+
+CPathfinder::Node* CPathfinder::getClosestNode(const float3 &f, CGroup *group) {
 	if(f == ERRORVECTOR)
 		return NULL;
 
 	int fx = int(round(f.x/REAL/I_MAP_RES));
 	int fz = int(round(f.z/REAL/I_MAP_RES));
+	int pathType;
+	
+	if (group)
+		pathType = group->pathType;
+	else
+		pathType = activeMap;
 
 	Node *bestNode = NULL;
 	float bestScore = std::numeric_limits<float>::max();
@@ -534,7 +565,7 @@ CPathfinder::Node* CPathfinder::getClosestNode(const float3 &f) {
 			if (z < 0 || z > ZZ-1 || x < 0 || x > XX-1)
 				continue;
 			
-			if (!isBlocked(x * I_MAP_RES, z * I_MAP_RES, activeMap)) {
+			if (!isBlocked(x * I_MAP_RES, z * I_MAP_RES, pathType)) {
 				Node *n = CPathfinder::graph[ID_GRAPH(x, z)];
 				float3 s = n->toFloat3();
 				float dist = (s - f).Length2D();
@@ -550,14 +581,6 @@ CPathfinder::Node* CPathfinder::getClosestNode(const float3 &f) {
 		LOG_EE("CPathfinder::getClosestNode failed to lock node("<<fx<<","<<fz<<") for pos("<<f.x<<","<<f.z<<")")
 	
 	return bestNode;
-}
-
-void CPathfinder::drawNode(Node *n) {
-	float3 fp = n->toFloat3();
-	float3 fn = n->toFloat3();
-	fn.y = ai->cb->GetElevation(fn.x, fn.z) + 200.0f;
-	ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, 10000, 11);
-	ai->cb->SetFigureColor(11, 0.0f, 1.0f, 1.0f, 0.5f);
 }
 
 bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup &group, float radius) {
@@ -593,8 +616,8 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGrou
 		}
 		path.push_back(g);
 
-		if (draw) {
-			for (unsigned i = 2; i < path.size(); i++) 
+		if (false) {
+			for (unsigned i = 2; i < path.size(); i++)
 				ai->cb->CreateLineFigure(path[i-1], path[i], 8.0f, 0, DRAW_TIME, group.key);
 			ai->cb->SetFigureColor(group.key, group.key/float(CGroup::counter), 1.0f-group.key/float(CGroup::counter), 1.0f, 1.0f);
 		}
@@ -622,39 +645,65 @@ void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 		succ.push(CPathfinder::graph[V[u]]);
 }
 
+bool CPathfinder::switchDebugMode() {
+	if (!ai->isMaster())
+		return false;
+
+	if (ai->cb->GetSelectedUnits(&ai->unitIDs[0], 1) == 1) {
+		CUnit *unit = ai->unittable->getUnit(ai->unitIDs[0]);
+		if (unit && !(unit->type->cats&STATIC)) {
+			int pathType;
+			MoveData *md = unit->def->movedata;
+			
+			if (md)
+				pathType = md->pathType;
+			else
+				pathType = -1;
+
+			if (drawPathGraph != pathType) {
+				if (drawPathGraph > -2)
+					ai->cb->DeleteFigureGroup(10);
+				drawGraph(pathType);
+				drawPathGraph = pathType;
+			}
+
+			return true;
+		}
+	}
+	
+	if (drawPathGraph > -2) {
+		ai->cb->DeleteFigureGroup(10);		
+		drawPathGraph = -2;
+	}
+
+	return false;
+}
+
 void CPathfinder::drawGraph(int map) {
+	static const int figureID = 10;
+
 	for (unsigned int i = 0; i < CPathfinder::graph.size(); i++) {
-		Node *p = CPathfinder::graph[i]; 
+		Node *p = CPathfinder::graph[i];
 		float3 fp = p->toFloat3();
 		fp.y = ai->cb->GetElevation(fp.x, fp.z) + 50.0f;
-		for (size_t j = 0; j < p->neighbours[map].size(); j++) {
-			Node *n = CPathfinder::graph[p->neighbours[map][j]];
+		std::vector<unsigned short> *temp = &p->neighbours[map];
+		for (size_t j = 0; j < temp->size(); j++) {
+			Node *n = CPathfinder::graph[(*temp)[j]];
 			float3 fn = n->toFloat3();
 			fn.y = ai->cb->GetElevation(fn.x, fn.z) + 50.0f;
-			ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, 10000, 10);
-			ai->cb->SetFigureColor(10, 0.0f, 0.0f, 1.0f, 0.5f);
+			ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, 10000, figureID);
+			ai->cb->SetFigureColor(figureID, 0.0f, 0.0f, 1.0f, 0.5f);
 		}
 	}
 }
 
-/*
-void CPathfinder::drawMap(int map) {
-	std::map<int, int>::iterator i;
-	for (i = CPathfinder::graph[map].begin(); i != CPathfinder::graph[map].end(); i++) {
-		Node *node = NODE(i->second); 
-		float3 p0 = node->toFloat3();
-		p0.y = ai->cb->GetElevation(p0.x, p0.z);
-		float3 p1(p0);
-		if (node->isBlocked()) {
-			p0.y += 100.0f;
-			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, DRAW_TIME, 10);
-			ai->cb->SetFigureColor(10, 1.0f, 0.0f, 0.0f, 1.0f);
-		}
-		else if (node->w > 10.0f) {
-			p1.y += node->w;
-			ai->cb->CreateLineFigure(p0, p1, 10.0f, 1, DRAW_TIME, 20);
-			ai->cb->SetFigureColor(20, 1.0f, 1.0f, 1.0f, 0.1f);
-		}
-	}
+void CPathfinder::drawNode(Node *n) {
+	static const int figureID = 11;
+
+	float3 fp = n->toFloat3();
+	float3 fn = fp;
+	fp.y = ai->cb->GetElevation(fp.x, fp.z);
+	fn.y = fp.y + 150.0f;
+	ai->cb->CreateLineFigure(fp, fn, 10.0f, 1, 10000, figureID);
+	ai->cb->SetFigureColor(figureID, 0.0f, 1.0f, 1.0f, 0.5f);
 }
-*/
