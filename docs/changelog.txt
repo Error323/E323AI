@@ -1,6 +1,9 @@
 E323AI changelog
 ----------------
-v3.21.0 [2010-05-??]
+v3.21.1 [2010-05-17]
+* fixed protential crash in UnitIdle callback
+
+v3.21.0 [2010-05-16]
 * refactored target selection
 * fixed most issues with attack stalling
 * avoid continuous issuing of MOVE command in Merge task when group is already in-place
