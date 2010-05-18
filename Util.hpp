@@ -33,11 +33,38 @@ namespace util {
 	 */
 	bool IsBinarySubset(unsigned A, unsigned B);
 
-	template<typename T> std::set<T> IntersectSets(const std::set<T>& s1, const std::set<T>& s2);
+	template<typename T>
+	std::set<T> IntersectSets(const std::set<T>& s1, const std::set<T>& s2) {
+		std::set<T> r;
+		std::set<T>::const_iterator sit;
 
-	template<typename T> std::set<T> UnionSets(const std::set<T>& s1, const std::set<T>& s2);
+		for (sit = s1.begin(); sit != s1.end(); sit++) {
+			if (s2.find(*sit) != s2.end()) {
+				r.insert(*sit);
+			}
+		}
 
-	template<class Key, class T> void GetShuffledKeys(std::vector<Key> &out, std::map<Key, T> &in);
+		return r;
+	}
+
+	template<typename T> 
+	std::set<T> UnionSets(const std::set<T>& s1, const std::set<T>& s2) {
+		std::set<T> r;
+		
+		r.insert(s1.begin(), s1.end());
+		r.insert(s2.begin(), s2.end());
+
+		return r;
+	}
+
+	template <class Key, class T>
+	void GetShuffledKeys(std::vector<Key> &out, std::map<Key, T> &in) {
+		std::map<Key, T>::iterator it;
+		for (it = in.begin(); it != in.end(); it++) {
+			out.push_back(it->first);
+		}
+		std::random_shuffle(out.begin(), out.end());
+	}
 }
 
 #endif
