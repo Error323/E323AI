@@ -22,7 +22,7 @@ struct TargetsFilter {
 	float threatFactor;
 	float threatValue; // can be updated after passing to selectTarget()
 	
-	TargetsFilter::TargetsFilter() {
+	TargetsFilter() {
 		reset();
 	}	
 
