@@ -76,6 +76,8 @@
 /* Number of frames a new unit can not accept tasks */
 #define NEW_UNIT_DELAY (5*30)
 
+#define BAD_TARGET_TIMEOUT (60*30)
+
 /* Draw time */
 #define DRAW_TIME MULTIPLEXER*30
 

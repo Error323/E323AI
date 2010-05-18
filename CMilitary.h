@@ -40,6 +40,8 @@ class CMilitary: public ARegistrar {
 
 		bool switchDebugMode();
 
+		void onEnemyDestroyed(int enemy, int attacker);
+
 	private:
 		AIClasses *ai;
 

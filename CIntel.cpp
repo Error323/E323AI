@@ -4,6 +4,7 @@
 #include "CUnitTable.h"
 #include "CUnit.h"
 #include "GameMap.hpp"
+#include <ctime>
 
 CIntel::CIntel(AIClasses *ai) {
 	this->ai = ai;
@@ -45,6 +46,7 @@ CIntel::CIntel(AIClasses *ai) {
 	targets[BOMBER].push_back(&metalMakers);
 	
 	initialized = false;
+	strategyTechUp = false;
 }
 
 float3 CIntel::getEnemyVector() {
@@ -91,6 +93,15 @@ void CIntel::init() {
 	}
 	// TODO: do not build air on too small maps?
 	allowedFactories.push_back(AIR);
+
+	// FIXME: engineer better decision algo
+	if (ai->gamemap->IsMetalMap())
+		strategyTechUp = true;
+	else
+		// NOTE: clock() gives much better results than rng.RndFloat() (at least under MSVC)
+		strategyTechUp = ((clock() % 3) == 0);
+
+	LOG_II("Tech-up strategy: " << strategyTechUp)
 
 	initialized = true;
 }

@@ -1,7 +1,10 @@
 E323AI changelog
 ----------------
-v3.21.1 [2010-05-17]
+v3.21.1 [2010-05-18]
 * fixed protential crash in UnitIdle callback
+* somewhat fixed chasing after aircraft with non-aircraft groups
+* fixed continuous assigning unreachable target to military group which leads to serious perofmance hit
+* tech-up strategy occured not perfect so it is random by now
 
 v3.21.0 [2010-05-16]
 * refactored target selection

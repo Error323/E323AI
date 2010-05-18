@@ -33,10 +33,10 @@ namespace util {
 	 */
 	bool IsBinarySubset(unsigned A, unsigned B);
 
-	template<typename T>
+	template<class T>
 	std::set<T> IntersectSets(const std::set<T>& s1, const std::set<T>& s2) {
 		std::set<T> r;
-		std::set<T>::const_iterator sit;
+		typename std::set<T>::const_iterator sit;
 
 		for (sit = s1.begin(); sit != s1.end(); sit++) {
 			if (s2.find(*sit) != s2.end()) {
@@ -47,7 +47,7 @@ namespace util {
 		return r;
 	}
 
-	template<typename T> 
+	template<class T> 
 	std::set<T> UnionSets(const std::set<T>& s1, const std::set<T>& s2) {
 		std::set<T> r;
 		
@@ -59,7 +59,7 @@ namespace util {
 
 	template <class Key, class T>
 	void GetShuffledKeys(std::vector<Key> &out, std::map<Key, T> &in) {
-		std::map<Key, T>::iterator it;
+		typename std::map<Key, T>::iterator it;
 		for (it = in.begin(); it != in.end(); it++) {
 			out.push_back(it->first);
 		}

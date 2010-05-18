@@ -14,19 +14,30 @@ class UnitType;
 
 struct TargetsFilter {
 	unsigned int include, exclude;
-	int bestTarget; // can be updated after passing to selectTarget()
+		// unit category tags filter
+	std::map<int, bool> *excludeId;
+		// unit Ids to exclude
+	int bestTarget; 
+		// best target score; can be updated after passing to selectTarget()
 	int candidatesLimit;
+		// number of possible targets to consider
 	float threatRadius;
+		// radius to calculate area threat value
 	float threatCeiling;
-	float scoreCeiling; // can be updated after passing to selectTarget()
+		// max threat threshold allowed at target position
+	float scoreCeiling; 
+		// max target score allowed; can be updated after passing to selectTarget()
 	float threatFactor;
-	float threatValue; // can be updated after passing to selectTarget()
+		// impacts function which calculates heuristic target score
+	float threatValue;
+		// threat value at best target position; can be updated after passing to selectTarget()
 	
-	TargetsFilter::TargetsFilter() {
+	TargetsFilter() {
 		reset();
 	}	
 
 	void reset() {
+		excludeId = NULL;
 		bestTarget = -1;
 		candidatesLimit = std::numeric_limits<int>::max();
 		include = std::numeric_limits<unsigned int>::max();
@@ -79,6 +90,9 @@ class CGroup: public ARegistrar {
 		bool busy;
 		/* The units <id, CUnit*> */
 		std::map<int, CUnit*> units;
+		/* Group personal bad targets (due to pathfinding issues usually) <id, frame> */
+		std::map<int, int> badTargets;
+
 		/* Reference to common AI struct */
 		AIClasses *ai;
 
@@ -128,7 +142,7 @@ class CGroup: public ARegistrar {
 		void unwait();
 		/* Get the maximal lateral dispersion */
 		int maxLength();
-		/* Can unit exists at this point? */
+		/* Can group exists at this place? */
 		bool canTouch(const float3&);
 		/* Is position reachable by group */
 		bool canReach(const float3&);
@@ -138,27 +152,33 @@ class CGroup: public ARegistrar {
 		bool canAdd(CUnit *unit);
 		
 		bool canMerge(CGroup *group);
-		
+		/* Get area threat specific to current group */
 		float getThreat(float3 &target, float radius = 0.0f);
 
-		int selectTarget(std::vector<int> &targets, std::map<int,bool> &occupied, TargetsFilter &tf);
+		int selectTarget(std::vector<int> &targets, TargetsFilter &tf);
+		
+		int selectTarget(float search_radius, TargetsFilter &tf);
+		
+		bool addBadTarget(int id);
 
-		int selectTarget(float search_radius, std::map<int,bool> &occupied, TargetsFilter &tf);
+		float getScanRange();
+
+		float getRange();
 
 		/* Overloaded */
 		RegistrarType regtype() { return REGT_GROUP; }
-		/* output stream */
+		/* Output stream */
 		friend std::ostream& operator<<(std::ostream &out, const CGroup &group);
 
 	private:
 		bool radiusUpdateRequied;
 			// when "radius" needs to be recalculated
 		float groupRadius;
-			// group radius (half of hypotenuse of square in which all units are inscribed)
+			// group radius (when units clustered together)
 		
 		/* Recalculate group properties based on new unit */
 		void recalcProperties(CUnit *unit, bool reset = false);
-
+		/* Implements rules of mering unit categories */
 		void mergeCats(unsigned int);
 };
 

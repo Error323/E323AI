@@ -19,7 +19,6 @@
 #include "CUnit.h"
 #include "CGroup.h"
 #include "CScopedTimer.h"
-#include "CRNG.h"
 #include "Util.hpp"
 #include "ReusableObjectFactory.hpp"
 
@@ -313,9 +312,11 @@ void CE323AI::EnemyLeaveRadar(int enemy) {
 }
 
 void CE323AI::EnemyDestroyed(int enemy, int attacker) {
+	ai->military->onEnemyDestroyed(enemy, attacker);
 }
 
 void CE323AI::EnemyDamaged(int damaged, int attacker, float damage, float3 dir) {
+
 }
 
 
@@ -452,7 +453,6 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 						if(unit->group) {
 							// remove unit from group so it will not receive 
 							// AI commands anymore...
-							unit->unreg(*unit->group); // this prevent a crash when unit destroyed in player mode
 							unit->group->remove(*unit);
 						}							
 						// NOTE: i think the following two lines have almost
@@ -473,9 +473,6 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 
 /* Update AI per logical frame = 1/30 sec on gamespeed 1.0 */
 void CE323AI::Update() {
-	// NOTE: if AI is attached at game start Update() is called since 1st game frame.
-	// By current time all player commanders are already spawned and that's good because 
-	// we calculate number of enemies in CIntel::init()
 	const int currentFrame = ai->cb->GetCurrentFrame();
 	
 	if (currentFrame < 0)

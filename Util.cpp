@@ -70,7 +70,6 @@ namespace util {
 		return wavg;
 	}
 
-
 	bool IsBinarySubset(unsigned A, unsigned B) {
 		unsigned cA     = CountOneBits(A);
 		unsigned cAandB = CountOneBits(A&B);
