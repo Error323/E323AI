@@ -13,7 +13,11 @@ class CUnit;
 class CGroup;
 class AIClasses;
 
-enum groupType{SCOUT, ENGAGE, BOMBER};
+enum MilitaryGroupBehaviour {
+	SCOUT,
+	ENGAGE,
+	BOMBER
+};
 
 class CMilitary: public ARegistrar {
 	public:
@@ -27,42 +31,41 @@ class CMilitary: public ARegistrar {
 		void addUnit(CUnit &unit);
 
 		/* Returns a fresh CGroup instance */
-		CGroup* requestGroup(groupType type);
+		CGroup* requestGroup(MilitaryGroupBehaviour type);
 
 		/* update callin */
 		void update(int groupsize);
 
 		int idleScoutGroupsNum();
 
+		bool switchDebugMode();
+
 	private:
 		AIClasses *ai;
-
-		void prepareTargets(std::vector<int> &all, std::vector<int> &harass);
 
 		/* Current group per factory <factory, CGroup*> */
 		std::map<int, CGroup*> assemblingGroups;
 
 		/* The ingame scout groups */
 		std::map<int, CGroup*> activeScoutGroups;
-
 		/* The ingame attack groups */
 		std::map<int, CGroup*> activeAttackGroups;
+		/* The ingame attack groups */
+		std::map<int, CGroup*> activeBomberGroups;
 
-		/* Occupied targets */
-		std::vector<int> occupiedTargets;
+		std::map<MilitaryGroupBehaviour, std::map<int, CGroup*>* > groups;
 
 		/* Mergable groups */
-		std::map<int,CGroup*> mergeScouts, mergeGroups;
+		std::map<int,CGroup*> mergeGroups;
 
-		/* Select a target */
-		int selectTarget(CGroup &group, float radius, std::vector<int> &targets);
-
-		void filterOccupiedTargets(std::vector<int> &source, std::vector<int> &dest);
+		bool drawTasks;
 
 		/* Request a unit for building using a roulette wheel system */
-		unsigned requestUnit(unsigned int basecat);
+		unsigned int requestUnit(unsigned int basecat);
 
-		char buf[1024];
+		bool isAssemblingGroup(CGroup *group);
+
+		void visualizeTasks(CGroup*);
 };
 
 #endif

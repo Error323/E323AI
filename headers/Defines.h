@@ -37,13 +37,13 @@
 /* Metal to Energy ratio */
 #define METAL2ENERGY 60
 
-/* Max features */
-#define MAX_FEATURES 25
+/* Max features for range scan */
+#define MAX_FEATURES 15
 
-/* Max enemies */
-#define MAX_ENEMIES 20
+/* Max enemies for range scan */
+#define MAX_ENEMIES 30
 
-/* Max enemy units */
+/* Max enemy units (used by CThreatMap) */
 #define MAX_UNITS_AI 500
 
 /* Map ratios */
@@ -62,13 +62,19 @@
 #define MAX_IDLE_SCOUT_GROUPS 3
 
 /* Critical number of units per group where pathfinding stalls the game */
-#define GROUP_CRITICAL_MASS 14
+#define GROUP_CRITICAL_MASS 20
 
 /* Max unit weapon range to be considered by threatmap algo */
-#define MAX_WEAPON_RANGE_FOR_TM 1000.0f
+#define MAX_WEAPON_RANGE_FOR_TM 1200.0f
+
+/* Max distance at which groups can merge */
+#define MERGE_DISTANCE 1500.0f
 
 /* Number of multiplex iterations */
 #define MULTIPLEXER 10 
+
+/* Number of frames a new unit can not accept tasks */
+#define NEW_UNIT_DELAY (5*30)
 
 /* Draw time */
 #define DRAW_TIME MULTIPLEXER*30
@@ -110,14 +116,12 @@ enum unitCategory {
 	EMAKER       = (1<<21),
 	MSTORAGE     = (1<<22),
 	ESTORAGE     = (1<<23),
-	WIND         = (1<<24),
-	TIDAL        = (1<<25),
 
-	KBOT         = (1<<26),
-	VEHICLE      = (1<<27),
-	HOVER        = (1<<28),
+	KBOT         = (1<<24),
+	VEHICLE      = (1<<25),
+	HOVER        = (1<<26),
 
-	DEFENSE      = (1<<29)
+	DEFENSE      = (1<<27)
 };
 
 /* Build priorities */

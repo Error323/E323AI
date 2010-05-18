@@ -11,6 +11,7 @@ enum ThreatMapType {
 	TMT_NONE = 0,
 	TMT_AIR,
 	TMT_SURFACE,
+	TMT_LAST,
 	TMT_UNDERWATER
 };
 
@@ -23,21 +24,27 @@ class CThreatMap {
 		float getThreat(float3 &center, float radius, ThreatMapType type = TMT_SURFACE);
 		float getThreat(float3 &center, float radius, CGroup *group);
 		float *getMap(ThreatMapType);
-		
+		bool switchDebugMode();
+
 		int X, Z;
 		int RES;
 
 	private:
-		AIClasses *ai;	
+		AIClasses *ai;
 		int *units;
 		float REAL;
-		std::map<ThreatMapType,float> maxPower;
-		std::map<ThreatMapType,float*> maps;
-		std::map<ThreatMapType,int> handles;
-
+		ThreatMapType drawMap;
+		std::map<ThreatMapType, float> maxPower;
+		std::map<ThreatMapType, float*> maps;
+#if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
+		std::map<ThreatMapType, int> handles;
+			// for visual debuggin purposes
+#endif
 		float gauss(float x, float sigma, float mu);
+		
 		void reset();
-		void draw(ThreatMapType type = TMT_SURFACE);
+		
+		void visualizeMap(ThreatMapType type = TMT_SURFACE);
 };
 
 #endif

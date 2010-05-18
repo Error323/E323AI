@@ -28,7 +28,7 @@ void ATask::remove() {
 	// NOTE: removal order below is VERY important
 
 	std::list<ARegistrar*>::iterator j;
-	for (j = records.begin(); j != records.end(); j++)
+	for (j = records.begin(); j != records.end(); ++j)
 		// remove current task from CTaskHandler, so it will mark this task 
 		// to be killed on next update
 		(*j)->remove(*this);
@@ -36,7 +36,7 @@ void ATask::remove() {
 	// remove all assisting tasks...
 	std::list<ATask*>::iterator i = assisters.begin();
 	while(i != assisters.end()) {
-		ATask *task = *i; i++;
+		ATask *task = *i; ++i;
 		task->remove();
 	}
 	//assert(assisters.size() == 0);
@@ -73,66 +73,48 @@ void ATask::addGroup(CGroup &g) {
 	group->abilities(true);
 }
 
-bool ATask::enemyScan(bool scout) {
-	//PROFILE(tasks-enemyscan)
-	
-	const CUnit *unit = group->firstUnit();
-	std::multimap<float, int> candidates;
-	float3 gpos = group->pos();
-	
-	int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], gpos, scout ? 3.0f * group->range: 2.0f * group->range, MAX_ENEMIES);
-	for (int i = 0; i < numEnemies; i++) {
-		const int euid = ai->unitIDs[i];
-		const UnitDef *ud = ai->cbc->GetUnitDef(euid);
-		if (ud == NULL)
-			continue;
-		if (!group->canAttack(euid))
-			continue;
-		const unsigned int ecats = UC(ud->id);
-		float3 epos = ai->cbc->GetUnitPos(euid);
-		float dist = gpos.distance2D(epos);
-		if (!ai->cbc->IsUnitCloaked(euid))
-			if (!((unit->type->cats&ANTIAIR) ^ (ecats&AIR)))
-				candidates.insert(std::pair<float,int>(dist, euid));
+bool ATask::enemyScan() {
+	bool scout = group->cats&SCOUTER;
+	int target;
+	std::map<int, bool> occupied;
+	TargetsFilter tf;
+
+	if (scout) {
+		tf.threatCeiling = 1.1f;
+		tf.threatRadius = 300.0f;
+	}
+	else {
+		if (group->cats&AIR) {
+			if (group->cats&ASSAULT)
+				tf.threatCeiling = group->strength;
+			else
+				tf.threatCeiling = 1.1f;
+			// TODO: replace with maneuvering radius?
+			tf.threatRadius = 300.0f;
+		}
+		else {
+			tf.exclude = SCOUTER;
+			tf.threatCeiling = group->strength;
+			tf.threatRadius = 0.0f;
+		}
 	}
 
-	if (!candidates.empty()) {
-		float threat = 0.0f;
-		std::multimap<float,int>::iterator i = candidates.begin();
-		while (i != candidates.end()) {
-			const UnitDef *ud = ai->cbc->GetUnitDef(i->second);
-			const unsigned int ecats = UC(ud->id);
-			float3 epos = ai->cbc->GetUnitPos(i->second);
-			threat = ai->threatmap->getThreat(epos, scout ? 300.0f: 0.0f);
-			if (scout) {
-				// scouts like safe places
-				if (threat <= 1.1f /*|| (ecats&SCOUTER && group->strength > ai->cbc->GetUnitPower(i->second))*/)
-					break;
-			} else {
-				// attack groups won't chase enemy souts, they like real tough job
-				if (group->strength >= threat && !(ecats&SCOUTER))
-					break;
-			}
-			i++;
-		}
-		
-		if (i != candidates.end()) {
-			group->attack(i->second);
-			group->micro(true);
-			if (scout)
-				LOG_II("ATask::enemyScan scout " << (*group) << " is microing enemy target Unit(" << i->second << ") with threat =" << threat)
-			else
-				LOG_II("ATask::enemyScan group " << (*group) << " is microing enemy targets")
-			return true;
-		}
+	target = group->selectTarget(group->radius() + scout ? 3.0f * group->range: 1.5f * group->range, occupied, tf);
+
+	if (target >= 0) {
+		group->attack(target);
+		group->micro(true);
+		if (scout)
+			LOG_II("ATask::enemyScan scout " << (*group) << " is microing enemy target Unit(" << target << ")")
+		else
+			LOG_II("ATask::enemyScan engage " << (*group) << " is microing enemy target Unit(" << target << ")")
+		return true;
 	}
 
 	return false;
 }
 
 bool ATask::resourceScan() {
-	//PROFILE(tasks-resourcescan)
-	
 	bool isFeature = true;
 	int bestFeature = -1;
 	float bestDist = std::numeric_limits<float>::max();
@@ -163,24 +145,15 @@ bool ATask::resourceScan() {
 	// if there is no feature available then reclaim enemy unarmed building, 
 	// hehe :)
 	if (bestFeature == -1) {
-		const int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], gpos, radius, MAX_ENEMIES);
-		for (int i = 0; i < numEnemies; i++) {
-			const int uid = ai->unitIDs[i];
-			
-			if (ai->cbc->IsUnitCloaked(uid))
-				continue;
-			
-			const UnitDef *ud = ai->cbc->GetUnitDef(uid);
-			const unsigned int cats = UC(ud->id);
-			if ((cats&STATIC) && ud->weapons.empty()) {
-				float3 epos = ai->cbc->GetUnitPos(uid);
-				float dist = gpos.distance2D(epos);
-				if (dist < bestDist) {
-					bestDist = dist;
-					bestFeature = uid;
-				}
-			}
-		}
+		std::map<int, bool> occupied;
+		TargetsFilter tf;
+		tf.include = STATIC;
+		tf.exclude = ATTACKER;
+		tf.threatCeiling = 1.1f;
+		tf.threatRadius = radius;
+		
+		bestFeature = group->selectTarget(radius, occupied, tf);
+		
 		isFeature = false;
 	}			
 	
@@ -245,7 +218,7 @@ float ATask::lifeTime() const {
 void ATask::update() {
 	if (!active) return;
 
-	// validate task when moving to goal only...
+	// validate task while moving to goal...
 	if (validateInterval > 0 && isMoving) {
 		int lifetime = lifeFrames();
 		if (lifetime >= nextValidateFrame) {
@@ -269,7 +242,7 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 
 		case ASSIST: {
 			const CTaskHandler::AssistTask *task = dynamic_cast<const CTaskHandler::AssistTask*>(&atask);
-			ss << "AssistTask(" << task->key << ") assisting(" << (*task->assist) << ") ";
+			ss << "AssistTask(" << task->key << ") assisting Task(" << (task->assist->key) << ") ";
 			ss << (*(task->group));
 		} break;
 
@@ -289,7 +262,7 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 			const CTaskHandler::MergeTask *task = dynamic_cast<const CTaskHandler::MergeTask*>(&atask);
 			ss << "MergeTask(" << task->key << ") " << task->groups.size() << " range("<<task->range<<") pos("<<task->pos.x<<", "<<task->pos.z<<") groups { ";
 			std::map<int,CGroup*>::const_iterator i;
-			for (i = task->groups.begin(); i != task->groups.end(); i++) {
+			for (i = task->groups.begin(); i != task->groups.end(); ++i) {
 				ss << (*(i->second)) << " ";
 			}
 			ss << "}";
@@ -301,7 +274,7 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 	if (atask.t != ASSIST && atask.t != MERGE) {
 		ss << " Assisters: amount(" << atask.assisters.size() << ") [";
 		std::list<ATask*>::const_iterator i;
-		for (i = atask.assisters.begin(); i != atask.assisters.end(); i++)
+		for (i = atask.assisters.begin(); i != atask.assisters.end(); ++i)
 			ss << (*(*i)->group);
 		ss << "] ";
 	}
@@ -337,6 +310,15 @@ CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500, std::string("taskhand
 		buildStr[BUILD_MSTORAGE] = std::string("MSTORAGE");
 		buildStr[BUILD_ESTORAGE] = std::string("ESTORAGE");
 	}
+
+	statsMaxTasks = 0;
+	statsMaxActiveTasks = 0;
+
+}
+
+CTaskHandler::~CTaskHandler() {
+	LOG_II("CTaskHandler::Stats MaxTasks = " << statsMaxTasks)
+	LOG_II("CTaskHandler::Stats MaxActiveTasks = " << statsMaxActiveTasks)
 }
 
 void CTaskHandler::remove(ARegistrar &task) {
@@ -370,15 +352,6 @@ void CTaskHandler::remove(ARegistrar &task) {
 	}
 }
 
-/*
-void CTaskHandler::getGroupsPos(std::vector<CGroup*> &groups, float3 &pos) {
-	pos.x = pos.y = pos.z = 0.0f;
-	for (unsigned i = 0; i < groups.size(); i++)
-		pos += groups[i]->pos();
-	pos /= groups.size();
-}
-*/
-
 void CTaskHandler::update() {
 	/* delete obsolete tasks from memory */
 	while(!obsoleteTasks.empty()) {
@@ -391,11 +364,17 @@ void CTaskHandler::update() {
 	}
 
 	/* Begin task updates */
+	int numActiveTasks = 0;
 	std::map<int, ATask*>::iterator i;
-	for (i = activeTasks.begin(); i != activeTasks.end(); i++) {
-		if (i->second->active)
+	for (i = activeTasks.begin(); i != activeTasks.end(); ++i) {
+		if (i->second->active) {
 			i->second->update();
+			numActiveTasks++;
+		}
 	}
+
+	statsMaxTasks = std::max<int>(statsMaxTasks, activeTasks.size());
+	statsMaxActiveTasks = std::max<int>(statsMaxActiveTasks, numActiveTasks);
 }
 
 float3 CTaskHandler::getPos(CGroup &group) {
@@ -411,7 +390,7 @@ ATask* CTaskHandler::getTask(CGroup &group) {
 
 ATask* CTaskHandler::getTaskByTarget(int uid) {
 	std::map<int, AttackTask*>::iterator i;
-	for (i = activeAttackTasks.begin(); i != activeAttackTasks.end(); i++) {
+	for (i = activeAttackTasks.begin(); i != activeAttackTasks.end(); ++i) {
 		if (i->second->target == uid)
 			return i->second;
 	}
@@ -422,7 +401,7 @@ ATask* CTaskHandler::getTaskByTarget(int uid) {
 /************************* BUILD TASK *************************/
 /**************************************************************/
 void CTaskHandler::addBuildTask(buildType build, UnitType *toBuild, CGroup &group, float3 &pos) {
-	if (ai->pathfinder->getClosestNode(pos) == NULL)
+	if (ai->pathfinder->getClosestNode(pos, &group) == NULL)
 		return;
 
 	BuildTask *buildTask = new BuildTask(ai);
@@ -484,6 +463,7 @@ void CTaskHandler::BuildTask::update() {
 		}
 		/* See if we can suck wreckages */
 		else if (!group->isMicroing()) {
+			// TODO: increase ETA on success
 			if (!resourceScan())
 				repairScan();
 		}
@@ -494,7 +474,7 @@ void CTaskHandler::BuildTask::update() {
 		if (ai->economy->hasFinishedBuilding(*group))
 			remove();
 		else if (lifeFrames() > eta && !ai->economy->hasBegunBuilding(*group)) {
-			LOG_WW("BuildTask::update assuming buildpos blocked for group "<<(*group))
+			LOG_WW("BuildTask::update assuming buildpos blocked for group " << (*group))
 			remove();
 		}
 	}
@@ -505,9 +485,9 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister, float &travelTime) {
 		return false;
 	
 	float buildSpeed = group->buildSpeed;
-	std::list<ATask*>::iterator i;
-	for (i = assisters.begin(); i != assisters.end(); i++)
-		buildSpeed += (*i)->group->buildSpeed;
+	std::list<ATask*>::iterator it;
+	for (it = assisters.begin(); it != assisters.end(); ++it)
+		buildSpeed += (*it)->group->buildSpeed;
 
 	float3 gpos = group->pos();
 	//float3 gpos = pos;
@@ -523,21 +503,17 @@ bool CTaskHandler::BuildTask::assistable(CGroup &assister, float &travelTime) {
 /************************* FACTORY TASK ***********************/
 /**************************************************************/
 void CTaskHandler::addFactoryTask(CGroup &group) {
-	float3 pos = group.firstUnit()->pos();
-	if (ai->pathfinder->getClosestNode(pos) == NULL)
-		return;
-
 	FactoryTask *factoryTask = new FactoryTask(ai);
 	// NOTE: currently if factories are joined into one group then assisters 
 	// will assist the first factory only
 	//factoryTask->pos = group.pos();
-	// NOTE: "pos" is never used currently
-	factoryTask->pos = pos;
+	factoryTask->pos = group.firstUnit()->pos();
 	// TODO: rethink this when implementing units like Consul
-	factoryTask->isMoving = false; // assuming factory is not moving
+	// NOTE: set isMoveing to true to enable task validating
+	factoryTask->isMoving = true;
 	factoryTask->reg(*this); // register task in a task handler
 	factoryTask->addGroup(group);
-	factoryTask->validateInterval = 0;
+	factoryTask->validateInterval = 10 * 30;
 
 	activeFactoryTasks[factoryTask->key] = factoryTask;
 	activeTasks[factoryTask->key] = factoryTask;
@@ -554,13 +530,38 @@ bool CTaskHandler::FactoryTask::assistable(CGroup &assister) {
 		return false;
 	}
 	else {
-		// SLOGIC: why we need to push a new builder? Firt of all, this breaks
+		// SLOGIC: why we need to push a new builder? First of all, this breaks
 		// builder limit set in config file. Secondly, assisting task involves
 		// a builder which has nothing to do better. Right? So, commented out 
 		// by now.
 		//ai->wishlist->push(BUILDER, HIGH);
 		return true;
 	}
+}
+
+bool CTaskHandler::FactoryTask::validate() {
+	int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], pos, 16.0f);
+	if (numUnits > 0) {
+		for (int i = 0; i < numUnits; i++) {
+    		int uid = ai->unitIDs[i];
+    		
+    		if (group->firstUnit()->key == uid)
+    			continue;
+    		
+    		if (!ai->cb->UnitBeingBuilt(uid)) {
+    			CUnit *unit = ai->unittable->getUnit(uid);
+    			if (unit) {
+    				if (ai->unittable->canPerformTask(*unit))
+    					// our unit stalled a factory
+    					return false;
+    			}
+    			else
+    				// some stupid allied unit stalled out factory
+    				return false;
+    		}
+		}
+	}
+	return true;
 }
 
 void CTaskHandler::FactoryTask::update() {
@@ -573,7 +574,7 @@ void CTaskHandler::FactoryTask::update() {
 	std::map<int,CUnit*>::iterator i;
 	CUnit *factory;
 	
-	for(i = group->units.begin(); i != group->units.end(); i++) {
+	for(i = group->units.begin(); i != group->units.end(); ++i) {
 		factory = i->second;
 		if (ai->unittable->idle[factory->key] && !ai->wishlist->empty(factory->key)) {
 			Wish w = ai->wishlist->top(factory->key);
@@ -590,7 +591,7 @@ void CTaskHandler::FactoryTask::setWait(bool on) {
 	std::list<ATask*>::iterator ti;
 	CUnit *factory;
 
-	for (ui = group->units.begin(); ui != group->units.end(); ui++) {
+	for (ui = group->units.begin(); ui != group->units.end(); ++ui) {
 		factory = ui->second;
 		if(on)
 			factory->wait();
@@ -598,7 +599,7 @@ void CTaskHandler::FactoryTask::setWait(bool on) {
 			factory->unwait();
 	}
 
-	for (ti = assisters.begin(); ti != assisters.end(); ti++) {
+	for (ti = assisters.begin(); ti != assisters.end(); ++ti) {
 		if ((*ti)->isMoving) continue;
 		if(on)
 			(*ti)->group->wait();
@@ -611,7 +612,7 @@ void CTaskHandler::FactoryTask::setWait(bool on) {
 /************************* ASSIST TASK ************************/
 /**************************************************************/
 void CTaskHandler::addAssistTask(ATask &toAssist, CGroup &group) {
-	if (ai->pathfinder->getClosestNode(toAssist.pos) == NULL)
+	if (ai->pathfinder->getClosestNode(toAssist.pos, &group) == NULL)
 		return;
 	
 	AssistTask *assistTask = new AssistTask(ai);
@@ -660,7 +661,7 @@ void CTaskHandler::AssistTask::update() {
 
 	if (!active) return;
 	
-	if (assist->t == BUILD && group->isMicroing() && group->isIdle())
+	if (group->isMicroing() && group->isIdle())
 		group->micro(false);
 
 	if (isMoving) {
@@ -674,28 +675,35 @@ void CTaskHandler::AssistTask::update() {
 			group->assist(*assist);
 			ai->pathfinder->remove(*group);
 			isMoving = false;
-		} else if(assist->t == BUILD && !group->isMicroing()) {
-			/* See if we can suck wreckages */
-			resourceScan();
-		}
+			group->micro(true);
+		} 
+	}
 
+	if (!group->isMicroing()) {
+		if (group->cats&BUILDER)
+			resourceScan(); // builders should not be too aggressive
+		else if (!(group->cats&AIR)) {
+			enemyScan();
+		}
 	}
 }
 
 /**************************************************************/
 /************************* ATTACK TASK ************************/
 /**************************************************************/
-void CTaskHandler::addAttackTask(int target, CGroup &group) {
-	float3 pos = ai->cbc->GetUnitPos(target);
-	if (ai->pathfinder->getClosestNode(pos) == NULL)
-		return;
+bool CTaskHandler::addAttackTask(int target, CGroup &group, bool urgent) {
 	const UnitDef *ud = ai->cbc->GetUnitDef(target);
-	
-	if (ud == NULL) return;
+	if (ud == NULL) 
+		return false;
+
+	float3 pos = ai->cbc->GetUnitPos(target);
+	if (ai->pathfinder->getClosestNode(pos, &group) == NULL)
+		return false;
 
 	AttackTask *attackTask = new AttackTask(ai);
 	attackTask->target     = target;
 	attackTask->pos        = pos;
+	attackTask->urgent     = urgent;
 	attackTask->enemy      = ud->humanName;
 	attackTask->reg(*this); // register task in a task handler
 	attackTask->addGroup(group);
@@ -710,31 +718,43 @@ void CTaskHandler::addAttackTask(int target, CGroup &group) {
 		attackTask->remove();
 	else
 		attackTask->active = true;
+
+	return attackTask->active;
 }
 
 bool CTaskHandler::AttackTask::validate() {
 	bool scoutGroup = group->cats&SCOUTER;
 	float targetDistance = pos.distance2D(group->pos());
-
+	
+	// don't chase scout groups too long if they are out of base...
 	if (!scoutGroup && lifeTime() > 20.0f) {
 		const UnitDef *eud = ai->cbc->GetUnitDef(target);
 		if (eud) {
 			const unsigned int ecats = UC(eud->id);
 			if (ecats&SCOUTER && !ai->defensematrix->isPosInBounds(pos))
-				return false; // don't chase scouts too long if they are out of base
+				return false; 
 		}
 	}
 	
-	if (targetDistance > 600.0f)
+	if (targetDistance > 1000.0f)
 		return true; // too far to panic
 
-	if (scoutGroup) {
-		if (ai->threatmap->getThreat(pos, 300.0f) > group->strength)
-			return false;
-	}
-	
-	if (ai->cbc->IsUnitCloaked(target)) {
+	if (ai->cbc->IsUnitCloaked(target))
 		return false;
+	
+	bool isBaseThreat = ai->defensematrix->isPosInBounds(pos);
+
+	// if there is no threat to our base then prevent useless attack for groups
+	// which are not too cheap
+	if (!isBaseThreat && (group->costMetal / group->units.size()) >= 100.0f) {
+		float threatRange;
+		if (scoutGroup)
+			threatRange = 300.0f;
+		else
+			threatRange = 0.0f;
+
+		if (group->getThreat(pos, threatRange) > group->strength)
+			return false;
 	}
 
 	return true;
@@ -751,13 +771,13 @@ void CTaskHandler::AttackTask::update() {
 		group->micro(false);
 
 	/* If the target is destroyed, remove the task, unreg groups */
+	// TODO: move this check to validate() ?
 	if (ai->cbc->GetUnitHealth(target) <= 0.0f) {
 		remove();
 		return;
 	}
 
-	CUnit* unit = group->firstUnit();
-	bool builder = (unit->type->cats&BUILDER) && !(unit->type->cats&ATTACKER);
+	bool builder = group->cats&BUILDER;
 
 	if (isMoving) {
 		/* Keep tracking the target */
@@ -779,13 +799,11 @@ void CTaskHandler::AttackTask::update() {
 	}
 	
 	/* See if we can attack a target we found on our path */
-	if (!group->isMicroing()) {
+	if (!(group->isMicroing() || urgent)) {
 		if (builder)
 			resourceScan(); // builders should not be too aggressive
-		else if (group->cats&SCOUTER)
-			enemyScan(true);
 		else
-			enemyScan(false);
+			enemyScan();
 	}
 }
 
@@ -793,64 +811,73 @@ void CTaskHandler::AttackTask::update() {
 /************************* MERGE TASK *************************/
 /**************************************************************/
 void CTaskHandler::addMergeTask(std::map<int,CGroup*> &groups) {
-	int i;
-	int range = 0;
-	int units = 0;
+	//int masterGroup = -1;
+	float range = 0.0f;
 	std::map<int,CGroup*>::iterator j;
 	float minSlope = std::numeric_limits<float>::max();
 	float maxPower = std::numeric_limits<float>::min();
-	float sqLeg;
 	
 	MergeTask *mergeTask = new MergeTask(ai);
 	mergeTask->groups = groups;
 	mergeTask->pos = float3(0.0f, 0.0f, 0.0f);
 	mergeTask->reg(*this); // register task in a task handler
-	mergeTask->validateInterval = 0;
+	//mergeTask->validateInterval = 0;
 	
-	for (j = groups.begin(); j != groups.end(); j++) {
+	for (j = groups.begin(); j != groups.end(); ++j) {
 		j->second->reg(*mergeTask);
 		j->second->busy = true;
 		j->second->micro(false);
 		j->second->abilities(true);
 		groupToTask[j->first] = mergeTask;
-		range += j->second->size + FOOTPRINT2REAL;
-		units += j->second->units.size();
+		range += j->second->radius();
+		/*
 		if (j->second->maxSlope < (minSlope + EPS) && maxPower < j->second->strength) {
+			masterGroup = j->second->key;
 			minSlope = j->second->maxSlope;
 			maxPower = j->second->strength;
-			mergeTask->pos = j->second->pos();
+			mergeTask->pos = j->second->pos(true);
 		}
+		*/
 	}
 	
-	// NOTE: actually merge range should increase from the smallest to 
-	// calculated here as long as more groups are joined
-	for(i = 1; units > i * i; i++);
-	i *= i;
-	sqLeg = (float)range * i / units;
-	sqLeg *= sqLeg;
-	mergeTask->range = sqrt(sqLeg + sqLeg);
+	unsigned int cats = groups.begin()->second->cats;
+	if ((cats&AIR) && !(cats&ASSAULT)) {
+		mergeTask->range = 600.0f;
+	}
+	else {
+		mergeTask->range = range + groups.size() * FOOTPRINT2REAL;
+	}
 
 	LOG_II((*mergeTask))
 
 	activeMergeTasks[mergeTask->key] = mergeTask;
 	activeTasks[mergeTask->key] = mergeTask;
+	
+	/*
 	for (j = groups.begin(); j != groups.end(); j++) {
+		//if (j->second->key == masterGroup)
+		//	continue; // this group is already in place
 		if (!ai->pathfinder->addGroup(*(j->second))) {
 			mergeTask->remove();
 			break;
 		}
 	}
-
+	
 	if (j == groups.end())
 		mergeTask->active = true;
+	*/
+	
+	mergeTask->active = mergeTask->reelectMasterGroup();
+	if (!mergeTask->active)
+		mergeTask->remove();
 }
 
 void CTaskHandler::MergeTask::remove() {
 	LOG_II("MergeTask::remove " << (*this))
 	
-	std::map<int,CGroup*>::iterator g;
-	
-	for (g = groups.begin(); g != groups.end(); g++) {
+	std::map<int, CGroup*>::iterator g;
+
+	for (g = groups.begin(); g != groups.end(); ++g) {
 		g->second->unreg(*this);
 		g->second->busy = false;
 		g->second->micro(false);
@@ -860,20 +887,35 @@ void CTaskHandler::MergeTask::remove() {
 	}
 	
 	std::list<ARegistrar*>::iterator j;
-	for (j = records.begin(); j != records.end(); j++)
+	for (j = records.begin(); j != records.end(); ++j)
+		// remove current task from CTaskHandler, so it will mark this task 
+		// to be killed on next update
 		(*j)->remove(*this);
+
+	group = NULL;
 
 	active = false;
 }
 
 // called on Group removing
-void CTaskHandler::MergeTask::remove(ARegistrar &group) {
-	groups.erase(group.key);
-	group.unreg(*this);
-	// TODO: cleanup other data of group?
+void CTaskHandler::MergeTask::remove(ARegistrar &g) {
+	bool isReelectionNeeded = (group && group->key == g.key);
+	
+	mergable.erase(g.key);
+	groups.erase(g.key);
+	g.unreg(*this);
 	// TODO: remove from taskhandler->groupToTask
+
+	if (isReelectionNeeded) {
+		group = NULL;
+		reelectMasterGroup();
+	}
 }
 		
+bool CTaskHandler::MergeTask::validate() {
+	return reelectMasterGroup();
+}
+
 void CTaskHandler::MergeTask::update() {
 	//PROFILE(tasks-merge)
 	
@@ -881,31 +923,96 @@ void CTaskHandler::MergeTask::update() {
 
 	if (!active) return;
 
-	std::vector<CGroup*> mergable;
-
 	/* See which groups can be merged already */
-	std::map<int,CGroup*>::iterator g;
-	for (g = groups.begin(); g != groups.end(); g++) {
-		CGroup *group = g->second;
-		if (pos.distance2D(group->pos()) <= range) {
-			mergable.push_back(group);
-			if (group->units.size() >= GROUP_CRITICAL_MASS)
-				ai->pathfinder->remove(*group);
+	std::map<int,CGroup*>::iterator it;
+	for (it = groups.begin(); it != groups.end(); ++it) {
+		CGroup *g = it->second;
+		
+		if (g->isMicroing())
+			continue;
+		
+		if (pos.distance2D(g->pos()) < range) {
+			mergable[g->key] = true;
+			g->micro(true);
 		}
 	}
 	
 	/* We have at least two groups, now we can merge */
 	if (mergable.size() >= 2) {
-		CGroup *alpha = mergable[0];
-		for (unsigned j = 1; j < mergable.size(); j++) {
-			LOG_II("MergeTask::update merging " << (*mergable[j]) << " with " << (*alpha))
-			alpha->merge(*mergable[j]);
+		std::vector<int> keys;
+		std::map<int, bool>::iterator it;
+		
+		// get keys because while merging "mergable" is reducing...
+		for (it = mergable.begin(); it != mergable.end(); ++it) {
+			keys.push_back(it->first);
 		}
+		
+		for (int i = 0; i < keys.size(); i++) {
+			int key = keys[i];
+			if (key != group->key) {
+				LOG_II("MergeTask::update merging " << (*groups[key]) << " with " << (*group))
+				// NOTE: group being merged is automatically removed
+				group->merge(*groups[key]);
+			}
+		}
+		
+		assert(mergable.size() == 1);
+		mergable.clear();
+		group->micro(false);
 	}
 
-	/* If only one (or none) group remains, merging is no longer possible,
-	 * remove the task, unreg groups 
-	 */
+	// if only one (or none) group remains, merging is no longer possible,
+	// remove the task, unreg groups...
 	if (groups.size() <= 1)
 		remove();
+}
+
+bool CTaskHandler::MergeTask::reelectMasterGroup() {
+	bool reelect = true;
+	
+	if (groups.size() <= 1)
+		return false;
+
+	if (group && !isRetreating) {
+		float threat = group->getThreat(pos, group->radius());
+		// if threat is 2x smaller than group strength then do nothing
+		if (threat <= EPS || (group->strength / threat) > 2.0f)
+			reelect = false;
+	}
+	
+	if (reelect) {
+		float minThreat = std::numeric_limits<float>::max();
+		float maxDistance = std::numeric_limits<float>::min();
+		CGroup *bestGroup = NULL;
+		std::map<int,CGroup*>::iterator it;
+
+		for (it = groups.begin(); it != groups.end(); ++it) {
+			CGroup *g = it->second;
+			float3 gpos = g->pos();
+			float threat = g->getThreat(gpos, g->radius());
+			float distance = ai->defensematrix->distance2D(gpos);
+
+			if (distance > maxDistance)
+				maxDistance = distance;
+
+			if (threat < minThreat) {
+				bestGroup = g;
+				minThreat = threat;
+				isRetreating = (distance + EPS) < maxDistance;
+			}
+		}
+
+		if (bestGroup && (group == NULL || group->key != bestGroup->key)) {
+			group = bestGroup;
+			pos = bestGroup->pos(true);
+			for (it = groups.begin(); it != groups.end(); ++it) {
+				CGroup *g = it->second;
+				ai->pathfinder->remove(*g);
+				if (!ai->pathfinder->addGroup(*g))
+					return false;
+			}
+		}
+	}
+	
+	return (group != NULL);
 }

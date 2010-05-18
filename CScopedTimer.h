@@ -31,14 +31,14 @@ static const float3 colors[] = {
 class CScopedTimer {
 	public:
 		CScopedTimer(const std::string& s, IAICallback *_cb): cb(_cb), task(s) {
-			initialized = cb->IsDebugDrawerEnabled();
-			if (!initialized)
-				return;
-
+			initialized = true;
+			
 			if (std::find(tasks.begin(), tasks.end(), task) == tasks.end()) {
 				taskIDs[task] = tasks.size();
+#if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
 				cb->DebugDrawerSetGraphLineColor(taskIDs[task], colors[taskIDs[task]%8]);
 				cb->DebugDrawerSetGraphLineLabel(taskIDs[task], task.c_str());
+#endif
 				tasks.push_back(task);
 				curTime[task] = cb->GetCurrentFrame();
 				prevTime[task] = 0;
@@ -52,7 +52,7 @@ class CScopedTimer {
 
 			if (!initialized)
 				return;
-
+#if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
 			unsigned int curFrame = cb->GetCurrentFrame();
 			for (size_t i = 0; i < tasks.size(); i++) {
 				if (tasks[i] == task) {
@@ -66,6 +66,7 @@ class CScopedTimer {
 				if ((curFrame - curTime[tasks[i]]) >= TIME_INTERVAL)
 					cb->DebugDrawerDelGraphPoints(taskIDs[tasks[i]], 1);
 			}
+#endif
 		}
 
 	private:
@@ -73,7 +74,7 @@ class CScopedTimer {
 		const std::string task;
 		unsigned t1, t2;
 		bool initialized;
-
+		
 		static std::vector<std::string> tasks;
 		static std::map<std::string, int> taskIDs;
 		static std::map<std::string, unsigned int> curTime, prevTime;

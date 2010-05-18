@@ -86,7 +86,7 @@ bool CConfigParser::parseConfig(std::string filename) {
 
 			/* New state block */
 			if (contains(line, '{')) {
-				line.substr(0, line.size()-1);
+				line.substr(0, line.size() - 1);
 				split(line, ':', splitted);
 				state = atoi(splitted[1].c_str());
 				std::map<std::string, int> curstate;
@@ -105,7 +105,7 @@ bool CConfigParser::parseConfig(std::string filename) {
 				states[state][splitted[0]] = atoi(splitted[1].c_str());
 			}
 		}
-		LOG_II("CConfigParser::parseConfig parsed "<<linenr<<" lines from " << dirfilename)
+		LOG_II("CConfigParser::parseConfig parsed " << linenr << " lines from " << dirfilename)
 		file.close();
 		loaded = true;
 	}
@@ -127,7 +127,6 @@ bool CConfigParser::parseConfig(std::string filename) {
 }
 
 bool CConfigParser::isUsable() const {
-
 #ifdef DEBUG
 	return loaded;
 #else
@@ -182,7 +181,9 @@ bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType
 		LOG_WW("Could not open " << filename << " for parsing")
 		return false;
 	}
+	
 	LOG_II("CConfigParser::parseCategories parsed "<<linenr<<" lines from " << filename)
+	
 	return true;
 }
 

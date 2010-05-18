@@ -131,3 +131,7 @@ const char* aiexport_getMyOption(int skirmishAIId, const char* key) {
 size_t aiexport_getNumAIInstances() {
 	return myAIs.size();
 }
+
+bool aiexport_isPrimaryInstance(int skirmishAIId) {
+	return (myAIs.begin()->first == skirmishAIId);
+}

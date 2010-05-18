@@ -41,11 +41,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				FavorSizeOrSpeed="0"
 				AdditionalIncludeDirectories="..\..\..\..\..\rts;..\..\..\..\..\rts\System;..\..\..\..\..\vclibs\SDL\include;..\..\..\..\..\vclibs\boost\include;..\..\..\..\..\vclibs\libcurl\include;..\..\..\..\Wrappers"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;BUILDING_SKIRMISH_AI;BUILDING_AI;_HAS_ITERATOR_DEBUGGING=0"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;BUILDING_SKIRMISH_AI;BUILDING_AI;BUILDING_AI_FOR_SPRING_0_81_2;_HAS_ITERATOR_DEBUGGING=0"
 				MinimalRebuild="true"
 				ExceptionHandling="1"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
 				EnableEnhancedInstructionSet="1"
 				UsePrecompiledHeader="0"
@@ -127,7 +128,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\..\..\..\rts;..\..\..\..\..\rts\System;..\..\..\..\..\vclibs\SDL\include;..\..\..\..\..\vclibs\libcurl\include;..\..\..\..\..\vclibs\boost\include;..\..\..\..\Wrappers"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;E323AI_EXPORTS;BUILDING_SKIRMISH_AI;BUILDING_AI"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;BUILDING_SKIRMISH_AI;BUILDING_AI;BUILDING_AI_FOR_SPRING_0_81_2"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -158,6 +159,89 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="0"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug optimized|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="..\..\..\..\..\rts;..\..\..\..\..\rts\System;..\..\..\..\..\vclibs\SDL\include;..\..\..\..\..\vclibs\boost\include;..\..\..\..\..\vclibs\libcurl\include;..\..\..\..\Wrappers"
+				PreprocessorDefinitions="WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;BUILDING_SKIRMISH_AI;BUILDING_AI;BUILDING_AI_FOR_SPRING_0_81_2;_HAS_ITERATOR_DEBUGGING=0"
+				MinimalRebuild="true"
+				ExceptionHandling="1"
+				BasicRuntimeChecks="0"
+				RuntimeLibrary="1"
+				EnableEnhancedInstructionSet="1"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+				DisableSpecificWarnings="4244;4099;4018;4305;4996;4800"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="SDL.lib"
+				OutputFile="$(OutDir)\SkirmishAI.dll"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\..\..\..\..\vclibs\libcurl;..\..\..\..\..\vclibs\boost\lib;..\..\..\..\..\vclibs\DevIL\lib;..\..\..\..\..\vclibs\freetype\objs;..\..\..\..\..\vclibs\zlibwapi\lib;..\..\..\..\..\vclibs\SDL\lib"
+				GenerateManifest="false"
+				ModuleDefinitionFile="E323AI.def"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				OptimizeForWindows98="0"
 				RandomizedBaseAddress="0"
 				TargetMachine="1"
 			/>
@@ -271,6 +355,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\GameMap.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\MathUtil.h"
 				>
 			</File>
@@ -284,6 +372,10 @@
 			</File>
 			<File
 				RelativePath="..\..\AIExport.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\CAI.cpp"
 				>
 			</File>
 			<File

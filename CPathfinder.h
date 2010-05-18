@@ -12,8 +12,11 @@
 #include "AAStar.h"
 #include "CThreatMap.h"
 
+// how far a unit can advance on its path?
 #define MOVE_BUFFER 2
-
+// number of frames to give a group for regrouping
+#define FRAMES_TO_REGROUP 30
+// cache version (stored in file header)
 #define CACHE_VERSION "CACHEv03"
 
 class CGroup;
@@ -87,12 +90,15 @@ class CPathfinder: public AAStar, public ARegistrar {
 		void remove(ARegistrar &obj);
 
 		/* Get closest Node id to real world vector f, return NULL on failure */
-		Node* getClosestNode(const float3 &f);
+		Node* getClosestNode(const float3 &f, CGroup *group = NULL);
+		float3 getClosestPos(const float3 &f, CGroup *group = NULL);
 
 		/* x and z in slopemap resolution */
 		bool isBlocked(int x, int z, int movetype);
 		
 		bool pathExists(CGroup &group, const float3 &s, const float3 &g);
+
+		bool switchDebugMode();
 
 		/* NOTE: slopemap 1:2 heightmap 1:8 realmap, GetMapWidth() and
 		 * GetMapHeight() give map dimensions in heightmap resolution
@@ -100,68 +106,50 @@ class CPathfinder: public AAStar, public ARegistrar {
 		int X,Z,XX,ZZ;
 		float REAL;
 
-
 	private:
 		AIClasses *ai;
 
-		char buf[1024];
-
 		/* Node Graph */
 		static std::vector<Node*> graph;
-
 		/* Number of threads (is not used currently) */
 		size_t nrThreads;
-
 		/* Group to receive repathing event next updatePaths() call */
 		int repathGroup;
-
 		/* Active map (graph[activeMap]), CRUCIAL to A* */
 		int activeMap;
-
 		/* Controls which path may be updated, (round robin-ish) */
 		unsigned int update;
-
 		/* The paths <group, path> */
 		std::map<int, std::vector<float3> > paths;
-
 		/* The groups */
-		std::map<int, CGroup*> groups;
-
+		std::map<int, CGroup*> groups; // key = <group_id>
 		/* Regrouping */
-		std::map<int, bool> regrouping;
-
-		/* draw the path ? */
-		bool draw;
+		std::map<int, int> regrouping; // key = <group_id>, value = <frame_number>
 
 		unsigned int graphSize;
+
+		static int drawPathGraph;
 
 		const float *sm;
 		const float *hm;
 
 		/* overload */
 		void successors(ANode *an, std::queue<ANode*> &succ);
-
 		/* overload */
 		float heuristic(ANode *an1, ANode *an2);
-
 		/* Add a path to a unit or group */
 		bool addPath(CGroup&, float3 &start, float3 &goal);
-
 		/* Reset the map nodes */
 		void resetMap(CGroup&, ThreatMapType = TMT_NONE);
-
 		/* Calculate the nodes */
 		void calcNodes();
-
 		/* Determine the nodes their neighbours */
 		void calcGraph();
-
 		/* Start pathfinding ("radius" not implemented yet) */
 		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup&, float radius = EPSILON);
-
 		/* Draw the map */
-		//void drawMap(int map);
 		void drawGraph(int map);
+		
 		void drawNode(Node *n);
 };
 

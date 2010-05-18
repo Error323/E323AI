@@ -1,14 +1,32 @@
 E323AI changelog
 ----------------
-v3.20.0 [2010-04-xx]
-* initial aircraft support
+v3.21.1 [2010-05-17]
+* fixed protential crash in UnitIdle callback
+
+v3.21.0 [2010-05-16]
+* refactored target selection
+* fixed most issues with attack stalling
+* avoid continuous issuing of MOVE command in Merge task when group is already in-place
+* changed Merge task algorithm: groups try to merge in safe places and closer to enemy at the same time
+* changed factory building strategy to tech-up faster
+* detection and resolving of factory stall
+* WIND & TIDAL tags removed
+* fixed multiple AI info printing in chat
+* added support for chat command "!e323ai" to visualize debug info (available for spectators only)
+* added support of separate categorization files per AI; you have to copy & rename original categorization file to the following template: <modname>-categorization-<team_id>.cfg
+
+v3.20.0 [2010-05-05]
+* aircraft support
+* brand new military group behaviour for bombers
 * universal algorithm of factory selection to be built
-* fixed situation, when untis with SCOUTER tag can never be added to attack groups
+* fixed situation when untis with SCOUTER tag can never be added to attack groups
 * new scout units won't be requested if there are idle scouts already
 * scout units won't be merged without real need
 * ability to build defense for single building in a cluster
-* tweaks to build second (etc.) factories earlier
+* tweaks to build second (etc.) factory earlier
 * tweaks in target selection
+* optimization in units regrouping
+* support of geothermal energy makers
 * added config files for Supreme Annihilation (credits to MisterBenn)
 
 v3.19.1 [2010-04-03]
@@ -22,7 +40,7 @@ v3.19.0 [2010-04-02]
 * fixed a crash connected with economy units with weapons
 * completely fixed building MExes near allied MExes
 * implemented factory pattern
-* better profiler, outputs to "timings.dat"
+* better profiler, outputs to "timings.dat" file
 
 v3.18.1 [2010-02-22]
 * builders are more aggressive now and will reclaim nearby enemy structures even when metal is nowhere to store

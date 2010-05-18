@@ -3,18 +3,17 @@
 #include <sstream>
 #include <iostream>
 #include <string>
-#include <limits>
 
 #include "CAI.h"
 #include "CUnit.h"
 #include "CUnitTable.h"
 #include "CTaskHandler.h"
 #include "CPathfinder.h"
+#include "CDefenseMatrix.h"
 
 int CGroup::counter = 0;
 
 void CGroup::addUnit(CUnit &unit) {
-
 	if (unit.group) {
 		if (unit.group == this) {
 			LOG_EE("CGroup::addUnit " << unit << " already registered in " << (*this))
@@ -65,6 +64,7 @@ void CGroup::remove() {
 
 void CGroup::remove(ARegistrar &object) {
 	CUnit *unit = dynamic_cast<CUnit*>(&object);
+	
 	LOG_II("CGroup::remove " << (*unit) << " from " << (*this))
 
 	assert(units.find(unit->key) != units.end());
@@ -91,7 +91,7 @@ void CGroup::reclaim(int entity, bool feature) {
 	
 	if (feature) {
 		pos = ai->cb->GetFeaturePos(entity);
-		if (pos == ZEROVECTOR)
+		if (pos == ZeroVector)
 			return;
 	}
 		
@@ -170,11 +170,14 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		range      = 0.0f;
 		buildRange = 0.0f;
 		los        = 0.0f;
-		busy       = false;
 		maxSlope   = 1.0f;
 		pathType   = -1; // emulate NONE
 		techlvl    = TECH1;
 		cats       = 0;
+		groupRadius     = 0.0f;
+		radiusUpdateRequied = false;
+		cost       = 0.0f;
+		costMetal  = 0.0f;
 	}
 
 	if(unit == NULL)
@@ -187,20 +190,27 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 	// NOTE: aircraft & static units do not have movedata
 	MoveData *md = unit->def->movedata;
     if (md) {
-    	if (md->maxSlope <= maxSlope) {
+		// select base path type with the lowerst slope, so pos(true) will
+		// return valid postition for all units in a group...
+		if (md->maxSlope <= maxSlope) {
 			pathType = md->pathType;
 			maxSlope = md->maxSlope;
 		}
 	}
 		
-	strength += ai->cb->GetUnitPower(unit->key);
+	strength += unit->type->dps;
 	buildSpeed += unit->def->buildSpeed;
 	size += FOOTPRINT2REAL * std::max<int>(unit->def->xsize, unit->def->zsize);
 	range = std::max<float>(ai->cb->GetUnitMaxRange(unit->key), range);
 	buildRange = std::max<float>(unit->def->buildDistance, buildRange);
 	speed = std::min<float>(ai->cb->GetUnitSpeed(unit->key), speed);
 	los = std::max<float>(unit->def->losRadius, los);
+	cost += unit->type->cost;
+	costMetal += unit->type->costMetal;
+	
 	mergeCats(unit->type->cats);
+
+	radiusUpdateRequied = true;
 }
 
 void CGroup::merge(CGroup &group) {
@@ -210,10 +220,10 @@ void CGroup::merge(CGroup &group) {
 		CUnit *unit = i->second; i++;
 		assert(unit->group == &group);
 		addUnit(*unit);
-	}	
+	}
 }
 
-float3 CGroup::pos() {
+float3 CGroup::pos(bool force_valid) {
 	std::map<int, CUnit*>::iterator i;
 	float3 pos(0.0f, 0.0f, 0.0f);
 
@@ -222,7 +232,46 @@ float3 CGroup::pos() {
 
 	pos /= units.size();
 
+	if (force_valid) {
+		if (ai->pathfinder->isBlocked(pos.x, pos.z, pathType)) {
+			float3 posValid = ai->pathfinder->getClosestPos(pos, this);
+			if (posValid == ERRORVECTOR) {
+				float bestDistance = std::numeric_limits<float>::max();
+				for (i = units.begin(); i != units.end(); i++) {
+					float3 pos2 = ai->cb->GetUnitPos(i->first);
+					if (ai->pathfinder->isBlocked(pos2.x, pos2.z, pathType))
+						pos2 = ai->pathfinder->getClosestPos(pos2, this);
+					if (pos2 != ERRORVECTOR) {
+						float distance = pos.distance2D(pos2);
+						if (distance < bestDistance) {
+							posValid = pos2;
+							bestDistance = distance;
+						}
+					}
+
+				}
+			}
+			return posValid;
+		}
+	}
+
 	return pos;
+}
+
+float CGroup::radius() {
+	if (radiusUpdateRequied) {
+		int i;
+		// get number of units per leg length in a square
+		for(i = 1; units.size() > i * i; i++);
+		// calculate length of leg of square
+		float sqLeg = maxLength() * i / (float)units.size();
+		sqLeg *= sqLeg;
+		// calculate half of hypotenuse
+		groupRadius = sqrt(sqLeg + sqLeg) / 2.0f;
+		
+		radiusUpdateRequied = false;
+	}
+	return groupRadius;
 }
 
 int CGroup::maxLength() {
@@ -312,26 +361,34 @@ bool CGroup::canReach(const float3 &goal) {
 	if (pathType < 0)
 		return true;
 
-	float3 gpos = pos();
-	
+	float3 gpos = pos(true);
+
 	return ai->pathfinder->pathExists(*this, gpos, goal);
 }
 
 bool CGroup::canAttack(int uid) {
-	const UnitDef *ud = ai->cbc->GetUnitDef(uid);
-	if (!ud)
+	if (!(cats&ATTACKER) && !firstUnit()->def->canReclaim)
 		return false;
+	
+	const UnitDef *ud = ai->cbc->GetUnitDef(uid);
+	
+	if (ud == NULL || ai->cbc->IsUnitCloaked(uid))
+		return false;
+	
 	const unsigned int ecats = UC(ud->id);
 	float3 epos = ai->cbc->GetUnitPos(uid);
 	
-	// FIXME: group can have ANTIAIR + some attacker tags
-	if ((cats&ANTIAIR) && !(ecats&AIR))
+	if ((ecats&AIR) && !(cats&ANTIAIR))
 		return false;
-
-	if ((cats&LAND) && epos.y < 0.0f)
+	/*
+	if ((ecats&SUBMARINE) && !(cats&TORPEDO))
 		return false;
-
-	// TODO: submarine units can't shoot land units
+	*/
+	if (epos.y < 0.0f && (cats&(LAND|AIR)) /*&& !(cats&TORPEDO)*/)
+		return false;
+	
+	if ((ecats&LAND) && pos().y < 0.0f)
+		return false;
 
 	// TODO: add more tweaks based on physical weapon possibilities
 
@@ -339,19 +396,40 @@ bool CGroup::canAttack(int uid) {
 }
 
 bool CGroup::canAdd(CUnit *unit) {
-	// TODO:
+	// TODO: ?
 	return true;
 }
 		
 bool CGroup::canMerge(CGroup *group) {
-	/* TODO: can't merge: 
-	- static vs mobile
-	- water with non-water
-	- underwater with hovers?
-	- builders with non-builders?
-	- nukes with non-nukes
-	- lrpc with non-lrpc?
-	*/
+	static unsigned int nonMergableCats[] = {SEA, LAND, AIR, HOVER, ATTACKER, STATIC, MOBILE, BUILDER, SCOUTER};
+
+	unsigned int c = cats&group->cats;
+	
+	if (c == 0)
+		return false;
+	
+	for (int i = 0; i < sizeof(nonMergableCats) / sizeof(unsigned int); i++) {
+		unsigned int tag = nonMergableCats[i];
+		if ((cats&tag) && !(c&tag))
+			return false;
+	}
+
+	if (!(cats&SCOUTER) && (group->cats&SCOUTER)) {
+		// attempt to add scouter to non-scout group
+		static unsigned int attackCats = ANTIAIR|ARTILLERY|SNIPER|ASSAULT;
+		if (!(c&attackCats))
+			return false;
+	}
+
+	// NOTE: aircraft units have more restricted merge rules
+	// TODO: refactor with introducing Group behaviour property?
+	if (cats&AIR) {
+		if ((cats&ASSAULT) && !(c&ASSAULT))
+			return false;
+		if ((cats&ARTILLERY) && !(c&ARTILLERY))
+			return false;
+	}
+	
 	return true;
 }
 
@@ -361,20 +439,86 @@ CUnit* CGroup::firstUnit() {
 	return units.begin()->second;
 }
 
-
 void CGroup::mergeCats(unsigned int newcats) {
 	if (cats == 0)
 		cats = newcats;
 	else {
-		static unsigned int nonMergableCats[] = {SCOUTER, SEA, LAND, AIR, STATIC, MOBILE};
+		static unsigned int nonXorCats[] = {SEA, LAND, AIR, STATIC, MOBILE, SCOUTER};
 		unsigned int oldcats = cats;
 		cats |= newcats;
-		for (int i = 0; i < sizeof(nonMergableCats) / sizeof(unsigned int); i++) {
-			unsigned int tempCat = nonMergableCats[i];
-			if (!(oldcats&tempCat) && cats&tempCat)
-				cats &= ~tempCat;
+		for (int i = 0; i < sizeof(nonXorCats) / sizeof(unsigned int); i++) {
+			unsigned int tag = nonXorCats[i];
+			if (!(oldcats&tag) && (cats&tag))
+				cats &= ~tag;
 		}
 	}
+}
+
+float CGroup::getThreat(float3 &target, float radius) {
+	return ai->threatmap->getThreat(target, radius, this);
+}
+
+int CGroup::selectTarget(std::vector<int> &targets, std::map<int,bool> &occupied, TargetsFilter &tf) {
+	bool scout = cats&SCOUTER;
+	bool bomber = !scout && (cats&AIR) && (cats&ARTILLERY);
+	float bestScore = tf.scoreCeiling;
+	float unitDamageK;
+	float3 gpos = pos();
+
+	for (int i = 0; i < std::min<int>(targets.size(), tf.candidatesLimit); i++) {
+		int t = targets[i];
+
+		if (occupied[t] || !canAttack(t))
+			continue;
+		
+		const UnitDef *ud = ai->cbc->GetUnitDef(t);
+		const unsigned int ecats = UC(ud->id);
+		if (!(tf.include&ecats) || (tf.exclude&ecats))
+			continue;
+		
+		float3 epos = ai->cbc->GetUnitPos(t);
+		float threat = getThreat(epos, tf.threatRadius);
+		if (threat > tf.threatCeiling)
+			continue;
+		
+		float unitMaxHealth = ai->cbc->GetUnitMaxHealth(t);
+		if (unitMaxHealth > EPS)
+			unitDamageK = (unitMaxHealth - ai->cbc->GetUnitHealth(t)) / unitMaxHealth;
+		else
+			unitDamageK = 0.0f;
+		
+		float score = gpos.distance2D(epos);
+		score += (tf.threatFactor * threat) - unitDamageK * 50.0f;
+		// TODO: refactor so params blow are moved into TargetFilter
+		if (ai->defensematrix->isPosInBounds(epos))
+			// boost in priority enemy at our base, even scout units
+			score -= 1000.0f; // TODO: better change value to the length a group can pass for 1 min (40 sec?)?
+		else if(!scout && ecats&SCOUTER) {
+			// remote scouts are not interesting for engage groups
+			score += 10000.0f;
+		}
+		
+		if (bomber && (ecats&STATIC) && (ecats&ANTIAIR))
+			score -= 500.0f;
+
+		if(score < tf.scoreCeiling) {
+			tf.bestTarget = t;
+			tf.scoreCeiling = score;
+			tf.threatValue = threat;
+		}
+	}
+
+	return tf.bestTarget;
+}
+
+int CGroup::selectTarget(float search_radius, std::map<int,bool> &occupied, TargetsFilter &tf) {
+	int target = -1;
+	int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], pos(), search_radius, std::min<int>(MAX_ENEMIES, tf.candidatesLimit));
+	if (numEnemies > 0) {
+		tf.candidatesLimit = numEnemies;
+		target = selectTarget(ai->unitIDs, occupied, tf);
+	}
+	return target;
 }
 
 std::ostream& operator<<(std::ostream &out, const CGroup &group) {

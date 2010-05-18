@@ -42,8 +42,8 @@ void CUnit::reset(int uid, int bid) {
 
 bool CUnit::isEconomy() {
 	static const unsigned int economic = 
-		FACTORY|BUILDER|ASSISTER|RESURRECTOR|COMMANDER|MEXTRACTOR|MMAKER|EMAKER|
-		MSTORAGE|ESTORAGE|WIND|TIDAL;
+		FACTORY|BUILDER|ASSISTER|RESURRECTOR|COMMANDER|MEXTRACTOR|MMAKER
+		|EMAKER|MSTORAGE|ESTORAGE;
 	return type->cats&economic;
 }
 

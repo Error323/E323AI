@@ -1,6 +1,7 @@
 #include "CDefenseMatrix.h"
 
 #include <math.h>
+#include <limits>
 
 #include "CAI.h"
 #include "CUnit.h"
@@ -11,9 +12,10 @@
 
 CDefenseMatrix::CDefenseMatrix(AIClasses *ai) {
 	this->ai = ai;
-	this->hm = ai->cb->GetHeightMap();
-	this->X  = ai->cb->GetMapWidth();
-	this->Z  = ai->cb->GetMapHeight();
+	hm = ai->cb->GetHeightMap();
+	X  = ai->cb->GetMapWidth();
+	Z  = ai->cb->GetMapHeight();
+	drawMatrix = false;
 }
 
 float3 CDefenseMatrix::getBestDefendedPos(int n) {
@@ -171,20 +173,37 @@ void CDefenseMatrix::update() {
 			break;
 	}
 
-	//draw();
+	if (drawMatrix)
+		draw();
 }
 
 float CDefenseMatrix::getValue(CUnit *unit) {
 	return unit->type->cost;
 }
 
-bool CDefenseMatrix::isPosInBounds(float3 &pos) {
-	std::multimap<float, Cluster*>::iterator i;
+bool CDefenseMatrix::isPosInBounds(float3 &pos) const {
+	std::multimap<float, Cluster*>::const_iterator i;
 	for (i = clusters.begin(); i != clusters.end(); i++) {
 		if(i->second->center.distance2D(pos) <= 320.0f)
 			return true;
 	}
-	return false;	
+	return false;
+}
+
+float CDefenseMatrix::distance2D(float3 &pos) const {
+	float result = std::numeric_limits<float>::max();
+	std::multimap<float, Cluster*>::const_iterator i;
+	for (i = clusters.begin(); i != clusters.end(); i++) {
+		float distance = i->second->center.distance2D(pos);
+		if (distance < result)
+			result = distance;
+	}
+	return result;
+}
+
+bool CDefenseMatrix::switchDebugMode() {
+	drawMatrix = !drawMatrix;
+	return drawMatrix;
 }
 
 void CDefenseMatrix::draw() {
@@ -196,16 +215,15 @@ void CDefenseMatrix::draw() {
 		if (i->second->members.size() == 1) {
 			float3 p1(p0);
 			p1.y += 100.0f;
-			ai->cb->CreateLineFigure(p0, p1, 10.0f, 0, DRAW_TIME, group);
+			ai->cb->CreateLineFigure(p0, p1, 10.0f, 0, MULTIPLEXER, group);
 		}
 		else {
 			std::multimap<float, CUnit*>::iterator j;
 			for (j = i->second->members.begin(); j != i->second->members.end(); j++) {
 				float3 p2 = j->second->pos();
-				ai->cb->CreateLineFigure(p0, p2, 5.0f, 0, DRAW_TIME, group);
+				ai->cb->CreateLineFigure(p0, p2, 5.0f, 0, MULTIPLEXER, group);
 			}
 		}
 		ai->cb->SetFigureColor(group, 0.0f, 0.0f, i->first/totalValue, 1.0f);
 	}
 }
-
