@@ -28,10 +28,14 @@ struct TargetsFilter {
 	float scoreCeiling; 
 		// max target score allowed; can be updated after passing to selectTarget()
 	float threatFactor;
-		// impacts function which calculates heuristic target score
+		// impacts heuristic formula which calculates target score
 	float threatValue;
 		// threat value at best target position; can be updated after passing to selectTarget()
-	
+	float damageFactor;
+		// impacts heuristic formula which calculates target score
+	float powerFactor;
+		// impacts heuristic formula which calculates target score
+
 	TargetsFilter() {
 		reset();
 	}	
@@ -46,6 +50,8 @@ struct TargetsFilter {
 		scoreCeiling = threatCeiling = std::numeric_limits<float>::max();
 		threatFactor = 1.0f;
 		threatValue = 0.0f;
+		damageFactor = -50.0f;
+		powerFactor = 0.0f; // don't care
 	}
 };
 

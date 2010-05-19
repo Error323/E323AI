@@ -491,7 +491,7 @@ int CGroup::selectTarget(std::vector<int> &targets, TargetsFilter &tf) {
 		if (!canAttack(t) || (tf.excludeId && (*(tf.excludeId))[t]))
 			continue;
 		
-		if (badTargets.size() > 0) {
+		if (!badTargets.empty()) {
 			std::map<int, int>::iterator it = badTargets.find(t);
 			if (it != badTargets.end()) {
 				if (it->second < 0)
@@ -525,13 +525,16 @@ int CGroup::selectTarget(std::vector<int> &targets, TargetsFilter &tf) {
 			unitDamageK = 0.0f;
 		
 		float score = gpos.distance2D(epos);
-		score += (tf.threatFactor * threat) - unitDamageK * 50.0f;
-		// TODO: refactor so params below are moved into TargetFilter
+		score += tf.threatFactor * threat;
+		score += tf.damageFactor * unitDamageK;
+		score += tf.powerFactor * ud->power;
+		
+		// TODO: refactor so params below are moved into TargetFilter?
 		if (ai->defensematrix->isPosInBounds(epos))
 			// boost in priority enemy at our base, even scout units
 			score -= 1000.0f; // TODO: better change value to the length a group can pass for 1 min (40 sec?)?
 		else if(!scout && ecats&SCOUTER) {
-			// remote scouts are not interesting for engage groups
+			// remote scouts are not interesting for non-scout groups
 			score += 10000.0f;
 		}
 		

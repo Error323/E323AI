@@ -93,6 +93,7 @@ bool ATask::enemyScan() {
 		}
 		else {
 			tf.exclude = SCOUTER;
+			tf.threatFactor = 0.001f;
 			tf.threatCeiling = group->strength;
 			tf.threatRadius = 0.0f;
 		}

@@ -48,10 +48,10 @@ class CUnitTable: public ARegistrar {
 		/* Max unit power */
 		float maxUnitPower;
 
-		/* All units flattened in a map */
+		/* All units flattened in a map <udef_id, unit_type> */
 		std::map<int, UnitType> units;
 
-		/* movetypes, used by pathfinder */
+		/* movetypes, used by pathfinder <move_type_id, move_data> */
 		std::map<int, MoveData*> moveTypes;
 
 		/* Ingame units, set in eco module */
@@ -65,7 +65,7 @@ class CUnitTable: public ARegistrar {
 		std::map<int, int>          unitsAliveTime;
 		std::map<int, CUnit*>       unitsUnderPlayerControl;
 		std::map<int, unsigned int> unitsUnderConstruction; // key = <unit_id>, value = <cats_from_wishlist>
-		std::map<int, Wish>         unitsBuilding; // key = <unit_id>, value = <wish>
+		std::map<int, Wish>         unitsBuilding; // key = <builder_id>, value = <wish>
 
 		/* unitCategories in string format, see Defines.h */
 		static std::map<unitCategory, std::string> cat2str;

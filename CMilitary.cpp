@@ -398,7 +398,7 @@ void CMilitary::onEnemyDestroyed(int enemy, int attacker) {
 	for (itGroups = groups.begin(); itGroups != groups.end(); ++itGroups) {
 		activeGroups = itGroups->second;
 		for (itGroup = activeGroups->begin(); itGroup != activeGroups->end(); ++itGroup) {
-			if (itGroup->second->badTargets.size() > 0)
+			if (!itGroup->second->badTargets.empty())
 				itGroup->second->badTargets.erase(enemy);
 		}
 	}

@@ -99,21 +99,12 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	}
 
 	/* Generate the buildBy and canBuild lists per UnitType */
-	std::map<int, UnitType>::iterator j;
-	UnitType *utParent;
-
+	/*
 	std::map<int, UnitType*>::iterator l;
 	std::string buildBy, canBuild;
-
-	// NOTE: -1 movetype means a graph for aircraft
-	moveTypes[-1] = NULL;
-
+	std::map<int, UnitType>::iterator j;
 	for (j = units.begin(); j != units.end(); j++) {
-		utParent = &(j->second);
-		MoveData* movedata = utParent->def->movedata;
-
-		if (movedata != NULL)
-			moveTypes[movedata->pathType] = movedata;
+		UnitType *utParent = &(j->second);
 
 		debugCategories(utParent);
 		debugUnitDefs(utParent);
@@ -132,7 +123,9 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		}
 		canBuild = canBuild.substr(0, canBuild.length() - 2);
 	}
+	*/
 
+	LOG_II("CUnitTable::CUnitTable Number of unit types: " << numUnits);
 	LOG_II("CUnitTable::CUnitTable Max unit power: " << maxUnitPower);
 }
 
@@ -231,13 +224,18 @@ bool CUnitTable::canPerformTask(CUnit &unit) {
 }
 
 void CUnitTable::buildTechTree() {
-	std::vector<const UnitDef*> unitdefs(numUnits);
-	//const UnitDef *unitdefs[numUnits];
-	ai->cb->GetUnitDefList(&unitdefs[0]);
+	if (!units.empty())
+		return; // alreay initialized
 
 	std::map<int, std::string> buildOptions;
 	std::map<int, std::string>::iterator j;
+	std::vector<const UnitDef*> unitdefs(numUnits);
+	
+	ai->cb->GetUnitDefList(&unitdefs[0]);
 
+	// NOTE: -1 movetype means a graph for aircraft
+	moveTypes[-1] = NULL;
+	
 	for (int i = 0; i < numUnits; i++) {
 		const UnitDef *ud = unitdefs[i];
 		if (ud == NULL) continue;
@@ -245,8 +243,12 @@ void CUnitTable::buildTechTree() {
 
 		UnitType *utParent, *utChild;
 
-		if (u == units.end())
+		if (u == units.end()) {
 			utParent = insertUnit(ud);
+			MoveData* md = utParent->def->movedata;
+			if (md != NULL)
+				moveTypes[md->pathType] = md;
+		}
 		else
 			utParent = &(u->second);
 

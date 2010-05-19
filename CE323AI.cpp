@@ -133,8 +133,12 @@ void CE323AI::UnitCreated(int uid, int bid) {
 		if (builder->type->cats&STATIC) {
 			// NOTE: factories should be already rotated in proper direction 
 			// to prevent units going outside the map
-			if (c&AIR)
-				unit->moveRandom(500.0f, true);
+			if (c&AIR) {
+				if (c&ANTIAIR)
+					unit->guard(bid, true);
+				else
+					unit->moveRandom(450.0f, true);
+			}
 			else if (c&BUILDER)
 				unit->moveForward(200.0f);
 			else
