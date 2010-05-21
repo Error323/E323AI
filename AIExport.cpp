@@ -19,8 +19,8 @@
 */
 
 #if WIN32
-#include <windows.h>
-#include <tchar.h>
+	#include <windows.h>
+	#include <tchar.h>
 #endif
 
 #include <map>

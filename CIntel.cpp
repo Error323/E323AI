@@ -77,6 +77,7 @@ void CIntel::init() {
 		without external helpers in config files.
 	*/
 	if(ai->gamemap->IsWaterMap()) {
+		//allowedFactories.push_back(SEA);
 		allowedFactories.push_back(HOVER);
 	}
 	else {
@@ -94,6 +95,14 @@ void CIntel::init() {
 	// TODO: do not build air on too small maps?
 	allowedFactories.push_back(AIR);
 
+	// vary first factory among allied AIs...
+	int i = ai->allyAITeam;
+	while (i > 1) {
+		allowedFactories.push_back(allowedFactories.front());
+		allowedFactories.pop_front();
+		i--;
+	}
+	
 	// FIXME: engineer better decision algo
 	if (ai->gamemap->IsMetalMap())
 		strategyTechUp = true;

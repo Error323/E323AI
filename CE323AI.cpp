@@ -2,6 +2,7 @@
 
 #include <string>
 #include <algorithm>
+#include <map>
 #include <cctype>
 
 #include "CAI.h"
@@ -22,6 +23,10 @@
 #include "Util.hpp"
 #include "ReusableObjectFactory.hpp"
 
+#include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
+
+extern std::map<int, CAIGlobalAI*> myAIs;
+
 int CE323AI::instances = 0;
 
 CE323AI::CE323AI() {
@@ -35,9 +40,22 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->cb            = callback->GetAICallback();
 	ai->cbc           = callback->GetCheatInterface();
 	ai->team          = team;
+	ai->allyTeam      = ai->cb->GetMyAllyTeam();
 	ai->logger        = new CLogger(ai, /*CLogger::LOG_STDOUT |*/ CLogger::LOG_FILE);
 	ai->cfgparser     = new CConfigParser(ai);
 	ai->unittable     = new CUnitTable(ai);
+
+	ai->allyAITeam    = 1;
+	/*
+	std::map<int, CAIGlobalAI*>::iterator it;
+	for (it = myAIs.begin(); it != myAIs.end(); ++it) {
+		if (it->first != team) {
+			if (ai->cb->GetTeamAllyTeam(it->first) == ai->allyTeam)
+				ai->allyAITeam++;
+		}
+		
+	}
+	*/
 
 	std::string configfile(ai->cb->GetModName());
 	configfile = configfile.substr(0, configfile.size()-4) + "-config.cfg";
