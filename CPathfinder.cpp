@@ -92,12 +92,10 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 		}
 	}
 
-	//drawGraph(1);
-
 	this->REAL = HEIGHT2REAL*HEIGHT2SLOPE;
 	
-	LOG_II("CPathfinder::CPathfinder Heightmap dimensions " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
-	LOG_II("CPathfinder::CPathfinder Pathmap dimensions   " << XX << "x" << ZZ)
+	LOG_II("CPathfinder::CPathfinder Heightmap dimensions: " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
+	LOG_II("CPathfinder::CPathfinder Pathmap dimensions:   " << XX << "x" << ZZ)
 
 	nrThreads = 1;
 }
@@ -456,25 +454,6 @@ void CPathfinder::updatePaths() {
 
 	if (!addPath(*groups[repathGroup], start, goal)) {
 		LOG_EE("CPathfinder::updatePaths failed for " << (*groups[repathGroup]))
-	}
-
-	if (drawPathGraph) {
-		/*
-		if (ai->cb->GetSelectedUnits(&ai->unitIDs[0], 1) > 0) {
-	    	CUnit *unit = ai->unittable->getUnit(ai->unitIDs[0]);
-	    	if (unit) {
-				int pathType;
-				MoveData *md = unit->def->movedata;
-				
-				if (md)
-					pathType = md->pathType;
-				else
-					pathType = -1;
-				
-				drawGraph(pathType);
-	    	}
-		}
-		*/
 	}
 }
 
