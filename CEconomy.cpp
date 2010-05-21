@@ -339,7 +339,7 @@ float3 CEconomy::getBestSpot(CGroup &group, std::list<float3> &resources, std::m
 		
 		bool taken = false;
 		for (j = tracker.begin(); j != tracker.end(); j++) {
-			if ((*i - j->second).Length2D() < radius) {
+			if (i->distance2D(j->second) < radius) {
 				taken = true;
 				break;
 			}
@@ -358,7 +358,12 @@ float3 CEconomy::getBestSpot(CGroup &group, std::list<float3> &resources, std::m
 		}
 		if (taken) continue; // already taken by ally team
 
-		float dist = (gpos - *i).Length2D();
+		// TODO: actually any spot with any threat should be skipped; 
+		// to implement this effectively we need to refactor tasks, cause
+		// builder during approaching should scan target place for threat
+		// periodically; currently it does not, so skipping dangerous spot
+		// has no real profit
+		float dist = gpos.distance2D(*i);
 		dist += 1000.0f * group.getThreat(*i, 300.0f);
 		if (dist < bestDist) {
 			bestDist = dist;
