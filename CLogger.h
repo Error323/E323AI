@@ -11,10 +11,10 @@ class AIClasses;
 
 class CLogger {
 	public:
-		enum type{LOG_FILE = (1<<0), LOG_SCREEN = (1<<1), LOG_SPRING = (1<<2)};
+		enum type { LOG_FILE = (1<<0), LOG_STDOUT = (1<<1), LOG_SPRING = (1<<2) };
 
 		CLogger(AIClasses *_ai, unsigned lt);
-		~CLogger(){}
+		~CLogger() {}
 
 		/* Error logging */
 		void e(std::string msg) { log(ERROR, msg); }
@@ -29,14 +29,14 @@ class CLogger {
 		void s(std::string msg);
 
 	private:
-		enum logLevel{ERROR, WARNING, VERBOSE};
+		enum logLevel{ ERROR, WARNING, VERBOSE };
 
 		std::string fileName;
 
 		AIClasses *ai;
 
-		/* The log types */
-		unsigned logType;
+		/* Sum of log type flags */
+		unsigned int logType;
 
 		/* File stream */
 		std::ofstream ofs;
