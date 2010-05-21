@@ -35,7 +35,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->cb            = callback->GetAICallback();
 	ai->cbc           = callback->GetCheatInterface();
 	ai->team          = team;
-	ai->logger        = new CLogger(ai, CLogger::LOG_SCREEN | CLogger::LOG_FILE);
+	ai->logger        = new CLogger(ai, /*CLogger::LOG_STDOUT |*/ CLogger::LOG_FILE);
 	ai->cfgparser     = new CConfigParser(ai);
 	ai->unittable     = new CUnitTable(ai);
 
@@ -160,7 +160,8 @@ void CE323AI::UnitFinished(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
 	
 	if(!unit) {
-		LOG_EE("CE323AI::UnitFinished unregistered Unit(" << uid << ")")
+		const UnitDef *ud = ai->cb->GetUnitDef(uid);
+		LOG_EE("CE323AI::UnitFinished unregistered " << (ud ? ud->humanName : std::string("UnknownUnit")) << "(" << uid << ")")
 		return;
 	}
 	else
@@ -208,14 +209,15 @@ void CE323AI::UnitIdle(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
 	
 	if (unit == NULL) {
-		LOG_WW("CE323AI::UnitIdle unregistered Unit(" << uid << ")")
+		const UnitDef *ud = ai->cb->GetUnitDef(uid);
+		LOG_EE("CE323AI::UnitIdle unregistered " << (ud ? ud->humanName : std::string("UnknownUnit")) << "(" << uid << ")")
 		return;
 	}
 
 	if(ai->unittable->unitsUnderPlayerControl.find(uid) != ai->unittable->unitsUnderPlayerControl.end()) {
 		ai->unittable->unitsUnderPlayerControl.erase(uid);
 		assert(unit->group == NULL);
-		LOG_II("CE323AI::UnitControlledByAI " << (*unit))
+		LOG_II("CE323AI::UnitIdle " << (*unit) << " is under AI control again")
 		// re-assign unit to appropriate group
 		UnitFinished(uid);
 		return;
@@ -242,9 +244,9 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 		return;
 
 	CUnit* unit = ai->unittable->getUnit(damaged);
-	if (!unit)
+	if (unit == NULL)
 		return; // invalid unit
-	if (!unit->group)
+	if (unit->group == NULL)
 		return; // unit is not under AI control
 
 	/*
@@ -424,9 +426,10 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 			/* Player incoming command */
 			const PlayerCommandEvent* pce = (const PlayerCommandEvent*) data;
 			bool importantCommand = false;
+			
 			if(pce->command.id < 0)
 				importantCommand = true;
-			else
+			else {
 				switch(pce->command.id)
 				{
 					case CMD_MOVE:
@@ -447,25 +450,30 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 						importantCommand = true;
 						break;
 				}
+			}
 
 			if(importantCommand && !pce->units.empty()) {
 				for(int i = 0; i < pce->units.size(); i++) {
-					if(ai->unittable->unitsUnderPlayerControl.find(pce->units[i]) == ai->unittable->unitsUnderPlayerControl.end()) {
+					const int uid = pce->units[i];
+					if(ai->unittable->unitsUnderPlayerControl.find(uid) == ai->unittable->unitsUnderPlayerControl.end()) {
 						// we have to remove unit from a group, but not 
 						// to emulate unit death
-						CUnit* unit = ai->unittable->getUnit(pce->units[i]);
+						CUnit* unit = ai->unittable->getUnit(uid);
+						
+						if (unit == NULL)
+							continue;
+						
+						// remove unit from group so it will not receive 
+						// AI commands anymore...
 						if(unit->group) {
-							// remove unit from group so it will not receive 
-							// AI commands anymore...
 							unit->group->remove(*unit);
 						}							
-						// NOTE: i think the following two lines have almost
-						// no sense because current AI design does not deal
-						// with units not assigned to any group
+						
 						unit->micro(false);
-						ai->unittable->idle[unit->key] = false; // because player controls it
-						ai->unittable->unitsUnderPlayerControl[unit->key] = unit;
-						LOG_II("CE323AI::UnitControlledByPlayer " << (*unit))
+						ai->unittable->idle[uid] = false; // because player controls it
+						ai->unittable->unitsUnderPlayerControl[uid] = unit;
+						
+						LOG_II("CE323AI::PlayerCommand " << (*unit) << " is under human control")
 					}
 				}
 			}
