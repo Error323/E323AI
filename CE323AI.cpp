@@ -46,7 +46,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->unittable     = new CUnitTable(ai);
 
 	ai->allyAITeam    = 1;
-	/*
+#if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
 	std::map<int, CAIGlobalAI*>::iterator it;
 	for (it = myAIs.begin(); it != myAIs.end(); ++it) {
 		if (it->first != team) {
@@ -55,7 +55,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 		}
 		
 	}
-	*/
+#endif
 
 	std::string configfile(ai->cb->GetModName());
 	configfile = configfile.substr(0, configfile.size()-4) + "-config.cfg";
