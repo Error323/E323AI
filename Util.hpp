@@ -12,6 +12,7 @@ class IAICallback;
 
 namespace util {
 	std::string GetAbsFileName(IAICallback*, const std::string&, bool readonly = false);
+	void SanitizeFileNameInPlace(std::string&);
 
 	void StringToLowerInPlace(std::string&);
 	std::string StringToLower(std::string);
