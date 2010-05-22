@@ -355,6 +355,7 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 		modMil[] = "military",
 		modEco[] = "economy",
 		modPF[] = "pathfinder",
+		modPG[] = "pathgraph",
 		modDM[] = "defensematrix";
 
 	// NOTE: accept AI commands from spectators only
@@ -371,8 +372,8 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 			if (ai->isMaster()) {
 				ai->cb->SendTextMsg("Usage: !e323ai <module>", 0);
 				ai->cb->SendTextMsg("where", 0);
-				ai->cb->SendTextMsg("\t<module> ::= pathfinder|military|threatmap|defensematrix", 0);
-				ai->cb->SendTextMsg("\t<module> ::= pf|mil|tm|dm", 0);
+				ai->cb->SendTextMsg("\t<module> ::= pathfinder|pathgraph|military|threatmap|defensematrix", 0);
+				ai->cb->SendTextMsg("\t<module> ::= pf|pg|mil|tm|dm", 0);
 			}
 			return;
 		}
@@ -387,8 +388,12 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 			cmd.assign(modMil);
 		}
 		else if (cmd == modPF || cmd == "pf") {
-			isDebugOn = ai->pathfinder->switchDebugMode();
+			isDebugOn = ai->pathfinder->switchDebugMode(false);
 			cmd.assign(modPF);
+		}
+		else if (cmd == modPG || cmd == "pg") {
+			isDebugOn = ai->pathfinder->switchDebugMode(true);
+			cmd.assign(modPG);
 		}
 		else if (cmd == modDM || cmd == "dm") {
 			isDebugOn = ai->defensematrix->switchDebugMode();

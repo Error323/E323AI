@@ -98,7 +98,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		
 		bool pathExists(CGroup &group, const float3 &s, const float3 &g);
 
-		bool switchDebugMode();
+		bool switchDebugMode(bool graph);
 
 		/* NOTE: slopemap 1:2 heightmap 1:8 realmap, GetMapWidth() and
 		 * GetMapHeight() give map dimensions in heightmap resolution
@@ -128,6 +128,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 		unsigned int graphSize;
 
+		bool drawPaths;
 		static int drawPathGraph;
 
 		const float *sm;
