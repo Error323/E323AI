@@ -28,8 +28,9 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	this->XX   = this->X / I_MAP_RES;
 	this->ZZ   = this->Z / I_MAP_RES;
 	graphSize = XX * ZZ;
-	update     = 0;
-	repathGroup= -1;
+	update      = 0;
+	repathGroup = -1;
+	drawPaths   = false;
 
 	hm = ai->cb->GetHeightMap();
 	sm = ai->cb->GetSlopeMap();
@@ -90,12 +91,10 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 		}
 	}
 
-	//drawGraph(1);
-
 	this->REAL = HEIGHT2REAL*HEIGHT2SLOPE;
 	
-	LOG_II("CPathfinder::CPathfinder Heightmap dimensions " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
-	LOG_II("CPathfinder::CPathfinder Pathmap dimensions   " << XX << "x" << ZZ)
+	LOG_II("CPathfinder::CPathfinder Heightmap dimensions: " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
+	LOG_II("CPathfinder::CPathfinder Pathmap dimensions:   " << XX << "x" << ZZ)
 
 	nrThreads = 1;
 }
@@ -455,25 +454,6 @@ void CPathfinder::updatePaths() {
 	if (!addPath(*groups[repathGroup], start, goal)) {
 		LOG_EE("CPathfinder::updatePaths failed for " << (*groups[repathGroup]))
 	}
-
-	if (drawPathGraph) {
-		/*
-		if (ai->cb->GetSelectedUnits(&ai->unitIDs[0], 1) > 0) {
-	    	CUnit *unit = ai->unittable->getUnit(ai->unitIDs[0]);
-	    	if (unit) {
-				int pathType;
-				MoveData *md = unit->def->movedata;
-				
-				if (md)
-					pathType = md->pathType;
-				else
-					pathType = -1;
-				
-				drawGraph(pathType);
-	    	}
-		}
-		*/
-	}
 }
 
 void CPathfinder::remove(ARegistrar &obj) {
@@ -614,10 +594,11 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGrou
 		}
 		path.push_back(g);
 
-		if (false) {
+		if (drawPaths) {
+			int life = MULTIPLEXER * path.size(); // in frames
 			for (unsigned i = 2; i < path.size(); i++)
-				ai->cb->CreateLineFigure(path[i-1], path[i], 8.0f, 0, DRAW_TIME, group.key);
-			ai->cb->SetFigureColor(group.key, group.key/float(CGroup::counter), 1.0f-group.key/float(CGroup::counter), 1.0f, 1.0f);
+				ai->cb->CreateLineFigure(path[i - 1], path[i], 8.0f, 0, life, group.key + 10);
+			ai->cb->SetFigureColor(group.key + 10, group.key/float(CGroup::counter), 1.0f-group.key/float(CGroup::counter), 1.0f, 1.0f);
 		}
 	}
 	else {
@@ -643,7 +624,12 @@ void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 		succ.push(CPathfinder::graph[V[u]]);
 }
 
-bool CPathfinder::switchDebugMode() {
+bool CPathfinder::switchDebugMode(bool graph) {
+	if (!graph) {
+		drawPaths = !drawPaths;
+		return drawPaths;
+	}
+
 	if (!ai->isMaster())
 		return false;
 

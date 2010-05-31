@@ -24,6 +24,15 @@ namespace util {
 		return (std::string(dst));
 	}
 
+	void SanitizeFileNameInPlace(std::string& s) {
+		static const char chars2replace[] = "<>:?| \t\n\r";
+		size_t pos = 0;
+		while((pos = s.find_first_of(chars2replace, pos)) != std::string::npos) {
+			s[pos] = '_';
+			pos++;
+		}
+	}
+
 	void StringToLowerInPlace(std::string& s) {
 		std::transform(s.begin(), s.end(), s.begin(), (int (*)(int))tolower);
 	}
@@ -69,7 +78,6 @@ namespace util {
 
 		return wavg;
 	}
-
 
 	bool IsBinarySubset(unsigned A, unsigned B) {
 		unsigned cA     = CountOneBits(A);

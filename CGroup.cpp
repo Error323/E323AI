@@ -16,11 +16,11 @@ int CGroup::counter = 0;
 void CGroup::addUnit(CUnit &unit) {
 	if (unit.group) {
 		if (unit.group == this) {
-			LOG_EE("CGroup::addUnit " << unit << " already registered in " << (*this))
+			LOG_WW("CGroup::addUnit " << unit << " already registered in " << (*this))
 			return; // already registered
 		} else {
 			// NOTE: unit can exist in one and only group
-			LOG_II("CGroup::addUnit " << unit << " still in group " << (*(unit.group)))
+			//LOG_II("CGroup::addUnit " << unit << " still in " << (*(unit.group)))
 			unit.group->remove(unit);
 		}
 	}
@@ -55,11 +55,9 @@ void CGroup::remove() {
 		i->second->group = NULL;
 	}
 	units.clear();
-	
-	assert(records.empty());
+	badTargets.clear();
 
-	// TODO: remove next line when prev assertion is never raised
-	records.clear();
+	assert(records.empty());
 }
 
 void CGroup::remove(ARegistrar &object) {
@@ -73,11 +71,14 @@ void CGroup::remove(ARegistrar &object) {
 	unit->unreg(*this);
 	units.erase(unit->key);
 
+	badTargets.clear();
+
 	/* If no more units remain in this group, remove the group */
 	if (units.empty()) {
 		remove();
 	} else {
 		/* Recalculate properties of the current group */
+		
 		recalcProperties(NULL, true);
 		std::map<int, CUnit*>::iterator i;
 		for (i = units.begin(); i != units.end(); i++) {
@@ -158,6 +159,7 @@ void CGroup::reset() {
 	abilities(false);
 	units.clear();
 	records.clear();
+	badTargets.clear();
 }
 
 void CGroup::recalcProperties(CUnit *unit, bool reset)
@@ -279,10 +281,11 @@ int CGroup::maxLength() {
 }
 
 void CGroup::assist(ATask &t) {
+	// t->addAssister(
 	switch(t.t) {
 		case BUILD: {
 			CTaskHandler::BuildTask *task = dynamic_cast<CTaskHandler::BuildTask*>(&t);
-			CUnit *unit  = task->group->firstUnit();
+			CUnit *unit = task->group->firstUnit();
 			guard(unit->key);
 			break;
 		}
@@ -296,7 +299,7 @@ void CGroup::assist(ATask &t) {
 
 		case FACTORY_BUILD: {
 			CTaskHandler::FactoryTask *task = dynamic_cast<CTaskHandler::FactoryTask*>(&t);
-			CUnit *unit  = task->group->firstUnit();
+			CUnit *unit = task->group->firstUnit();
 			guard(unit->key);
 			break;
 		}
@@ -458,9 +461,26 @@ float CGroup::getThreat(float3 &target, float radius) {
 	return ai->threatmap->getThreat(target, radius, this);
 }
 
-int CGroup::selectTarget(std::vector<int> &targets, std::map<int,bool> &occupied, TargetsFilter &tf) {
+bool CGroup::addBadTarget(int id) {
+	const UnitDef *ud = ai->cbc->GetUnitDef(id);
+	if (ud == NULL)
+		return false;
+	
+	LOG_WW("CGroup::addBadTarget " << ud->humanName << "(" << id << ") to " << (*this))
+	
+	const unsigned int ecats = UC(ud->id);
+	if (ecats&STATIC)
+		badTargets[id] = -1;
+	else
+		badTargets[id] = ai->cb->GetCurrentFrame();
+
+	return true;
+}
+
+int CGroup::selectTarget(std::vector<int> &targets, TargetsFilter &tf) {
 	bool scout = cats&SCOUTER;
 	bool bomber = !scout && (cats&AIR) && (cats&ARTILLERY);
+	int frame = ai->cb->GetCurrentFrame();
 	float bestScore = tf.scoreCeiling;
 	float unitDamageK;
 	float3 gpos = pos();
@@ -468,10 +488,27 @@ int CGroup::selectTarget(std::vector<int> &targets, std::map<int,bool> &occupied
 	for (int i = 0; i < std::min<int>(targets.size(), tf.candidatesLimit); i++) {
 		int t = targets[i];
 
-		if (occupied[t] || !canAttack(t))
+		if (!canAttack(t) || (tf.excludeId && (*(tf.excludeId))[t]))
 			continue;
 		
+		if (!badTargets.empty()) {
+			std::map<int, int>::iterator it = badTargets.find(t);
+			if (it != badTargets.end()) {
+				if (it->second < 0)
+					continue; // permanent bad target
+				if ((frame - it->second) < BAD_TARGET_TIMEOUT)
+					continue; // temporary bad target
+				else {
+					badTargets.erase(it->first);
+					LOG_II("CGroup::selectTarget bad target Unit(" << t << ") timed out for " << (*this))
+				}
+			}
+		}
+		
 		const UnitDef *ud = ai->cbc->GetUnitDef(t);
+		if (ud == NULL)
+			continue;
+
 		const unsigned int ecats = UC(ud->id);
 		if (!(tf.include&ecats) || (tf.exclude&ecats))
 			continue;
@@ -488,18 +525,25 @@ int CGroup::selectTarget(std::vector<int> &targets, std::map<int,bool> &occupied
 			unitDamageK = 0.0f;
 		
 		float score = gpos.distance2D(epos);
-		score += (tf.threatFactor * threat) - unitDamageK * 50.0f;
-		// TODO: refactor so params blow are moved into TargetFilter
+		score += tf.threatFactor * threat;
+		score += tf.damageFactor * unitDamageK;
+		score += tf.powerFactor * ud->power;
+		
+		// TODO: refactor so params below are moved into TargetFilter?
 		if (ai->defensematrix->isPosInBounds(epos))
 			// boost in priority enemy at our base, even scout units
 			score -= 1000.0f; // TODO: better change value to the length a group can pass for 1 min (40 sec?)?
 		else if(!scout && ecats&SCOUTER) {
-			// remote scouts are not interesting for engage groups
+			// remote scouts are not interesting for non-scout groups
 			score += 10000.0f;
 		}
 		
 		if (bomber && (ecats&STATIC) && (ecats&ANTIAIR))
 			score -= 500.0f;
+
+		// do not allow land units chase after air units...
+		if (!(cats&AIR) && (ecats&AIR))
+			score += 3000.0f;
 
 		if(score < tf.scoreCeiling) {
 			tf.bestTarget = t;
@@ -511,14 +555,36 @@ int CGroup::selectTarget(std::vector<int> &targets, std::map<int,bool> &occupied
 	return tf.bestTarget;
 }
 
-int CGroup::selectTarget(float search_radius, std::map<int,bool> &occupied, TargetsFilter &tf) {
-	int target = -1;
+int CGroup::selectTarget(float search_radius, TargetsFilter &tf) {
 	int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], pos(), search_radius, std::min<int>(MAX_ENEMIES, tf.candidatesLimit));
 	if (numEnemies > 0) {
 		tf.candidatesLimit = numEnemies;
-		target = selectTarget(ai->unitIDs, occupied, tf);
+		tf.bestTarget = selectTarget(ai->unitIDs, tf);
 	}
-	return target;
+	return tf.bestTarget;
+}
+
+float CGroup::getScanRange() {
+	float result = radius();
+
+	if (cats&STATIC)
+		result += getRange();
+	if (cats&BUILDER)
+		result += buildRange * 1.5f;
+	else if (cats&SNIPER)
+		result += range * 1.05f;
+	else if (cats&SCOUTER)
+		result += range * 3.0f;
+	else if (cats&ATTACKER)
+		result += range * 1.4f;
+	
+	return result;
+}
+
+float CGroup::getRange() {
+	if (cats&BUILDER)
+		return buildRange;
+	return range;
 }
 
 std::ostream& operator<<(std::ostream &out, const CGroup &group) {

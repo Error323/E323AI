@@ -98,7 +98,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		
 		bool pathExists(CGroup &group, const float3 &s, const float3 &g);
 
-		bool switchDebugMode();
+		bool switchDebugMode(bool graph);
 
 		/* NOTE: slopemap 1:2 heightmap 1:8 realmap, GetMapWidth() and
 		 * GetMapHeight() give map dimensions in heightmap resolution
@@ -111,7 +111,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 
 		/* Node Graph */
 		static std::vector<Node*> graph;
-		/* Number of threads (is not used currently) */
+		/* Number of threads (NOT used currently) */
 		size_t nrThreads;
 		/* Group to receive repathing event next updatePaths() call */
 		int repathGroup;
@@ -121,13 +121,14 @@ class CPathfinder: public AAStar, public ARegistrar {
 		unsigned int update;
 		/* The paths <group, path> */
 		std::map<int, std::vector<float3> > paths;
-		/* The groups */
-		std::map<int, CGroup*> groups; // key = <group_id>
-		/* Regrouping */
-		std::map<int, int> regrouping; // key = <group_id>, value = <frame_number>
+		/* The groups <group_id, CGroup*> */
+		std::map<int, CGroup*> groups;
+		/* Regrouping <group_id, frame_number> */
+		std::map<int, int> regrouping;
 
 		unsigned int graphSize;
 
+		bool drawPaths;
 		static int drawPathGraph;
 
 		const float *sm;

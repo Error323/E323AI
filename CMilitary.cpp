@@ -117,17 +117,20 @@ CGroup* CMilitary::requestGroup(MilitaryGroupBehaviour type) {
 
 void CMilitary::update(int frame) {
 	int busyScoutGroups = 0;
-	std::vector<int> keys, occupied;
-	std::map<int, bool> isOccupiedTarget;
+	std::vector<int> keys;
+	std::vector<int> occupied;
+	std::map<int, bool> isOccupied;
 	std::map<int, CTaskHandler::AttackTask*>::iterator itTask;
 	std::map<MilitaryGroupBehaviour, std::map<int, CGroup*>* >::iterator itGroup;
 	TargetsFilter tf;
 
-	// NOTE: occupied targets are being analyzed only if there are no suitable
-	// primary targets
+	// NOTE: we store occupied targets in two formats because vector is used
+	// for list of targets (which can be used if there no suitable primary
+	// targets are found), second one is used for TargetFilter to filter out 
+	// occupied targets when searching for primary targets
 	for (itTask = ai->tasks->activeAttackTasks.begin(); itTask != ai->tasks->activeAttackTasks.end(); itTask++) {
 		occupied.push_back(itTask->second->target);
-		isOccupiedTarget[itTask->second->target] = true;
+		isOccupied[itTask->second->target] = true;
 	}
 	
 	for(itGroup = groups.begin(); itGroup != groups.end(); itGroup++) {
@@ -179,6 +182,7 @@ void CMilitary::update(int frame) {
 			// NOTE: each group can have different score on the same target
 			// because of their disposition, strength etc.
 			tf.scoreCeiling = std::numeric_limits<float>::max();
+			tf.excludeId = &isOccupied;
 
 			// setup custom target filter params per current group...
 			switch(behaviour) {	
@@ -197,7 +201,7 @@ void CMilitary::update(int frame) {
 			if (target != -1) {
 				for(int b = 0; b < targetBlocks->size(); b++) {
 					std::vector<int> *targets = (*targetBlocks)[b];
-					target = group->selectTarget(*targets, isOccupiedTarget, tf);
+					target = group->selectTarget(*targets, tf);
 				}
 			}
 
@@ -205,8 +209,8 @@ void CMilitary::update(int frame) {
 			
 			if ((!isAssembling && behaviour == SCOUT) || target < 0) {
 				// scan for better target among existing targets...
-				std::map<int, bool> dummy;
-				int assistTarget = group->selectTarget(occupied, dummy, tf);
+				tf.excludeId = NULL;
+				int assistTarget = group->selectTarget(occupied, tf);
 				if (assistTarget >= 0 && assistTarget != target) {
 					ATask *task = ai->tasks->getTaskByTarget(assistTarget);
 					if (task) {
@@ -252,7 +256,10 @@ void CMilitary::update(int frame) {
 					mergeGroups.erase(group->key);
 					if (ai->tasks->addAttackTask(target, *group, behaviour == BOMBER)) {
 						occupied.push_back(target);
-						isOccupiedTarget[target] = true;
+						isOccupied[target] = true;
+					}
+					else {
+						group->addBadTarget(target);
 					}
 					break;
 				}
@@ -367,7 +374,7 @@ unsigned int CMilitary::requestUnit(unsigned int basecat) {
 int CMilitary::idleScoutGroupsNum() {
 	int result = 0;
 	std::map<int, CGroup*>::iterator i;
-	for(i = activeScoutGroups.begin(); i != activeScoutGroups.end(); i++)
+	for(i = activeScoutGroups.begin(); i != activeScoutGroups.end(); ++i)
 		if(!i->second->busy)
 			result++;
 	return result;
@@ -375,12 +382,26 @@ int CMilitary::idleScoutGroupsNum() {
 
 bool CMilitary::isAssemblingGroup(CGroup *group) {
 	std::map<int, CGroup*>::iterator i;
-	for (i = assemblingGroups.begin(); i != assemblingGroups.end(); i++) {
+	for (i = assemblingGroups.begin(); i != assemblingGroups.end(); ++i) {
 		if (i->second->key == group->key) {
 			return true;
 		}
 	}
 	return false;	
+}
+
+void CMilitary::onEnemyDestroyed(int enemy, int attacker) {
+	std::map<int, CGroup*> *activeGroups;
+	std::map<int, CGroup*>::iterator itGroup;
+	std::map<MilitaryGroupBehaviour, std::map<int, CGroup*>* >::iterator itGroups;
+
+	for (itGroups = groups.begin(); itGroups != groups.end(); ++itGroups) {
+		activeGroups = itGroups->second;
+		for (itGroup = activeGroups->begin(); itGroup != activeGroups->end(); ++itGroup) {
+			if (!itGroup->second->badTargets.empty())
+				itGroup->second->badTargets.erase(enemy);
+		}
+	}
 }
 
 bool CMilitary::switchDebugMode() {

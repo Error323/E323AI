@@ -3,7 +3,6 @@
 #include "CAI.h"
 #include "CUnitTable.h"
 #include "CUnit.h"
-#include "CRNG.h"
 #include "CConfigParser.h"
 #include "CEconomy.h"
 
@@ -13,13 +12,13 @@ CWishList::CWishList(AIClasses *ai) {
 }
 
 CWishList::~CWishList() {
-	LOG_II("CWishList::Stats MaxWishlistSize = " << maxWishlistSize)
+	LOG_II("CWishList::Stats MaxWishListSize = " << maxWishlistSize)
 }
 
 void CWishList::push(unsigned categories, buildPriority p) {
 	std::map<int, CUnit*>::iterator itFac = ai->unittable->factories.begin();
 	UnitType *fac;
-	for (;itFac != ai->unittable->factories.end(); itFac++) {
+	for (;itFac != ai->unittable->factories.end(); ++itFac) {
 		fac = itFac->second->type;
 		std::multimap<float, UnitType*> candidates;
 		ai->unittable->getBuildables(fac, categories, 0, candidates);

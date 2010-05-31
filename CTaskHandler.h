@@ -20,10 +20,9 @@ enum task{BUILD, ASSIST, ATTACK, MERGE, FACTORY_BUILD, REPAIR};
 class ATask: public ARegistrar {
 	public:
 		ATask(AIClasses *ai): 
-			ARegistrar(counter, std::string("task")) {
+			ARegistrar(counter++, std::string("task")) {
 			this->ai = ai;
 			active = false;
-			counter++;
 			isMoving = true;
 			pos = ZEROVECTOR;
 			group = NULL;
@@ -59,30 +58,23 @@ class ATask: public ARegistrar {
 		/* Remove this task, unreg groups involved, and make them available
 		   again */
 		virtual void remove();
-
 		/* Overload */
 		void remove(ARegistrar &group);
-
 		/* Add a group to this task */
 		void addGroup(CGroup &group);
-
 		/* Scan and micro for resources */
 		bool resourceScan();
-
 		/* Scan and micro for damaged units */
 		bool repairScan();
-
 		/* Scan and micro for enemy targets */
 		bool enemyScan();
-
+		/* Task lifetime in frames */
 		int lifeFrames() const;
-		
 		/* Task lifetime in sec */
 		float lifeTime() const;
-
 		/* Update this task */
 		virtual void update();
-
+		/* Task validation function */
 		virtual bool validate() { return true; }
 
 		RegistrarType regtype() { return REGT_TASK; } 
@@ -90,7 +82,6 @@ class ATask: public ARegistrar {
 		friend std::ostream& operator<<(std::ostream &out, const ATask &task);
 
 		AIClasses *ai;
-		char buf[512];
 };
 
 class CTaskHandler: public ARegistrar {
@@ -110,22 +101,20 @@ class CTaskHandler: public ARegistrar {
 			/* The UnitType to build */
 			UnitType *toBuild;
 
-			/* Update the build task, assumes 1 group on a task! */
+			/* overload */
 			void update();
-
+			/* overload */
 			bool validate();
 
 			bool assistable(CGroup &group, float &travelTime);
-
-			//void reset(float3 &pos, buildType bt, UnitType *ut);
 		};
 
 		struct FactoryTask: public ATask {
-			FactoryTask(AIClasses *_ai): ATask(_ai){t = FACTORY_BUILD;}
+			FactoryTask(AIClasses *_ai): ATask(_ai) {t = FACTORY_BUILD;}
 
 			/* set the factorytask to wait including assisters */
 			void setWait(bool wait);
-			/* If a factory is idle, make sure it gets something to build */
+			/* overload */
 			void update();
 
 			bool assistable(CGroup &group);
@@ -136,10 +125,10 @@ class CTaskHandler: public ARegistrar {
 		struct AssistTask: public ATask {
 			AssistTask(AIClasses *_ai): ATask(_ai) {t = ASSIST;}
 
-			/* The (build)task to assist */
+			/* Task to assist */
 			ATask *assist;
 
-			/* Update the assist task */
+			/* overload */
 			void update();
 			/* overload */
 			void remove();
@@ -151,11 +140,12 @@ class CTaskHandler: public ARegistrar {
 			AttackTask(AIClasses *_ai): ATask(_ai) {t = ATTACK;}
 			
 			bool urgent;
-				// if task is urgent then disable enemy scanning while moving
+				// if task is urgent then enemy scanning is disable while moving
 			int target;
 				// the target to attack
 			std::string enemy;
 				// enemy user name
+			
 			/* Update the attack task */
 			void update();
 			/* overload */
@@ -170,9 +160,10 @@ class CTaskHandler: public ARegistrar {
 			float range;
 				// the minimal range at which groups can merge
 			std::map<int, CGroup*> groups;
-
-			std::map<int, bool> mergable;
-
+				// groups involved in merge process
+			std::map<int, bool> mergable; // key = <group_id>, value = <not_used>
+				// groups ready to merge
+			
 			bool reelectMasterGroup();
 			/* Update the merge task */
 			void update();

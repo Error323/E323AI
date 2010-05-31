@@ -39,9 +39,14 @@ public:
 	CDefenseMatrix *defensematrix;
 	CLogger        *logger;
 	int            team;
+		// team ID (will be AI ID soon)
+	int            allyTeam;
+		// ally team ID
+	int            allyAITeam;
+		// ally AI team ID (internal)
 	int            skirmishAIId;
 		// is it actually AI player id?
-	std::vector<int> unitIDs; 
+	std::vector<int> unitIDs;
 		// temporary container for GetEnemyUnits(), GetFriendlyUnits() etc. results
 };
 

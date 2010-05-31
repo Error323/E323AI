@@ -12,6 +12,7 @@ class IAICallback;
 
 namespace util {
 	std::string GetAbsFileName(IAICallback*, const std::string&, bool readonly = false);
+	void SanitizeFileNameInPlace(std::string&);
 
 	void StringToLowerInPlace(std::string&);
 	std::string StringToLower(std::string);
@@ -33,7 +34,7 @@ namespace util {
 	 */
 	bool IsBinarySubset(unsigned A, unsigned B);
 
-	template<typename T>
+	template<class T>
 	std::set<T> IntersectSets(const std::set<T>& s1, const std::set<T>& s2) {
 		std::set<T> r;
 		typename std::set<T>::const_iterator sit;
@@ -47,7 +48,7 @@ namespace util {
 		return r;
 	}
 
-	template<typename T> 
+	template<class T> 
 	std::set<T> UnionSets(const std::set<T>& s1, const std::set<T>& s2) {
 		std::set<T> r;
 		

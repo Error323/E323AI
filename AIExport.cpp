@@ -19,8 +19,8 @@
 */
 
 #if WIN32
-#include <windows.h>
-#include <tchar.h>
+	#include <windows.h>
+	#include <tchar.h>
 #endif
 
 #include <map>
@@ -130,6 +130,26 @@ const char* aiexport_getMyOption(int skirmishAIId, const char* key) {
 
 size_t aiexport_getNumAIInstances() {
 	return myAIs.size();
+}
+
+size_t aiexport_getNumAIInstancesInAllyTeam(int skirmishAIId, int allyTeamId) {
+
+	size_t numAllies = 0;
+
+#if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
+	std::map<int, CAIAI*>::iterator aii;
+	for (aii = myAIs.begin(); aii != myAIs.end(); ++aii) {
+		const int otherSkirmishAIId = aii->first;
+		const int otherTeamId = skirmishAIId_callback[otherSkirmishAIId]->Game_getMyTeam(otherSkirmishAIId);
+		if (skirmishAIId_callback[skirmishAIId]->Game_getTeamAllyTeam(skirmishAIId, otherTeamId) == allyTeamId) {
+			numAllies++;
+		}
+	}
+#else
+	numAllies++;
+#endif
+
+	return numAllies;
 }
 
 bool aiexport_isPrimaryInstance(int skirmishAIId) {

@@ -19,9 +19,9 @@
 #include "CUnit.h"
 #include "CGroup.h"
 #include "CScopedTimer.h"
-#include "CRNG.h"
 #include "Util.hpp"
 #include "ReusableObjectFactory.hpp"
+#include "AIExport.h"
 
 int CE323AI::instances = 0;
 
@@ -37,9 +37,12 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->cbc           = callback->GetCheatInterface();
 	ai->team          = team;
 	ai->skirmishAIId  = ai->cb->GetMySkirmishAIId();
-	ai->logger        = new CLogger(ai, CLogger::LOG_SCREEN | CLogger::LOG_FILE);
+	ai->allyTeam      = ai->cb->GetMyAllyTeam();
+	ai->logger        = new CLogger(ai, /*CLogger::LOG_STDOUT |*/ CLogger::LOG_FILE);
 	ai->cfgparser     = new CConfigParser(ai);
 	ai->unittable     = new CUnitTable(ai);
+
+	ai->allyAITeam    = aiexport_getNumAIInstancesInAllyTeam(ai->skirmishAIId, ai->allyTeam);
 
 	std::string configfile(ai->cb->GetModName());
 	configfile = configfile.substr(0, configfile.size()-4) + "-config.cfg";
@@ -135,8 +138,12 @@ void CE323AI::UnitCreated(int uid, int bid) {
 		if (builder->type->cats&STATIC) {
 			// NOTE: factories should be already rotated in proper direction 
 			// to prevent units going outside the map
-			if (c&AIR)
-				unit->moveRandom(500.0f, true);
+			if (c&AIR) {
+				if (c&ANTIAIR)
+					unit->guard(bid, true);
+				else
+					unit->moveRandom(450.0f, true);
+			}
 			else if (c&BUILDER)
 				unit->moveForward(200.0f);
 			else
@@ -158,7 +165,8 @@ void CE323AI::UnitFinished(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
 	
 	if(!unit) {
-		LOG_EE("CE323AI::UnitFinished unregistered Unit(" << uid << ")")
+		const UnitDef *ud = ai->cb->GetUnitDef(uid);
+		LOG_EE("CE323AI::UnitFinished unregistered " << (ud ? ud->humanName : std::string("UnknownUnit")) << "(" << uid << ")")
 		return;
 	}
 	else
@@ -206,14 +214,15 @@ void CE323AI::UnitIdle(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
 	
 	if (unit == NULL) {
-		LOG_WW("CE323AI::UnitIdle unregistered Unit(" << uid << ")")
+		const UnitDef *ud = ai->cb->GetUnitDef(uid);
+		LOG_EE("CE323AI::UnitIdle unregistered " << (ud ? ud->humanName : std::string("UnknownUnit")) << "(" << uid << ")")
 		return;
 	}
 
 	if(ai->unittable->unitsUnderPlayerControl.find(uid) != ai->unittable->unitsUnderPlayerControl.end()) {
 		ai->unittable->unitsUnderPlayerControl.erase(uid);
 		assert(unit->group == NULL);
-		LOG_II("CE323AI::UnitControlledByAI " << (*unit))
+		LOG_II("CE323AI::UnitIdle " << (*unit) << " is under AI control again")
 		// re-assign unit to appropriate group
 		UnitFinished(uid);
 		return;
@@ -240,9 +249,9 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 		return;
 
 	CUnit* unit = ai->unittable->getUnit(damaged);
-	if (!unit)
+	if (unit == NULL)
 		return; // invalid unit
-	if (!unit->group)
+	if (unit->group == NULL)
 		return; // unit is not under AI control
 
 	/*
@@ -314,9 +323,11 @@ void CE323AI::EnemyLeaveRadar(int enemy) {
 }
 
 void CE323AI::EnemyDestroyed(int enemy, int attacker) {
+	ai->military->onEnemyDestroyed(enemy, attacker);
 }
 
 void CE323AI::EnemyDamaged(int damaged, int attacker, float damage, float3 dir) {
+
 }
 
 
@@ -331,6 +342,7 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 		modMil[] = "military",
 		modEco[] = "economy",
 		modPF[] = "pathfinder",
+		modPG[] = "pathgraph",
 		modDM[] = "defensematrix";
 
 	// NOTE: accept AI commands from spectators only
@@ -347,8 +359,8 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 			if (ai->isMaster()) {
 				ai->cb->SendTextMsg("Usage: !e323ai <module>", 0);
 				ai->cb->SendTextMsg("where", 0);
-				ai->cb->SendTextMsg("\t<module> ::= pathfinder|military|threatmap|defensematrix", 0);
-				ai->cb->SendTextMsg("\t<module> ::= pf|mil|tm|dm", 0);
+				ai->cb->SendTextMsg("\t<module> ::= pathfinder|pathgraph|military|threatmap|defensematrix", 0);
+				ai->cb->SendTextMsg("\t<module> ::= pf|pg|mil|tm|dm", 0);
 			}
 			return;
 		}
@@ -363,8 +375,12 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 			cmd.assign(modMil);
 		}
 		else if (cmd == modPF || cmd == "pf") {
-			isDebugOn = ai->pathfinder->switchDebugMode();
+			isDebugOn = ai->pathfinder->switchDebugMode(false);
 			cmd.assign(modPF);
+		}
+		else if (cmd == modPG || cmd == "pg") {
+			isDebugOn = ai->pathfinder->switchDebugMode(true);
+			cmd.assign(modPG);
 		}
 		else if (cmd == modDM || cmd == "dm") {
 			isDebugOn = ai->defensematrix->switchDebugMode();
@@ -420,9 +436,10 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 			/* Player incoming command */
 			const PlayerCommandEvent* pce = (const PlayerCommandEvent*) data;
 			bool importantCommand = false;
+			
 			if(pce->command.id < 0)
 				importantCommand = true;
-			else
+			else {
 				switch(pce->command.id)
 				{
 					case CMD_MOVE:
@@ -443,26 +460,30 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 						importantCommand = true;
 						break;
 				}
+			}
 
 			if(importantCommand && !pce->units.empty()) {
 				for(int i = 0; i < pce->units.size(); i++) {
-					if(ai->unittable->unitsUnderPlayerControl.find(pce->units[i]) == ai->unittable->unitsUnderPlayerControl.end()) {
+					const int uid = pce->units[i];
+					if(ai->unittable->unitsUnderPlayerControl.find(uid) == ai->unittable->unitsUnderPlayerControl.end()) {
 						// we have to remove unit from a group, but not 
 						// to emulate unit death
-						CUnit* unit = ai->unittable->getUnit(pce->units[i]);
+						CUnit* unit = ai->unittable->getUnit(uid);
+						
+						if (unit == NULL)
+							continue;
+						
+						// remove unit from group so it will not receive 
+						// AI commands anymore...
 						if(unit->group) {
-							// remove unit from group so it will not receive 
-							// AI commands anymore...
-							unit->unreg(*unit->group); // this prevent a crash when unit destroyed in player mode
 							unit->group->remove(*unit);
 						}							
-						// NOTE: i think the following two lines have almost
-						// no sense because current AI design does not deal
-						// with units not assigned to any group
+						
 						unit->micro(false);
-						ai->unittable->idle[unit->key] = false; // because player controls it
-						ai->unittable->unitsUnderPlayerControl[unit->key] = unit;
-						LOG_II("CE323AI::UnitControlledByPlayer " << (*unit))
+						ai->unittable->idle[uid] = false; // because player controls it
+						ai->unittable->unitsUnderPlayerControl[uid] = unit;
+						
+						LOG_II("CE323AI::PlayerCommand " << (*unit) << " is under human control")
 					}
 				}
 			}
@@ -474,9 +495,6 @@ int CE323AI::HandleEvent(int msg, const void* data) {
 
 /* Update AI per logical frame = 1/30 sec on gamespeed 1.0 */
 void CE323AI::Update() {
-	// NOTE: if AI is attached at game start Update() is called since 1st game frame.
-	// By current time all player commanders are already spawned and that's good because 
-	// we calculate number of enemies in CIntel::init()
 	const int currentFrame = ai->cb->GetCurrentFrame();
 	
 	if (currentFrame < 0)

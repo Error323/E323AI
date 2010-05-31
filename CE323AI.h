@@ -41,7 +41,7 @@ class CE323AI: public IGlobalAI {
 		int attachedAtFrame;
 			// frame when AI was attached
 		static int instances;
-			// number of AI isntanses
+			// number of AI instanses
 };
 
 #endif

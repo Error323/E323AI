@@ -39,7 +39,7 @@ void ATask::remove() {
 		ATask *task = *i; ++i;
 		task->remove();
 	}
-	//assert(assisters.size() == 0);
+	assert(assisters.size() == 0);
 
 	if (group) {
 		// remove from group...
@@ -75,8 +75,7 @@ void ATask::addGroup(CGroup &g) {
 
 bool ATask::enemyScan() {
 	bool scout = group->cats&SCOUTER;
-	int target;
-	std::map<int, bool> occupied;
+	bool aircraft = group->cats&AIR;
 	TargetsFilter tf;
 
 	if (scout) {
@@ -84,7 +83,7 @@ bool ATask::enemyScan() {
 		tf.threatRadius = 300.0f;
 	}
 	else {
-		if (group->cats&AIR) {
+		if (aircraft) {
 			if (group->cats&ASSAULT)
 				tf.threatCeiling = group->strength;
 			else
@@ -94,12 +93,17 @@ bool ATask::enemyScan() {
 		}
 		else {
 			tf.exclude = SCOUTER;
+			tf.threatFactor = 0.001f;
 			tf.threatCeiling = group->strength;
 			tf.threatRadius = 0.0f;
 		}
 	}
 
-	target = group->selectTarget(group->radius() + scout ? 3.0f * group->range: 1.5f * group->range, occupied, tf);
+	// do not chase after aircraft by non-aircraft groups...
+	if (!aircraft)
+		tf.exclude |= AIR;
+
+	int target = group->selectTarget(group->getScanRange(), tf);
 
 	if (target >= 0) {
 		group->attack(target);
@@ -152,7 +156,7 @@ bool ATask::resourceScan() {
 		tf.threatCeiling = 1.1f;
 		tf.threatRadius = radius;
 		
-		bestFeature = group->selectTarget(radius, occupied, tf);
+		bestFeature = group->selectTarget(radius, tf);
 		
 		isFeature = false;
 	}			
@@ -669,7 +673,7 @@ void CTaskHandler::AssistTask::update() {
 
 		float3 grouppos = group->pos();
 		float3 dist = grouppos - pos;
-		float range = (assist->t == ATTACK) ? group->range : group->buildRange;
+		float range = group->getRange();
 
 		if (dist.Length2D() <= range) {
 			group->assist(*assist);
@@ -693,7 +697,7 @@ void CTaskHandler::AssistTask::update() {
 /**************************************************************/
 bool CTaskHandler::addAttackTask(int target, CGroup &group, bool urgent) {
 	const UnitDef *ud = ai->cbc->GetUnitDef(target);
-	if (ud == NULL) 
+	if (ud == NULL)
 		return false;
 
 	float3 pos = ai->cbc->GetUnitPos(target);
@@ -777,18 +781,16 @@ void CTaskHandler::AttackTask::update() {
 		return;
 	}
 
-	bool builder = group->cats&BUILDER;
-
 	if (isMoving) {
 		/* Keep tracking the target */
 		pos = ai->cbc->GetUnitPos(target);
 	
-		float range = builder ? group->buildRange: group->range;
+		float range = group->getRange();
 		float3 gpos = group->pos();
 
 		/* See if we can attack our target already */
 		if (gpos.distance2D(pos) <= range) {
-			if (builder)
+			if (group->cats&BUILDER)
 				group->reclaim(target);
 			else
 				group->attack(target);
@@ -800,7 +802,7 @@ void CTaskHandler::AttackTask::update() {
 	
 	/* See if we can attack a target we found on our path */
 	if (!(group->isMicroing() || urgent)) {
-		if (builder)
+		if (group->cats&BUILDER)
 			resourceScan(); // builders should not be too aggressive
 		else
 			enemyScan();

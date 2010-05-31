@@ -13,7 +13,6 @@
 #include "CDefenseMatrix.h"
 #include "CGroup.h"
 #include "CUnit.h"
-#include "CRNG.h"
 #include "CPathfinder.h"
 #include "CConfigParser.h"
 #include "CIntel.h"
@@ -340,7 +339,7 @@ float3 CEconomy::getBestSpot(CGroup &group, std::list<float3> &resources, std::m
 		
 		bool taken = false;
 		for (j = tracker.begin(); j != tracker.end(); j++) {
-			if ((*i - j->second).Length2D() < radius) {
+			if (i->distance2D(j->second) < radius) {
 				taken = true;
 				break;
 			}
@@ -359,7 +358,12 @@ float3 CEconomy::getBestSpot(CGroup &group, std::list<float3> &resources, std::m
 		}
 		if (taken) continue; // already taken by ally team
 
-		float dist = (gpos - *i).Length2D();
+		// TODO: actually any spot with any threat should be skipped; 
+		// to implement this effectively we need to refactor tasks, cause
+		// builder during approaching should scan target place for threat
+		// periodically; currently it does not, so skipping dangerous spot
+		// has no real profit
+		float dist = gpos.distance2D(*i);
 		dist += 1000.0f * group.getThreat(*i, 300.0f);
 		if (dist < bestDist) {
 			bestDist = dist;
@@ -755,27 +759,28 @@ bool CEconomy::canAffordToBuild(UnitType *builder, UnitType *utToBuild) {
 }
 
 unsigned int CEconomy::getNextFactoryToBuild(CUnit *unit, int maxteachlevel) {
-	/*
-	for(int techlevel = TECH1; techlevel <= maxteachlevel; techlevel++) {
+	if (ai->intel->strategyTechUp) {
 		for(std::list<unitCategory>::iterator f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
+			for(int techlevel = maxteachlevel; techlevel >= TECH1; techlevel--) {
 			int factory = *f|techlevel;
 			if(ai->unittable->canBuild(unit->type, factory))
 				if(!ai->unittable->gotFactory(factory)) {
 					return factory;
 				}
-		}
-	}
-	*/
-	
-	for(std::list<unitCategory>::iterator f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
-		for(int techlevel = maxteachlevel; techlevel >= TECH1; techlevel--) {
-		int factory = *f|techlevel;
-		if(ai->unittable->canBuild(unit->type, factory))
-			if(!ai->unittable->gotFactory(factory)) {
-				return factory;
 			}
 		}
 	}
+	else {	
+		for(int techlevel = TECH1; techlevel <= maxteachlevel; techlevel++) {
+			for(std::list<unitCategory>::iterator f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
+				int factory = *f|techlevel;
+				if(ai->unittable->canBuild(unit->type, factory))
+					if(!ai->unittable->gotFactory(factory)) {
+						return factory;
+					}
+			}
+		}
+	}	
 	
 	return 0;
 }

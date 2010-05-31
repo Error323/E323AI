@@ -22,6 +22,7 @@ class CIntel {
 		bool enemyInbound();
 		float3 getEnemyVector();
 
+		bool strategyTechUp;
 		// TODO: replace this shit below with universal cataloguer
 		std::vector<int> factories;
 		std::vector<int> attackers;

@@ -121,12 +121,12 @@ bool CUnit::setOnOff(bool on) {
 
 bool CUnit::moveRandom(float radius, bool enqueue) {
 	float3 pos = ai->cb->GetUnitPos(key);
-	float3 newpos(rng.RandFloat(), 0.0f, rng.RandFloat());
+	float3 newpos(rng.RandFloat(2.0f) - 1.0f, 0.0f, rng.RandFloat(2.0f) - 1.0f);
 	newpos.Normalize();
 	newpos   *= radius;
 	newpos.x += pos.x;
-	newpos.y  = pos.y;
 	newpos.z += pos.z;
+	newpos.y  = ai->cb->GetElevation(pos.x, pos.z);
 	return move(newpos, enqueue);
 }
 

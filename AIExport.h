@@ -59,6 +59,7 @@ EXPORT(int) handleEvent(int skirmishAIId, int topic, const void* data);
 const char* aiexport_getVersion();
 const char* aiexport_getMyOption(int skirmishAIId, const char* key);
 size_t aiexport_getNumAIInstances();
+size_t aiexport_getNumAIInstancesInAllyTeam(int skirmishAIId, int allyTeamId);
 bool aiexport_isPrimaryInstance(int skirmishAIId);
 
 #endif // _AIEXPORT_H

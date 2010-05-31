@@ -1,7 +1,13 @@
 E323AI changelog
 ----------------
-v3.21.1 [2010-05-17]
+v3.21.1 [2010-05-19]
 * fixed protential crash in UnitIdle callback
+* somewhat fixed chasing after aircraft with non-aircraft groups
+* fixed continuous assigning unreachable target to military group which leads to serious performance hit
+* tech-up strategy occurred not perfect so it is selected randomly on game start (temporary step)
+* fixed enemy scan procedure where ENGAGE groups preferred unarmed units
+* fixed moveRandom() procedure which always returned results in lower-right corner relative to basic position in 2D plane
+* anti-air aricraft will be set to guard factory when it is built
 
 v3.21.0 [2010-05-16]
 * refactored target selection
