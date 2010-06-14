@@ -44,11 +44,11 @@ class CScopedTimer {
 				prevTime[task] = 0;
 			}
 
-			t1 = SDL_GetTicks();
+			t1 = GetEngineRuntimeMillis();
 		}
 
 		~CScopedTimer() {
-			t2 = SDL_GetTicks();
+			t2 = GetEngineRuntimeMillis();
 
 			if (!initialized)
 				return;
@@ -67,6 +67,10 @@ class CScopedTimer {
 					cb->DebugDrawerDelGraphPoints(taskIDs[tasks[i]], 1);
 			}
 #endif
+		}
+
+		static unsigned GetEngineRuntimeMillis() {
+			return SDL_GetTicks();
 		}
 
 	private:
