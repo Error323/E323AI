@@ -6,7 +6,7 @@
 #include <vector>
 #include <algorithm>
 
-#include <SDL_timer.h>
+#include "boost/thread.hpp"
 
 #include "headers/Defines.h"
 #include "headers/HAIInterface.h"
@@ -69,14 +69,17 @@ class CScopedTimer {
 #endif
 		}
 
-		static unsigned GetEngineRuntimeMillis() {
-			return SDL_GetTicks();
+		static unsigned int GetEngineRuntimeMillis() {
+			boost::xtime t;
+			boost::xtime_get(&t, boost::TIME_UTC);
+			const unsigned int milliSeconds = t.sec * 1000 + (t.nsec / 1000000);   
+			return milliSeconds;
 		}
 
 	private:
 		IAICallback *cb;
 		const std::string task;
-		unsigned t1, t2;
+		unsigned int t1, t2;
 		bool initialized;
 		
 		static std::vector<std::string> tasks;
