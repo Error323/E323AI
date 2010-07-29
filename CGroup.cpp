@@ -44,8 +44,8 @@ void CGroup::remove() {
 		
 	std::list<ARegistrar*>::iterator j = records.begin();
 	while(j != records.end()) {
-		ARegistrar *regobj = *j; j++;
-		// remove from CEconomy, CPathfinder, ATask
+		ARegistrar *regobj = *j; ++j;
+		// remove from CEconomy, CPathfinder, ATask, CTaskHandler
 		regobj->remove(*this);
 	}
 	
@@ -152,6 +152,7 @@ bool CGroup::isIdle() {
 
 void CGroup::reset() {
 	LOG_II("CGroup::reset " << (*this))
+	
 	assert(units.empty());
 	recalcProperties(NULL, true);
 	busy = false;
@@ -177,15 +178,17 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		techlvl    = TECH1;
 		cats       = 0;
 		groupRadius     = 0.0f;
-		radiusUpdateRequied = false;
+		radiusUpdateRequired = false;
 		cost       = 0.0f;
 		costMetal  = 0.0f;
+		worstSpeedUnit = NULL;
+		worstSlopeUnit = NULL;
 	}
 
 	if(unit == NULL)
 		return;
 
-    if (unit->builtBy >= 0) {
+	if (unit->builtBy >= 0) {
 		techlvl = std::max<int>(techlvl, unit->techlvl);
 	}
 
@@ -197,22 +200,29 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		if (md->maxSlope <= maxSlope) {
 			pathType = md->pathType;
 			maxSlope = md->maxSlope;
+			worstSlopeUnit = unit;
 		}
 	}
-		
+
 	strength += unit->type->dps;
 	buildSpeed += unit->def->buildSpeed;
 	size += FOOTPRINT2REAL * std::max<int>(unit->def->xsize, unit->def->zsize);
 	range = std::max<float>(ai->cb->GetUnitMaxRange(unit->key), range);
 	buildRange = std::max<float>(unit->def->buildDistance, buildRange);
-	speed = std::min<float>(ai->cb->GetUnitSpeed(unit->key), speed);
 	los = std::max<float>(unit->def->losRadius, los);
 	cost += unit->type->cost;
 	costMetal += unit->type->costMetal;
 	
+	float temp;
+	temp = ai->cb->GetUnitSpeed(unit->key);
+	if (temp < speed) {
+		speed = temp;
+		worstSpeedUnit = unit;
+	}
+
 	mergeCats(unit->type->cats);
 
-	radiusUpdateRequied = true;
+	radiusUpdateRequired = true;
 }
 
 void CGroup::merge(CGroup &group) {
@@ -261,7 +271,7 @@ float3 CGroup::pos(bool force_valid) {
 }
 
 float CGroup::radius() {
-	if (radiusUpdateRequied) {
+	if (radiusUpdateRequired) {
 		int i;
 		// get number of units per leg length in a square
 		for(i = 1; units.size() > i * i; i++);
@@ -271,7 +281,7 @@ float CGroup::radius() {
 		// calculate half of hypotenuse
 		groupRadius = sqrt(sqLeg + sqLeg) / 2.0f;
 		
-		radiusUpdateRequied = false;
+		radiusUpdateRequired = false;
 	}
 	return groupRadius;
 }
@@ -283,23 +293,23 @@ int CGroup::maxLength() {
 void CGroup::assist(ATask &t) {
 	// t->addAssister(
 	switch(t.t) {
-		case BUILD: {
-			CTaskHandler::BuildTask *task = dynamic_cast<CTaskHandler::BuildTask*>(&t);
-			CUnit *unit = task->group->firstUnit();
+		case TASK_BUILD: {
+			BuildTask *task = dynamic_cast<BuildTask*>(&t);
+			CUnit *unit = task->firstGroup()->firstUnit();
 			guard(unit->key);
 			break;
 		}
 
-		case ATTACK: {
+		case TASK_ATTACK: {
 			// TODO: Calculate the flanking pos and attack from there
-			CTaskHandler::AttackTask *task = dynamic_cast<CTaskHandler::AttackTask*>(&t);
+			AttackTask *task = dynamic_cast<AttackTask*>(&t);
 			attack(task->target);
 			break;
 		}
 
-		case FACTORY_BUILD: {
-			CTaskHandler::FactoryTask *task = dynamic_cast<CTaskHandler::FactoryTask*>(&t);
-			CUnit *unit = task->group->firstUnit();
+		case TASK_FACTORY: {
+			FactoryTask *task = dynamic_cast<FactoryTask*>(&t);
+			CUnit *unit = task->firstGroup()->firstUnit();
 			guard(unit->key);
 			break;
 		}
@@ -556,7 +566,8 @@ int CGroup::selectTarget(std::vector<int> &targets, TargetsFilter &tf) {
 }
 
 int CGroup::selectTarget(float search_radius, TargetsFilter &tf) {
-	int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], pos(), search_radius, std::min<int>(MAX_ENEMIES, tf.candidatesLimit));
+	int limit = std::min<int>(MAX_ENEMIES, tf.candidatesLimit);
+	int numEnemies = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], pos(), search_radius, limit);
 	if (numEnemies > 0) {
 		tf.candidatesLimit = numEnemies;
 		tf.bestTarget = selectTarget(ai->unitIDs, tf);
@@ -569,7 +580,7 @@ float CGroup::getScanRange() {
 
 	if (cats&STATIC)
 		result += getRange();
-	if (cats&BUILDER)
+	else if (cats&BUILDER)
 		result += buildRange * 1.5f;
 	else if (cats&SNIPER)
 		result += range * 1.05f;

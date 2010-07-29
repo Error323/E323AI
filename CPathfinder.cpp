@@ -450,7 +450,7 @@ void CPathfinder::updatePaths() {
 	if (group->isMicroing())
 		return;
 
-	float3 start = group->pos();
+	float3 start = group->pos(true);
 	float3 goal  = ai->tasks->getPos(*group);
 
 	if (!addPath(*groups[repathGroup], start, goal)) {
@@ -624,6 +624,10 @@ void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	std::vector<unsigned short int> &V = dynamic_cast<Node*>(an)->neighbours[activeMap];
 	for (size_t u = 0, N = V.size(); u < N; u++)
 		succ.push(CPathfinder::graph[V[u]]);
+}
+
+bool CPathfinder::pathAssigned(CGroup &group) {
+	return paths.find(group.key) != paths.end();
 }
 
 bool CPathfinder::switchDebugMode(bool graph) {

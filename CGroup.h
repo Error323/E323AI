@@ -166,22 +166,29 @@ class CGroup: public ARegistrar {
 		int selectTarget(float search_radius, TargetsFilter &tf);
 		
 		bool addBadTarget(int id);
-
+		/* Get a range usually used for scanning enemies while moving */
 		float getScanRange();
 
 		float getRange();
 
+		CUnit* getWorstSlopeUnit() { return worstSpeedUnit; }
+
+		CUnit* getWorstSpeedUnit() { return worstSlopeUnit; }
+
 		/* Overloaded */
-		RegistrarType regtype() { return REGT_GROUP; }
+		RegistrarType regtype() { return REG_GROUP; }
 		/* Output stream */
 		friend std::ostream& operator<<(std::ostream &out, const CGroup &group);
 
 	private:
-		bool radiusUpdateRequied;
+		bool radiusUpdateRequired;
 			// when "radius" needs to be recalculated
 		float groupRadius;
 			// group radius (when units clustered together)
-		
+		CUnit *worstSpeedUnit;
+			// points to the slowest unit
+		CUnit *worstSlopeUnit;
+			// points to unit with worst slope
 		/* Recalculate group properties based on new unit */
 		void recalcProperties(CUnit *unit, bool reset = false);
 		/* Implements rules of mering unit categories */

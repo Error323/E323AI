@@ -61,7 +61,7 @@
 /* Max number of idle scout groups to prevent building unnecessary scouts */
 #define MAX_IDLE_SCOUT_GROUPS 3
 
-/* Critical number of units per group where pathfinding stalls the game */
+/* Critical number of units per group when pathfinding stalls the game */
 #define GROUP_CRITICAL_MASS 20
 
 /* Max unit weapon range to be considered by threatmap algo */
@@ -74,15 +74,17 @@
 #define MULTIPLEXER 10 
 
 /* Number of frames a new unit can not accept tasks */
-#define NEW_UNIT_DELAY (5*30)
+#define IDLE_UNIT_TIMEOUT (5*30)
 
 #define BAD_TARGET_TIMEOUT (60*30)
+
+/* Number of unique tasks allowed to be executed per update */
+#define MAX_TASKS_PER_UPDATE 10
 
 /* Draw time */
 #define DRAW_TIME MULTIPLEXER*30
 
-
-/* Stats url */
+/* Stats url (NOT used) */
 #define UPLOAD_URL "http://fhuizing.pythonic.nl/ai-stats.php"
 
 /* We gonna use math.h constants */

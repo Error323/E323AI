@@ -13,7 +13,7 @@ void CUnit::remove(ARegistrar &reg) {
 	
 	std::list<ARegistrar*>::iterator i = records.begin();
 	while(i != records.end()) {
-		ARegistrar *regobj = *i; i++;
+		ARegistrar *regobj = *i; ++i;
 		// remove from CUnitTable, CGroup
 		regobj->remove(reg);
 	}
@@ -189,7 +189,7 @@ bool CUnit::build(UnitType *toBuild, float3 &pos) {
 
 	float startRadius  = def->buildDistance*2.0f;
 	facing f           = getBestFacing(pos);
-	float3 start       = ai->cb->GetUnitPos(key);
+	//float3 start       = ai->cb->GetUnitPos(key);
 	float3 goal        = ai->cb->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
 
 	int i = 0;

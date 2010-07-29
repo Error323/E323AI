@@ -19,6 +19,7 @@
 #include "GameMap.hpp"
 #include "ReusableObjectFactory.hpp"
 
+
 CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	this->ai = ai;
 	state = 0;
@@ -140,7 +141,7 @@ void CEconomy::addUnitOnFinished(CUnit &unit) {
 void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsigned exclude) {
 	ATask *task = canAssist(bt, group);
 	if (task != NULL) {
-		ai->tasks->addAssistTask(*task, group);
+		ai->tasks->addTask(new AssistTask(ai, *task, group));
 		return;
 	}
 
@@ -204,7 +205,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				}
 			}
 
-			ai->tasks->addBuildTask(bt, i->second, group, goal);
+			ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, goal));
 
 			break;
 		}
@@ -216,18 +217,18 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				bool tooSmallIncome = mIncome < 3.0f;
 				bool isComm = unit->def->isCommander;
 				if (tooSmallIncome || !isComm || ai->pathfinder->getETA(group, goal) < 30*10) {
-					ai->tasks->addBuildTask(bt, i->second, group, goal);
+					ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, goal));
 				}
 				else if (areMMakersEnabled && canBuildMMaker) {
 					UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 					if (mmaker != NULL)
-						ai->tasks->addBuildTask(bt, mmaker, group, pos);
+						ai->tasks->addTask(new BuildTask(ai, bt, mmaker, group, pos));
 				}
 			}
 			else if (areMMakersEnabled && canBuildMMaker) {
 				UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
 				if (mmaker != NULL)
-					ai->tasks->addBuildTask(bt, mmaker, group, pos);
+					ai->tasks->addTask(new BuildTask(ai, bt, mmaker, group, pos));
 			}
 			else {
 				buildOrAssist(group, BUILD_EPROVIDER, EMAKER|LAND);
@@ -239,12 +240,12 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 			/* Start building storage after enough ingame time */
 			if (!taskInProgress(bt) && ai->cb->GetCurrentFrame() > 30*60*7) {
 				pos = ai->defensematrix->getBestDefendedPos(0);
-				ai->tasks->addBuildTask(bt, i->second, group, pos);
+				ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, pos));
 			}
 			break;
 		}
 
-		case FACTORY_BUILD: {
+		case BUILD_FACTORY: {
 			if (!taskInProgress(bt)) {
 				int numFactories = ai->unittable->factories.size();
 
@@ -297,7 +298,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				if (build) {
 					if (numFactories > 1)
 						pos = ai->defensematrix->getBestDefendedPos(numFactories);
-					ai->tasks->addBuildTask(bt, i->second, group, pos);
+					ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, pos));
 				}
 			}
 			break;
@@ -306,14 +307,14 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 		case BUILD_AG_DEFENSE: case BUILD_AA_DEFENSE: {
 			if (!taskInProgress(bt)) {
 				pos = ai->defensematrix->getDefenseBuildSite(i->second);
-				ai->tasks->addBuildTask(bt, i->second, group, pos);
+				ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, pos));
 			}
 			break;
 		}
 
 		default: {
 			if (affordable && !taskInProgress(bt))
-				ai->tasks->addBuildTask(bt, i->second, group, goal);
+				ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, goal));
 			break;
 		}
 	}
@@ -409,7 +410,7 @@ void CEconomy::update(int frame) {
 			continue;
 
 		if (group->cats&FACTORY) {
-			ai->tasks->addFactoryTask(*group);
+			ai->tasks->addTask(new FactoryTask(ai, *group));
 		
 			/* TODO: put same factories in a single group. This requires refactoring of task
 			assisting, because when factory is dead assisting tasks continue working on ex. factory
@@ -464,7 +465,7 @@ void CEconomy::update(int frame) {
 			/* If we can assist a lab and it's close enough, do so */
 			ATask *task = NULL;
 			if ((task = canAssistFactory(*group)) != NULL) {
-				ai->tasks->addAssistTask(*task, *group);
+				ai->tasks->addTask(new AssistTask(ai, *task, *group));
 				if (group->busy) continue;
 			}
 		}
@@ -522,7 +523,7 @@ void CEconomy::update(int frame) {
 			ATask *task = NULL;
 			/* If we can afford to assist a lab and it's close enough, do so */
 			if ((task = canAssistFactory(*group)) != NULL) {
-				ai->tasks->addAssistTask(*task, *group);
+				ai->tasks->addTask(new AssistTask(ai, *task, *group));
 				if (group->busy) continue;
 			}
 			/* Otherwise just expand */
@@ -543,9 +544,9 @@ void CEconomy::update(int frame) {
 }
 
 bool CEconomy::taskInProgress(buildType bt) {
-	std::map<int, CTaskHandler::BuildTask*>::iterator i;
-	for (i = ai->tasks->activeBuildTasks.begin(); i != ai->tasks->activeBuildTasks.end(); i++) {
-		if (i->second->bt == bt)
+	std::map<int, ATask*>::iterator it;
+	for (it = ai->tasks->activeTasks[TASK_BUILD].begin(); it != ai->tasks->activeTasks[TASK_BUILD].end(); ++it) {
+		if (((BuildTask*)(it->second))->bt == bt)
 			return true;
 	}
 	return false;
@@ -588,25 +589,30 @@ void CEconomy::controlMetalMakers() {
 }
 
 void CEconomy::preventStalling() {
+	std::map<int, ATask*>::iterator it;
+
 	/* If factorytask is on wait, unwait him */
-	std::map<int, CTaskHandler::FactoryTask*>::iterator k;
-	for (k = ai->tasks->activeFactoryTasks.begin(); k != ai->tasks->activeFactoryTasks.end(); k++)
-		k->second->setWait(false);
+	for (it = ai->tasks->activeTasks[TASK_FACTORY].begin(); it != ai->tasks->activeTasks[TASK_FACTORY].end(); ++it) {
+		FactoryTask *task = (FactoryTask*)it->second;
+		task->setWait(false);
+	}
 
 	/* If we're not stalling, return */
 	if (!mstall && !estall)
 		return;
 
 	/* Stop all guarding workers */
-	std::map<int,CTaskHandler::AssistTask*>::iterator i;
-	for (i = ai->tasks->activeAssistTasks.begin(); i != ai->tasks->activeAssistTasks.end(); i++) {
+	it = ai->tasks->activeTasks[TASK_ASSIST].begin();
+	while (it != ai->tasks->activeTasks[TASK_ASSIST].end()) {
+		AssistTask *task = (AssistTask*)it->second; ++it;
+		
 		/* If the assisting group is moving, continue */
-		if (i->second->isMoving)
+		if (task->isMoving)
 			continue;
 
 		/* Don't stop those workers that are trying to fix the problem */
-		if (i->second->assist->t == BUILD) {
-			CTaskHandler::BuildTask* build = dynamic_cast<CTaskHandler::BuildTask*>(i->second->assist);
+		if (task->assist->t == TASK_BUILD) {
+			BuildTask* build = dynamic_cast<BuildTask*>(task->assist);
 			if ((mstall || mRequest) && build->bt == BUILD_MPROVIDER)
 				continue;
 
@@ -615,23 +621,25 @@ void CEconomy::preventStalling() {
 		}
 
 		/* Don't stop factory assisters, they will be dealt with later */
-		if (i->second->assist->t == BUILD && i->second->assist->t != FACTORY_BUILD) {
-			i->second->remove();
+		if (task->assist->t == TASK_BUILD && task->assist->t != TASK_FACTORY) {
+			task->remove();
 			return;
 		}
 
 		/* Unless it is the commander, he should be fixing the problem */
-		if (i->second->group->units.begin()->second->def->isCommander) {
+		if (task->firstGroup()->firstUnit()->def->isCommander) {
 			if ((mstall && !eRequest) || (estall && !mstall)) {
-				i->second->remove();
+				task->remove();
 				return;
 			}
 		}
 	}
 
 	/* Wait all factories and their assisters */
-	for (k = ai->tasks->activeFactoryTasks.begin(); k != ai->tasks->activeFactoryTasks.end(); k++)
-		k->second->setWait(true);
+	for (it = ai->tasks->activeTasks[TASK_FACTORY].begin(); it != ai->tasks->activeTasks[TASK_FACTORY].end(); ++it) {
+		FactoryTask *task = (FactoryTask*)it->second;
+		task->setWait(true);
+	}
 }
 
 void CEconomy::updateIncomes(int frame) {
@@ -687,18 +695,18 @@ void CEconomy::updateIncomes(int frame) {
 }
 
 ATask* CEconomy::canAssist(buildType t, CGroup &group) {
-	std::map<int, CTaskHandler::BuildTask*>::iterator i;
-	std::multimap<float, CTaskHandler::BuildTask*> suited;
+	std::map<int, ATask*>::iterator i;
+	std::multimap<float, BuildTask*> suited;
 
-	for (i = ai->tasks->activeBuildTasks.begin(); i != ai->tasks->activeBuildTasks.end(); i++) {
-		CTaskHandler::BuildTask *buildtask = i->second;
+	for (i = ai->tasks->activeTasks[TASK_BUILD].begin(); i != ai->tasks->activeTasks[TASK_BUILD].end(); ++i) {
+		BuildTask *buildtask = (BuildTask*)i->second;
 
 		/* Only build tasks we are interested in */
 		float travelTime;
 		if (buildtask->bt != t || !buildtask->assistable(group, travelTime))
 			continue;
 		
-		suited.insert(std::pair<float, CTaskHandler::BuildTask*>(travelTime, buildtask));
+		suited.insert(std::pair<float, BuildTask*>(travelTime, buildtask));
 	}
 
 	/* There are no suited tasks that require assistance */
@@ -719,15 +727,15 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 }
 
 ATask* CEconomy::canAssistFactory(CGroup &group) {
-	CUnit *unit = group.units.begin()->second;
-	std::map<int, CTaskHandler::FactoryTask*>::iterator i;
-	std::map<float, CTaskHandler::FactoryTask*> candidates;
+	CUnit *unit = group.firstUnit();
+	std::map<int, ATask*>::iterator i;
+	std::map<float, FactoryTask*> candidates;
 	float3 pos = group.pos();
 
-	for (i = ai->tasks->activeFactoryTasks.begin(); i != ai->tasks->activeFactoryTasks.end(); i++) {
+	for (i = ai->tasks->activeTasks[TASK_FACTORY].begin(); i != ai->tasks->activeTasks[TASK_FACTORY].end(); ++i) {
 		/* TODO: instead of euclid distance, use pathfinder distance */
 		float dist = (pos - i->second->pos).Length2D();
-		candidates[dist] = i->second;
+		candidates[dist] = (FactoryTask*)i->second;
 	}
 
 	if (candidates.empty())
@@ -736,8 +744,8 @@ ATask* CEconomy::canAssistFactory(CGroup &group) {
 	if (unit->def->isCommander)
 		return candidates.begin()->second;
 
-	std::map<float, CTaskHandler::FactoryTask*>::iterator j;
-	for (j = candidates.begin(); j != candidates.end(); j++) {
+	std::map<float, FactoryTask*>::iterator j;
+	for (j = candidates.begin(); j != candidates.end(); ++j) {
 		if (!j->second->assistable(group))
 			continue;
 		return j->second;

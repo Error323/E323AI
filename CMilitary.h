@@ -16,7 +16,8 @@ class AIClasses;
 enum MilitaryGroupBehaviour {
 	SCOUT,
 	ENGAGE,
-	BOMBER
+	BOMBER,
+	HARASS
 };
 
 class CMilitary: public ARegistrar {

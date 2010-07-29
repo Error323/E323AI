@@ -19,6 +19,7 @@
 #include "GameMap.hpp"
 #include "Util.hpp"
 
+
 CMilitary::CMilitary(AIClasses *ai): ARegistrar(200, std::string("military")) {
 	this->ai = ai;
 
@@ -120,17 +121,18 @@ void CMilitary::update(int frame) {
 	std::vector<int> keys;
 	std::vector<int> occupied;
 	std::map<int, bool> isOccupied;
-	std::map<int, CTaskHandler::AttackTask*>::iterator itTask;
+	std::map<int, ATask*>::iterator itTask;
 	std::map<MilitaryGroupBehaviour, std::map<int, CGroup*>* >::iterator itGroup;
 	TargetsFilter tf;
 
 	// NOTE: we store occupied targets in two formats because vector is used
-	// for list of targets (which can be used if there no suitable primary
+	// for list of targets (which can be used if no suitable primary
 	// targets are found), second one is used for TargetFilter to filter out 
 	// occupied targets when searching for primary targets
-	for (itTask = ai->tasks->activeAttackTasks.begin(); itTask != ai->tasks->activeAttackTasks.end(); itTask++) {
-		occupied.push_back(itTask->second->target);
-		isOccupied[itTask->second->target] = true;
+	for (itTask = ai->tasks->activeTasks[TASK_ATTACK].begin(); itTask != ai->tasks->activeTasks[TASK_ATTACK].end(); ++itTask) {
+		AttackTask *task = (AttackTask*)itTask->second;
+		occupied.push_back(task->target);
+		isOccupied[task->target] = true;
 	}
 	
 	for(itGroup = groups.begin(); itGroup != groups.end(); itGroup++) {
@@ -185,7 +187,7 @@ void CMilitary::update(int frame) {
 			tf.excludeId = &isOccupied;
 
 			// setup custom target filter params per current group...
-			switch(behaviour) {	
+			switch(behaviour) {
 				case SCOUT:
 					if (group->cats&AIR)
 						tf.threatCeiling = 1.1f;
@@ -216,10 +218,10 @@ void CMilitary::update(int frame) {
 					if (task) {
 						bool canAssist = false;
 						int assisters = task->assisters.size();
-						float cumulativeStrength = task->group->strength;
+						float cumulativeStrength = task->firstGroup()->strength;
 						std::list<ATask*>::iterator itATask;
 						for (itATask = task->assisters.begin(); itATask != task->assisters.end(); itATask++) {
-							cumulativeStrength += (*itATask)->group->strength;
+							cumulativeStrength += (*itATask)->firstGroup()->strength;
 						}
 
 						switch(behaviour) {
@@ -236,7 +238,8 @@ void CMilitary::update(int frame) {
 						
 						if (canAssist) {
 							mergeGroups.erase(group->key);
-							ai->tasks->addAssistTask(*task, *group);
+							if (!ai->tasks->addTask(new AssistTask(ai, *task, *group)))
+								group->addBadTarget(assistTarget);
 							break;
 						}
 					} 
@@ -254,7 +257,7 @@ void CMilitary::update(int frame) {
 				
 				if ((isAssembling && isSizeEnough) || (!isAssembling && isStrongEnough)) {
 					mergeGroups.erase(group->key);
-					if (ai->tasks->addAttackTask(target, *group, behaviour == BOMBER)) {
+					if (ai->tasks->addTask(new AttackTask(ai, target, *group, behaviour == BOMBER))) {
 						occupied.push_back(target);
 						isOccupied[target] = true;
 					}
@@ -286,10 +289,10 @@ void CMilitary::update(int frame) {
 
 	/* Merge the groups that were not strong enough */
 	if (mergeGroups.size() >= 2) {
-		std::map<int,CGroup*> merge;
-		for (std::map<int,CGroup*>::iterator base = mergeGroups.begin(); base != mergeGroups.end(); base++) {
+		std::list<CGroup*> merge;
+		for (std::map<int, CGroup*>::iterator base = mergeGroups.begin(); base != mergeGroups.end(); ++base) {
 			if (!base->second->busy) {
-				for (std::map<int,CGroup*>::iterator compare = mergeGroups.begin(); compare != mergeGroups.end(); compare++) {
+				for (std::map<int,CGroup*>::iterator compare = mergeGroups.begin(); compare != mergeGroups.end(); ++compare) {
 					if (!compare->second->busy && base->first != compare->first) {
 						if (base->second->canMerge(compare->second)) {
 							bool canMerge = false;
@@ -302,8 +305,8 @@ void CMilitary::update(int frame) {
 
 							if (canMerge) {
 								if (merge.empty())
-									merge[base->first] = base->second;
-								merge[compare->first] = compare->second;
+									merge.push_back(base->second);
+								merge.push_back(compare->second);
 								break;
 							}
 						}
@@ -311,7 +314,7 @@ void CMilitary::update(int frame) {
 				}
 				
 				if (!merge.empty()) {
-					ai->tasks->addMergeTask(merge);
+					ai->tasks->addTask(new MergeTask(ai, merge));
 					merge.clear();
 					break;
 				}
@@ -319,9 +322,9 @@ void CMilitary::update(int frame) {
 		}
 
 		// remove busy (merging) groups...
-		std::map<int,CGroup*>::iterator it = mergeGroups.begin();
+		std::map<int, CGroup*>::iterator it = mergeGroups.begin();
 		while(it != mergeGroups.end()) {
-			int key = it->first; it++;
+			int key = it->first; ++it;
 			if (mergeGroups[key]->busy)
 				mergeGroups.erase(key);
 		}
@@ -398,8 +401,10 @@ void CMilitary::onEnemyDestroyed(int enemy, int attacker) {
 	for (itGroups = groups.begin(); itGroups != groups.end(); ++itGroups) {
 		activeGroups = itGroups->second;
 		for (itGroup = activeGroups->begin(); itGroup != activeGroups->end(); ++itGroup) {
-			if (!itGroup->second->badTargets.empty())
+			if (!itGroup->second->badTargets.empty()) {
+				LOG_II("CMilitary::onEnemyDestroyed bad target Unit(" << enemy << ") destroyed for " << (*(itGroup->second)))
 				itGroup->second->badTargets.erase(enemy);
+			}
 		}
 	}
 }
@@ -417,13 +422,13 @@ void CMilitary::visualizeTasks(CGroup *g) {
     
     float R, G, B;
     switch(task->t) {
-    	case ATTACK:
+    	case TASK_ATTACK:
     		R = 1.0f; G = 0.0f; B = 0.0f;
     		break;
-    	case MERGE:
+    	case TASK_MERGE:
     		R = 1.0f; G = 1.0f; B = 0.0f;
     		break;
-    	case ASSIST:
+    	case TASK_ASSIST:
     		R = 1.0f; G = 0.0f; B = 1.0f;
     		break;
     	default:
@@ -436,6 +441,6 @@ void CMilitary::visualizeTasks(CGroup *g) {
 	fn.y = ai->cb->GetElevation(fn.x, fn.z) + 50.0f;
 	// draw arrow for MERGE task only because otherwise it looks ugly (arrow
 	// is stretched, not fixed in size)
-	ai->cb->CreateLineFigure(fp, fn, 6.0f, task->t == MERGE ? 1 : 0, MULTIPLEXER, task->t);
+	ai->cb->CreateLineFigure(fp, fn, 6.0f, task->t == TASK_MERGE ? 1 : 0, MULTIPLEXER, task->t);
 	ai->cb->SetFigureColor(task->t, R, G, B, 0.5f);
 }

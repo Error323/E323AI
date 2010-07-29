@@ -98,6 +98,8 @@ class CPathfinder: public AAStar, public ARegistrar {
 		
 		bool pathExists(CGroup &group, const float3 &s, const float3 &g);
 
+		bool pathAssigned(CGroup &group);
+
 		bool switchDebugMode(bool graph);
 
 		/* NOTE: slopemap 1:2 heightmap 1:8 realmap, GetMapWidth() and
@@ -119,7 +121,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		int activeMap;
 		/* Controls which path may be updated, (round robin-ish) */
 		unsigned int update;
-		/* The paths <group, path> */
+		/* The paths <group_id, path> */
 		std::map<int, std::vector<float3> > paths;
 		/* The groups <group_id, CGroup*> */
 		std::map<int, CGroup*> groups;
