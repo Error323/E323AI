@@ -7,13 +7,23 @@
 
 #include "headers/Defines.h"
 
+enum GetFilenameFlags {
+	GET_CFG  = (1<<0),
+	GET_CAT  = (1<<1),
+	GET_VER  = (1<<2),
+	GET_TEAM = (1<<3)
+};
+
 class UnitType;
 class AIClasses;
 
 class CConfigParser {
 	public:
 		CConfigParser(AIClasses *ai);
-		~CConfigParser(){};
+		~CConfigParser() {};
+
+		std::string getFilename(unsigned int f);
+		bool fileExists(const std::string& filename);
 
 		int determineState(int metalIncome, int energyIncome);
 		int getMinWorkers();
@@ -45,8 +55,8 @@ class CConfigParser {
 
 		AIClasses *ai;
 
-		std::map<std::string, bool> stateVariables;
 		int state;
+		std::map<std::string, bool> stateVariables;
 
 		void split(std::string &line, char c, std::vector<std::string> &splitted);
 		bool contains(std::string &line, char c);

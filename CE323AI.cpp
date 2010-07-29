@@ -53,13 +53,17 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 			if (ai->cb->GetTeamAllyTeam(it->first) == ai->allyTeam)
 				ai->allyAITeam++;
 		}
-		
 	}
 #endif
 
-	std::string configfile(ai->cb->GetModName());
-	configfile = configfile.substr(0, configfile.size()-4) + "-config.cfg";
+	std::string configfile = ai->cfgparser->getFilename(GET_CFG);
 	ai->cfgparser->parseConfig(configfile);
+	if (ai->cfgparser->isUsable()) {
+		// try loading overload file...
+		configfile = ai->cfgparser->getFilename(GET_CFG|GET_VER);
+		if (ai->cfgparser->fileExists(configfile))
+			ai->cfgparser->parseConfig(configfile);
+	}
 	if (!ai->cfgparser->isUsable()) {
 		ai->cb->SendTextMsg("No usable config file available for this Mod/Game.", 0);
 		const std::string confFileLine = "A template can be found at: " + configfile;
@@ -188,7 +192,7 @@ void CE323AI::UnitFinished(int uid) {
 	// NOTE: commanders and factories should start actions earlier than
 	// usual units
 	if (unit->builtBy == -1 || (unit->type->cats&FACTORY))
-		ai->unittable->unitsAliveTime[uid] = NEW_UNIT_DELAY;
+		ai->unittable->unitsAliveTime[uid] = IDLE_UNIT_TIMEOUT;
 	else
 		ai->unittable->unitsAliveTime[uid] = 0;
 			
@@ -215,6 +219,8 @@ void CE323AI::UnitFinished(int uid) {
 
 /* Called on a destroyed unit */
 void CE323AI::UnitDestroyed(int uid, int attacker) {
+	ai->tasks->onUnitDestroyed(uid, attacker);
+	
 	CUnit *unit = ai->unittable->getUnit(uid);
 	if (unit) {
 		LOG_II("CE323AI::UnitDestroyed " << (*unit))
@@ -303,15 +309,15 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 /* Called on move fail e.g. can't reach the point */
 void CE323AI::UnitMoveFailed(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
-	if (unit && (unit->type->cats&LAND)) {
+	if (unit && (unit->type->cats&(LAND|SEA))) {
 		// if unit is inside a factory then force moving...
 		float3 pos = ai->cb->GetUnitPos(unit->key);
 		std::map<int, CUnit*>::iterator it;
-		for (it = ai->unittable->factories.begin(); it != ai->unittable->factories.end(); it++) {
+		for (it = ai->unittable->factories.begin(); it != ai->unittable->factories.end(); ++it) {
 			float distance = ai->cb->GetUnitPos(it->first).distance2D(pos);
 			if (distance < 16.0) {
 				unit->moveForward(200.0f);
-				if (ai->unittable->unitsAliveTime[uid] <= NEW_UNIT_DELAY)
+				if (ai->unittable->unitsAliveTime[uid] <= IDLE_UNIT_TIMEOUT)
 					ai->unittable->unitsAliveTime[uid] = 0;
 			}
 		}
@@ -337,6 +343,7 @@ void CE323AI::EnemyLeaveRadar(int enemy) {
 
 void CE323AI::EnemyDestroyed(int enemy, int attacker) {
 	ai->military->onEnemyDestroyed(enemy, attacker);
+	ai->tasks->onEnemyDestroyed(enemy, attacker);
 }
 
 void CE323AI::EnemyDamaged(int damaged, int attacker, float damage, float3 dir) {

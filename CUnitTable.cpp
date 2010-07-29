@@ -75,28 +75,25 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
  	/* Build the techtree, note that this is actually a graph in XTA */
 	buildTechTree();
 
-	/* Determine the modname */
-	std::string basename(ai->cb->GetModName());
-	basename.resize(basename.size() - 4); // remove extension
-	basename += "-categorization";
-	/* Parse or generate categories */
 	bool success = false;
-	// try to load categorization file per team ID first...
-	char tail[64];
-	sprintf(tail, "-%d.cfg", ai->team);
-	std::string filename;
-	filename = basename + tail;
-	if (ai->cb->GetFileSize(util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER) + filename, true).c_str())) {
+
+	std::string filename = ai->cfgparser->getFilename(GET_CAT|GET_TEAM);
+	if (ai->cfgparser->fileExists(filename))
 		success = ai->cfgparser->parseCategories(filename, units);
-	}
 	if (!success) {
-		// load ordinary categorization file...
-		filename = basename + ".cfg";
-		if (!ai->cfgparser->parseCategories(filename, units)) {
+		filename = ai->cfgparser->getFilename(GET_CAT);
+		success = ai->cfgparser->parseCategories(filename, units);
+		if (!success) {
 			filename = util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER) + filename, false);
 			generateCategorizationFile(filename);
 		}
 	}
+	if (success) {
+		// try loading overload file...
+		filename = ai->cfgparser->getFilename(GET_CAT|GET_VER);
+		if (ai->cfgparser->fileExists(filename))
+			ai->cfgparser->parseCategories(filename, units);
+	}		
 
 	/* Generate the buildBy and canBuild lists per UnitType */
 	/*
@@ -220,7 +217,7 @@ bool CUnitTable::canPerformTask(CUnit &unit) {
 	if ((unit.type->cats&STATIC) && !(unit.type->cats&FACTORY))
 		return false;
 	/* lifetime of more then 5 seconds */
-	return unitsAliveTime.find(unit.key) != unitsAliveTime.end() && unitsAliveTime[unit.key] > NEW_UNIT_DELAY;
+	return unitsAliveTime.find(unit.key) != unitsAliveTime.end() && unitsAliveTime[unit.key] > IDLE_UNIT_TIMEOUT;
 }
 
 void CUnitTable::buildTechTree() {

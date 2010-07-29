@@ -27,6 +27,43 @@ CConfigParser::CConfigParser(AIClasses *ai) {
 	state = -1;
 }
 
+bool CConfigParser::fileExists(const std::string& filename) {
+	return
+		ai->cb->GetFileSize(util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER) + filename, true).c_str()) > 0;
+}
+
+std::string CConfigParser::getFilename(unsigned int f) {
+	static const char 
+		ext[] =".cfg",
+		cfg[] = "-config",
+		cat[] = "-categorization";
+
+	std::string result(ai->cb->GetModShortName());
+	
+	if (f&GET_VER) {
+		result += "-";
+		result += ai->cb->GetModVersion();
+	}
+
+	if (f&GET_CFG)
+		result += cfg;
+	else if (f&GET_CAT)
+		result += cat;
+	
+	if (f&GET_TEAM) {
+		char team[16];
+		sprintf(team, "-%d", ai->team);
+		result += team;
+	}
+
+	result += ext;
+
+	util::SanitizeFileNameInPlace(result);
+	
+	return result;
+}
+
+
 int CConfigParser::determineState(int metalIncome, int energyIncome) {
 	int previous = state;
 	std::map<int, std::map<std::string, int> >::iterator i;
@@ -63,11 +100,13 @@ int CConfigParser::getMinGroupSize(int techLevel) {
 bool CConfigParser::parseConfig(std::string filename) {
 	std::string dirfilename = util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER)+filename, true);
 	std::ifstream file(dirfilename.c_str());
-	unsigned linenr = 0;
 
 	if (file.good() && file.is_open()) {
-		templt = false;
+		unsigned int linenr = 0;
 		std::vector<std::string> splitted;
+		
+		templt = false;
+		
 		while(!file.eof()) {
 			linenr++;
 			std::string line;
