@@ -29,7 +29,7 @@ CThreatMap::CThreatMap(AIClasses *ai) {
 	handles[TMT_SURFACE] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_SURFACE], X, Z);
 	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_SURFACE],  0.55f, -0.5f);
 	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_SURFACE], 0.4f, 0.4f);
-	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_SURFACE], "Surface ThreatMap");		
+	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_SURFACE], "Surface ThreatMap");
 #endif
 	
 	drawMap = TMT_NONE;

@@ -25,7 +25,6 @@ class GameMap {
 		/** @return float, amount of land in [0, 1] */
 		float GetAmountOfLand() { return (1.0f - waterAmount); }
 
-
 		bool HasGeoSpots() { return geospots.size() > 0; }
 		bool HasMetalFeatures() { return metalfeatures.size() > 0; }
 		bool HasEnergyFeatures() { return energyfeatures.size() > 0; }

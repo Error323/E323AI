@@ -38,7 +38,7 @@ class CThreatMap {
 		std::map<ThreatMapType, float*> maps;
 #if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
 		std::map<ThreatMapType, int> handles;
-			// for visual debuggin purposes
+			// for visual debugging purposes
 #endif
 		float gauss(float x, float sigma, float mu);
 		

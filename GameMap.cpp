@@ -10,7 +10,6 @@
 
 #include "CAI.h"
 #include "MathUtil.h"
-#include "CScopedTimer.h"
 
 #include "headers/HEngine.h"
 
@@ -213,5 +212,5 @@ void GameMap::CalcMapHeightFeatures() {
 
 	std::string type(IsKbotMap() ? "Kbot" : "Vehicle");
 	std::string hoover(IsHooverMap() ? "Enabled" : "Disabled");
-	LOG_II("GameMap::CalcMapHeightFeatures Primary lab: "<<type<<", Hoover lab: " << hoover)
+	LOG_II("GameMap::CalcMapHeightFeatures Primary lab: "<< type <<", Hoover lab: " << hoover)
 }
