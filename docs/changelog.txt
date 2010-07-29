@@ -1,5 +1,10 @@
 E323AI changelog
 ----------------
+v3.22.0 [2010-??-??]
+* implemented http://github.com/Error323/E323AI/issues#issue/26
+* tasks refactoring (no changes for end-user)
+* no more unlimited number of tasks being executed per update
+
 v3.21.1 [2010-05-19]
 * fixed protential crash in UnitIdle callback
 * somewhat fixed chasing after aircraft with non-aircraft groups
@@ -8,6 +13,7 @@ v3.21.1 [2010-05-19]
 * fixed enemy scan procedure where ENGAGE groups preferred unarmed units
 * fixed moveRandom() procedure which always returned results in lower-right corner relative to basic position in 2D plane
 * anti-air aricraft will be set to guard factory when it is built
+* when AIs are in coop among itself they will vary the first factory to build
 
 v3.21.0 [2010-05-16]
 * refactored target selection
@@ -28,7 +34,7 @@ v3.20.0 [2010-05-05]
 * fixed situation when untis with SCOUTER tag can never be added to attack groups
 * new scout units won't be requested if there are idle scouts already
 * scout units won't be merged without real need
-* ability to build defense for single building in a cluster
+* ability to build defense for single building in a cluster (more defense)
 * tweaks to build second (etc.) factory earlier
 * tweaks in target selection
 * optimization in units regrouping
@@ -46,7 +52,7 @@ v3.19.0 [2010-04-02]
 * fixed a crash connected with economy units with weapons
 * completely fixed building MExes near allied MExes
 * implemented factory pattern
-* better profiler, outputs to "timings.dat" file
+* better profiler, outputs to "timings.dat" file (edit: replaced with realtime graph in later versions)
 
 v3.18.1 [2010-02-22]
 * builders are more aggressive now and will reclaim nearby enemy structures even when metal is nowhere to store
