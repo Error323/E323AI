@@ -22,11 +22,14 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		cat2str[TECH1]       = "TECH1";
 		cat2str[TECH2]       = "TECH2";
 		cat2str[TECH3]       = "TECH3";
+		cat2str[TECH4]       = "TECH4";
+		cat2str[TECH5]       = "TECH5";
 
 		/* main categories */
 		cat2str[AIR]         = "AIR";
 		cat2str[SEA]         = "SEA";
 		cat2str[LAND]        = "LAND";
+				
 		cat2str[STATIC]      = "STATIC";
 		cat2str[MOBILE]      = "MOBILE";
 
@@ -52,10 +55,12 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		cat2str[MSTORAGE]    = "MSTORAGE";
 		cat2str[ESTORAGE]    = "ESTORAGE";
 
-		/* ground types */
+		/* factory types */
 		cat2str[KBOT]        = "KBOT";
 		cat2str[VEHICLE]     = "VEHICLE";
 		cat2str[HOVER]       = "HOVER";
+		cat2str[AIRCRAFT]    = "AIRCRAFT"; // not used yet
+		cat2str[NAVAL]       = "NAVAL"; // not used yet
 
 		cat2str[DEFENSE]     = "DEFENSE";
 	}
@@ -194,6 +199,8 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 		unit->techlvl = (activeUnits[bid]->type->cats&TECH1) ? TECH1 : unit->techlvl;
 		unit->techlvl = (activeUnits[bid]->type->cats&TECH2) ? TECH2 : unit->techlvl;
 		unit->techlvl = (activeUnits[bid]->type->cats&TECH3) ? TECH3 : unit->techlvl;
+		unit->techlvl = (activeUnits[bid]->type->cats&TECH4) ? TECH4 : unit->techlvl;
+		unit->techlvl = (activeUnits[bid]->type->cats&TECH5) ? TECH5 : unit->techlvl;
 	}
 	if ((unit->type->cats&STATIC) && (unit->type->cats&ATTACKER))
 		defenses[unit->key] = unit;

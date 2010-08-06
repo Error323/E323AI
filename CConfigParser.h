@@ -56,7 +56,7 @@ class CConfigParser {
 		AIClasses *ai;
 
 		int state;
-		std::map<std::string, bool> stateVariables;
+		std::map<std::string, int> stateVariables;
 
 		void split(std::string &line, char c, std::vector<std::string> &splitted);
 		bool contains(std::string &line, char c);

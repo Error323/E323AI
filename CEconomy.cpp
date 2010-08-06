@@ -103,22 +103,26 @@ void CEconomy::remove(ARegistrar &object) {
 }
 
 void CEconomy::addUnitOnCreated(CUnit &unit) {
-	unsigned c = unit.type->cats;
+	unsigned int c = unit.type->cats;
 	if (c&MEXTRACTOR) {
 		CGroup *group = requestGroup();
 		group->addUnit(unit);
 		takenMexes[group->key] = group->pos();
 		CUnit *builder = ai->unittable->getUnit(group->firstUnit()->builtBy);
-		if (builder)
+		if (builder) {
+			assert(group->key != builder->group->key);
 			takenMexes.erase(builder->group->key);
+		}
 	}
 	else if(unit.type->def->needGeo) {
 		CGroup *group = requestGroup();
 		group->addUnit(unit);
 		takenGeo[group->key] = group->pos();	
 		CUnit *builder = ai->unittable->getUnit(group->firstUnit()->builtBy);
-		if (builder)
+		if (builder) {
+			assert(group->key != builder->group->key);
 			takenGeo.erase(builder->group->key);
+		}
 	}
 }
 
@@ -333,13 +337,13 @@ float3 CEconomy::getBestSpot(CGroup &group, std::list<float3> &resources, std::m
 
 	std::list<float3>::iterator i;
 	std::map<int, float3>::iterator j;
-	for (i = resources.begin(); i != resources.end(); i++) {
+	for (i = resources.begin(); i != resources.end(); ++i) {
 		// TODO: compare with actual group properties
 		if (i->y < 0.0f)
 			continue; // spot is under water
 		
 		bool taken = false;
-		for (j = tracker.begin(); j != tracker.end(); j++) {
+		for (j = tracker.begin(); j != tracker.end(); ++j) {
 			if (i->distance2D(j->second) < radius) {
 				taken = true;
 				break;
@@ -769,19 +773,20 @@ bool CEconomy::canAffordToBuild(UnitType *builder, UnitType *utToBuild) {
 unsigned int CEconomy::getNextFactoryToBuild(CUnit *unit, int maxteachlevel) {
 	if (ai->intel->strategyTechUp) {
 		for(std::list<unitCategory>::iterator f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
-			for(int techlevel = maxteachlevel; techlevel >= TECH1; techlevel--) {
-			int factory = *f|techlevel;
-			if(ai->unittable->canBuild(unit->type, factory))
-				if(!ai->unittable->gotFactory(factory)) {
-					return factory;
-				}
+			for(int techlevel = maxteachlevel; techlevel >= MIN_TECHLEVEL; techlevel--) {
+				unsigned int factory = *f|(1<<(techlevel - 1));
+				if(ai->unittable->canBuild(unit->type, factory))
+					if(!ai->unittable->gotFactory(factory)) {
+						return factory;
+					}
 			}
 		}
 	}
-	else {	
-		for(int techlevel = TECH1; techlevel <= maxteachlevel; techlevel++) {
+	else {
+		for(int techlevel = MIN_TECHLEVEL; techlevel <= maxteachlevel; techlevel++) {
+			unsigned int techlevelCat = 1<<(techlevel - 1);
 			for(std::list<unitCategory>::iterator f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
-				int factory = *f|techlevel;
+				unsigned int factory = *f|techlevelCat;
 				if(ai->unittable->canBuild(unit->type, factory))
 					if(!ai->unittable->gotFactory(factory)) {
 						return factory;

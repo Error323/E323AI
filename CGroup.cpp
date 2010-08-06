@@ -175,7 +175,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		los        = 0.0f;
 		maxSlope   = 1.0f;
 		pathType   = -1; // emulate NONE
-		techlvl    = TECH1;
+		techlvl    = MIN_TECHLEVEL;
 		cats       = 0;
 		groupRadius     = 0.0f;
 		radiusUpdateRequired = false;
@@ -229,7 +229,7 @@ void CGroup::merge(CGroup &group) {
 	std::map<int, CUnit*>::iterator i = group.units.begin();
 	// NOTE: "group" will automatically be removed when last unit is transferred
 	while(i != group.units.end()) {
-		CUnit *unit = i->second; i++;
+		CUnit *unit = i->second; ++i;
 		assert(unit->group == &group);
 		addUnit(*unit);
 	}
@@ -239,7 +239,7 @@ float3 CGroup::pos(bool force_valid) {
 	std::map<int, CUnit*>::iterator i;
 	float3 pos(0.0f, 0.0f, 0.0f);
 
-	for (i = units.begin(); i != units.end(); i++)
+	for (i = units.begin(); i != units.end(); ++i)
 		pos += ai->cb->GetUnitPos(i->first);
 
 	pos /= units.size();

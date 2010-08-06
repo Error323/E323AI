@@ -90,42 +90,49 @@
 /* We gonna use math.h constants */
 #define _USE_MATH_DEFINES
 
+#define MIN_TECHLEVEL 1
+#define MAX_TECHLEVEL 5
+
 /* Unit categories */
 enum unitCategory {
-	TECH1        = (1<<0),
+	TECH1        = (1<<0), // hardcored techlevels for now
 	TECH2        = (1<<1),
 	TECH3        = (1<<2),
+	TECH4        = (1<<3),
+	TECH5        = (1<<4),
 
-	AIR          = (1<<3),
-	SEA          = (1<<4),
-	LAND         = (1<<5),
-	STATIC       = (1<<6),
-	MOBILE       = (1<<7),
+	AIR          = (1<<5), // can fly
+	SEA          = (1<<6), // can float
+	LAND         = (1<<7), // can walk/drive
+	
+	STATIC       = (1<<8),
+	MOBILE       = (1<<9),
 
-	FACTORY      = (1<<8),
-	BUILDER      = (1<<9),
-	ASSISTER     = (1<<10),
-	RESURRECTOR  = (1<<11),
+	FACTORY      = (1<<10),
+	BUILDER      = (1<<11),
+	ASSISTER     = (1<<12),
+	RESURRECTOR  = (1<<13),
 
-	COMMANDER    = (1<<12),
-	ATTACKER     = (1<<13),
-	ANTIAIR      = (1<<14),
-	SCOUTER      = (1<<15),
-	ARTILLERY    = (1<<16),
-	SNIPER       = (1<<17),
-	ASSAULT      = (1<<18),
+	COMMANDER    = (1<<14),
+	ATTACKER     = (1<<15),
+	ANTIAIR      = (1<<16),
+	SCOUTER      = (1<<17),
+	ARTILLERY    = (1<<18),
+	SNIPER       = (1<<19),
+	ASSAULT      = (1<<20),
 
-	MEXTRACTOR   = (1<<19),
-	MMAKER       = (1<<20),
-	EMAKER       = (1<<21),
-	MSTORAGE     = (1<<22),
-	ESTORAGE     = (1<<23),
+	MEXTRACTOR   = (1<<21),
+	MMAKER       = (1<<22),
+	EMAKER       = (1<<23),
+	MSTORAGE     = (1<<24),
+	ESTORAGE     = (1<<25),
+	DEFENSE      = (1<<26),
 
-	KBOT         = (1<<24),
-	VEHICLE      = (1<<25),
-	HOVER        = (1<<26),
-
-	DEFENSE      = (1<<27)
+	KBOT         = (1<<27), // produces kbots
+	VEHICLE      = (1<<28), // produces vehicles 
+	HOVER        = (1<<29), // produces hovercraft
+	AIRCRAFT     = (1<<30), // produces aircraft (not used yet)
+	NAVAL        = (1<<31), // produces naval units (not used yet)
 };
 
 /* Build priorities */

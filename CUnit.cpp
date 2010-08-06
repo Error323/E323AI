@@ -36,7 +36,7 @@ void CUnit::reset(int uid, int bid) {
 	this->builtBy = bid;
 	this->waiting = false;
 	this->microing= false;
-	this->techlvl = 0;
+	this->techlvl = MIN_TECHLEVEL;
 	this->group = NULL;
 }
 
@@ -179,9 +179,12 @@ bool CUnit::repair(int target) {
 
 bool CUnit::build(UnitType *toBuild, float3 &pos) {
 	int mindist = 8;
+	
+	// FIXME: remove hardcoding; we need analyzer of the largest footprint
+	// per tech level
 	if (toBuild->cats&FACTORY || toBuild->cats&EMAKER) {
 		mindist = 10;
-		if (toBuild->cats&VEHICLE || toBuild->cats&TECH3)
+		if (toBuild->cats&VEHICLE || toBuild->cats&(TECH3|TECH4|TECH5))
 			mindist = 15;
 	}
 	else if(toBuild->cats&MEXTRACTOR)

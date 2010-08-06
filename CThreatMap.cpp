@@ -46,8 +46,9 @@ CThreatMap::~CThreatMap() {
 void CThreatMap::reset() {
 	float *map;
 	std::map<ThreatMapType,float*>::iterator i;
+	// NOTE: no threat value equals to ONE, not ZERO!
 	for (i = maps.begin(); i != maps.end(); i++) {
-		maxPower[i->first] = 0.0f;
+		maxPower[i->first] = 1.0f;
 		map = i->second;
 		for (int i = 0; i < X*Z; i++)
 			map[i] = 1.0f;
@@ -69,6 +70,7 @@ float CThreatMap::getThreat(float3 &center, float radius, ThreatMapType type) {
 	if (radius < EPS)
 		return map[ID(j,i)];
 	
+	int sectorsProcessed = 0;
 	int R = ceil(radius / REAL);
 	float power = 0.0f;
 	for (int z = -R; z <= R; z++) {
@@ -79,13 +81,22 @@ float CThreatMap::getThreat(float3 &center, float radius, ThreatMapType type) {
 		
 		for (int x = -R; x <= R; x++) {
 			int xx = x+j;
-			if (xx < X-1 && xx >= 0)
+			if (xx < X-1 && xx >= 0) {
 				power += map[ID(xx,zz)];
+				sectorsProcessed++;
+			}
 		}
 	}
+
+	// calculate number of sectors in R x R...
+	R = 2 * R + 1;
+	R *= R;
+
+	// fixing area threat  for map edges...
+	if (sectorsProcessed < R)
+		power += (R - sectorsProcessed);
 	
-	//return power/(2.0f*R*M_PI);
-	return power / (R*R*M_PI);
+	return power / R;
 }
 
 float CThreatMap::getThreat(float3 &center, float radius, CGroup *group) {
@@ -166,7 +177,7 @@ void CThreatMap::update(int frame) {
 			}
 		}
 		
-		for (tmi = activeTypes.begin(); tmi != activeTypes.end(); tmi++) {
+		for (tmi = activeTypes.begin(); tmi != activeTypes.end(); ++tmi) {
 			maxPower[*tmi] = std::max<float>(power, maxPower[*tmi]);
 		}
 	}

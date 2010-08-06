@@ -15,15 +15,20 @@ CConfigParser::CConfigParser(AIClasses *ai) {
 	this->ai = ai;
 	loaded = false;
 	templt = false;
+
 	stateVariables["metalIncome"]       = 0;
 	stateVariables["energyIncome"]      = 0;
 	stateVariables["minWorkers"]        = 0;
-	stateVariables["maxWorkers"]        = 0;
+	stateVariables["maxWorkers"]        = 99;
 	stateVariables["minScouts"]         = 0;
-	stateVariables["maxTechLevel"]      = 0;
-	stateVariables["minGroupSizeTech1"] = 0;
-	stateVariables["minGroupSizeTech2"] = 0;
-	stateVariables["minGroupSizeTech3"] = 0;
+	// NOTE: in config file techlevel is ordinary value, not a flag
+	stateVariables["maxTechLevel"]      = MIN_TECHLEVEL;
+	stateVariables["minGroupSizeTech1"] = 1;
+	stateVariables["minGroupSizeTech2"] = 1;
+	stateVariables["minGroupSizeTech3"] = 1;
+	stateVariables["minGroupSizeTech4"] = 1;
+	stateVariables["minGroupSizeTech5"] = 1;
+	
 	state = -1;
 }
 
@@ -85,7 +90,9 @@ int CConfigParser::getMaxWorkers()   { return states[state]["maxWorkers"]; }
 int CConfigParser::getMinScouts()    { return states[state]["minScouts"]; }
 
 int CConfigParser::getMaxTechLevel() {
-	return states[state]["maxTechLevel"];
+	int result = std::min<int>(states[state]["maxTechLevel"], MAX_TECHLEVEL);
+	if (result < MIN_TECHLEVEL) result = MIN_TECHLEVEL;
+	return result;
 }
 
 int CConfigParser::getMinGroupSize(int techLevel) {
@@ -93,6 +100,8 @@ int CConfigParser::getMinGroupSize(int techLevel) {
 		case TECH1: return states[state]["minGroupSizeTech1"];
 		case TECH2: return states[state]["minGroupSizeTech2"];
 		case TECH3: return states[state]["minGroupSizeTech3"];
+		case TECH4: return states[state]["minGroupSizeTech4"];
+		case TECH5: return states[state]["minGroupSizeTech5"];
 		default: return 0;
 	}
 }
@@ -128,8 +137,7 @@ bool CConfigParser::parseConfig(std::string filename) {
 				line.substr(0, line.size() - 1);
 				split(line, ':', splitted);
 				state = atoi(splitted[1].c_str());
-				std::map<std::string, int> curstate;
-				states[state] = curstate;
+				states[state] = stateVariables;
 			}
 			/* Close state block */
 			else if (contains(line, '}')) {
