@@ -1,9 +1,13 @@
 E323AI changelog
 ----------------
-v3.22.0 [2010-??-??]
+v3.21.2 [2010-08-06]
 * implemented http://github.com/Error323/E323AI/issues#issue/26
 * tasks refactoring (no changes for end-user)
 * no more unlimited number of tasks being executed per update
+* possible number of tech levels increased from 3 to 5
+* fixed improper area threat calculation near map edges
+* fixed rare selecting the edge metal spot instead of the closest one (due to the fix above)
+* fixed invalid handling with techlevel flags when selecting next factory to build
 
 v3.21.1 [2010-05-19]
 * fixed protential crash in UnitIdle callback
