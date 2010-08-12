@@ -77,23 +77,34 @@ void CIntel::init() {
 		without external helpers in config files.
 	*/
 	if(ai->gamemap->IsWaterMap()) {
-		//allowedFactories.push_back(SEA);
+		allowedFactories.push_back(NAVAL);
 		allowedFactories.push_back(HOVER);
-	}
+	} 
 	else {
-		if(ai->gamemap->IsKbotMap()) {
+		unitCategory nextFactory;
+		if (ai->gamemap->IsKbotMap()) {
 			allowedFactories.push_back(KBOT);
+			nextFactory = VEHICLE;
+		} 
+		else {
 			allowedFactories.push_back(VEHICLE);
-		} else {
-			allowedFactories.push_back(VEHICLE);
-			allowedFactories.push_back(KBOT);
+			nextFactory = KBOT;
 		}
 		
-		if(ai->gamemap->IsHooverMap())
-			allowedFactories.push_back(HOVER);
+		if (ai->gamemap->IsHooverMap()) {
+			if (ai->gamemap->GetAmountOfWater() > 0.5) {
+				allowedFactories.push_back(HOVER);
+			}
+			else {
+				allowedFactories.push_back(nextFactory);
+				nextFactory = HOVER;
+			}
+		}
+		
+		allowedFactories.push_back(nextFactory);
 	}
 	// TODO: do not build air on too small maps?
-	allowedFactories.push_back(AIR);
+	allowedFactories.push_back(AIRCRAFT);
 
 	// vary first factory among allied AIs...
 	int i = ai->allyAITeam;
