@@ -34,7 +34,7 @@ class GameMap {
 		bool IsHooverMap() { return waterAmount > 0.2f; }
 		bool IsWaterMap() { return waterAmount > 0.7f; }
 		bool IsMetalMap() { return metalCount > nonMetalCount && avgMetal > 80; }
-		bool IsNonMetalMap() { return metalCount == 0; }
+		bool IsMetalFreeMap() { return metalCount == 0; }
 
 		std::list<float3>& GetGeoSpots() { return geospots; }
 		std::list<float3>& GetMetalFeatures() { return metalfeatures; }
