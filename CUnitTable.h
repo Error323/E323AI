@@ -73,7 +73,6 @@ class CUnitTable: public ARegistrar {
 		/* Unit categories in vector */
 		static std::vector<unitCategory> cats;
 
-
 		/* Special commander hook, since it's the first to spawn */
 		UnitType *comm;
 
@@ -88,8 +87,8 @@ class CUnitTable: public ARegistrar {
 		/* Returns a unittype with categories that ut can build */
 		UnitType* canBuild(UnitType *ut, unsigned int categories);
 		void getBuildables(UnitType *ut, unsigned i, unsigned e, std::multimap<float, UnitType*> &candidates);
-		int factoryCount(unsigned c);
-		bool gotFactory(unsigned c);
+		int factoryCount(unsigned int c);
+		bool gotFactory(unsigned int c);
 
 		UnitType* getUnitTypeByCats(unsigned int c);
 		static CUnit* getUnitByDef(std::map<int, CUnit*> &dic, const UnitDef *udef);
@@ -100,6 +99,8 @@ class CUnitTable: public ARegistrar {
 		std::string debugCategories(unsigned categories);
 		void debugUnitDefs(UnitType *ut);
 		void debugWeapons(UnitType *ut);
+
+		int setOnOff(std::map<int, CUnit*>& list, bool value);
 
 	private:
 		AIClasses *ai;

@@ -310,8 +310,8 @@ bool CUnitTable::hasAntiAir(const std::vector<UnitDef::UnitDefWeapon> &weapons) 
 }
 
 unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
-	unsigned int cats = 0;
 	const UnitDef *ud = ut->def;
+	unsigned int cats = 0;
 	
 	if (ud->isCommander)
 		cats |= COMMANDER;
@@ -359,16 +359,23 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (!ud->buildOptions.empty() && !ud->canmove) {
 		cats |= FACTORY;
 
+		// precise factory type...
 		std::map<int, std::string>::iterator j;
 		std::map<int, std::string> buildOptions = ud->buildOptions;
-		for (j = buildOptions.begin(); j != buildOptions.end(); j++) {
+		for (j = buildOptions.begin(); j != buildOptions.end(); ++j) {
 			const UnitDef *canbuild = ai->cb->GetUnitDef(j->second.c_str());
+			
+			if (canbuild == NULL)
+				continue;
+			
 			if (canbuild->canfly) {
-				cats |= AIR;
-				cats &= ~LAND;
+				cats |= AIRCRAFT;
 				break;
 			}
-			if (canbuild->movedata == NULL) continue;
+			
+			if (canbuild->movedata == NULL) 
+				continue;
+			
 			if (canbuild->movedata->moveFamily == MoveData::KBot &&
 				ud->minWaterDepth < 0.0f) {
 				cats |= KBOT;
@@ -383,7 +390,6 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 				cats |= HOVER;
 				break;
 			}
-
 		}
 		//XXX: hack
 		if (ud->metalCost < 2000.0f)
@@ -404,13 +410,7 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if ((ud->energyMake - ud->energyUpkeep) / ut->cost > 0.002 ||
 		ud->tidalGenerator || ud->windGenerator)
 		cats |= EMAKER;
-/*
-	if (ud->windGenerator)
-		cats |= WIND;
-
-	if (ud->tidalGenerator)
-		cats |= TIDAL;
-*/
+	
 	if (ud->extractsMetal)
 		cats |= MEXTRACTOR;
 	
@@ -425,10 +425,10 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 
 	if (cats&ATTACKER && cats&MOBILE && !(cats&BUILDER) && ud->speed >= 50.0f) {
 		std::map<int, UnitType*>::iterator i,j;
-		for (i = ut->buildBy.begin(); i != ut->buildBy.end(); i++) {
+		for (i = ut->buildBy.begin(); i != ut->buildBy.end(); ++i) {
 			bool isCheapest = true;
 			UnitType *bb = i->second;
-			for (j = bb->canBuild.begin(); j != bb->canBuild.end(); j++) {
+			for (j = bb->canBuild.begin(); j != bb->canBuild.end(); ++j) {
 				if (ut->cost > j->second->cost && !j->second->def->weapons.empty()) {
 					isCheapest = false;
 					break;
@@ -449,7 +449,7 @@ float CUnitTable::calcUnitDps(UnitType *ut) {
 	return ut->def->power;
 }
 
-int CUnitTable::factoryCount(unsigned c) {
+int CUnitTable::factoryCount(unsigned int c) {
 	int result = 0;
 
 	// decode categories from "c" and put them into "utcats"...
@@ -474,7 +474,7 @@ int CUnitTable::factoryCount(unsigned c) {
 	return result;
 }
 
-bool CUnitTable::gotFactory(unsigned c) {
+bool CUnitTable::gotFactory(unsigned int c) {
 	return factoryCount(c) > 0;
 }
 
@@ -552,6 +552,21 @@ UnitType* CUnitTable::getUnitTypeByCats(unsigned int c) {
 			return &(it->second);
 	}
 	return NULL;
+}
+
+int CUnitTable::setOnOff(std::map<int, CUnit*>& list, bool value) {
+	int result = 0;
+	std::map<int, CUnit*>::iterator i;
+	
+	for (i = list.begin(); i != list.end(); ++i) {
+		CUnit *unit = i->second;
+		if (value != unit->isOn()) {
+			unit->setOnOff(value);
+			result++;
+		}
+	}
+
+	return result;
 }
 
 std::string CUnitTable::debugCategories(unsigned categories) {
