@@ -330,8 +330,8 @@ void CMilitary::update(int frame) {
 		}
 	}
 
-	bool gotAirFactory = ai->unittable->gotFactory(AIR);
-	bool gotSeaFactory = ai->unittable->gotFactory(SEA);
+	bool gotAirFactory = ai->unittable->gotFactory(AIRCRAFT);
+	bool gotSeaFactory = ai->unittable->gotFactory(NAVAL|HOVER);
 	
 	// if all scouts are busy create some more...
 	if (busyScoutGroups == activeScoutGroups.size()) {
