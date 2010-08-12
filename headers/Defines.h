@@ -126,13 +126,14 @@ enum unitCategory {
 	EMAKER       = (1<<23),
 	MSTORAGE     = (1<<24),
 	ESTORAGE     = (1<<25),
+	
 	DEFENSE      = (1<<26),
 
 	KBOT         = (1<<27), // produces kbots
 	VEHICLE      = (1<<28), // produces vehicles 
 	HOVER        = (1<<29), // produces hovercraft
-	AIRCRAFT     = (1<<30), // produces aircraft (not used yet)
-	NAVAL        = (1<<31), // produces naval units (not used yet)
+	AIRCRAFT     = (1<<30), // produces aircraft
+	NAVAL        = (1<<31), // produces naval units
 };
 
 /* Build priorities */
