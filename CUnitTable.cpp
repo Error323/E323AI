@@ -202,7 +202,8 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 		unit->techlvl = (activeUnits[bid]->type->cats&TECH4) ? TECH4 : unit->techlvl;
 		unit->techlvl = (activeUnits[bid]->type->cats&TECH5) ? TECH5 : unit->techlvl;
 	}
-	if ((unit->type->cats&STATIC) && (unit->type->cats&ATTACKER))
+	// NOTE: remember that NOTA has mobile defenses
+	if ((unit->type->cats&STATIC) && (unit->type->cats&ATTACKER) || (unit->type->cats&DEFENSE))
 		defenses[unit->key] = unit;
 	if (unit->type->cats&ESTORAGE)
 		energyStorages[unit->key] = unit;
@@ -219,10 +220,6 @@ void CUnitTable::update() {
 }
 
 bool CUnitTable::canPerformTask(CUnit &unit) {
-	// TODO: this is a temporary hack until we make all groups behaviour via
-	// tasks. Currently for most of static groups this is wrong
-	if ((unit.type->cats&STATIC) && !(unit.type->cats&FACTORY))
-		return false;
 	/* lifetime of more then 5 seconds */
 	return unitsAliveTime.find(unit.key) != unitsAliveTime.end() && unitsAliveTime[unit.key] > IDLE_UNIT_TIMEOUT;
 }

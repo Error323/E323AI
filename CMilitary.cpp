@@ -63,7 +63,7 @@ void CMilitary::addUnit(CUnit &unit) {
 
 	unsigned int c = unit.type->cats;
 
-	if (c&MOBILE) {
+	if (c&MOBILE && !(c&DEFENSE)) {
 		unsigned int wishedCats = ai->unittable->unitsUnderConstruction[unit.key];
 		CGroup *group;
 		
