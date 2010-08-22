@@ -85,6 +85,8 @@ class CEconomy: public ARegistrar {
 
 	private:
 		bool initialized;
+		bool stallThresholdsReady;
+		UnitType *utCommander;
 		AIClasses *ai;
 
 		std::map<int, float3> takenMexes, takenGeo;
@@ -127,6 +129,7 @@ class CEconomy: public ARegistrar {
 		bool taskInProgress(buildType bt);
 
 		/* Get next allowed factory to build */
+		unsigned int getNextFactoryToBuild(UnitType *ut, int maxteachlevel);
 		unsigned int getNextFactoryToBuild(CUnit *unit, int maxteachlevel);
 };
 
