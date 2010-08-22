@@ -88,6 +88,9 @@ void ATask::addGroup(CGroup &g) {
 	g.micro(false);
 	g.abilities(true);
 	
+	if (g.cats&STATIC)
+		isMoving = false;
+
 	groups.push_back(&g);
 }
 

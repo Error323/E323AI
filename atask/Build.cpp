@@ -25,6 +25,8 @@ BuildTask::BuildTask(AIClasses *_ai, buildType build, UnitType *toBuild, CGroup 
 	this->bt      = build;
 	this->toBuild = toBuild;
 	this->eta     = int((ai->pathfinder->getETA(group, pos) + 100) * 1.3f);
+	this->building = false;
+	
 	addGroup(group);
 }
 
@@ -65,22 +67,30 @@ void BuildTask::onUpdate() {
 		else
 			return; // if microing, break
 	}
-
-	/* See if we can build yet */
-	if (isMoving) {
-		if (gpos.distance2D(pos) <= group->buildRange) {
-			group->build(pos, toBuild);
-			isMoving = false;
-			ai->pathfinder->remove(*group);
+	
+	if (!building) {
+		if (isMoving) {
+			/* See if we can build yet */
+			if (gpos.distance2D(pos) <= group->buildRange) {
+				isMoving = false;
+				ai->pathfinder->remove(*group);
+			}
+			/* See if we can suck wreckages */
+			else if (!group->isMicroing()) {
+				// TODO: increase ETA on success
+				if (!resourceScan())
+					repairScan();
+			}
 		}
-		/* See if we can suck wreckages */
-		else if (!group->isMicroing()) {
-			// TODO: increase ETA on success
-			if (!resourceScan())
-				repairScan();
+
+		if (!isMoving) {
+			group->build(pos, toBuild);
+			building = true;
+			group->micro(true);	
 		}
 	}
-	else if (group->isIdle()) {
+
+	if (group->isIdle()) {
 		// make builder react faster when job is finished
 		if (!onValidate())
 			remove();
@@ -88,9 +98,12 @@ void BuildTask::onUpdate() {
 }
 
 bool BuildTask::assistable(CGroup &assister, float &travelTime) const {
-	if ((bt == BUILD_AG_DEFENSE && assisters.size() >= 2) || isMoving)
+	if (!toBuild->def->canBeAssisted)
 		return false;
 	
+	if ((bt == BUILD_AG_DEFENSE && assisters.size() >= 2) || isMoving)
+		return false;
+
 	CGroup *group = firstGroup();
 
 	float buildSpeed = group->buildSpeed;

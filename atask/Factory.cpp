@@ -12,7 +12,6 @@ FactoryTask::FactoryTask(AIClasses *_ai, CGroup& group): ATask(_ai) {
 	// will assist the first factory only
 	//factoryTask->pos = group.pos();
 	pos = group.firstUnit()->pos();
-	isMoving = false;
 	validateInterval = 10 * 30;
 	addGroup(group);
 }

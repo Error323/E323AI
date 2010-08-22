@@ -189,9 +189,9 @@ void CE323AI::UnitFinished(int uid) {
 	else
 		LOG_II("CE323AI::UnitFinished " << (*unit))
 
-	// NOTE: commanders and factories should start actions earlier than
+	// NOTE: commanders and static units should start actions earlier than
 	// usual units
-	if (unit->builtBy == -1 || (unit->type->cats&FACTORY))
+	if (unit->builtBy == -1 || (unit->type->cats&STATIC))
 		ai->unittable->unitsAliveTime[uid] = IDLE_UNIT_TIMEOUT;
 	else
 		ai->unittable->unitsAliveTime[uid] = 0;

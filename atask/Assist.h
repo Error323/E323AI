@@ -7,6 +7,7 @@ struct AssistTask: public ATask {
 	AssistTask(AIClasses *_ai): ATask(_ai) { t = TASK_ASSIST; }
 	AssistTask(AIClasses *_ai, ATask& toAssist, CGroup& group);
 
+	bool assisting;
 	/* Task to assist */
 	ATask *assist;
 

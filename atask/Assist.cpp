@@ -7,6 +7,7 @@ AssistTask::AssistTask(AIClasses *_ai, ATask& toAssist, CGroup& group): ATask(_a
 	t = TASK_ASSIST;
 	assist = &toAssist;
 	toAssist.assisters.push_back(this);
+	assisting = false;
 	pos = toAssist.pos;
 	validateInterval = 0;
 	addGroup(group);
@@ -28,19 +29,25 @@ void AssistTask::onUpdate() {
 	if (group->isMicroing() && group->isIdle())
 		group->micro(false);
 
-	if (isMoving) {
-		pos = assist->pos; // because task target could be mobile
+	if (!assisting) {
+		if (isMoving) {
+			pos = assist->pos; // because task target could be mobile
 
-		float3 grouppos = group->pos();
-		float3 dist = grouppos - pos;
-		float range = group->getRange();
+			float3 grouppos = group->pos();
+			float3 dist = grouppos - pos;
+			float range = group->getRange();
 
-		if (dist.Length2D() <= range) {
+			if (dist.Length2D() <= range) {
+				isMoving = false;
+				ai->pathfinder->remove(*group);
+			} 
+		}
+
+		if (!isMoving) {
 			group->assist(*assist);
-			ai->pathfinder->remove(*group);
-			isMoving = false;
 			group->micro(true);
-		} 
+			assisting = true;
+		}
 	}
 
 	if (!group->isMicroing()) {
