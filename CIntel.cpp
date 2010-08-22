@@ -66,7 +66,7 @@ void CIntel::init() {
 		enemyvector /= numUnits;
 	}
 
-	LOG_II("Number of enemy units: " << numUnits)
+	LOG_II("CIntel::init Number of enemy units: " << numUnits)
 	
 	/* FIXME:
 		I faced situation that on maps with less land there is a direct
@@ -121,7 +121,7 @@ void CIntel::init() {
 		// NOTE: clock() gives much better results than rng.RndFloat() (at least under MSVC)
 		strategyTechUp = ((clock() % 3) == 0);
 
-	LOG_II("Tech-up strategy: " << strategyTechUp)
+	LOG_II("CIntel::init Tech-up strategy: " << strategyTechUp)
 
 	initialized = true;
 }

@@ -186,7 +186,7 @@ class CGroup: public ARegistrar {
 		float groupRadius;
 			// group radius (when units clustered together)
 		CUnit *worstSpeedUnit;
-			// points to the slowest unit in a group
+			// points to the slowest unit
 		CUnit *worstSlopeUnit;
 			// points to unit with worst slope
 		/* Recalculate group properties based on new unit */

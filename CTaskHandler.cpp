@@ -145,7 +145,7 @@ bool CTaskHandler::addTask(ATask *task) {
 	// NOTE: this is required because within ATask::onValidate() a path 
 	// (or even paths) can be added, which in its turn calls 
 	// CTaskHandler::getPos()
-	for(it = task->groups.begin(); it != task->groups.end(); ++it) {
+	for (it = task->groups.begin(); it != task->groups.end(); ++it) {
 		(*it)->reg(*this);
 		groupToTask[(*it)->key] = task;
 	}

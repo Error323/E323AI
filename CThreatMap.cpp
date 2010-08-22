@@ -92,7 +92,7 @@ float CThreatMap::getThreat(float3 &center, float radius, ThreatMapType type) {
 	R = 2 * R + 1;
 	R *= R;
 
-	// fixing area threat  for map edges...
+	// fixing area threat for map edges...
 	if (sectorsProcessed < R)
 		power += (R - sectorsProcessed);
 	
