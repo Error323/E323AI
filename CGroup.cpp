@@ -413,6 +413,18 @@ bool CGroup::canAdd(CUnit *unit) {
 	return true;
 }
 		
+bool CGroup::canAssist(UnitType *type) {
+	if (type && !type->def->canBeAssisted)
+		return false;
+	
+	std::map<int, CUnit*>::const_iterator i;
+	for (i = units.begin(); i != units.end(); i++)
+		if (i->second->type->def->canAssist)
+			return true;
+
+	return false;
+}
+
 bool CGroup::canMerge(CGroup *group) {
 	static unsigned int nonMergableCats[] = {SEA, LAND, AIR, HOVER, ATTACKER, STATIC, MOBILE, BUILDER, SCOUTER};
 
