@@ -55,6 +55,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 		}
 	}
 #endif
+	LOG_II("CE323AI::InitAI allyAITeam = " << ai->allyAITeam)
 
 	std::string configfile = ai->cfgparser->getFilename(GET_CFG);
 	ai->cfgparser->parseConfig(configfile);
@@ -137,7 +138,8 @@ void CE323AI::UnitCreated(int uid, int bid) {
 	
 	LOG_II("CE323AI::UnitCreated " << (*unit))
 
-	if (unit->def->isCommander && !ai->economy->isInitialized()) {
+	// unit->def->isCommander
+	if ((unit->type->cats&COMMANDER) && !ai->economy->isInitialized()) {
 		ai->economy->init(*unit);
 	}
 
