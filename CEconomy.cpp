@@ -677,36 +677,42 @@ void CEconomy::preventStalling() {
 
 void CEconomy::updateIncomes(int frame) {
 	if (!stallThresholdsReady) {
-		bool oldAlgo = true;
-		int initialFactory = getNextFactoryToBuild(utCommander, MIN_TECHLEVEL);
-		if (initialFactory) {
-			UnitType *facType = ai->unittable->canBuild(utCommander, initialFactory);
-			if (facType != NULL) {
-				float buildTime = facType->def->buildTime / utCommander->def->buildSpeed;
-				float mDrain = facType->def->metalCost / buildTime;
-				float eDrain = facType->def->energyCost / buildTime;
-				float mTotalIncome = utCommander->def->metalMake * buildTime;
-		
-				mStart = (1.5 * facType->def->metalCost - ai->cb->GetMetal() - mTotalIncome) / buildTime;
-				if (mStart < 0.0f)
-					mStart = 0.0f;
-				eStart = 0.9f * eDrain;
-				
-				oldAlgo = false;
-			}
+		if (utCommander->cats&FACTORY) {
+			mStart = utCommander->def->metalMake;
+			eStart = 0.0f;
 		}
+		else {
+			bool oldAlgo = true;
+			int initialFactory = getNextFactoryToBuild(utCommander, MIN_TECHLEVEL);
+			if (initialFactory) {
+				UnitType *facType = ai->unittable->canBuild(utCommander, initialFactory);
+				if (facType != NULL) {
+					float buildTime = facType->def->buildTime / utCommander->def->buildSpeed;
+					float mDrain = facType->def->metalCost / buildTime;
+					float eDrain = facType->def->energyCost / buildTime;
+					float mTotalIncome = utCommander->def->metalMake * buildTime;
 		
-	    if (oldAlgo) {
-	    	mStart = 2.0f * utCommander->def->metalMake;
-	    	eStart = 1.5f * utCommander->def->energyMake;
-	    }
+					mStart = (1.5 * facType->def->metalCost - ai->cb->GetMetal() - mTotalIncome) / buildTime;
+					if (mStart < 0.0f)
+						mStart = 0.0f;
+					eStart = 0.9f * eDrain;
+				
+					oldAlgo = false;
+				}
+			}
 		
+		    if (oldAlgo) {
+				mStart = 2.0f * utCommander->def->metalMake;
+				eStart = 1.5f * utCommander->def->energyMake;
+		    }
+		}	
+
 		LOG_II("CEconomy::updateIncomes Metal stall threshold: " << mStart)
 		LOG_II("CEconomy::updateIncomes Energy stall threshold: " << eStart)
-
+		
 		stallThresholdsReady = true;
-	}	
-	
+	}
+
 	incomes++;
 
 	//mNowSummed    += ai->cb->GetMetal();
@@ -762,6 +768,9 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 	std::map<int, ATask*>::iterator i;
 	std::multimap<float, BuildTask*> suited;
 
+	if (!group.canAssist())
+		return NULL;
+
 	for (i = ai->tasks->activeTasks[TASK_BUILD].begin(); i != ai->tasks->activeTasks[TASK_BUILD].end(); ++i) {
 		BuildTask *buildtask = (BuildTask*)i->second;
 
@@ -791,6 +800,9 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 }
 
 ATask* CEconomy::canAssistFactory(CGroup &group) {
+	if (!group.canAssist())
+		return NULL;
+	
 	CUnit *unit = group.firstUnit();
 	float3 pos = group.pos();
 	std::map<int, ATask*>::iterator i;
