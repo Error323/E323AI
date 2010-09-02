@@ -256,6 +256,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				int numFactories = ai->unittable->factories.size();
 
 				bool build = numFactories <= 0;
+				
 				/*
 				if (numFactories > 0) {
 					int maxTechLevel = ai->cfgparser->getMaxTechLevel();
@@ -273,32 +274,34 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				}
 				*/				
 				
-				float m = mNow / mStorage;
+				if (!build) {
+					float m = mNow / mStorage;
 			
-				switch(state) {
-				case 0: case 1: case 2: {
-					build = (m > 0.4f && affordable);
-					break;
-				}
-				case 3: {
-					build = (m > 0.4f);
-					break;
-				}
-				case 4: {
-					build = (m > 0.35f);
-					break;
-				}
-				case 5: {
-					build = (m > 0.3f);
-					break;
-				}
-				case 6: {
-					build = (m > 0.25f);
-					break;
-				}
-				default: {
-					build = (m > 0.2f);
-				}
+					switch(state) {
+						case 0: case 1: case 2: {
+							build = (m > 0.4f && affordable);
+							break;
+						}
+						case 3: {
+							build = (m > 0.4f);
+							break;
+						}
+						case 4: {
+							build = (m > 0.35f);
+							break;
+						}
+						case 5: {
+							build = (m > 0.3f);
+							break;
+						}
+						case 6: {
+							build = (m > 0.25f);
+							break;
+						}
+						default: {
+							build = (m > 0.2f);
+						}
+					}
 				}
 
 				if (build) {
@@ -831,7 +834,8 @@ ATask* CEconomy::canAssistFactory(CGroup &group) {
 }
 
 bool CEconomy::canAffordToBuild(UnitType *builder, UnitType *utToBuild) {
-	/* NOTE: "Salary" is provided every 32 logical frames */
+	/*
+	// NOTE: "Salary" is provided every 32 logical frames
 	float buildTime   = (utToBuild->def->buildTime / builder->def->buildSpeed) * 32.0f;
 	float mCost       = utToBuild->def->metalCost;
 	float eCost       = utToBuild->def->energyCost;
@@ -839,6 +843,16 @@ bool CEconomy::canAffordToBuild(UnitType *builder, UnitType *utToBuild) {
 	float ePrediction = (eIncome - eUsage - eCost/buildTime)*buildTime - eCost + eNow;
 	mRequest          = mPrediction < 0.0f;
 	eRequest          = ePrediction < 0.0f;
+	*/
+	float buildTime = utToBuild->def->buildTime / builder->def->buildSpeed;
+	float mPrediction = mNow + (mIncome - mUsage) * buildTime - utToBuild->def->metalCost;
+	float ePrediction = eNow + (eIncome - eUsage) * buildTime - utToBuild->def->energyCost;
+
+	if (!mRequest)
+		mRequest = mPrediction < 0.0f;
+	if (!eRequest)
+		eRequest = ePrediction < 0.0f;
+
 	return (mPrediction >= 0.0f && ePrediction >= 0.0f && mNow/mStorage >= 0.1f);
 }
 
