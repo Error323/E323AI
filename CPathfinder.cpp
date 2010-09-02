@@ -29,28 +29,33 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	// NOTE: XX and ZZ are in pathgraph map resolution units
 	this->XX   = this->X / I_MAP_RES;
 	this->ZZ   = this->Z / I_MAP_RES;
-	graphSize = XX * ZZ;
-	update      = 0;
+	graphSize  = XX * ZZ;
+	update     = 0;
 	repathGroup = -1;
-	drawPaths   = false;
+	drawPaths  = false;
 
 	hm = ai->cb->GetHeightMap();
 	sm = ai->cb->GetSlopeMap();
 
 	if (CPathfinder::graph.empty()) {
 		const std::string cacheVersion(CACHE_VERSION);
+		const std::string modShortName(ai->cb->GetModShortName());
+		const std::string modVersion(ai->cb->GetModVersion());
+		const std::string modHash = util::IntToString(ai->cb->GetModHash(), "%x");
+		const std::string mapName(ai->cb->GetMapName());
+		const std::string mapHash = util::IntToString(ai->cb->GetMapHash(), "%x");
 
 		bool readOk = false;
 		unsigned int N;
-		std::string modname(ai->cb->GetModName());
-		modname.resize(modname.size()-4);
-		std::string filename = modname + "/" + std::string(ai->cb->GetMapName());
 		std::string cacheMarker;
+		std::string filename = 
+			std::string(CACHE_FOLDER) + modShortName + "-" + modVersion + "-" +
+			modHash + "/" + mapName + "-" + mapHash + "-graph.bin";
 
-		cacheMarker.resize(cacheVersion.size());
-
-		filename = std::string(CACHE_FOLDER) + filename.substr(0, filename.size()-4) + "-graph.bin";
+		util::SanitizeFileNameInPlace(filename);
 		filename = util::GetAbsFileName(ai->cb, filename);
+		
+		cacheMarker.resize(cacheVersion.size());
 
 		/* See if we can read from binary */
 		std::ifstream fin;
