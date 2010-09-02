@@ -12,8 +12,9 @@ class AIClasses;
 class CLogger {
 	public:
 		enum type { LOG_FILE = (1<<0), LOG_STDOUT = (1<<1), LOG_SPRING = (1<<2) };
+		enum logLevel { NONE = 0, ERROR, WARNING, VERBOSE };
 
-		CLogger(AIClasses *_ai, unsigned lt);
+		CLogger(AIClasses *_ai, unsigned int lt, logLevel lf = VERBOSE);
 		~CLogger() {}
 
 		/* Error logging */
@@ -29,8 +30,6 @@ class CLogger {
 		void s(std::string msg);
 
 	private:
-		enum logLevel{ ERROR, WARNING, VERBOSE };
-
 		std::string fileName;
 
 		AIClasses *ai;
@@ -38,12 +37,14 @@ class CLogger {
 		/* Sum of log type flags */
 		unsigned int logType;
 
+		logLevel logFilter;
+
 		/* File stream */
 		std::ofstream ofs;
 
 		/* logLevels to string */
-		std::map<logLevel, std::string> logLevels;
-		std::map<logLevel, std::string> logDesc;
+		static std::map<logLevel, std::string> logLevels;
+		static std::map<logLevel, std::string> logDesc;
 
 		/* Perform logging @ defined logTypes */
 		void log(logLevel level, std::string &msg);

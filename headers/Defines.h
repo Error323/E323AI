@@ -61,10 +61,11 @@
 /* Max number of idle scout groups to prevent building unnecessary scouts */
 #define MAX_IDLE_SCOUT_GROUPS 3
 
-/* Critical number of units per group when pathfinding stalls the game */
+/* Critical number of units per group when regrouping for moving group 
+   stalls the game */
 #define GROUP_CRITICAL_MASS 20
 
-/* Max unit weapon range to be considered by threatmap algo */
+/* Max unit weapon range to be considered by threatmap algo (a hack!) */
 #define MAX_WEAPON_RANGE_FOR_TM 1200.0f
 
 /* Max distance at which groups can merge */
@@ -152,6 +153,12 @@ enum buildType {
 	BUILD_FACTORY,
 	BUILD_MSTORAGE,
 	BUILD_ESTORAGE
+};
+
+enum difficultyLevel {
+	DIFFICULTY_EASY = 1,
+	DIFFICULTY_NORMAL,
+	DIFFICULTY_HARD
 };
 
 #endif

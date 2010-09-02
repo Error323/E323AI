@@ -44,7 +44,8 @@ public:
 		// ally team ID
 	int            allyAITeam;
 		// ally AI team ID (internal)
-		
+	difficultyLevel difficulty;
+						
 	std::vector<int> unitIDs;
 		// temporary container for GetEnemyUnits(), GetFriendlyUnits() etc. results
 };

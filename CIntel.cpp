@@ -232,7 +232,7 @@ void CIntel::resetCounters() {
 	counts[AIR] = 0;
 	counts[ASSAULT] = 3;
 	
-	if(ai->military->idleScoutGroupsNum() >= MAX_IDLE_SCOUT_GROUPS)
+	if (ai->difficulty == DIFFICULTY_EASY || ai->military->idleScoutGroupsNum() >= MAX_IDLE_SCOUT_GROUPS)
 		counts[SCOUTER] = 0;
 	else
 		counts[SCOUTER] = 1; // default value

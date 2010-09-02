@@ -426,9 +426,12 @@ bool CGroup::canAssist(UnitType *type) {
 }
 
 bool CGroup::canMerge(CGroup *group) {
-	static unsigned int nonMergableCats[] = {SEA, LAND, AIR, HOVER, ATTACKER, STATIC, MOBILE, BUILDER, SCOUTER};
+	static unsigned int nonMergableCats[] = {SEA, LAND, AIR, ATTACKER, STATIC, MOBILE, BUILDER, SCOUTER};
 
-	unsigned int c = cats&group->cats;
+	if (units.empty())
+		return true;
+
+	unsigned int c = cats&group->cats; // common categories between two groups
 	
 	if (c == 0)
 		return false;
@@ -440,7 +443,7 @@ bool CGroup::canMerge(CGroup *group) {
 	}
 
 	if (!(cats&SCOUTER) && (group->cats&SCOUTER)) {
-		// attempt to add scouter to non-scout group
+		// merging scout group with non-scout group...
 		static unsigned int attackCats = ANTIAIR|ARTILLERY|SNIPER|ASSAULT;
 		if (!(c&attackCats))
 			return false;

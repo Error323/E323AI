@@ -5,6 +5,7 @@
 extern std::map<int, CAIGlobalAI*> myAIs;
 
 AIClasses::AIClasses() {
+	difficulty = DIFFICULTY_HARD;
 	unitIDs.resize(MAX_UNITS);
 }
 

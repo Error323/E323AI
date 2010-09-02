@@ -22,6 +22,65 @@
 --------------------------------------------------------------------------------
 
 local options = {
+	{ -- section
+		key    = 'performance',
+		name   = 'Performance relevant settings',
+		desc   = 'These settings may be relevant for both CPU usage and AI difficulty.',
+		type   = 'section',
+	},
+	
+	{ -- list
+		section = 'performance',
+		key     = 'difficulty',
+		name    = 'Difficulty level',
+		desc    = 'Customize difficulty level',
+		type    = 'list',
+		def     = '3',
+		items   = {
+			{
+				key  = '1',
+				name = 'Easy',
+			},
+			
+			{
+				key  = '2',
+				name = 'Normal',
+			},
+			
+			{
+				key  = '3',
+				name = 'Hard',
+			},
+		},
+	},
+	
+	{ -- list
+		section = 'performance',
+		key     = 'logging',
+		name    = 'Log level',
+		desc    = 'Specifies how much information to output into log file',
+		type    = 'list',
+		def     = '0',
+		items   = {
+			{
+				key  = '0',
+				name = 'Nothing',
+			},
+			
+			{
+				key  = '1',
+				name = 'Errors',
+			},
+			{
+				key  = '2',
+				name = 'Warnings',
+			},
+			{
+				key  = '3',
+				name = 'Verbose',
+			},
+		},
+	},
 }
 
 return options

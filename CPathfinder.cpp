@@ -348,7 +348,8 @@ void CPathfinder::updateFollowers() {
 		else
 			maxGroupLength *= 2.0f;
 	
-		// NOTE: among aircraft units only Brawler type units (ASSAULT) can regroup
+		// NOTE: among aircraft units only Brawler type units (ASSAULT) 
+		// can regroup (TODO: detect this by moving behaviour?)
 		bool enableRegrouping = 
 			group->units.size() < GROUP_CRITICAL_MASS 
 			&& (!(group->cats&AIR) || (group->cats&(ASSAULT|SNIPER|ARTILLERY|ANTIAIR)) == ASSAULT);
@@ -356,15 +357,17 @@ void CPathfinder::updateFollowers() {
 		M.clear();
 
 		/* Go through all the units in a group */
-		for (u = group->units.begin(); u != group->units.end(); u++) {
-			CUnit *unit = u->second;
+		for (u = group->units.begin(); u != group->units.end(); ++u) {
+			int s1 = 0, s2 = 1;
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
 			float l1, l2;
 			float length = 0.0f;
-			int s1 = 0, s2 = 1;
+			CUnit *unit = u->second;
+
 			float3 upos = unit->pos();
-			/* Go through the path to determine the unit's segment on the path
-			 */
+			
+			// go through the path to determine the unit's segment 
+			// on the path...
 			for (segment = 1; segment < path->second.size() - waypoint; segment++) {
 				if (segment == 1)
 					l1 = upos.distance2D(path->second[segment - 1]);

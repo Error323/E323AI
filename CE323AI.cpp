@@ -35,13 +35,29 @@ CE323AI::CE323AI() {
 }
 
 void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
+	static const char
+		optionDifficulty[] = "difficulty",
+		optionLoggingLevel[] = "logging";
+  
+	CLogger::logLevel loggingLevel = CLogger::VERBOSE;
+	
 	instances++;
+	
 	ai                = new AIClasses();
 	ai->cb            = callback->GetAICallback();
 	ai->cbc           = callback->GetCheatInterface();
 	ai->team          = team;
 	ai->allyTeam      = ai->cb->GetMyAllyTeam();
-	ai->logger        = new CLogger(ai, /*CLogger::LOG_STDOUT |*/ CLogger::LOG_FILE);
+	
+	std::map<std::string, std::string> options = ai->cb->GetMyOptionValues();
+	if (options.find(optionDifficulty) != options.end()) {
+		ai->difficulty = static_cast<difficultyLevel>(atoi(options[optionDifficulty].c_str()));
+	}
+	if (options.find(optionLoggingLevel) != options.end()) {
+		loggingLevel = static_cast<CLogger::logLevel>(atoi(options[optionLoggingLevel].c_str()));
+	}
+	
+	ai->logger        = new CLogger(ai, /*CLogger::LOG_STDOUT |*/ CLogger::LOG_FILE, loggingLevel);
 	ai->cfgparser     = new CConfigParser(ai);
 	ai->unittable     = new CUnitTable(ai);
 
@@ -56,7 +72,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	}
 #endif
 	LOG_II("CE323AI::InitAI allyAITeam = " << ai->allyAITeam)
-
+	
 	std::string configfile = ai->cfgparser->getFilename(GET_CFG);
 	ai->cfgparser->parseConfig(configfile);
 	if (ai->cfgparser->isUsable()) {

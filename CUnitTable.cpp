@@ -44,9 +44,9 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		cat2str[ATTACKER]    = "ATTACKER";
 		cat2str[ANTIAIR]     = "ANTIAIR";
 		cat2str[SCOUTER]     = "SCOUTER";
-		cat2str[ARTILLERY]   = "ARTILLERY";  
-		cat2str[SNIPER]      = "SNIPER";  
-		cat2str[ASSAULT]     = "ASSAULT";  
+		cat2str[ARTILLERY]   = "ARTILLERY";
+		cat2str[SNIPER]      = "SNIPER";
+		cat2str[ASSAULT]     = "ASSAULT";
 
 		/* economic */
 		cat2str[MEXTRACTOR]  = "MEXTRACTOR";

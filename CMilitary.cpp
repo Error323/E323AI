@@ -68,7 +68,7 @@ void CMilitary::addUnit(CUnit &unit) {
 		CGroup *group;
 		
 		if (c&SCOUTER && wishedCats && !(wishedCats&SCOUTER))
-			c &= ~SCOUTER; // scouter was not requested
+			c &= ~SCOUTER; // scout was not requested
 
 		if (c&SCOUTER) {
 			/* A scout is initially alone */
@@ -333,16 +333,18 @@ void CMilitary::update(int frame) {
 	bool gotAirFactory = ai->unittable->gotFactory(AIRCRAFT);
 	bool gotSeaFactory = ai->unittable->gotFactory(NAVAL|HOVER);
 	
-	// if all scouts are busy create some more...
-	if (busyScoutGroups == activeScoutGroups.size()) {
-		unsigned int baseType = ai->gamemap->IsWaterMap() ? SEA : LAND;
-		buildPriority priority = activeScoutGroups.size() < ai->cfgparser->getMinScouts() ? HIGH: NORMAL;
+	if (ai->difficulty == DIFFICULTY_HARD) {
+		// if all scouts are busy create some more...
+		if (busyScoutGroups == activeScoutGroups.size()) {
+			unsigned int baseType = ai->gamemap->IsWaterMap() ? SEA : LAND;
+			buildPriority priority = activeScoutGroups.size() < ai->cfgparser->getMinScouts() ? HIGH: NORMAL;
 
-		if(gotAirFactory && rng.RandFloat() > 0.66f)
-			baseType = AIR;
+			if(gotAirFactory && rng.RandFloat() > 0.66f)
+				baseType = AIR;
 				
-		ai->wishlist->push(baseType | MOBILE | SCOUTER, priority);
-	} 
+			ai->wishlist->push(baseType | MOBILE | SCOUTER, priority);
+		} 
+	}
 
 	/* Always build some unit */
 	if (ai->gamemap->IsWaterMap()) {
