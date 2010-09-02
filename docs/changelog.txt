@@ -4,6 +4,7 @@ v3.22.2 [2010-09-02]
 * added difficulty option (hard by default)
 * added logging level option (log nothing by default)
 * fixed filename generation for pathfinder graph cached data
+* fixed possible temporary stall before the very first factory build
 
 v3.22.1 [2010-09-01]
 * fixed issuing assist commands for builders which can't assist
