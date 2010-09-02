@@ -1,5 +1,9 @@
 E323AI changelog
 ----------------
+v3.22.2 [2010-09-02]
+* added difficulty option (hard by default)
+* added logging level option (log nothing by default)
+
 v3.22.1 [2010-09-01]
 * fixed issuing assist commands for builders which can't assist
 * added parital support for Conflict Terra mod (you must start the game with Flasgship Base commander unit only)
