@@ -70,6 +70,12 @@ namespace util {
 		return num;
 	}
 	
+	std::string IntToString(int i, const std::string& format) {
+		char buf[64];
+		SNPRINTF(buf, sizeof(buf), format.c_str(), i);
+		return std::string(buf);
+	}
+	
 	float WeightedAverage(std::list<float>& V, std::list<float>& W) {
 		float wavg = 0.0f;
 		std::list<float>::const_iterator v, w;
