@@ -30,7 +30,11 @@ CLogger::CLogger(AIClasses *_ai, unsigned int lt, logLevel lf): ai(_ai), logType
 	}
 
 	if (lt & CLogger::LOG_FILE) {
-		std::string mapname = std::string(ai->cb->GetMapName());
+		std::string modShortName = std::string(ai->cb->GetModShortName());
+		std::string mapName = std::string(ai->cb->GetMapName());
+
+		util::SanitizeFileNameInPlace(modShortName);
+		util::SanitizeFileNameInPlace(mapName);
 
 		time_t now1;
 		time(&now1);
@@ -38,9 +42,10 @@ CLogger::CLogger(AIClasses *_ai, unsigned int lt, logLevel lf): ai(_ai), logType
 
 		char relFileName[2048];
 		std::sprintf(
-			relFileName, "%s%s-%2.2d%2.2d%2.2d%2.2d%2.2d-team-%d.log", 
+			relFileName, "%s%s-%s-%2.2d%2.2d%2.2d%2.2d%2.2d-team-%d.log", 
 			LOG_FOLDER,
-			mapname.c_str(), 
+			modShortName.c_str(),
+			mapName.c_str(), 
 			now2->tm_year + 1900, 
 			now2->tm_mon + 1, 
 			now2->tm_mday, 
@@ -48,6 +53,7 @@ CLogger::CLogger(AIClasses *_ai, unsigned int lt, logLevel lf): ai(_ai), logType
 			now2->tm_min, 
 			ai->team
 		);
+		
 		fileName = util::GetAbsFileName(ai->cb, std::string(relFileName), false);
 		ofs.open(fileName.c_str(), std::ios::app);
 		if (ofs.good()) {
@@ -71,11 +77,11 @@ CLogger::CLogger(AIClasses *_ai, unsigned int lt, logLevel lf): ai(_ai), logType
 	}
 	
 	if (lt & CLogger::LOG_STDOUT) {
-		std::cout << "Logging to screen:\n";
+		std::cout << "Logging to screen...\n";
 	}
 	
 	if (lt & CLogger::LOG_SPRING) {
-		ai->cb->SendTextMsg("Logging to spring", 0);
+		ai->cb->SendTextMsg("Logging to Spring...", 0);
 	}
 }
 
