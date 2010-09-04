@@ -72,8 +72,10 @@ class CPathfinder: public AAStar, public ARegistrar {
 				}
 		};
 
+		/* Get estimated path lenfth a group need to travel */
+		float getPathLength(CGroup&, float3&);
 		/* Get estimated time of arrival */
-		float getETA(CGroup&, float3&, float radius = 0.0f);
+		float getETA(CGroup&, float3&);
 
 		/* Update groups following paths */
 		void updateFollowers();
@@ -93,7 +95,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		Node* getClosestNode(const float3 &f, CGroup *group = NULL);
 		float3 getClosestPos(const float3 &f, CGroup *group = NULL);
 
-		/* x and z in slopemap resolution */
+		/* x and z are in slopemap resolution */
 		bool isBlocked(int x, int z, int movetype);
 		
 		bool pathExists(CGroup &group, const float3 &s, const float3 &g);

@@ -299,29 +299,45 @@ void CPathfinder::resetMap(CGroup &group, ThreatMapType tm_type) {
 	}
 }
 
-float CPathfinder::getETA(CGroup &group, float3 &pos, float radius) {
-	float dist;
-	float travelTime;
+float CPathfinder::getPathLength(CGroup &group, float3 &pos) {
+	float result = -1.0f;
 	float3 gpos = group.pos();
-	
-	if (group.pathType < 0 || group.speed < EPS) {
-		travelTime = std::numeric_limits<float>::max();
-		unsigned int cats = group.firstUnit()->type->cats;
-		if (cats&STATIC) {
-			if (cats&BUILDER) {
-				// FIXME: should we consider "radius" here?
-				if (gpos.distance2D(pos) < group.buildRange)
-					travelTime = 0.0f;
+
+	if (group.pathType < 0) {
+		float distance = gpos.distance2D(pos);
+
+		if (distance < EPS)
+			result = 0.0f;
+		else {
+			unsigned int cats = group.cats;
+
+			if (cats&STATIC) {
+				if ((cats&BUILDER) && distance < group.buildRange)
+					result = 0.0f;
 			}
-		} else if (cats & AIR) {
-			travelTime = gpos.distance2D(pos) - radius;
+			else if(cats&AIR)
+				result = distance;
 		}
-	} else {
-		dist = ai->cb->GetPathLength(gpos, pos, group.pathType) - radius;
-		travelTime = (dist / group.speed);
 	}
+	else {
+		result = ai->cb->GetPathLength(gpos, pos, group.pathType);
+	}
+
+	return result;
+}
+
+float CPathfinder::getETA(CGroup &group, float3 &pos) {
+	float result = getPathLength(group, pos);
 	
-	return travelTime;
+	if (result < 0.0f)
+		result = std::numeric_limits<float>::max();	// pos is unreachable
+	else if (result > EPS)
+		if (group.speed	> EPS)
+			result /= group.speed;
+		else
+			result = std::numeric_limits<float>::max(); // can't move to remote pos
+	
+	return result;
 }
 
 void CPathfinder::updateFollowers() {
@@ -578,13 +594,13 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGrou
 
 	std::list<ANode*> nodepath;
 	
-	bool success = (start != NULL && goal != NULL && (findPath(&nodepath)));
+	bool success = (start != NULL && goal != NULL && findPath(&nodepath));
 	if (success) {
 		/* Insert a pre-waypoint at the starting of the path */
-		int waypoint = std::min<int>(4, nodepath.size()-1);
+		int waypoint = std::min<int>(4, nodepath.size() - 1);
 		std::list<ANode*>::iterator wp;
 		int x = 0;
-		for (wp = nodepath.begin(); wp != nodepath.end(); wp++) {
+		for (wp = nodepath.begin(); wp != nodepath.end(); ++wp) {
 			if (x >= waypoint) break;
 			x++;
 		}
@@ -593,13 +609,13 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGrou
 		float3 seg = s - ss;
 		seg *= 1000.0f; /* Blow up the pre-waypoint */
 		seg += s;
-		seg.y = ai->cb->GetElevation(seg.x, seg.z)+10;
+		seg.y = ai->cb->GetElevation(seg.x, seg.z) + 10.0f;
 		path.push_back(seg);
 
-		for (std::list<ANode*>::iterator i = nodepath.begin(); i != nodepath.end(); i++) {
+		for (std::list<ANode*>::iterator i = nodepath.begin(); i != nodepath.end(); ++i) {
 			Node *n = dynamic_cast<Node*>(*i);
 			float3 f = n->toFloat3();
-			f.y = ai->cb->GetElevation(f.x, f.z)+20;
+			f.y = ai->cb->GetElevation(f.x, f.z) + 20.0f;
 			path.push_back(f);
 		}
 		path.push_back(g);
