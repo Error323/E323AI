@@ -476,7 +476,11 @@ bool CUnitTable::gotFactory(unsigned int c) {
 }
 
 void CUnitTable::getBuildables(UnitType *ut, unsigned include, unsigned exclude, std::multimap<float, UnitType*> &candidates) {
+	static const unsigned int envCats = (AIR|SEA|LAND);
+	unsigned int incEnvCats = (envCats&include);
 	std::vector<unitCategory> incCats, excCats;
+	
+	// split categories...
 	for (unsigned int i = 0; i < cats.size(); i++) {
 		if (include&cats[i])
 			incCats.push_back(cats[i]);
@@ -485,37 +489,51 @@ void CUnitTable::getBuildables(UnitType *ut, unsigned include, unsigned exclude,
 	}
 
 	std::map<int, UnitType*>::iterator j;
-	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); j++) {
-		bool qualifies = true;
+	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); ++j) {
+		bool valid = true;
 		unsigned int cat = j->second->cats;
 		for (unsigned int i = 0; i < incCats.size(); i++) {
-			if (!(incCats[i]&cat)) {
-				qualifies = false;
+			// NOTE: evironment tags are handled differently: if requested
+			// AIR, LAND & SEA in any combination that means having at least
+			// one match automatically qualifies unit as valid
+			if (incCats[i]&envCats) {
+				if (incEnvCats) {
+					// filter by environment tags is active
+					if (!(incEnvCats&cat)) {
+						valid = false;
+						break;
+					}
+				}
+			}
+			else if (!(incCats[i]&cat)) {
+				valid = false;
 				break;
 			}
 		}
 
-		if (qualifies) {
+		if (valid) {
 			/* Filter out excludes */
 			for (unsigned int i = 0; i < excCats.size(); i++) {
-				if ((excCats[i]&cat)) {
-					qualifies = false;
+				if (excCats[i]&cat) {
+					valid = false;
 					break;
 				}
 			}
 			
-			if (qualifies) {
+			if (valid) {
 				float cost = j->second->cost;
 				candidates.insert(std::pair<float,UnitType*>(cost, j->second));
 			}
 		}
 	}
+	
 	if (candidates.empty())
 		LOG_WW("CUnitTable::getBuildables no candidates found INCLUDE(" << debugCategories(include) << ") EXCLUDE("<<debugCategories(exclude)<<") for unitdef(" << ut->def->humanName << ")")
 }
 
 UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
 	std::map<int, UnitType*>::iterator it;
+	// TODO: make it compatible with environment tags
 	for (it = ut->canBuild.begin(); it != ut->canBuild.end(); it++) {
 		if ((it->second->cats & c) == c)
 			return it->second;
