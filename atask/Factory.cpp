@@ -19,8 +19,23 @@ FactoryTask::FactoryTask(AIClasses *_ai, CGroup& group): ATask(_ai) {
 bool FactoryTask::assistable(CGroup &assister) {
 	CGroup *group = firstGroup();
 
-	if (assisters.size() >= std::min(ai->cfgparser->getState() * 2, FACTORY_ASSISTERS)
-	|| !group->firstUnit()->def->canBeAssisted) {
+	if (!group->firstUnit()->def->canBeAssisted)
+		return false; // no physical ability
+	if (assister.firstUnit()->type->cats&COMMANDER)
+		return true; // commander must stay at the base
+	if (assisters.size() >= std::min(ai->cfgparser->getState() * 2, FACTORY_ASSISTERS)) {
+		if (assister.cats&AIR) {
+			// try replacing existing assisters with aircraft assisters to free
+			// factory exit...
+			std::list<ATask*>::iterator it;
+			for (it = assisters.begin(); it != assisters.end(); ++it) {
+				ATask *task = *it;
+				if (!(task->firstGroup()->cats&(AIR|COMMANDER))) {
+					task->remove();
+					return true;
+				}
+			}		
+		}
 		return false;
 	}
 	
