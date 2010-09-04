@@ -55,7 +55,7 @@ class CUnit: public ARegistrar {
 		bool attack(int target, bool enqueue = false);
 
 		/* Move a unit forward by dist */
-		bool moveForward(float dist, bool enqueue = true);
+		bool moveForward(float dist, bool enqueue = false);
 
 		/* Move random */
 		bool moveRandom(float radius, bool enqueue = false);
@@ -81,7 +81,7 @@ class CUnit: public ARegistrar {
 		bool cloak(bool on);
 
 		/* Guard a certain unit */
-		bool guard(int target, bool enqueue = true);
+		bool guard(int target, bool enqueue = false);
 
 		/* Stop doing what you did */
 		bool stop();
