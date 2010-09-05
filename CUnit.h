@@ -13,10 +13,10 @@ class UnitType;
 class CGroup;
 
 /* Building facings, NOTE: this order is important! */
-enum facing{SOUTH, EAST, NORTH, WEST, NONE};
+enum facing{ SOUTH, EAST, NORTH, WEST, NONE };
 
 /* Map quadrants */
-enum quadrant {NORTH_WEST, NORTH_EAST, SOUTH_WEST, SOUTH_EAST};
+enum quadrant { NORTH_WEST, NORTH_EAST, SOUTH_WEST, SOUTH_EAST };
 
 class CUnit: public ARegistrar {
 	public:
