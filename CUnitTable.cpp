@@ -68,7 +68,7 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	if (str2cat.empty()) {
 		/* Create the str2cat table and cats vector */
 		std::map<unitCategory,std::string>::iterator i;
-		for (i = cat2str.begin(); i != cat2str.end(); i++) {
+		for (i = cat2str.begin(); i != cat2str.end(); ++i) {
 			cats.push_back(i->first);
 			str2cat[i->second] = i->first;
 		}
@@ -353,15 +353,20 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->canResurrect)
 		cats |= RESURRECTOR;
 
-	if (!ud->buildOptions.empty() && !ud->canmove) {
+	// NOTE: we aren't checking for "canMove" becasue it is usually used to set rally point
+	// for factory
+	if (!ud->buildOptions.empty()) {
 		cats |= FACTORY;
 
 		// precise factory type...
-		std::map<int, std::string>::iterator j;
-		std::map<int, std::string> buildOptions = ud->buildOptions;
-		for (j = buildOptions.begin(); j != buildOptions.end(); ++j) {
+		std::map<int, std::string>::const_iterator j;
+		for (j = ud->buildOptions.begin(); j != ud->buildOptions.end(); ++j) {
 			const UnitDef *canbuild = ai->cb->GetUnitDef(j->second.c_str());
 			
+			if (canbuild->speed < EPS && (cats&FACTORY))
+				// this is a static builder, not a factory
+				cats -= FACTORY; 
+
 			if (canbuild == NULL)
 				continue;
 			
@@ -378,17 +383,25 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 				cats |= KBOT;
 				break;
 			}
-			else if (canbuild->movedata->moveFamily == MoveData::Tank &&
+			
+			if (canbuild->movedata->moveFamily == MoveData::Tank &&
 				ud->minWaterDepth < 0.0f) {
 				cats |= VEHICLE;
 				break;
 			}
-			else if (canbuild->movedata->moveFamily == MoveData::Hover) {
+			
+			if (canbuild->movedata->moveFamily == MoveData::Hover) {
 				cats |= HOVER;
 				break;
 			}
+
+			if (canbuild->movedata->moveFamily == MoveData::Ship) {
+				cats |= NAVAL;
+				break;
+			}			
 		}
-		//XXX: hack
+		
+		// HACK: true
 		if (ud->metalCost < 2000.0f)
 			cats |= TECH1;
 		else
@@ -401,7 +414,7 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->energyStorage / ut->cost > 0.2f)
 		cats |= ESTORAGE;
 
-	if (ud->makesMetal >= 1 && ud->energyUpkeep > ud->makesMetal * 40)
+	if (ud->makesMetal >= 0.5f && (ud->energyUpkeep > (ud->makesMetal * 40.0f)))
 		cats |= MMAKER;
 
 	if ((ud->energyMake - ud->energyUpkeep) / ut->cost > 0.002 ||
@@ -420,7 +433,7 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->highTrajectoryType >= 1)
 		cats |= ARTILLERY;
 
-	if (cats&ATTACKER && cats&MOBILE && !(cats&BUILDER) && ud->speed >= 50.0f) {
+	if ((cats&ATTACKER) && (cats&MOBILE) && !(cats&BUILDER) && ud->speed >= 50.0f) {
 		std::map<int, UnitType*>::iterator i,j;
 		for (i = ut->buildBy.begin(); i != ut->buildBy.end(); ++i) {
 			bool isCheapest = true;
@@ -442,29 +455,16 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 }
 
 float CUnitTable::calcUnitDps(UnitType *ut) {
-	// FIXME: Make our own *briljant* dps calc here
+	// FIXME: make our own *briljant* dps calc here
 	return ut->def->power;
 }
 
 int CUnitTable::factoryCount(unsigned int c) {
 	int result = 0;
-
-	// decode categories from "c" and put them into "utcats"...
-	std::vector<unitCategory> utcats;
-	for (unsigned int i = 0; i < cats.size(); i++)
-		if (c&cats[i])
-			utcats.push_back(cats[i]);
-
 	std::map<int, CUnit*>::iterator i;
-	for (i = factories.begin(); i != factories.end(); i++) {
-		bool qualifies = true;
-		unsigned int cat = activeUnits[i->first]->type->cats;
-		for (unsigned int i = 0; i < utcats.size(); i++)
-			if (!(utcats[i]&cat)) {
-				qualifies = false;
-				break;
-			}
-		if (qualifies)
+
+	for (i = factories.begin(); i != factories.end(); ++i) {
+		if ((c&i->second->type->cats) == c)
 			result++;
 	}
 	

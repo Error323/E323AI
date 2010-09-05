@@ -35,7 +35,6 @@ class CUnitTable: public ARegistrar {
 		CUnitTable(AIClasses *ai);
 		~CUnitTable();
 
-
 		/* Returns a fresh CUnit instance */
 		CUnit* requestUnit(int uid, int bid);
 
