@@ -328,15 +328,17 @@ float CPathfinder::getPathLength(CGroup &group, float3 &pos) {
 
 float CPathfinder::getETA(CGroup &group, float3 &pos) {
 	float result = getPathLength(group, pos);
-	
-	if (result < 0.0f)
+
+	if (result < 0.0f) {
 		result = std::numeric_limits<float>::max();	// pos is unreachable
-	else if (result > EPS)
-		if (group.speed	> EPS)
+	} else if (result > EPS) {
+		if (group.speed	> EPS) {
 			result /= group.speed;
-		else
+		} else {
 			result = std::numeric_limits<float>::max(); // can't move to remote pos
-	
+		}
+	}
+
 	return result;
 }
 

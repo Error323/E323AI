@@ -203,7 +203,7 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 		unit->techlvl = (activeUnits[bid]->type->cats&TECH5) ? TECH5 : unit->techlvl;
 	}
 	// NOTE: remember that NOTA has mobile defenses
-	if ((unit->type->cats&STATIC) && (unit->type->cats&ATTACKER) || (unit->type->cats&DEFENSE))
+	if (((unit->type->cats&STATIC) && (unit->type->cats&ATTACKER)) || (unit->type->cats&DEFENSE))
 		defenses[unit->key] = unit;
 	if (unit->type->cats&ESTORAGE)
 		energyStorages[unit->key] = unit;
