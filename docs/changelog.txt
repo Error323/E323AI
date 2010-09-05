@@ -1,10 +1,18 @@
 E323AI changelog
 ----------------
+v3.22.3 [2010-09-05]
+* changed filename generation for log file: now includes short mod name and contains only safe path characters
+* fixed filename generation for pathfinder graph cached data: no more semi-qualified filenames like "-graph.bin" 
+* fixed possible temporary stall before the very first factory build (introduced in v3.22.2)
+* fixed commander walking into enemy base on metall stall detection (probably)
+* aircraft builders can always assist factories now, replacing ground assisters when limit per factory is reached; this is done to free factory exit in late game
+* better metall stall and energy stall resolving; previous versions heavily depend on commander and also do not consider it can be dead
+* fixed the problem when aircraft builders could not build some economy units (introduced in v3.21.2)
+* partial tech 2 support for NOTA mod
+
 v3.22.2 [2010-09-02]
 * added difficulty option (hard by default)
 * added logging level option (log nothing by default)
-* fixed filename generation for pathfinder graph cached data
-* fixed possible temporary stall before the very first factory build
 
 v3.22.1 [2010-09-01]
 * fixed issuing assist commands for builders which can't assist
