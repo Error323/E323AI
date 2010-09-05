@@ -154,6 +154,9 @@ void CMilitary::update(int frame) {
 				// TODO: replace constant with maneuvering radius of plane?
 				tf.threatRadius = 1000.0f;
 				break;
+			case HARASS:
+				// should never get here
+				throw 38;
 		}
 
 		std::vector<std::vector<int>* > *targetBlocks = &(ai->intel->targets[behaviour]);
@@ -197,6 +200,12 @@ void CMilitary::update(int frame) {
 				case BOMBER:
 					tf.threatCeiling = group->strength + group->firstUnit()->type->dps;
 					break;
+				case ENGAGE:
+					// should never get here
+					throw 37;
+				case HARASS:
+					// should never get here
+					throw 36;
 			}
 
 			// basic target selection...
@@ -234,6 +243,9 @@ void CMilitary::update(int frame) {
 							case BOMBER:
 								canAssist = assisters < 9;
 								break;
+							case HARASS:
+								// should never get here
+								throw 35;
 						}
 						
 						if (canAssist) {
@@ -280,6 +292,9 @@ void CMilitary::update(int frame) {
 				case BOMBER:
 					bMerge = bMerge && activeBomberGroups.size() > 1;
 					break;
+				case HARASS:
+					// should never get here
+					throw 34;
 			}
 				
 			if (bMerge)
