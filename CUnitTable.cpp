@@ -244,17 +244,13 @@ void CUnitTable::buildTechTree() {
 
 		UnitType *utParent, *utChild;
 
-		if (u == units.end()) {
+		if (u == units.end())
 			utParent = insertUnit(ud);
-			MoveData* md = utParent->def->movedata;
-			if (md != NULL)
-				moveTypes[md->pathType] = md;
-		}
 		else
 			utParent = &(u->second);
 
 		buildOptions = ud->buildOptions;
-		for (j = buildOptions.begin(); j != buildOptions.end(); j++) {
+		for (j = buildOptions.begin(); j != buildOptions.end(); ++j) {
 			ud = ai->cb->GetUnitDef(j->second.c_str());
 			u = units.find(ud->id);
 
@@ -277,6 +273,7 @@ void CUnitTable::buildTechTree() {
 
 UnitType* CUnitTable::insertUnit(const UnitDef *ud) {
 	UnitType ut;
+
 	ut.def        = ud;
 	ut.id         = ud->id;
 	ut.cost       = ud->metalCost*METAL2ENERGY + ud->energyCost;
@@ -285,6 +282,11 @@ UnitType* CUnitTable::insertUnit(const UnitDef *ud) {
 	ut.metalMake  = ud->metalMake  - ud->metalUpkeep;
 	ut.dps        = calcUnitDps(&ut);
 	units[ud->id] = ut;
+	
+	// also register pathtype...
+	MoveData* md = ud->movedata;
+	if (md)
+		moveTypes[md->pathType] = md;
 	
 	if (maxUnitPower < ut.dps)
 		maxUnitPower = ut.dps;
@@ -457,6 +459,18 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 float CUnitTable::calcUnitDps(UnitType *ut) {
 	// FIXME: make our own *briljant* dps calc here
 	return ut->def->power;
+}
+
+int CUnitTable::unitCount(unsigned int c) {
+	int result = 0;
+	std::map<int, CUnit*>::iterator i;
+
+	for (i = activeUnits.begin(); i != activeUnits.end(); ++i) {
+		if ((c&i->second->type->cats) == c)
+			result++;
+	}
+	
+	return result;
 }
 
 int CUnitTable::factoryCount(unsigned int c) {

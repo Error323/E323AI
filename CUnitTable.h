@@ -55,7 +55,7 @@ class CUnitTable: public ARegistrar {
 
 		/* Ingame units, set in eco module */
 		std::map<int, bool>         idle;
-		std::map<int, bool>         builders;
+		std::map<int, bool>         builders; // key = <unit_id>, <job_is_finished>
 		std::map<int, CUnit*>       metalMakers;
 		std::map<int, CUnit*>       activeUnits;
 		std::map<int, CUnit*>       factories;
@@ -72,10 +72,7 @@ class CUnitTable: public ARegistrar {
 		/* Unit categories in vector */
 		static std::vector<unitCategory> cats;
 
-		/* Special commander hook, since it's the first to spawn */
-		UnitType *comm;
-
-		/* Determine if alive long enough */
+		/* Determine if alive long enough to accept tasks */
 		bool canPerformTask(CUnit &unit);
 
 		void update();
@@ -88,6 +85,7 @@ class CUnitTable: public ARegistrar {
 		void getBuildables(UnitType *ut, unsigned i, unsigned e, std::multimap<float, UnitType*> &candidates);
 		int factoryCount(unsigned int c);
 		bool gotFactory(unsigned int c);
+		int unitCount(unsigned int c);
 
 		UnitType* getUnitTypeByCats(unsigned int c);
 		static CUnit* getUnitByDef(std::map<int, CUnit*> &dic, const UnitDef *udef);
@@ -110,7 +108,7 @@ class CUnitTable: public ARegistrar {
 		void buildTechTree();
 
 		/* Generate the categorizations config file */
-		void generateCategorizationFile(std::string &fileName);
+		void generateCategorizationFile(std::string& fileName);
 
 		/* Categorize the units, see defines.h for categories */
 		unsigned int categorizeUnit(UnitType *ut);
@@ -119,7 +117,7 @@ class CUnitTable: public ARegistrar {
 		float calcUnitDps(UnitType *ut);
 
 		/* Determine wether a unit has antiair weapons */
-		bool hasAntiAir(const std::vector<UnitDef::UnitDefWeapon> &weapons);
+		bool hasAntiAir(const std::vector<UnitDef::UnitDefWeapon>& weapons);
 
 		/* Create a UnitType of ud and insert into units */
 		UnitType* insertUnit(const UnitDef *ud);
