@@ -43,13 +43,13 @@ bool FactoryTask::assistable(CGroup &assister) {
 }
 
 bool FactoryTask::onValidate() {
-	CGroup *group = firstGroup();
 	int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], pos, 16.0f);
 	if (numUnits > 0) {
+		int factoryID = firstGroup()->firstUnit()->key;
 		for (int i = 0; i < numUnits; i++) {
     		int uid = ai->unitIDs[i];
     		
-    		if (group->firstUnit()->key == uid)
+    		if (factoryID == uid)
     			continue;
     		
     		if (!ai->cb->UnitBeingBuilt(uid)) {

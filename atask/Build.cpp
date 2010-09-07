@@ -117,7 +117,7 @@ bool BuildTask::assistable(CGroup &assister, float &travelTime) const {
 	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
 	
 	/* travelTime + 5 seconds to make it worth the trip */
-	travelTime = ai->pathfinder->getETA(assister, gpos) + 30 * 5;	
+	travelTime = ai->pathfinder->getETA(assister, gpos) + 150.0f;
 
 	return (buildTime > travelTime);
 }
