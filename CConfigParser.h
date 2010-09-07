@@ -31,7 +31,7 @@ class CConfigParser {
 		int getMinScouts();
 		int getMaxTechLevel();
 		int getTotalStates();
-		int getMinGroupSize(int techLevel);
+		int getMinGroupSize(unsigned int techLevel);
 		int getState();
 
 		/**

@@ -95,7 +95,7 @@ int CConfigParser::getMaxTechLevel() {
 	return result;
 }
 
-int CConfigParser::getMinGroupSize(int techLevel) {
+int CConfigParser::getMinGroupSize(unsigned int techLevel) {
 	switch (techLevel) {
 		case TECH1: return states[state]["minGroupSizeTech1"];
 		case TECH2: return states[state]["minGroupSizeTech2"];
