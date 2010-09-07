@@ -34,7 +34,7 @@ class CUnit: public ARegistrar {
 		const UnitDef *def;
 		UnitType *type;
 		int builtBy;
-		int techlvl;
+		unsigned int techlvl;
 		CGroup *group; // group unit belongs to
 
 		/* Remove the unit from everywhere registered */

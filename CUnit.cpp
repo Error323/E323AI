@@ -36,7 +36,7 @@ void CUnit::reset(int uid, int bid) {
 	this->builtBy = bid;
 	this->waiting = false;
 	this->microing= false;
-	this->techlvl = MIN_TECHLEVEL;
+	this->techlvl = TECH1;
 	this->group = NULL;
 }
 
