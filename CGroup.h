@@ -73,7 +73,7 @@ class CGroup: public ARegistrar {
 		/* Group category tags */
 		unsigned int cats;
 		/* Max tech level of all units in a group */
-		int techlvl;
+		unsigned int techlvl;
 		/* Path type with the smallest slope */
 		int pathType;
 		/* Corresponding maxSlope */
@@ -195,6 +195,8 @@ class CGroup: public ARegistrar {
 		void recalcProperties(CUnit *unit, bool reset = false);
 		/* Implements rules of mering unit categories */
 		void mergeCats(unsigned int);
+
+		static bool canBeMerged(unsigned int bcats, unsigned int mcats);
 };
 
 #endif

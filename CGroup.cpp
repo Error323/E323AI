@@ -175,7 +175,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		los        = 0.0f;
 		maxSlope   = 1.0f;
 		pathType   = -1; // emulate NONE
-		techlvl    = MIN_TECHLEVEL;
+		techlvl    = TECH1;
 		cats       = 0;
 		groupRadius     = 0.0f;
 		radiusUpdateRequired = false;
@@ -189,7 +189,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		return;
 
 	if (unit->builtBy >= 0) {
-		techlvl = std::max<int>(techlvl, unit->techlvl);
+		techlvl = std::max<unsigned int>(techlvl, unit->techlvl);
 	}
 
 	// NOTE: aircraft & static units do not have movedata
@@ -409,8 +409,7 @@ bool CGroup::canAttack(int uid) {
 }
 
 bool CGroup::canAdd(CUnit *unit) {
-	// TODO: ?
-	return true;
+	return canBeMerged(cats, unit->type->cats);
 }
 		
 bool CGroup::canAssist(UnitType *type) {
@@ -426,39 +425,7 @@ bool CGroup::canAssist(UnitType *type) {
 }
 
 bool CGroup::canMerge(CGroup *group) {
-	static unsigned int nonMergableCats[] = {SEA, LAND, AIR, ATTACKER, STATIC, MOBILE, BUILDER, SCOUTER};
-
-	if (units.empty())
-		return true;
-
-	unsigned int c = cats&group->cats; // common categories between two groups
-	
-	if (c == 0)
-		return false;
-	
-	for (int i = 0; i < sizeof(nonMergableCats) / sizeof(unsigned int); i++) {
-		unsigned int tag = nonMergableCats[i];
-		if ((cats&tag) && !(c&tag))
-			return false;
-	}
-
-	if (!(cats&SCOUTER) && (group->cats&SCOUTER)) {
-		// merging scout group with non-scout group...
-		static unsigned int attackCats = ANTIAIR|ARTILLERY|SNIPER|ASSAULT;
-		if (!(c&attackCats))
-			return false;
-	}
-
-	// NOTE: aircraft units have more restricted merge rules
-	// TODO: refactor with introducing Group behaviour property?
-	if (cats&AIR) {
-		if ((cats&ASSAULT) && !(c&ASSAULT))
-			return false;
-		if ((cats&ARTILLERY) && !(c&ARTILLERY))
-			return false;
-	}
-	
-	return true;
+	return canBeMerged(cats, group->cats);
 }
 
 CUnit* CGroup::firstUnit() {
@@ -611,6 +578,43 @@ float CGroup::getRange() {
 	if (cats&BUILDER)
 		return buildRange;
 	return range;
+}
+
+bool CGroup::canBeMerged(unsigned int bcats, unsigned int mcats) {
+	static unsigned int nonMergableCats[] = {SEA, LAND, AIR, ATTACKER, STATIC, MOBILE, BUILDER, SCOUTER};
+
+	if (bcats == 0)
+		return true;
+
+	unsigned int c = bcats&mcats; // common categories between two groups of cats
+	
+	if (c == 0)
+		return false;
+	
+	for (int i = 0; i < sizeof(nonMergableCats) / sizeof(unsigned int); i++) {
+		unsigned int tag = nonMergableCats[i];
+		if ((bcats&tag) && !(c&tag))
+			return false;
+	}
+
+	if (!(bcats&SCOUTER) && (mcats&SCOUTER)) {
+		// merging scout group with non-scout group...
+		static unsigned int attackCats = ANTIAIR|ARTILLERY|SNIPER|ASSAULT;
+		if (!(c&attackCats))
+			return false;
+	}
+
+	// NOTE: aircraft units have more restricted merge rules
+	// TODO: refactor with introducing Group behaviour property?
+	if (bcats&AIR) {
+		if ((bcats&ASSAULT) && !(c&ASSAULT))
+			return false;
+		if ((bcats&ARTILLERY) && !(c&ARTILLERY))
+			return false;
+	}
+	
+	return true;
+	
 }
 
 std::ostream& operator<<(std::ostream &out, const CGroup &group) {
