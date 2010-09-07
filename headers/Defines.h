@@ -80,7 +80,7 @@
 #define BAD_TARGET_TIMEOUT (60*30)
 
 /* Number of unique tasks allowed to be executed per update */
-#define MAX_TASKS_PER_UPDATE 10
+#define MAX_TASKS_PER_UPDATE 3
 
 /* Draw time */
 #define DRAW_TIME MULTIPLEXER*30
