@@ -129,8 +129,10 @@ class CEconomy: public ARegistrar {
 		bool taskInProgress(buildType bt);
 
 		/* Get next allowed factory to build */
-		unsigned int getNextFactoryToBuild(UnitType *ut, int maxteachlevel);
-		unsigned int getNextFactoryToBuild(CUnit *unit, int maxteachlevel);
+		unsigned int getNextTypeToBuild(UnitType *ut, unsigned int cats, int maxteachlevel);
+		unsigned int getNextTypeToBuild(CUnit *unit, unsigned int cats, int maxteachlevel);
+
+		bool isTypeRequired(UnitType *builder, unsigned int cats, int maxteachlevel);
 };
 
 #endif

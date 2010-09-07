@@ -270,23 +270,6 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 
 				bool build = numFactories <= 0;
 				
-				/*
-				if (numFactories > 0) {
-					int maxTechLevel = ai->cfgparser->getMaxTechLevel();
-					unsigned int cats = getNextFactoryToBuild(unit, maxTechLevel);
-					if (cats > 0) {
-						cats |= FACTORY;
-						UnitType *ut = ai->unittable->getUnitTypeByCats(cats);
-						if (ut) {
-							if (ut->costMetal > EPS)
-								build = ((mNow / ut->costMetal) > 0.8f);
-							else
-								build = true;
-						}
-					}
-				}
-				*/				
-				
 				if (!build) {
 					float m = mNow / mStorage;
 			
@@ -458,21 +441,6 @@ void CEconomy::update(int frame) {
 
 		if (group->cats&FACTORY) {
 			ai->tasks->addTask(new FactoryTask(ai, *group));
-		
-			/* TODO: put same factories in a single group. This requires refactoring of task
-			assisting, because when factory is dead assisting tasks continue working on ex. factory
-			position.
-
-			CUnit *factory = CUnitTable::getUnitByDef(ai->unittable->factories, unit.def);
-			if(factory && factory->group) {
-				factory->group->addUnit(unit);
-			} else {
-				CGroup *group = requestGroup();
-				group->addUnit(unit);
-				ai->tasks->addFactoryTask(*group);
-			}
-			*/
-			
 			continue;
 		}
 
@@ -507,8 +475,8 @@ void CEconomy::update(int frame) {
 			}
 			
 			/* If we don't have a factory, build one */
-			if (ai->unittable->factories.empty()) {
-				unsigned int factory = getNextFactoryToBuild(unit, maxTechLevel);
+			if (ai->unittable->factories.empty() || mexceeding) {
+				unsigned int factory = getNextTypeToBuild(unit, FACTORY, maxTechLevel);
 				if (factory > 0)
 					buildOrAssist(*group, BUILD_FACTORY, factory);
 				if (group->busy) continue;
@@ -521,10 +489,15 @@ void CEconomy::update(int frame) {
 				if (group->busy) continue;
 			}
 			
-			// HACK: in NOTA only static commanders can build factories
+			// NOTE: in NOTA only static commanders can build tech1 factories
 			if (unit->type->cats&STATIC) {
 				/* See if this unit can build desired factory */
-				unsigned int factory = getNextFactoryToBuild(unit, maxTechLevel);
+				unsigned int factory = getNextTypeToBuild(unit, FACTORY, maxTechLevel);
+				if (factory > 0)
+					buildOrAssist(*group, BUILD_FACTORY, factory);
+				if (group->busy) continue;
+
+				factory = getNextTypeToBuild(unit, BUILDER|STATIC, maxTechLevel);
 				if (factory > 0)
 					buildOrAssist(*group, BUILD_FACTORY, factory);
 				if (group->busy) continue;
@@ -570,7 +543,7 @@ void CEconomy::update(int frame) {
 		}
 		
 		/* See if this unit can build desired factory */
-		unsigned int factory = getNextFactoryToBuild(unit, maxTechLevel);
+		unsigned int factory = getNextTypeToBuild(unit, FACTORY, maxTechLevel);
 		if (factory > 0)
 			buildOrAssist(*group, BUILD_FACTORY, factory);
 		if (group->busy) continue;
@@ -670,7 +643,7 @@ void CEconomy::controlMetalMakers() {
 }
 
 void CEconomy::preventStalling() {
-	bool needMStallFixing, needEStallFixing;	
+	bool needMStallFixing, needEStallFixing;
 	AssistTask
 		*taskWithPowerBuilder = NULL,
 		*taskWithFastBuilder = NULL;
@@ -773,7 +746,7 @@ void CEconomy::updateIncomes(int frame) {
 		}
 		else {
 			bool oldAlgo = true;
-			int initialFactory = getNextFactoryToBuild(utCommander, MIN_TECHLEVEL);
+			int initialFactory = getNextTypeToBuild(utCommander, FACTORY, MIN_TECHLEVEL);
 			if (initialFactory) {
 				UnitType *facType = ai->unittable->canBuild(utCommander, initialFactory);
 				if (facType != NULL) {
@@ -838,8 +811,8 @@ void CEconomy::updateIncomes(int frame) {
 	uEIncome   = beta*(uEIncomeSummed / incomes) + (1.0f-beta)*eU;
 	*/
 
-	mstall     = (mNow < (mStorage*0.1f) && mUsage > mIncome) || mIncome < mStart;
-	estall     = (eNow < (eStorage*0.1f) && eUsage > eIncome) || eIncome < eStart;
+	mstall = (mNow < (mStorage*0.1f) && mUsage > mIncome) || mIncome < mStart;
+	estall = (eNow < (eStorage*0.1f) && eUsage > eIncome) || eIncome < eStart;
 
 	mexceeding = (mNow > (mStorage*0.9f) && mUsage < mIncome);
 	eexceeding = (eNow > (eStorage*0.9f) && eUsage < eIncome);
@@ -945,36 +918,46 @@ bool CEconomy::canAffordToBuild(UnitType *builder, UnitType *utToBuild) {
 	return (mPrediction >= 0.0f && ePrediction >= 0.0f && mNow/mStorage >= 0.1f);
 }
 
-unsigned int CEconomy::getNextFactoryToBuild(CUnit *unit, int maxteachlevel) {
-	return getNextFactoryToBuild(unit->type, maxteachlevel);
+unsigned int CEconomy::getNextTypeToBuild(CUnit *unit, unsigned int cats, int maxteachlevel) {
+	return getNextTypeToBuild(unit->type, cats, maxteachlevel);
 }
 
-unsigned int CEconomy::getNextFactoryToBuild(UnitType *ut, int maxteachlevel) {
+unsigned int CEconomy::getNextTypeToBuild(UnitType *ut, unsigned int cats, int maxteachlevel) {
 	std::list<unitCategory>::iterator f;
 
 	if (ai->intel->strategyTechUp) {
 		for(f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); ++f) {
 			for(int techlevel = maxteachlevel; techlevel >= MIN_TECHLEVEL; techlevel--) {
-				unsigned int factory = *f|(1<<(techlevel - 1));
-				if(ai->unittable->canBuild(ut, factory))
-					if(!ai->unittable->gotFactory(factory)) {
-						return factory;
-					}
+				unsigned int type = *f|(1U<<(techlevel - 1))|cats;
+				if (isTypeRequired(ut, type, maxteachlevel))
+					return type;
 			}
 		}
 	}
 	else {
 		for(int techlevel = MIN_TECHLEVEL; techlevel <= maxteachlevel; techlevel++) {
-			unsigned int techlevelCat = 1<<(techlevel - 1);
+			unsigned int techlevelCat = 1U<<(techlevel - 1);
 			for(f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
-				unsigned int factory = *f|techlevelCat;
-				if(ai->unittable->canBuild(ut, factory))
-					if(!ai->unittable->gotFactory(factory)) {
-						return factory;
-					}
+				unsigned int type = *f|techlevelCat|cats;
+				if (isTypeRequired(ut, type, maxteachlevel))
+					return type;
 			}
 		}
 	}	
 	
 	return 0;
+}
+
+bool CEconomy::isTypeRequired(UnitType *builder, unsigned int cats, int maxteachlevel) {
+	UnitType *ut = ai->unittable->canBuild(builder, cats);
+	if(ut) {
+		if (cats&FACTORY) {
+			int numRequired = ut->def->canBeAssisted ? 1: maxteachlevel;
+			if (ai->unittable->factoryCount(cats) < numRequired)
+				return true;
+		}
+		else if(ai->unittable->unitCount(cats) == 0)
+			return true;
+	}
+	return false;	
 }
