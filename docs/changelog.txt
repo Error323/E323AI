@@ -1,5 +1,13 @@
 E323AI changelog
 ----------------
+v3.22.4 [2010-09-08]
+* full tech 2 support for NOTA mod (from technical point of view)
+* fixed NOTA config file so tech 2 vehicles start being built (for ARM side only, CORE side is not updated at all)
+* converted NOTA config file from DOS into UNIX text format
+* fixed grouping of different types of units (air vs ground) if single factory can build both of them (Conflict Terra features this)
+* fixed epic very old bug which made some types of units do not move because no path graph was calculated for them (this bug revealed in Conflict Terra only for kbots)
+* added building multiple factories of the same type if they can't be assisted
+
 v3.22.3 [2010-09-05]
 * changed filename generation for log file: now includes short mod name and contains only safe path characters
 * fixed filename generation for pathfinder graph cached data: no more semi-qualified filenames like "-graph.bin" 
