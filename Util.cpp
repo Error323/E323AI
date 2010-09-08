@@ -4,6 +4,7 @@
 	#define _USE_MATH_DEFINES
 #endif
 #include <cmath>
+#include <cctype> // for isspace
 
 #include "headers/HAIInterface.h"
 #include "Util.hpp"
@@ -54,20 +55,8 @@ namespace util {
 		return s2;
 	}
 
-	int RemoveWhiteSpaceInPlace(std::string &line) {
-		int num = 0;
-		for ( int i = 0, j ; i < line.length() ; ++ i ) {
-			if ( line [i] == ' ' || line[i] == '\t') {
-				for ( j = i + 1; j < line.length ( ) ; ++j )
-				{
-					if ( line [j] != ' ' || line[i] == '\t')
-					break ;
-				}
-				num += (j - i);
-				line = line.erase(i, (j - i));
-			}
-		}
-		return num;
+	void RemoveWhiteSpaceInPlace(std::string& s) {
+		s.erase(remove_if(s.begin(), s.end(), isspace), s.end());
 	}
 	
 	std::string IntToString(int i, const std::string& format) {

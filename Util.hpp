@@ -17,7 +17,11 @@ namespace util {
 	void StringToLowerInPlace(std::string&);
 	std::string StringToLower(std::string);
 	std::string StringStripSpaces(const std::string&);
-	int RemoveWhiteSpaceInPlace(std::string&);
+	/**
+	 * Removes all white space chars in the supplied string.
+	 * @param s to clean string
+	 */
+	void RemoveWhiteSpaceInPlace(std::string& s);
 	std::string IntToString(int i, const std::string& format = "%i");
 
 	float WeightedAverage(std::list<float>&, std::list<float>&);
