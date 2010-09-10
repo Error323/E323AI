@@ -31,22 +31,44 @@ CE323AI::CE323AI() {
 }
 
 void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
+	static const char
+		optionDifficulty[] = "difficulty",
+		optionLoggingLevel[] = "logging";
+  
+	CLogger::logLevel loggingLevel = CLogger::VERBOSE;
+
 	instances++;
+
 	ai                = new AIClasses();
 	ai->cb            = callback->GetAICallback();
 	ai->cbc           = callback->GetCheatInterface();
 	ai->team          = team;
 	ai->skirmishAIId  = ai->cb->GetMySkirmishAIId();
 	ai->allyTeam      = ai->cb->GetMyAllyTeam();
-	ai->logger        = new CLogger(ai, /*CLogger::LOG_STDOUT |*/ CLogger::LOG_FILE);
+
+	std::map<std::string, std::string> options = ai->cb->GetMyOptionValues();
+	if (options.find(optionDifficulty) != options.end()) {
+		ai->difficulty = static_cast<difficultyLevel>(atoi(options[optionDifficulty].c_str()));
+	}
+	if (options.find(optionLoggingLevel) != options.end()) {
+		loggingLevel = static_cast<CLogger::logLevel>(atoi(options[optionLoggingLevel].c_str()));
+	}
+
+	ai->logger        = new CLogger(ai, /*CLogger::LOG_STDOUT |*/ CLogger::LOG_FILE, loggingLevel);
 	ai->cfgparser     = new CConfigParser(ai);
 	ai->unittable     = new CUnitTable(ai);
 
 	ai->allyAITeam    = aiexport_getNumAIInstancesInAllyTeam(ai->skirmishAIId, ai->allyTeam);
+	LOG_II("CE323AI::InitAI allyAITeam = " << ai->allyAITeam)
 
-	std::string configfile(ai->cb->GetModName());
-	configfile = configfile.substr(0, configfile.size()-4) + "-config.cfg";
+	std::string configfile = ai->cfgparser->getFilename(GET_CFG);
 	ai->cfgparser->parseConfig(configfile);
+	if (ai->cfgparser->isUsable()) {
+		// try loading overload file...
+		configfile = ai->cfgparser->getFilename(GET_CFG|GET_VER);
+		if (ai->cfgparser->fileExists(configfile))
+			ai->cfgparser->parseConfig(configfile);
+	}
 	if (!ai->cfgparser->isUsable()) {
 		ai->cb->SendTextMsg("No usable config file available for this Mod/Game.", 0);
 		const std::string confFileLine = "A template can be found at: " + configfile;
@@ -120,7 +142,8 @@ void CE323AI::UnitCreated(int uid, int bid) {
 	
 	LOG_II("CE323AI::UnitCreated " << (*unit))
 
-	if (unit->def->isCommander && !ai->economy->isInitialized()) {
+	// unit->def->isCommander
+	if ((unit->type->cats&COMMANDER) && !ai->economy->isInitialized()) {
 		ai->economy->init(*unit);
 	}
 
@@ -172,10 +195,10 @@ void CE323AI::UnitFinished(int uid) {
 	else
 		LOG_II("CE323AI::UnitFinished " << (*unit))
 
-	// NOTE: commanders and factories should start actions earlier than
+	// NOTE: commanders and static units should start actions earlier than
 	// usual units
-	if (unit->builtBy == -1 || (unit->type->cats&FACTORY))
-		ai->unittable->unitsAliveTime[uid] = NEW_UNIT_DELAY;
+	if (unit->builtBy == -1 || (unit->type->cats&STATIC))
+		ai->unittable->unitsAliveTime[uid] = IDLE_UNIT_TIMEOUT;
 	else
 		ai->unittable->unitsAliveTime[uid] = 0;
 			
@@ -202,6 +225,8 @@ void CE323AI::UnitFinished(int uid) {
 
 /* Called on a destroyed unit */
 void CE323AI::UnitDestroyed(int uid, int attacker) {
+	ai->tasks->onUnitDestroyed(uid, attacker);
+	
 	CUnit *unit = ai->unittable->getUnit(uid);
 	if (unit) {
 		LOG_II("CE323AI::UnitDestroyed " << (*unit))
@@ -290,15 +315,15 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 /* Called on move fail e.g. can't reach the point */
 void CE323AI::UnitMoveFailed(int uid) {
 	CUnit *unit = ai->unittable->getUnit(uid);
-	if (unit && (unit->type->cats&LAND)) {
+	if (unit && (unit->type->cats&(LAND|SEA))) {
 		// if unit is inside a factory then force moving...
 		float3 pos = ai->cb->GetUnitPos(unit->key);
 		std::map<int, CUnit*>::iterator it;
-		for (it = ai->unittable->factories.begin(); it != ai->unittable->factories.end(); it++) {
+		for (it = ai->unittable->factories.begin(); it != ai->unittable->factories.end(); ++it) {
 			float distance = ai->cb->GetUnitPos(it->first).distance2D(pos);
 			if (distance < 16.0) {
 				unit->moveForward(200.0f);
-				if (ai->unittable->unitsAliveTime[uid] <= NEW_UNIT_DELAY)
+				if (ai->unittable->unitsAliveTime[uid] <= IDLE_UNIT_TIMEOUT)
 					ai->unittable->unitsAliveTime[uid] = 0;
 			}
 		}
@@ -324,6 +349,7 @@ void CE323AI::EnemyLeaveRadar(int enemy) {
 
 void CE323AI::EnemyDestroyed(int enemy, int attacker) {
 	ai->military->onEnemyDestroyed(enemy, attacker);
+	ai->tasks->onEnemyDestroyed(enemy, attacker);
 }
 
 void CE323AI::EnemyDamaged(int damaged, int attacker, float damage, float3 dir) {

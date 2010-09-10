@@ -5,10 +5,10 @@
 #include <string>
 
 enum RegistrarType {
-	REGT_NOTE,
-	REGT_GROUP,
-	REGT_TASK,
-	REGT_UNIT
+	REG_UNDEFINED,
+	REG_GROUP,
+	REG_TASK,
+	REG_UNIT
 };
 
 class ARegistrar {
@@ -30,7 +30,7 @@ class ARegistrar {
 		/* Propagate removal through the system */
 		virtual void remove(ARegistrar &obj) = 0;
 
-		virtual RegistrarType regtype() { return REGT_NOTE; } 
+		virtual RegistrarType regtype() { return REG_UNDEFINED; } 
 
 	protected:
 		ARegistrar(): key(0), name("undefined") {}

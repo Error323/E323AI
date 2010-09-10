@@ -9,7 +9,7 @@ class AAStar {
 	public:
 		class ANode {
 			public:
-				ANode() {id = 0; g = 0; h = w = 0.0f; open = closed = false; }
+				ANode() { id = 0; g = 0; h = w = 0.0f; open = closed = false; }
 				ANode(unsigned int id, float w) {
 					this->id = id;
 					this->w  = w;

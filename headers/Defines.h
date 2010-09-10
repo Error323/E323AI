@@ -61,10 +61,11 @@
 /* Max number of idle scout groups to prevent building unnecessary scouts */
 #define MAX_IDLE_SCOUT_GROUPS 3
 
-/* Critical number of units per group where pathfinding stalls the game */
+/* Critical number of units per group when regrouping for moving group 
+   stalls the game */
 #define GROUP_CRITICAL_MASS 20
 
-/* Max unit weapon range to be considered by threatmap algo */
+/* Max unit weapon range to be considered by threatmap algo (a hack!) */
 #define MAX_WEAPON_RANGE_FOR_TM 1200.0f
 
 /* Max distance at which groups can merge */
@@ -74,56 +75,66 @@
 #define MULTIPLEXER 10 
 
 /* Number of frames a new unit can not accept tasks */
-#define NEW_UNIT_DELAY (5*30)
+#define IDLE_UNIT_TIMEOUT (5*30)
 
 #define BAD_TARGET_TIMEOUT (60*30)
+
+/* Number of unique tasks allowed to be executed per update */
+#define MAX_TASKS_PER_UPDATE 3
 
 /* Draw time */
 #define DRAW_TIME MULTIPLEXER*30
 
-
-/* Stats url */
+/* Stats url (NOT used) */
 #define UPLOAD_URL "http://fhuizing.pythonic.nl/ai-stats.php"
 
 /* We gonna use math.h constants */
 #define _USE_MATH_DEFINES
 
+#define MIN_TECHLEVEL 1
+#define MAX_TECHLEVEL 5
+
 /* Unit categories */
 enum unitCategory {
-	TECH1        = (1<<0),
+	TECH1        = (1<<0), // hardcored techlevels for now
 	TECH2        = (1<<1),
 	TECH3        = (1<<2),
+	TECH4        = (1<<3),
+	TECH5        = (1<<4),
 
-	AIR          = (1<<3),
-	SEA          = (1<<4),
-	LAND         = (1<<5),
-	STATIC       = (1<<6),
-	MOBILE       = (1<<7),
+	AIR          = (1<<5), // can fly
+	SEA          = (1<<6), // can float
+	LAND         = (1<<7), // can walk/drive
+	
+	STATIC       = (1<<8),
+	MOBILE       = (1<<9),
 
-	FACTORY      = (1<<8),
-	BUILDER      = (1<<9),
-	ASSISTER     = (1<<10),
-	RESURRECTOR  = (1<<11),
+	FACTORY      = (1<<10),
+	BUILDER      = (1<<11),
+	ASSISTER     = (1<<12),
+	RESURRECTOR  = (1<<13),
 
-	COMMANDER    = (1<<12),
-	ATTACKER     = (1<<13),
-	ANTIAIR      = (1<<14),
-	SCOUTER      = (1<<15),
-	ARTILLERY    = (1<<16),
-	SNIPER       = (1<<17),
-	ASSAULT      = (1<<18),
+	COMMANDER    = (1<<14),
+	ATTACKER     = (1<<15),
+	ANTIAIR      = (1<<16),
+	SCOUTER      = (1<<17),
+	ARTILLERY    = (1<<18),
+	SNIPER       = (1<<19),
+	ASSAULT      = (1<<20),
 
-	MEXTRACTOR   = (1<<19),
-	MMAKER       = (1<<20),
-	EMAKER       = (1<<21),
-	MSTORAGE     = (1<<22),
-	ESTORAGE     = (1<<23),
+	MEXTRACTOR   = (1<<21),
+	MMAKER       = (1<<22),
+	EMAKER       = (1<<23),
+	MSTORAGE     = (1<<24),
+	ESTORAGE     = (1<<25),
+	
+	DEFENSE      = (1<<26),
 
-	KBOT         = (1<<24),
-	VEHICLE      = (1<<25),
-	HOVER        = (1<<26),
-
-	DEFENSE      = (1<<27)
+	KBOT         = (1<<27), // produces kbots
+	VEHICLE      = (1<<28), // produces vehicles 
+	HOVER        = (1<<29), // produces hovercraft
+	AIRCRAFT     = (1<<30), // produces aircraft
+	NAVAL        = (1<<31), // produces naval units
 };
 
 /* Build priorities */
@@ -142,6 +153,12 @@ enum buildType {
 	BUILD_FACTORY,
 	BUILD_MSTORAGE,
 	BUILD_ESTORAGE
+};
+
+enum difficultyLevel {
+	DIFFICULTY_EASY = 1,
+	DIFFICULTY_NORMAL,
+	DIFFICULTY_HARD
 };
 
 #endif

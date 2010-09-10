@@ -27,28 +27,33 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 	// NOTE: XX and ZZ are in pathgraph map resolution units
 	this->XX   = this->X / I_MAP_RES;
 	this->ZZ   = this->Z / I_MAP_RES;
-	graphSize = XX * ZZ;
-	update      = 0;
+	graphSize  = XX * ZZ;
+	update     = 0;
 	repathGroup = -1;
-	drawPaths   = false;
+	drawPaths  = false;
 
 	hm = ai->cb->GetHeightMap();
 	sm = ai->cb->GetSlopeMap();
 
 	if (CPathfinder::graph.empty()) {
 		const std::string cacheVersion(CACHE_VERSION);
+		const std::string modShortName(ai->cb->GetModShortName());
+		const std::string modVersion(ai->cb->GetModVersion());
+		const std::string modHash = util::IntToString(ai->cb->GetModHash(), "%x");
+		const std::string mapName(ai->cb->GetMapName());
+		const std::string mapHash = util::IntToString(ai->cb->GetMapHash(), "%x");
 
 		bool readOk = false;
 		unsigned int N;
-		std::string modname(ai->cb->GetModName());
-		modname.resize(modname.size()-4);
-		std::string filename = modname + "/" + std::string(ai->cb->GetMapName());
 		std::string cacheMarker;
+		std::string filename = 
+			std::string(CACHE_FOLDER) + modShortName + "-" + modVersion + "-" +
+			modHash + "/" + mapName + "-" + mapHash + "-graph.bin";
 
-		cacheMarker.resize(cacheVersion.size());
-
-		filename = std::string(CACHE_FOLDER) + filename.substr(0, filename.size()-4) + "-graph.bin";
+		util::SanitizeFileNameInPlace(filename);
 		filename = util::GetAbsFileName(ai->cb, filename);
+		
+		cacheMarker.resize(cacheVersion.size());
 
 		/* See if we can read from binary */
 		std::ifstream fin;
@@ -292,29 +297,47 @@ void CPathfinder::resetMap(CGroup &group, ThreatMapType tm_type) {
 	}
 }
 
-float CPathfinder::getETA(CGroup &group, float3 &pos, float radius) {
-	float dist;
-	float travelTime;
+float CPathfinder::getPathLength(CGroup &group, float3 &pos) {
+	float result = -1.0f;
 	float3 gpos = group.pos();
-	
-	if (group.pathType < 0 || group.speed < EPS) {
-		travelTime = std::numeric_limits<float>::max();
-		unsigned int cats = group.firstUnit()->type->cats;
-		if (cats&STATIC) {
-			if (cats&BUILDER) {
-				// FIXME: should we consider "radius" here?
-				if (gpos.distance2D(pos) < group.buildRange)
-					travelTime = 0.0f;
+
+	if (group.pathType < 0) {
+		float distance = gpos.distance2D(pos);
+
+		if (distance < EPS)
+			result = 0.0f;
+		else {
+			unsigned int cats = group.cats;
+
+			if (cats&STATIC) {
+				if ((cats&BUILDER) && distance < group.buildRange)
+					result = 0.0f;
 			}
-		} else if (cats & AIR) {
-			travelTime = gpos.distance2D(pos) - radius;
+			else if(cats&AIR)
+				result = distance;
 		}
-	} else {
-		dist = ai->cb->GetPathLength(gpos, pos, group.pathType) - radius;
-		travelTime = (dist / group.speed);
 	}
-	
-	return travelTime;
+	else {
+		result = ai->cb->GetPathLength(gpos, pos, group.pathType);
+	}
+
+	return result;
+}
+
+float CPathfinder::getETA(CGroup &group, float3 &pos) {
+	float result = getPathLength(group, pos);
+
+	if (result < 0.0f) {
+		result = std::numeric_limits<float>::max();	// pos is unreachable
+	} else if (result > EPS) {
+		if (group.speed	> EPS) {
+			result /= group.speed;
+		} else {
+			result = std::numeric_limits<float>::max(); // can't move to remote pos
+		}
+	}
+
+	return result;
 }
 
 void CPathfinder::updateFollowers() {
@@ -346,7 +369,8 @@ void CPathfinder::updateFollowers() {
 		else
 			maxGroupLength *= 2.0f;
 	
-		// NOTE: among aircraft units only Brawler type units (ASSAULT) can regroup
+		// NOTE: among aircraft units only Brawler type units (ASSAULT) 
+		// can regroup (TODO: detect this by moving behaviour?)
 		bool enableRegrouping = 
 			group->units.size() < GROUP_CRITICAL_MASS 
 			&& (!(group->cats&AIR) || (group->cats&(ASSAULT|SNIPER|ARTILLERY|ANTIAIR)) == ASSAULT);
@@ -354,15 +378,17 @@ void CPathfinder::updateFollowers() {
 		M.clear();
 
 		/* Go through all the units in a group */
-		for (u = group->units.begin(); u != group->units.end(); u++) {
-			CUnit *unit = u->second;
+		for (u = group->units.begin(); u != group->units.end(); ++u) {
+			int s1 = 0, s2 = 1;
 			float sl1 = MAX_FLOAT, sl2 = MAX_FLOAT;
 			float l1, l2;
 			float length = 0.0f;
-			int s1 = 0, s2 = 1;
+			CUnit *unit = u->second;
+
 			float3 upos = unit->pos();
-			/* Go through the path to determine the unit's segment on the path
-			 */
+			
+			// go through the path to determine the unit's segment 
+			// on the path...
 			for (segment = 1; segment < path->second.size() - waypoint; segment++) {
 				if (segment == 1)
 					l1 = upos.distance2D(path->second[segment - 1]);
@@ -448,7 +474,7 @@ void CPathfinder::updatePaths() {
 	if (group->isMicroing())
 		return;
 
-	float3 start = group->pos();
+	float3 start = group->pos(true);
 	float3 goal  = ai->tasks->getPos(*group);
 
 	if (!addPath(*groups[repathGroup], start, goal)) {
@@ -568,13 +594,13 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGrou
 
 	std::list<ANode*> nodepath;
 	
-	bool success = (start != NULL && goal != NULL && (findPath(&nodepath)));
+	bool success = (start != NULL && goal != NULL && findPath(&nodepath));
 	if (success) {
 		/* Insert a pre-waypoint at the starting of the path */
-		int waypoint = std::min<int>(4, nodepath.size()-1);
+		int waypoint = std::min<int>(4, nodepath.size() - 1);
 		std::list<ANode*>::iterator wp;
 		int x = 0;
-		for (wp = nodepath.begin(); wp != nodepath.end(); wp++) {
+		for (wp = nodepath.begin(); wp != nodepath.end(); ++wp) {
 			if (x >= waypoint) break;
 			x++;
 		}
@@ -583,13 +609,13 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGrou
 		float3 seg = s - ss;
 		seg *= 1000.0f; /* Blow up the pre-waypoint */
 		seg += s;
-		seg.y = ai->cb->GetElevation(seg.x, seg.z)+10;
+		seg.y = ai->cb->GetElevation(seg.x, seg.z) + 10.0f;
 		path.push_back(seg);
 
-		for (std::list<ANode*>::iterator i = nodepath.begin(); i != nodepath.end(); i++) {
+		for (std::list<ANode*>::iterator i = nodepath.begin(); i != nodepath.end(); ++i) {
 			Node *n = dynamic_cast<Node*>(*i);
 			float3 f = n->toFloat3();
-			f.y = ai->cb->GetElevation(f.x, f.z)+20;
+			f.y = ai->cb->GetElevation(f.x, f.z) + 20.0f;
 			path.push_back(f);
 		}
 		path.push_back(g);
@@ -622,6 +648,10 @@ void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
 	std::vector<unsigned short int> &V = dynamic_cast<Node*>(an)->neighbours[activeMap];
 	for (size_t u = 0, N = V.size(); u < N; u++)
 		succ.push(CPathfinder::graph[V[u]]);
+}
+
+bool CPathfinder::pathAssigned(CGroup &group) {
+	return paths.find(group.key) != paths.end();
 }
 
 bool CPathfinder::switchDebugMode(bool graph) {

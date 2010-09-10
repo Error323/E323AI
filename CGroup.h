@@ -73,7 +73,7 @@ class CGroup: public ARegistrar {
 		/* Group category tags */
 		unsigned int cats;
 		/* Max tech level of all units in a group */
-		int techlvl;
+		unsigned int techlvl;
 		/* Path type with the smallest slope */
 		int pathType;
 		/* Corresponding maxSlope */
@@ -156,6 +156,8 @@ class CGroup: public ARegistrar {
 		bool canAttack(int uid);
 
 		bool canAdd(CUnit *unit);
+
+		bool canAssist(UnitType *type = NULL);
 		
 		bool canMerge(CGroup *group);
 		/* Get area threat specific to current group */
@@ -166,26 +168,35 @@ class CGroup: public ARegistrar {
 		int selectTarget(float search_radius, TargetsFilter &tf);
 		
 		bool addBadTarget(int id);
-
+		/* Get a range usually used for scanning enemies while moving */
 		float getScanRange();
 
 		float getRange();
 
+		CUnit* getWorstSlopeUnit() { return worstSlopeUnit; }
+
+		CUnit* getWorstSpeedUnit() { return worstSpeedUnit; }
+
 		/* Overloaded */
-		RegistrarType regtype() { return REGT_GROUP; }
+		RegistrarType regtype() { return REG_GROUP; }
 		/* Output stream */
 		friend std::ostream& operator<<(std::ostream &out, const CGroup &group);
 
 	private:
-		bool radiusUpdateRequied;
+		bool radiusUpdateRequired;
 			// when "radius" needs to be recalculated
 		float groupRadius;
 			// group radius (when units clustered together)
-		
+		CUnit *worstSpeedUnit;
+			// points to the slowest unit
+		CUnit *worstSlopeUnit;
+			// points to unit with worst slope
 		/* Recalculate group properties based on new unit */
 		void recalcProperties(CUnit *unit, bool reset = false);
 		/* Implements rules of mering unit categories */
 		void mergeCats(unsigned int);
+
+		static bool canBeMerged(unsigned int bcats, unsigned int mcats);
 };
 
 #endif

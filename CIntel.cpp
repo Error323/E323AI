@@ -66,7 +66,7 @@ void CIntel::init() {
 		enemyvector /= numUnits;
 	}
 
-	LOG_II("Number of enemy units: " << numUnits)
+	LOG_II("CIntel::init Number of enemy units: " << numUnits)
 	
 	/* FIXME:
 		I faced situation that on maps with less land there is a direct
@@ -77,23 +77,34 @@ void CIntel::init() {
 		without external helpers in config files.
 	*/
 	if(ai->gamemap->IsWaterMap()) {
-		//allowedFactories.push_back(SEA);
+		allowedFactories.push_back(NAVAL);
 		allowedFactories.push_back(HOVER);
-	}
+	} 
 	else {
-		if(ai->gamemap->IsKbotMap()) {
+		unitCategory nextFactory;
+		if (ai->gamemap->IsKbotMap()) {
 			allowedFactories.push_back(KBOT);
+			nextFactory = VEHICLE;
+		} 
+		else {
 			allowedFactories.push_back(VEHICLE);
-		} else {
-			allowedFactories.push_back(VEHICLE);
-			allowedFactories.push_back(KBOT);
+			nextFactory = KBOT;
 		}
 		
-		if(ai->gamemap->IsHooverMap())
-			allowedFactories.push_back(HOVER);
+		if (ai->gamemap->IsHooverMap()) {
+			if (ai->gamemap->GetAmountOfWater() > 0.5) {
+				allowedFactories.push_back(HOVER);
+			}
+			else {
+				allowedFactories.push_back(nextFactory);
+				nextFactory = HOVER;
+			}
+		}
+		
+		allowedFactories.push_back(nextFactory);
 	}
 	// TODO: do not build air on too small maps?
-	allowedFactories.push_back(AIR);
+	allowedFactories.push_back(AIRCRAFT);
 
 	// vary first factory among allied AIs...
 	int i = ai->allyAITeam;
@@ -110,7 +121,7 @@ void CIntel::init() {
 		// NOTE: clock() gives much better results than rng.RndFloat() (at least under MSVC)
 		strategyTechUp = ((clock() % 3) == 0);
 
-	LOG_II("Tech-up strategy: " << strategyTechUp)
+	LOG_II("CIntel::init Tech-up strategy: " << strategyTechUp)
 
 	initialized = true;
 }
@@ -221,7 +232,7 @@ void CIntel::resetCounters() {
 	counts[AIR] = 0;
 	counts[ASSAULT] = 3;
 	
-	if(ai->military->idleScoutGroupsNum() >= MAX_IDLE_SCOUT_GROUPS)
+	if (ai->difficulty == DIFFICULTY_EASY || ai->military->idleScoutGroupsNum() >= MAX_IDLE_SCOUT_GROUPS)
 		counts[SCOUTER] = 0;
 	else
 		counts[SCOUTER] = 1; // default value

@@ -22,11 +22,14 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		cat2str[TECH1]       = "TECH1";
 		cat2str[TECH2]       = "TECH2";
 		cat2str[TECH3]       = "TECH3";
+		cat2str[TECH4]       = "TECH4";
+		cat2str[TECH5]       = "TECH5";
 
 		/* main categories */
 		cat2str[AIR]         = "AIR";
 		cat2str[SEA]         = "SEA";
 		cat2str[LAND]        = "LAND";
+				
 		cat2str[STATIC]      = "STATIC";
 		cat2str[MOBILE]      = "MOBILE";
 
@@ -41,9 +44,9 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		cat2str[ATTACKER]    = "ATTACKER";
 		cat2str[ANTIAIR]     = "ANTIAIR";
 		cat2str[SCOUTER]     = "SCOUTER";
-		cat2str[ARTILLERY]   = "ARTILLERY";  
-		cat2str[SNIPER]      = "SNIPER";  
-		cat2str[ASSAULT]     = "ASSAULT";  
+		cat2str[ARTILLERY]   = "ARTILLERY";
+		cat2str[SNIPER]      = "SNIPER";
+		cat2str[ASSAULT]     = "ASSAULT";
 
 		/* economic */
 		cat2str[MEXTRACTOR]  = "MEXTRACTOR";
@@ -52,10 +55,12 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		cat2str[MSTORAGE]    = "MSTORAGE";
 		cat2str[ESTORAGE]    = "ESTORAGE";
 
-		/* ground types */
+		/* factory types */
 		cat2str[KBOT]        = "KBOT";
 		cat2str[VEHICLE]     = "VEHICLE";
 		cat2str[HOVER]       = "HOVER";
+		cat2str[AIRCRAFT]    = "AIRCRAFT"; // not used yet
+		cat2str[NAVAL]       = "NAVAL"; // not used yet
 
 		cat2str[DEFENSE]     = "DEFENSE";
 	}
@@ -63,7 +68,7 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 	if (str2cat.empty()) {
 		/* Create the str2cat table and cats vector */
 		std::map<unitCategory,std::string>::iterator i;
-		for (i = cat2str.begin(); i != cat2str.end(); i++) {
+		for (i = cat2str.begin(); i != cat2str.end(); ++i) {
 			cats.push_back(i->first);
 			str2cat[i->second] = i->first;
 		}
@@ -75,28 +80,25 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
  	/* Build the techtree, note that this is actually a graph in XTA */
 	buildTechTree();
 
-	/* Determine the modname */
-	std::string basename(ai->cb->GetModName());
-	basename.resize(basename.size() - 4); // remove extension
-	basename += "-categorization";
-	/* Parse or generate categories */
 	bool success = false;
-	// try to load categorization file per team ID first...
-	char tail[64];
-	sprintf(tail, "-%d.cfg", ai->team);
-	std::string filename;
-	filename = basename + tail;
-	if (ai->cb->GetFileSize(util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER) + filename, true).c_str())) {
+
+	std::string filename = ai->cfgparser->getFilename(GET_CAT|GET_TEAM);
+	if (ai->cfgparser->fileExists(filename))
 		success = ai->cfgparser->parseCategories(filename, units);
-	}
 	if (!success) {
-		// load ordinary categorization file...
-		filename = basename + ".cfg";
-		if (!ai->cfgparser->parseCategories(filename, units)) {
+		filename = ai->cfgparser->getFilename(GET_CAT);
+		success = ai->cfgparser->parseCategories(filename, units);
+		if (!success) {
 			filename = util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER) + filename, false);
 			generateCategorizationFile(filename);
 		}
 	}
+	if (success) {
+		// try loading overload file...
+		filename = ai->cfgparser->getFilename(GET_CAT|GET_VER);
+		if (ai->cfgparser->fileExists(filename))
+			ai->cfgparser->parseCategories(filename, units);
+	}		
 
 	/* Generate the buildBy and canBuild lists per UnitType */
 	/*
@@ -197,8 +199,11 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 		unit->techlvl = (activeUnits[bid]->type->cats&TECH1) ? TECH1 : unit->techlvl;
 		unit->techlvl = (activeUnits[bid]->type->cats&TECH2) ? TECH2 : unit->techlvl;
 		unit->techlvl = (activeUnits[bid]->type->cats&TECH3) ? TECH3 : unit->techlvl;
+		unit->techlvl = (activeUnits[bid]->type->cats&TECH4) ? TECH4 : unit->techlvl;
+		unit->techlvl = (activeUnits[bid]->type->cats&TECH5) ? TECH5 : unit->techlvl;
 	}
-	if ((unit->type->cats&STATIC) && (unit->type->cats&ATTACKER))
+	// NOTE: remember that NOTA has mobile defenses
+	if (((unit->type->cats&STATIC) && (unit->type->cats&ATTACKER)) || (unit->type->cats&DEFENSE))
 		defenses[unit->key] = unit;
 	if (unit->type->cats&ESTORAGE)
 		energyStorages[unit->key] = unit;
@@ -215,12 +220,8 @@ void CUnitTable::update() {
 }
 
 bool CUnitTable::canPerformTask(CUnit &unit) {
-	// TODO: this is a temporary hack until we make all groups behaviour via
-	// tasks. Currently for most of static groups this is wrong
-	if ((unit.type->cats&STATIC) && !(unit.type->cats&FACTORY))
-		return false;
 	/* lifetime of more then 5 seconds */
-	return unitsAliveTime.find(unit.key) != unitsAliveTime.end() && unitsAliveTime[unit.key] > NEW_UNIT_DELAY;
+	return unitsAliveTime.find(unit.key) != unitsAliveTime.end() && unitsAliveTime[unit.key] > IDLE_UNIT_TIMEOUT;
 }
 
 void CUnitTable::buildTechTree() {
@@ -243,17 +244,13 @@ void CUnitTable::buildTechTree() {
 
 		UnitType *utParent, *utChild;
 
-		if (u == units.end()) {
+		if (u == units.end())
 			utParent = insertUnit(ud);
-			MoveData* md = utParent->def->movedata;
-			if (md != NULL)
-				moveTypes[md->pathType] = md;
-		}
 		else
 			utParent = &(u->second);
 
 		buildOptions = ud->buildOptions;
-		for (j = buildOptions.begin(); j != buildOptions.end(); j++) {
+		for (j = buildOptions.begin(); j != buildOptions.end(); ++j) {
 			ud = ai->cb->GetUnitDef(j->second.c_str());
 			u = units.find(ud->id);
 
@@ -276,6 +273,7 @@ void CUnitTable::buildTechTree() {
 
 UnitType* CUnitTable::insertUnit(const UnitDef *ud) {
 	UnitType ut;
+
 	ut.def        = ud;
 	ut.id         = ud->id;
 	ut.cost       = ud->metalCost*METAL2ENERGY + ud->energyCost;
@@ -284,6 +282,11 @@ UnitType* CUnitTable::insertUnit(const UnitDef *ud) {
 	ut.metalMake  = ud->metalMake  - ud->metalUpkeep;
 	ut.dps        = calcUnitDps(&ut);
 	units[ud->id] = ut;
+	
+	// also register pathtype...
+	MoveData* md = ud->movedata;
+	if (md)
+		moveTypes[md->pathType] = md;
 	
 	if (maxUnitPower < ut.dps)
 		maxUnitPower = ut.dps;
@@ -306,8 +309,8 @@ bool CUnitTable::hasAntiAir(const std::vector<UnitDef::UnitDefWeapon> &weapons) 
 }
 
 unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
-	unsigned int cats = 0;
 	const UnitDef *ud = ut->def;
+	unsigned int cats = 0;
 	
 	if (ud->isCommander)
 		cats |= COMMANDER;
@@ -352,36 +355,55 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->canResurrect)
 		cats |= RESURRECTOR;
 
-	if (!ud->buildOptions.empty() && !ud->canmove) {
+	// NOTE: we aren't checking for "canMove" becasue it is usually used to set rally point
+	// for factory
+	if (!ud->buildOptions.empty()) {
 		cats |= FACTORY;
 
-		std::map<int, std::string>::iterator j;
-		std::map<int, std::string> buildOptions = ud->buildOptions;
-		for (j = buildOptions.begin(); j != buildOptions.end(); j++) {
+		// precise factory type...
+		std::map<int, std::string>::const_iterator j;
+		for (j = ud->buildOptions.begin(); j != ud->buildOptions.end(); ++j) {
 			const UnitDef *canbuild = ai->cb->GetUnitDef(j->second.c_str());
+			
+			if (canbuild->speed < EPS && (cats&FACTORY))
+				// this is a static builder, not a factory
+				cats -= FACTORY; 
+
+			if (canbuild == NULL)
+				continue;
+			
 			if (canbuild->canfly) {
-				cats |= AIR;
-				cats &= ~LAND;
+				cats |= AIRCRAFT;
 				break;
 			}
-			if (canbuild->movedata == NULL) continue;
+			
+			if (canbuild->movedata == NULL) 
+				continue;
+			
 			if (canbuild->movedata->moveFamily == MoveData::KBot &&
 				ud->minWaterDepth < 0.0f) {
 				cats |= KBOT;
 				break;
 			}
-			else if (canbuild->movedata->moveFamily == MoveData::Tank &&
+			
+			if (canbuild->movedata->moveFamily == MoveData::Tank &&
 				ud->minWaterDepth < 0.0f) {
 				cats |= VEHICLE;
 				break;
 			}
-			else if (canbuild->movedata->moveFamily == MoveData::Hover) {
+			
+			if (canbuild->movedata->moveFamily == MoveData::Hover) {
 				cats |= HOVER;
 				break;
 			}
 
+			if (canbuild->movedata->moveFamily == MoveData::Ship) {
+				cats |= NAVAL;
+				break;
+			}			
 		}
-		//XXX: hack
+		
+		// HACK: true
 		if (ud->metalCost < 2000.0f)
 			cats |= TECH1;
 		else
@@ -394,19 +416,13 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->energyStorage / ut->cost > 0.2f)
 		cats |= ESTORAGE;
 
-	if (ud->makesMetal >= 1 && ud->energyUpkeep > ud->makesMetal * 40)
+	if (ud->makesMetal >= 0.5f && (ud->energyUpkeep > (ud->makesMetal * 40.0f)))
 		cats |= MMAKER;
 
 	if ((ud->energyMake - ud->energyUpkeep) / ut->cost > 0.002 ||
 		ud->tidalGenerator || ud->windGenerator)
 		cats |= EMAKER;
-/*
-	if (ud->windGenerator)
-		cats |= WIND;
-
-	if (ud->tidalGenerator)
-		cats |= TIDAL;
-*/
+	
 	if (ud->extractsMetal)
 		cats |= MEXTRACTOR;
 	
@@ -419,12 +435,12 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->highTrajectoryType >= 1)
 		cats |= ARTILLERY;
 
-	if (cats&ATTACKER && cats&MOBILE && !(cats&BUILDER) && ud->speed >= 50.0f) {
+	if ((cats&ATTACKER) && (cats&MOBILE) && !(cats&BUILDER) && ud->speed >= 50.0f) {
 		std::map<int, UnitType*>::iterator i,j;
-		for (i = ut->buildBy.begin(); i != ut->buildBy.end(); i++) {
+		for (i = ut->buildBy.begin(); i != ut->buildBy.end(); ++i) {
 			bool isCheapest = true;
 			UnitType *bb = i->second;
-			for (j = bb->canBuild.begin(); j != bb->canBuild.end(); j++) {
+			for (j = bb->canBuild.begin(); j != bb->canBuild.end(); ++j) {
 				if (ut->cost > j->second->cost && !j->second->def->weapons.empty()) {
 					isCheapest = false;
 					break;
@@ -441,41 +457,44 @@ unsigned int CUnitTable::categorizeUnit(UnitType *ut) {
 }
 
 float CUnitTable::calcUnitDps(UnitType *ut) {
-	// FIXME: Make our own *briljant* dps calc here
+	// FIXME: make our own *briljant* dps calc here
 	return ut->def->power;
 }
 
-int CUnitTable::factoryCount(unsigned c) {
+int CUnitTable::unitCount(unsigned int c) {
 	int result = 0;
-
-	// decode categories from "c" and put them into "utcats"...
-	std::vector<unitCategory> utcats;
-	for (unsigned int i = 0; i < cats.size(); i++)
-		if (c&cats[i])
-			utcats.push_back(cats[i]);
-
 	std::map<int, CUnit*>::iterator i;
-	for (i = factories.begin(); i != factories.end(); i++) {
-		bool qualifies = true;
-		unsigned int cat = activeUnits[i->first]->type->cats;
-		for (unsigned int i = 0; i < utcats.size(); i++)
-			if (!(utcats[i]&cat)) {
-				qualifies = false;
-				break;
-			}
-		if (qualifies)
+
+	for (i = activeUnits.begin(); i != activeUnits.end(); ++i) {
+		if ((c&i->second->type->cats) == c)
 			result++;
 	}
 	
 	return result;
 }
 
-bool CUnitTable::gotFactory(unsigned c) {
+int CUnitTable::factoryCount(unsigned int c) {
+	int result = 0;
+	std::map<int, CUnit*>::iterator i;
+
+	for (i = factories.begin(); i != factories.end(); ++i) {
+		if ((c&i->second->type->cats) == c)
+			result++;
+	}
+	
+	return result;
+}
+
+bool CUnitTable::gotFactory(unsigned int c) {
 	return factoryCount(c) > 0;
 }
 
 void CUnitTable::getBuildables(UnitType *ut, unsigned include, unsigned exclude, std::multimap<float, UnitType*> &candidates) {
+	static const unsigned int envCats = (AIR|SEA|LAND);
+	unsigned int incEnvCats = (envCats&include);
 	std::vector<unitCategory> incCats, excCats;
+	
+	// split categories...
 	for (unsigned int i = 0; i < cats.size(); i++) {
 		if (include&cats[i])
 			incCats.push_back(cats[i]);
@@ -484,37 +503,51 @@ void CUnitTable::getBuildables(UnitType *ut, unsigned include, unsigned exclude,
 	}
 
 	std::map<int, UnitType*>::iterator j;
-	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); j++) {
-		bool qualifies = true;
+	for (j = ut->canBuild.begin(); j != ut->canBuild.end(); ++j) {
+		bool valid = true;
 		unsigned int cat = j->second->cats;
 		for (unsigned int i = 0; i < incCats.size(); i++) {
-			if (!(incCats[i]&cat)) {
-				qualifies = false;
+			// NOTE: evironment tags are handled differently: if requested
+			// AIR, LAND & SEA in any combination that means having at least
+			// one match automatically qualifies unit as valid
+			if (incCats[i]&envCats) {
+				if (incEnvCats) {
+					// filter by environment tags is active
+					if (!(incEnvCats&cat)) {
+						valid = false;
+						break;
+					}
+				}
+			}
+			else if (!(incCats[i]&cat)) {
+				valid = false;
 				break;
 			}
 		}
 
-		if (qualifies) {
+		if (valid) {
 			/* Filter out excludes */
 			for (unsigned int i = 0; i < excCats.size(); i++) {
-				if ((excCats[i]&cat)) {
-					qualifies = false;
+				if (excCats[i]&cat) {
+					valid = false;
 					break;
 				}
 			}
 			
-			if (qualifies) {
+			if (valid) {
 				float cost = j->second->cost;
 				candidates.insert(std::pair<float,UnitType*>(cost, j->second));
 			}
 		}
 	}
+	
 	if (candidates.empty())
 		LOG_WW("CUnitTable::getBuildables no candidates found INCLUDE(" << debugCategories(include) << ") EXCLUDE("<<debugCategories(exclude)<<") for unitdef(" << ut->def->humanName << ")")
 }
 
 UnitType* CUnitTable::canBuild(UnitType *ut, unsigned int c) {
 	std::map<int, UnitType*>::iterator it;
+	// TODO: make it compatible with environment tags
 	for (it = ut->canBuild.begin(); it != ut->canBuild.end(); it++) {
 		if ((it->second->cats & c) == c)
 			return it->second;
@@ -548,6 +581,21 @@ UnitType* CUnitTable::getUnitTypeByCats(unsigned int c) {
 			return &(it->second);
 	}
 	return NULL;
+}
+
+int CUnitTable::setOnOff(std::map<int, CUnit*>& list, bool value) {
+	int result = 0;
+	std::map<int, CUnit*>::iterator i;
+	
+	for (i = list.begin(); i != list.end(); ++i) {
+		CUnit *unit = i->second;
+		if (value != unit->isOn()) {
+			unit->setOnOff(value);
+			result++;
+		}
+	}
+
+	return result;
 }
 
 std::string CUnitTable::debugCategories(unsigned categories) {

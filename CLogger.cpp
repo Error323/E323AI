@@ -2,24 +2,39 @@
 
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <sstream>
 #include <ctime>
 
 #include "CAI.h"
 #include "Util.hpp"
 
-CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
-	logLevels[ERROR]   = "(EE)";
-	logLevels[WARNING] = "(WW)";
-	logLevels[VERBOSE] = "(II)";
+std::map<CLogger::logLevel, std::string> CLogger::logLevels;
+std::map<CLogger::logLevel, std::string> CLogger::logDesc;
 
-	logDesc[ERROR]   = logLevels[ERROR]   + " error, ";
-	logDesc[WARNING] = logLevels[WARNING] + " warning, ";
-	logDesc[VERBOSE] = logLevels[VERBOSE] + " informational";
+CLogger::CLogger(AIClasses *_ai, unsigned int lt, logLevel lf): ai(_ai), logType(lt), logFilter(lf) {
+	if (logLevels.empty()) {
+		logLevels[ERROR]   = "(EE)";
+		logLevels[WARNING] = "(WW)";
+		logLevels[VERBOSE] = "(II)";
+	}
+
+	if (logDesc.empty()) {
+		logDesc[ERROR]   = logLevels[ERROR]   + " error, ";
+		logDesc[WARNING] = logLevels[WARNING] + " warning, ";
+		logDesc[VERBOSE] = logLevels[VERBOSE] + " informational";
+	}
+
+	if (lf == NONE) {
+		ai->cb->SendTextMsg("Logging disabled", 0);
+		return;
+	}
 
 	if (lt & CLogger::LOG_FILE) {
-		std::string mapname = std::string(ai->cb->GetMapName());
+		std::string modShortName = std::string(ai->cb->GetModShortName());
+		std::string mapName = std::string(ai->cb->GetMapName());
+
+		util::SanitizeFileNameInPlace(modShortName);
+		util::SanitizeFileNameInPlace(mapName);
 
 		time_t now1;
 		time(&now1);
@@ -27,9 +42,10 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 
 		char relFileName[2048];
 		std::sprintf(
-			relFileName, "%s%s-%2.2d%2.2d%2.2d%2.2d%2.2d-team-%d.log", 
+			relFileName, "%s%s-%s-%2.2d%2.2d%2.2d%2.2d%2.2d-team-%d.log", 
 			LOG_FOLDER,
-			mapname.c_str(), 
+			modShortName.c_str(),
+			mapName.c_str(), 
 			now2->tm_year + 1900, 
 			now2->tm_mon + 1, 
 			now2->tm_mday, 
@@ -37,6 +53,7 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 			now2->tm_min, 
 			ai->team
 		);
+		
 		fileName = util::GetAbsFileName(ai->cb, std::string(relFileName), false);
 		ofs.open(fileName.c_str(), std::ios::app);
 		if (ofs.good()) {
@@ -44,8 +61,9 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 			ofs << "Version: " << AI_VERSION << "\n";
 			ofs << "Developers: " << AI_CREDITS << "\n";
 			ofs << "Markers: ";
+			
 			std::map<logLevel, std::string>::iterator i;
-			for (i = logDesc.begin(); i != logDesc.end(); i++)
+			for (i = logDesc.begin(); i != logDesc.end(); ++i)
 				ofs << i->second;
 
 			ofs << "\n\n";
@@ -59,11 +77,11 @@ CLogger::CLogger(AIClasses *_ai, unsigned lt): ai(_ai), logType(lt) {
 	}
 	
 	if (lt & CLogger::LOG_STDOUT) {
-		std::cout << "Logging to screen:\n";
+		std::cout << "Logging to screen...\n";
 	}
 	
 	if (lt & CLogger::LOG_SPRING) {
-		ai->cb->SendTextMsg("Logging to spring", 0);
+		ai->cb->SendTextMsg("Logging to Spring...", 0);
 	}
 }
 
@@ -72,6 +90,9 @@ void CLogger::s(std::string msg) {
 }
 
 void CLogger::log(logLevel level, std::string &msg) {
+	if (level == NONE || level > logFilter)
+		return;
+
 	int frame = ai->cb->GetCurrentFrame();
 	int sec   = (frame / 30) % 60;
 	int min   = ((frame / 30) - sec) / 60;

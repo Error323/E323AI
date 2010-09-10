@@ -13,7 +13,7 @@ void CUnit::remove(ARegistrar &reg) {
 	
 	std::list<ARegistrar*>::iterator i = records.begin();
 	while(i != records.end()) {
-		ARegistrar *regobj = *i; i++;
+		ARegistrar *regobj = *i; ++i;
 		// remove from CUnitTable, CGroup
 		regobj->remove(reg);
 	}
@@ -36,7 +36,7 @@ void CUnit::reset(int uid, int bid) {
 	this->builtBy = bid;
 	this->waiting = false;
 	this->microing= false;
-	this->techlvl = 0;
+	this->techlvl = TECH1;
 	this->group = NULL;
 }
 
@@ -178,38 +178,48 @@ bool CUnit::repair(int target) {
 }
 
 bool CUnit::build(UnitType *toBuild, float3 &pos) {
+	bool staticBuilder = type->cats&STATIC;
 	int mindist = 8;
-	if (toBuild->cats&FACTORY || toBuild->cats&EMAKER) {
+	
+	// FIXME: remove hardcoding; we need analyzer of the largest footprint
+	// per tech level
+	if (toBuild->cats&(FACTORY|EMAKER)) {
 		mindist = 10;
-		if (toBuild->cats&VEHICLE || toBuild->cats&TECH3)
+		if (toBuild->cats&(TECH3|TECH4|TECH5|VEHICLE|NAVAL))
 			mindist = 15;
 	}
 	else if(toBuild->cats&MEXTRACTOR)
 		mindist = 0;
 
-	float startRadius  = def->buildDistance*2.0f;
+	float startRadius  = staticBuilder ? def->buildDistance : def->buildDistance*2.0f;
 	facing f           = getBestFacing(pos);
-	float3 start       = ai->cb->GetUnitPos(key);
 	float3 goal        = ai->cb->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
 
-	int i = 0;
-	while (goal.x < 0.0f) {
-		startRadius += def->buildDistance;
-		goal = ai->cb->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
-		i++;
-		if (i > 15) {
-			/* Building in this area seems impossible, relocate unit */
-			moveRandom(startRadius);
+	if (goal.x < 0.0f) {
+		if (staticBuilder)
 			return false;
+		
+		int i = 0;
+		while (goal.x < 0.0f) {
+			startRadius += def->buildDistance;
+			goal = ai->cb->ClosestBuildSite(toBuild->def, pos, startRadius, mindist, f);
+			i++;
+			if (i > 15) {
+				/* Building in this area seems impossible, relocate unit */
+				moveRandom(startRadius);
+				return false;
+			}
 		}
 	}
 
+	// NOTE: we're using negative unit id for Legacy C++ API only
 	Command c = createPosCommand(-(toBuild->id), goal, -1.0f, f);
 	if (c.id != 0) {
 		ai->cb->GiveOrder(key, &c);
 		ai->unittable->idle[key] = false;
 		return true;
 	}
+
 	return false;
 }
 

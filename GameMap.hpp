@@ -25,7 +25,6 @@ class GameMap {
 		/** @return float, amount of land in [0, 1] */
 		float GetAmountOfLand() { return (1.0f - waterAmount); }
 
-
 		bool HasGeoSpots() { return geospots.size() > 0; }
 		bool HasMetalFeatures() { return metalfeatures.size() > 0; }
 		bool HasEnergyFeatures() { return energyfeatures.size() > 0; }
@@ -35,7 +34,7 @@ class GameMap {
 		bool IsHooverMap() { return waterAmount > 0.2f; }
 		bool IsWaterMap() { return waterAmount > 0.7f; }
 		bool IsMetalMap() { return metalCount > nonMetalCount && avgMetal > 80; }
-		bool IsNonMetalMap() { return metalCount == 0; }
+		bool IsMetalFreeMap() { return metalCount == 0; }
 
 		std::list<float3>& GetGeoSpots() { return geospots; }
 		std::list<float3>& GetMetalFeatures() { return metalfeatures; }

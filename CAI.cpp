@@ -3,6 +3,7 @@
 #include "AIExport.h"
 
 AIClasses::AIClasses() {
+	difficulty = DIFFICULTY_HARD;
 	unitIDs.resize(MAX_UNITS);
 }
 

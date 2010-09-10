@@ -41,12 +41,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				FavorSizeOrSpeed="0"
 				AdditionalIncludeDirectories="..\..\..\..\..\rts;..\..\..\..\..\rts\System;..\..\..\..\..\vclibs\SDL\include;..\..\..\..\..\vclibs\boost\include;..\..\..\..\..\vclibs\libcurl\include;..\..\..\..\Wrappers"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;BUILDING_SKIRMISH_AI;BUILDING_AI;BUILDING_AI_FOR_SPRING_0_81_2;_HAS_ITERATOR_DEBUGGING=0"
 				MinimalRebuild="true"
 				ExceptionHandling="1"
-				BasicRuntimeChecks="0"
+				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				EnableEnhancedInstructionSet="1"
 				UsePrecompiledHeader="0"
@@ -128,7 +127,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\..\..\..\rts;..\..\..\..\..\rts\System;..\..\..\..\..\vclibs\SDL\include;..\..\..\..\..\vclibs\libcurl\include;..\..\..\..\..\vclibs\boost\include;..\..\..\..\Wrappers"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;BUILDING_SKIRMISH_AI;BUILDING_AI;BUILDING_AI_FOR_SPRING_0_81_2"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;E323AI_EXPORTS;BUILDING_SKIRMISH_AI;BUILDING_AI;BUILDING_AI_FOR_SPRING_0_81_2"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -211,7 +210,7 @@
 				Optimization="2"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\..\..\..\rts;..\..\..\..\..\rts\System;..\..\..\..\..\vclibs\SDL\include;..\..\..\..\..\vclibs\boost\include;..\..\..\..\..\vclibs\libcurl\include;..\..\..\..\Wrappers"
-				PreprocessorDefinitions="WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;BUILDING_SKIRMISH_AI;BUILDING_AI;BUILDING_AI_FOR_SPRING_0_81_2;_HAS_ITERATOR_DEBUGGING=0"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;BUILDING_SKIRMISH_AI;BUILDING_AI;_HAS_ITERATOR_DEBUGGING=0"
 				MinimalRebuild="true"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="0"
@@ -355,11 +354,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\GameMap.hpp"
+				RelativePath="..\..\MathUtil.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\MathUtil.h"
+				RelativePath="..\..\Util.hpp"
 				>
 			</File>
 		</Filter>
@@ -372,6 +371,10 @@
 			</File>
 			<File
 				RelativePath="..\..\AIExport.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\ATask.cpp"
 				>
 			</File>
 			<File
@@ -450,6 +453,35 @@
 				RelativePath="..\..\Util.cpp"
 				>
 			</File>
+			<Filter
+				Name="atask"
+				Filter="atasks/*.cpp"
+				>
+				<File
+					RelativePath="..\..\atask\Assist.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\atask\Attack.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\atask\Build.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\atask\Factory.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\atask\Guard.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\atask\Merge.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="SpringRTS"
@@ -524,6 +556,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\..\Wrappers\LegacyCpp\AISCommands.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\..\Wrappers\LegacyCpp\UnitDef.cpp"
 				>
 			</File>
 		</Filter>

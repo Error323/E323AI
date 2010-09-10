@@ -13,10 +13,10 @@ class UnitType;
 class CGroup;
 
 /* Building facings, NOTE: this order is important! */
-enum facing{SOUTH, EAST, NORTH, WEST, NONE};
+enum facing{ SOUTH, EAST, NORTH, WEST, NONE };
 
 /* Map quadrants */
-enum quadrant {NORTH_WEST, NORTH_EAST, SOUTH_WEST, SOUTH_EAST};
+enum quadrant { NORTH_WEST, NORTH_EAST, SOUTH_WEST, SOUTH_EAST };
 
 class CUnit: public ARegistrar {
 	public:
@@ -34,7 +34,7 @@ class CUnit: public ARegistrar {
 		const UnitDef *def;
 		UnitType *type;
 		int builtBy;
-		int techlvl;
+		unsigned int techlvl;
 		CGroup *group; // group unit belongs to
 
 		/* Remove the unit from everywhere registered */
@@ -55,7 +55,7 @@ class CUnit: public ARegistrar {
 		bool attack(int target, bool enqueue = false);
 
 		/* Move a unit forward by dist */
-		bool moveForward(float dist, bool enqueue = true);
+		bool moveForward(float dist, bool enqueue = false);
 
 		/* Move random */
 		bool moveRandom(float radius, bool enqueue = false);
@@ -81,7 +81,7 @@ class CUnit: public ARegistrar {
 		bool cloak(bool on);
 
 		/* Guard a certain unit */
-		bool guard(int target, bool enqueue = true);
+		bool guard(int target, bool enqueue = false);
 
 		/* Stop doing what you did */
 		bool stop();
@@ -111,7 +111,7 @@ class CUnit: public ARegistrar {
 		/* Get quadrant */
 		quadrant getQuadrant(float3 &pos);
 
-		RegistrarType regtype() { return REGT_UNIT; } 
+		RegistrarType regtype() { return REG_UNIT; } 
 
 		static bool isMilitary(const UnitDef* ud) { return !ud->weapons.empty(); }
 		static bool isStatic(const UnitDef* ud) { return ud->speed < 0.0001f; }

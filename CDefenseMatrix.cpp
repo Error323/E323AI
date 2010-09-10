@@ -22,7 +22,7 @@ float3 CDefenseMatrix::getBestDefendedPos(int n) {
 	n = std::min<int>(n, clusters.size() - 1);
 	std::multimap<float, Cluster*>::iterator i;
 	int j = 0;
-	for (i = clusters.begin(); i != clusters.end(); i++) {
+	for (i = clusters.begin(); i != clusters.end(); ++i) {
 		if (j == n)
 			break;
 		j++;
@@ -80,8 +80,8 @@ float3 CDefenseMatrix::getDefenseBuildSite(UnitType *tower) {
 int CDefenseMatrix::getClusters() {
 	int bigClusters = 0;
 	std::multimap<float, Cluster*>::iterator i;
-	for (i = clusters.begin(); i != clusters.end(); i++) {
-		if (i->second->members.size() >= 1)
+	for (i = clusters.begin(); i != clusters.end(); ++i) {
+		if (i->second->members.size() > (DIFFICULTY_HARD - ai->difficulty))
 			bigClusters++;
 	}
 	return bigClusters;
@@ -92,7 +92,7 @@ void CDefenseMatrix::update() {
 	buildingToCluster.clear();
 	buildings.clear();
 	std::multimap<float, Cluster*>::iterator x;
-	for (x = clusters.begin(); x != clusters.end(); x++)
+	for (x = clusters.begin(); x != clusters.end(); ++x)
 		delete x->second;
 	clusters.clear();
 	totalValue = 0.0f;
@@ -100,7 +100,7 @@ void CDefenseMatrix::update() {
 	/* Gather the non attacking, non mobile buildings */
 	std::map<int, CUnit*>::iterator i, j;
 	std::multimap<float,CUnit*>::iterator k;
-	for (i = ai->unittable->activeUnits.begin(); i != ai->unittable->activeUnits.end(); i++) {
+	for (i = ai->unittable->activeUnits.begin(); i != ai->unittable->activeUnits.end(); ++i) {
 		unsigned c = i->second->type->cats;
 		if ((c&STATIC) && !(c&ATTACKER))
 			buildings[i->first] = i->second;
@@ -109,11 +109,11 @@ void CDefenseMatrix::update() {
 	/* Calculate cumulative defensive power */
 	float sumDefPower = 0.0f;
 	std::map<int, CUnit*>::iterator l;
-	for (l = ai->unittable->defenses.begin(); l != ai->unittable->defenses.end(); l++)
+	for (l = ai->unittable->defenses.begin(); l != ai->unittable->defenses.end(); ++l)
 		sumDefPower += ai->cb->GetUnitPower(l->first);
 
 	/* Determine clusters */
-	for (i = buildings.begin(); i != buildings.end(); i++) {
+	for (i = buildings.begin(); i != buildings.end(); ++i) {
 		/* Continue if the building is already contained in a cluster */
 		if (buildingToCluster.find(i->first) != buildingToCluster.end())
 			continue;
@@ -125,14 +125,14 @@ void CDefenseMatrix::update() {
 		float3 summedCenter(i->second->pos());
 		c->value = getValue(i->second);
 
-		for (++(j = i); j != buildings.end(); j++) {
+		for (++(j = i); j != buildings.end(); ++j) {
 			/* Continue if the building is already contained in a cluster */
 			if (buildingToCluster.find(j->first) != buildingToCluster.end())
 				continue;
 			
 			/* If the unit is within range of the cluster, add it to the cluster */
 			const float3 pos1 = j->second->pos();
-			for (k = c->members.begin(); k != c->members.end(); k++) {
+			for (k = c->members.begin(); k != c->members.end(); ++k) {
 				const float3 pos2 = k->second->pos();
 				if ((pos1 - pos2).Length2D() <= 320.0f) {
 					float buildingValue = getValue(j->second);
@@ -147,7 +147,7 @@ void CDefenseMatrix::update() {
 
 		/* Calculate coverage of current defense for this cluster */
 		c->center = (summedCenter / c->members.size());
-		for (l = ai->unittable->defenses.begin(); l != ai->unittable->defenses.end(); l++) {
+		for (l = ai->unittable->defenses.begin(); l != ai->unittable->defenses.end(); ++l) {
 			const float3 pos1 = l->second->pos();
 			float range = l->second->def->maxWeaponRange*0.8f;
 			float power = ai->cb->GetUnitPower(l->first)/sumDefPower;
@@ -183,7 +183,7 @@ float CDefenseMatrix::getValue(CUnit *unit) {
 
 bool CDefenseMatrix::isPosInBounds(float3 &pos) const {
 	std::multimap<float, Cluster*>::const_iterator i;
-	for (i = clusters.begin(); i != clusters.end(); i++) {
+	for (i = clusters.begin(); i != clusters.end(); ++i) {
 		if(i->second->center.distance2D(pos) <= 320.0f)
 			return true;
 	}
@@ -193,7 +193,7 @@ bool CDefenseMatrix::isPosInBounds(float3 &pos) const {
 float CDefenseMatrix::distance2D(float3 &pos) const {
 	float result = std::numeric_limits<float>::max();
 	std::multimap<float, Cluster*>::const_iterator i;
-	for (i = clusters.begin(); i != clusters.end(); i++) {
+	for (i = clusters.begin(); i != clusters.end(); ++i) {
 		float distance = i->second->center.distance2D(pos);
 		if (distance < result)
 			result = distance;
@@ -208,7 +208,7 @@ bool CDefenseMatrix::switchDebugMode() {
 
 void CDefenseMatrix::draw() {
 	std::multimap<float, Cluster*>::iterator i;
-	for (i = clusters.begin(); i != clusters.end(); i++) {
+	for (i = clusters.begin(); i != clusters.end(); ++i) {
 		int group = int(i->first);
 		float3 p0(i->second->center);
 		p0.y = ai->cb->GetElevation(p0.x, p0.z) + 10.0f;

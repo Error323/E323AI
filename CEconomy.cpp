@@ -19,6 +19,7 @@
 #include "GameMap.hpp"
 #include "ReusableObjectFactory.hpp"
 
+
 CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	this->ai = ai;
 	state = 0;
@@ -29,8 +30,9 @@ CEconomy::CEconomy(AIClasses *ai): ARegistrar(700, std::string("economy")) {
 	mUsage   = mUsageSummed   = eUsage   = eUsageSummed   = 0.0f;
 	mStorage = eStorage                                   = 0.0f;
 	mstall = estall = mexceeding = eexceeding = mRequest = eRequest = false;
-	initialized = false;
-	areMMakersEnabled = ai->gamemap->IsNonMetalMap();
+	initialized = stallThresholdsReady = false;
+	utCommander = NULL;
+	areMMakersEnabled = ai->gamemap->IsMetalFreeMap();
 }
 
 CEconomy::~CEconomy()
@@ -38,16 +40,16 @@ CEconomy::~CEconomy()
 }
 
 void CEconomy::init(CUnit &unit) {
-	if(initialized)	return;
+	if (initialized) return;
 	// NOTE: expecting "unit" is a commander unit
 	const UnitDef *ud = ai->cb->GetUnitDef(unit.key);
-	UnitType *utCommander = UT(ud->id);
+	
+	utCommander = UT(ud->id);
 	windmap = ((ai->cb->GetMaxWind() + ai->cb->GetMinWind()) / 2.0f) >= 10.0f;
 	//float avgWind   = (ai->cb->GetMinWind() + ai->cb->GetMaxWind()) / 2.0f;
 	//float windProf  = avgWind / utWind->cost;
 	//float solarProf = utSolar->energyMake / utSolar->cost;
-	mStart = utCommander->def->metalMake;
-	eStart = utCommander->def->energyMake;
+
 	initialized = true;
 }
 		
@@ -102,22 +104,26 @@ void CEconomy::remove(ARegistrar &object) {
 }
 
 void CEconomy::addUnitOnCreated(CUnit &unit) {
-	unsigned c = unit.type->cats;
+	unsigned int c = unit.type->cats;
 	if (c&MEXTRACTOR) {
 		CGroup *group = requestGroup();
 		group->addUnit(unit);
 		takenMexes[group->key] = group->pos();
 		CUnit *builder = ai->unittable->getUnit(group->firstUnit()->builtBy);
-		if (builder)
+		if (builder) {
+			assert(group->key != builder->group->key);
 			takenMexes.erase(builder->group->key);
+		}
 	}
 	else if(unit.type->def->needGeo) {
 		CGroup *group = requestGroup();
 		group->addUnit(unit);
 		takenGeo[group->key] = group->pos();	
 		CUnit *builder = ai->unittable->getUnit(group->firstUnit()->builtBy);
-		if (builder)
+		if (builder) {
+			assert(group->key != builder->group->key);
 			takenGeo.erase(builder->group->key);
+		}
 	}
 }
 
@@ -140,19 +146,20 @@ void CEconomy::addUnitOnFinished(CUnit &unit) {
 void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsigned exclude) {
 	ATask *task = canAssist(bt, group);
 	if (task != NULL) {
-		ai->tasks->addAssistTask(*task, group);
+		ai->tasks->addTask(new AssistTask(ai, *task, group));
 		return;
 	}
-
-	/* Retrieve the allowed buildable units */
-	CUnit *unit = group.firstUnit();
-	std::multimap<float, UnitType*> candidates;
 	
+	CUnit *unit = group.firstUnit();
+	/* Retrieve the allowed buildable units */
+	std::multimap<float, UnitType*> candidates;
 	ai->unittable->getBuildables(unit->type, include, exclude, candidates);
 	if (candidates.empty())
 		return; // builder can build nothing we need
 
 	int alternativesCount = candidates.size();
+
+	unsigned int envCats = (include&(AIR|SEA|LAND)) & ~exclude;
 
 	/* Determine which of these we can afford */
 	std::multimap<float, UnitType*>::iterator i = candidates.begin();
@@ -192,7 +199,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 			if (i->second->def->needGeo && alternativesCount > 1) {
 				float e = eNow/eStorage;
 				goal = getClosestOpenGeoSpot(group);
-				if (goal == ZeroVector || (e > 0.15f && ai->pathfinder->getETA(group, goal) > 30*15)) {
+				if (goal == ZeroVector || (e > 0.15f && ai->pathfinder->getETA(group, goal) > 450.0f)) {
 					// build anything another...
 	        		i = candidates.begin();
 	        		while (i != candidates.end() && (i->second->def->windGenerator || i->second->def->needGeo))
@@ -204,7 +211,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 				}
 			}
 
-			ai->tasks->addBuildTask(bt, i->second, group, goal);
+			ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, goal));
 
 			break;
 		}
@@ -213,24 +220,37 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 			goal = getClosestOpenMetalSpot(group);
 			bool canBuildMMaker = (eIncome - eUsage) >= METAL2ENERGY || eexceeding;
 			if (goal != ZeroVector) {
-				bool tooSmallIncome = mIncome < 3.0f;
-				bool isComm = unit->def->isCommander;
-				if (tooSmallIncome || !isComm || ai->pathfinder->getETA(group, goal) < 30*10) {
-					ai->tasks->addBuildTask(bt, i->second, group, goal);
+				bool allowDirectTask = true;
+				bool isComm = unit->type->cats&COMMANDER;
+				bool tooSmallIncome = (mIncome < mStart);
+
+				// TODO: there is a flaw in logic because when spot is under
+				// threat we anyway send builders there
+				
+				if (isComm && !tooSmallIncome) {
+					// if commander can build mmakers and there is no
+					// urgent metal need then prevent it walking for more than 
+					// 10 sec...
+					if (ai->unittable->canBuild(unit->type, MMAKER|envCats))
+						allowDirectTask = ai->pathfinder->getETA(group, goal) < 450.0f;
 				}
-				else if (areMMakersEnabled && canBuildMMaker) {
-					UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
+
+				if (allowDirectTask) {
+					ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, goal));
+				}
+				else if (mstall && (isComm || areMMakersEnabled) && canBuildMMaker) {
+					UnitType *mmaker = ai->unittable->canBuild(unit->type, MMAKER|envCats);
 					if (mmaker != NULL)
-						ai->tasks->addBuildTask(bt, mmaker, group, pos);
+						ai->tasks->addTask(new BuildTask(ai, bt, mmaker, group, pos));
 				}
 			}
-			else if (areMMakersEnabled && canBuildMMaker) {
-				UnitType *mmaker = ai->unittable->canBuild(unit->type, LAND|MMAKER);
+			else if (mstall && areMMakersEnabled && canBuildMMaker) {
+				UnitType *mmaker = ai->unittable->canBuild(unit->type, MMAKER|envCats);
 				if (mmaker != NULL)
-					ai->tasks->addBuildTask(bt, mmaker, group, pos);
+					ai->tasks->addTask(new BuildTask(ai, bt, mmaker, group, pos));
 			}
-			else {
-				buildOrAssist(group, BUILD_EPROVIDER, EMAKER|LAND);
+			else if (!eexceeding) {
+				buildOrAssist(group, BUILD_EPROVIDER, EMAKER|envCats);
 			}
 			break;
 		}
@@ -239,65 +259,52 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 			/* Start building storage after enough ingame time */
 			if (!taskInProgress(bt) && ai->cb->GetCurrentFrame() > 30*60*7) {
 				pos = ai->defensematrix->getBestDefendedPos(0);
-				ai->tasks->addBuildTask(bt, i->second, group, pos);
+				ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, pos));
 			}
 			break;
 		}
 
-		case FACTORY_BUILD: {
+		case BUILD_FACTORY: {
 			if (!taskInProgress(bt)) {
 				int numFactories = ai->unittable->factories.size();
 
 				bool build = numFactories <= 0;
-				/*
-				if (numFactories > 0) {
-					int maxTechLevel = ai->cfgparser->getMaxTechLevel();
-					unsigned int cats = getNextFactoryToBuild(unit, maxTechLevel);
-					if (cats > 0) {
-						cats |= FACTORY;
-						UnitType *ut = ai->unittable->getUnitTypeByCats(cats);
-						if (ut) {
-							if (ut->costMetal > EPS)
-								build = ((mNow / ut->costMetal) > 0.8f);
-							else
-								build = true;
+				
+				if (!build) {
+					float m = mNow / mStorage;
+			
+					switch(state) {
+						case 0: case 1: case 2: {
+							build = (m > 0.4f && affordable);
+							break;
+						}
+						case 3: {
+							build = (m > 0.4f);
+							break;
+						}
+						case 4: {
+							build = (m > 0.35f);
+							break;
+						}
+						case 5: {
+							build = (m > 0.3f);
+							break;
+						}
+						case 6: {
+							build = (m > 0.25f);
+							break;
+						}
+						default: {
+							build = (m > 0.2f);
 						}
 					}
 				}
-				*/				
-				
-				float m = mNow / mStorage;
-			
-				switch(state) {
-				case 0: case 1: case 2: {
-					build = (m > 0.4f && affordable);
-					break;
-				}
-				case 3: {
-					build = (m > 0.4f);
-					break;
-				}
-				case 4: {
-					build = (m > 0.35f);
-					break;
-				}
-				case 5: {
-					build = (m > 0.3f);
-					break;
-				}
-				case 6: {
-					build = (m > 0.25f);
-					break;
-				}
-				default: {
-					build = (m > 0.2f);
-				}
-				}
 
 				if (build) {
-					if (numFactories > 1)
+					// TODO: fix getBestDefendedPos() for static builders
+					if (numFactories > 1 && (unit->type->cats&MOBILE))
 						pos = ai->defensematrix->getBestDefendedPos(numFactories);
-					ai->tasks->addBuildTask(bt, i->second, group, pos);
+					ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, pos));
 				}
 			}
 			break;
@@ -305,21 +312,31 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unsigned include, unsi
 		
 		case BUILD_AG_DEFENSE: case BUILD_AA_DEFENSE: {
 			if (!taskInProgress(bt)) {
-				pos = ai->defensematrix->getDefenseBuildSite(i->second);
-				ai->tasks->addBuildTask(bt, i->second, group, pos);
+				bool allowTask = true;
+				bool isComm = unit->type->cats&COMMANDER;
+
+				// TODO: rethink defense spot selection for static builders
+				goal = ai->defensematrix->getDefenseBuildSite(i->second);
+				
+				if (isComm)
+					allowTask = ai->pathfinder->getETA(group, goal) < 300.0f;
+				
+				if (allowTask)
+					ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, goal));
 			}
 			break;
 		}
 
 		default: {
 			if (affordable && !taskInProgress(bt))
-				ai->tasks->addBuildTask(bt, i->second, group, goal);
+				ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, goal));
 			break;
 		}
 	}
 }
 
 float3 CEconomy::getBestSpot(CGroup &group, std::list<float3> &resources, std::map<int, float3> &tracker, bool metal) {
+	bool staticBuilder = group.cats&STATIC;
 	float bestDist = std::numeric_limits<float>::max();
 	float3 bestSpot = ZeroVector;
 	float3 gpos = group.pos();
@@ -332,13 +349,13 @@ float3 CEconomy::getBestSpot(CGroup &group, std::list<float3> &resources, std::m
 
 	std::list<float3>::iterator i;
 	std::map<int, float3>::iterator j;
-	for (i = resources.begin(); i != resources.end(); i++) {
+	for (i = resources.begin(); i != resources.end(); ++i) {
 		// TODO: compare with actual group properties
 		if (i->y < 0.0f)
 			continue; // spot is under water
 		
 		bool taken = false;
-		for (j = tracker.begin(); j != tracker.end(); j++) {
+		for (j = tracker.begin(); j != tracker.end(); ++j) {
 			if (i->distance2D(j->second) < radius) {
 				taken = true;
 				break;
@@ -358,12 +375,26 @@ float3 CEconomy::getBestSpot(CGroup &group, std::list<float3> &resources, std::m
 		}
 		if (taken) continue; // already taken by ally team
 
+		float dist = gpos.distance2D(*i);
+
+		if (staticBuilder) {
+			if (dist > group.buildRange)
+				continue; // spot is out of range
+		}
+		
+		/*
+		// NOTE: getPathLength() also considers static units
+		float dist = ai->pathfinder->getPathLength(group, *i);
+		if (dist < 0.0f)
+			continue; // spot is out of build range or unreachable
+		*/
+
 		// TODO: actually any spot with any threat should be skipped; 
 		// to implement this effectively we need to refactor tasks, cause
 		// builder during approaching should scan target place for threat
 		// periodically; currently it does not, so skipping dangerous spot
 		// has no real profit
-		float dist = gpos.distance2D(*i);
+		
 		dist += 1000.0f * group.getThreat(*i, 300.0f);
 		if (dist < bestDist) {
 			bestDist = dist;
@@ -398,7 +429,7 @@ void CEconomy::update(int frame) {
 
 	/* Update idle worker groups */
 	std::map<int, CGroup*>::iterator i;
-	for (i = activeGroups.begin(); i != activeGroups.end(); i++) {
+	for (i = activeGroups.begin(); i != activeGroups.end(); ++i) {
 		CGroup *group = i->second;
 		CUnit *unit = group->firstUnit();
 
@@ -409,129 +440,167 @@ void CEconomy::update(int frame) {
 			continue;
 
 		if (group->cats&FACTORY) {
-			ai->tasks->addFactoryTask(*group);
-		
-			/* TODO: put same factories in a single group. This requires refactoring of task
-			assisting, because when factory is dead assisting tasks continue working on ex. factory
-			position.
-
-			CUnit *factory = CUnitTable::getUnitByDef(ai->unittable->factories, unit.def);
-			if(factory && factory->group) {
-				factory->group->addUnit(unit);
-			} else {
-				CGroup *group = requestGroup();
-				group->addUnit(unit);
-				ai->tasks->addFactoryTask(*group);
-			}
-			*/
-			
+			ai->tasks->addTask(new FactoryTask(ai, *group));
 			continue;
 		}
 
-		if (group->cats&STATIC) {
-			LOG_WW("CEconomy::update AI can't handle static builders except factories")
+		if (group->cats&STATIC && !(group->cats&BUILDER)) {
+			// we don't have a task for current unit type yet
 			continue;
 		}
 		
+		unsigned int envCats = group->cats&(AIR|SEA|LAND);
+		if (!ai->gamemap->IsWaterMap())
+			envCats &= ~SEA;
+		if ((group->cats&AIR) && !(group->cats&LAND))
+			envCats |= LAND; // air units usually can build land units
+		// TODO: enforce SEA if land is far away, also enforce LAND if 
+		// water is far away
+
 		float3 pos = group->pos();
 
+		// NOTE: we're using special algo for commander to prevent
+		// it walking outside the base
 		if (unit->def->isCommander) {
-			/* If we are mstalling deal with it */
-			if (mstall) {
-				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
-				if (group->busy) continue;
-			}
 			/* If we are estalling deal with it */
-			if (estall) {
-				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
+			if (estall && !eexceeding) {
+				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|envCats);
 				if (group->busy) continue;
 			}
+			
+			/* If we are mstalling deal with it */
+			if (mstall && !mexceeding) {
+				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|envCats);
+				if (group->busy) continue;
+			}
+			
 			/* If we don't have a factory, build one */
-			if (ai->unittable->factories.empty()) {
-				unsigned int factory = getNextFactoryToBuild(unit, maxTechLevel);
+			if (ai->unittable->factories.empty() || mexceeding) {
+				unsigned int factory = getNextTypeToBuild(unit, FACTORY, maxTechLevel);
 				if (factory > 0)
 					buildOrAssist(*group, BUILD_FACTORY, factory);
 				if (group->busy) continue;
 			}
+
 			/* If we are exceeding and don't have estorage yet, build estorage */
 			if (eexceeding && !ai->unittable->factories.empty()) {
-				if (ai->unittable->energyStorages.size() >= ai->cfgparser->getMaxTechLevel())
-					buildOrAssist(*group, BUILD_ESTORAGE, LAND|MMAKER);
-				else
-					buildOrAssist(*group, BUILD_ESTORAGE, LAND|ESTORAGE);
+				if (ai->unittable->energyStorages.size() < ai->cfgparser->getMaxTechLevel())
+					buildOrAssist(*group, BUILD_ESTORAGE, ESTORAGE|envCats);
 				if (group->busy) continue;
 			}
-			/* If we can assist a lab and it's close enough, do so */
+			
+			// NOTE: in NOTA only static commanders can build tech1 factories
+			if (unit->type->cats&STATIC) {
+				/* See if this unit can build desired factory */
+				unsigned int factory = getNextTypeToBuild(unit, FACTORY, maxTechLevel);
+				if (factory > 0)
+					buildOrAssist(*group, BUILD_FACTORY, factory);
+				if (group->busy) continue;
+
+				factory = getNextTypeToBuild(unit, BUILDER|STATIC, maxTechLevel);
+				if (factory > 0)
+					buildOrAssist(*group, BUILD_FACTORY, factory);
+				if (group->busy) continue;
+			}
+			
+			// build nearby metal extractors if possible...
+			if (!(mexceeding && ai->gamemap->IsMetalMap())) {
+				// NOTE: there is a special hack withing buildOrAssist() 
+				// to prevent building unnecessary MMAKERS
+				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|envCats);
+				if (group->busy) continue;
+			}
+			
+			// if we can assist a lab and it's close enough, do so...
 			ATask *task = NULL;
+			// TODO: "close enough" condition is NOT executed at all
 			if ((task = canAssistFactory(*group)) != NULL) {
-				ai->tasks->addAssistTask(*task, *group);
+				ai->tasks->addTask(new AssistTask(ai, *task, *group));
 				if (group->busy) continue;
 			}
+			
+			// see if we can build defense (but ususally commander ends up 
+			// with assisting a factory if mod rules allow this)
+			if (!mstall) {
+				if (ai->defensematrix->getClusters() > ai->unittable->defenses.size()) {
+					buildOrAssist(*group, BUILD_AG_DEFENSE, DEFENSE, ANTIAIR);
+					if (group->busy) continue;
+				}
+			}
+			
+			continue;
 		}
-		else {
-			/* If we are estalling deal with it */
-			if (estall) {
-				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
-				if (group->busy) continue;
-			}
-			/* If we are mstalling deal with it */
-			if (mstall) {
-				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
-				if (group->busy) continue;
-			}
-			/* See if this unit can build desired factory */
-			unsigned int factory = getNextFactoryToBuild(unit, maxTechLevel);
-			if (factory > 0)
-				buildOrAssist(*group, BUILD_FACTORY, factory);
+
+		/* If we are estalling deal with it */
+		if (estall) {
+			buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|envCats);
 			if (group->busy) continue;
-			/* See if we can build defense */
+		}
+		/* If we are mstalling deal with it */
+		if (mstall) {
+			buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|envCats);
+			if (group->busy) continue;
+		}
+		
+		/* See if this unit can build desired factory */
+		unsigned int factory = getNextTypeToBuild(unit, FACTORY, maxTechLevel);
+		if (factory > 0)
+			buildOrAssist(*group, BUILD_FACTORY, factory);
+		if (group->busy) continue;
+		
+		/* See if we can build defense */
+		if (!mstall) {
 			if (ai->defensematrix->getClusters() > ai->unittable->defenses.size()) {
 				buildOrAssist(*group, BUILD_AG_DEFENSE, DEFENSE, ANTIAIR);
 				if (group->busy) continue;
 			}
-			/* If we are overflowing energy build a estorage */
-			if (eexceeding) {
-				if (ai->unittable->energyStorages.size() >= ai->cfgparser->getMaxTechLevel())
-					buildOrAssist(*group, BUILD_ESTORAGE, LAND|MMAKER);
-				else
-					buildOrAssist(*group, BUILD_ESTORAGE, LAND|ESTORAGE);
-				if (group->busy) continue;
-			}
-			/* If we are overflowing metal build an mstorage */
-			if (mexceeding) {
-				buildOrAssist(*group, BUILD_MSTORAGE, LAND|MSTORAGE);
-				if (group->busy) continue;
-			}
-			/* If both requested, see what is required most */
-			if (eRequest && mRequest) {
-				if ((mNow / mStorage) > (eNow / eStorage))
-					buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
-				else
-					buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
-				if (group->busy) continue;
-			}
-			/* Else just provide that which is requested */
-			if (eRequest) {
-				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
-				if (group->busy) continue;
-			}
-			if (mRequest) {
-				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
-				if (group->busy) continue;
-			}
-			ATask *task = NULL;
-			/* If we can afford to assist a lab and it's close enough, do so */
-			if ((task = canAssistFactory(*group)) != NULL) {
-				ai->tasks->addAssistTask(*task, *group);
-				if (group->busy) continue;
-			}
-			/* Otherwise just expand */
-			if (!ai->gamemap->IsMetalMap()) {
-				if ((mNow / mStorage) > (eNow / eStorage))
-					buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|LAND);
-				else
-					buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|LAND);
-			}
+		}
+		
+		/* If we are overflowing energy build an estorage */
+		if (eexceeding) {
+			if (ai->unittable->energyStorages.size() < ai->cfgparser->getMaxTechLevel())
+				buildOrAssist(*group, BUILD_ESTORAGE, ESTORAGE|envCats);
+			if (group->busy) continue;
+		}
+
+		/* If we are overflowing metal build an mstorage */
+		if (mexceeding) {
+			buildOrAssist(*group, BUILD_MSTORAGE, MSTORAGE|envCats);
+			if (group->busy) continue;
+		}
+		
+		/* If both requested, see what is required most */
+		if (eRequest && mRequest) {
+			if ((mNow / mStorage) > (eNow / eStorage))
+				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|envCats);
+			else
+				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|envCats);
+			if (group->busy) continue;
+		}
+		
+		/* Else just provide that which is requested */
+		if (eRequest) {
+			buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|envCats);
+			if (group->busy) continue;
+		}
+		if (mRequest) {
+			buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|envCats);
+			if (group->busy) continue;
+		}
+
+		/* If we can afford to assist a lab and it's close enough, do so */
+		ATask *task = NULL;
+		if ((task = canAssistFactory(*group)) != NULL) {
+			ai->tasks->addTask(new AssistTask(ai, *task, *group));
+			if (group->busy) continue;
+		}
+		
+		/* Otherwise just expand */
+		if (!ai->gamemap->IsMetalMap()) {
+			if ((mNow / mStorage) > (eNow / eStorage))
+				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER|envCats);
+			else
+				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|envCats);
 		}
 	}
 
@@ -543,9 +612,9 @@ void CEconomy::update(int frame) {
 }
 
 bool CEconomy::taskInProgress(buildType bt) {
-	std::map<int, CTaskHandler::BuildTask*>::iterator i;
-	for (i = ai->tasks->activeBuildTasks.begin(); i != ai->tasks->activeBuildTasks.end(); i++) {
-		if (i->second->bt == bt)
+	std::map<int, ATask*>::iterator it;
+	for (it = ai->tasks->activeTasks[TASK_BUILD].begin(); it != ai->tasks->activeTasks[TASK_BUILD].end(); ++it) {
+		if (((BuildTask*)(it->second))->bt == bt)
 			return true;
 	}
 	return false;
@@ -553,17 +622,10 @@ bool CEconomy::taskInProgress(buildType bt) {
 
 void CEconomy::controlMetalMakers() {
 	float eRatio = eNow / eStorage;
-	std::map<int, CUnit*>::iterator j;
+
 	if (eRatio < 0.3f) {
-		int success = 0;
-		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
-			CUnit *unit = j->second;
-			if(unit->isOn()) {
-				unit->setOnOff(false);
-				success++;
-			}
-		}
-		if (success > 0) {
+		int count = ai->unittable->setOnOff(ai->unittable->metalMakers, false);
+		if (count > 0) {
 			estall = false;
 			areMMakersEnabled = false;
 			return;
@@ -571,15 +633,8 @@ void CEconomy::controlMetalMakers() {
 	}
 
 	if (eRatio > 0.7f) {
-		int success = 0;
-		for (j = ai->unittable->metalMakers.begin(); j != ai->unittable->metalMakers.end(); j++) {
-			CUnit *unit = j->second;
-			if(!unit->isOn()) {
-				unit->setOnOff(true);
-				success++;
-			}
-		}
-		if (success > 0) {
+		int count = ai->unittable->setOnOff(ai->unittable->metalMakers, true);
+		if (count > 0) {
 			mstall = false;
 			areMMakersEnabled = true;
 			return;
@@ -588,59 +643,145 @@ void CEconomy::controlMetalMakers() {
 }
 
 void CEconomy::preventStalling() {
-	/* If factorytask is on wait, unwait him */
-	std::map<int, CTaskHandler::FactoryTask*>::iterator k;
-	for (k = ai->tasks->activeFactoryTasks.begin(); k != ai->tasks->activeFactoryTasks.end(); k++)
-		k->second->setWait(false);
+	bool needMStallFixing, needEStallFixing;
+	AssistTask
+		*taskWithPowerBuilder = NULL,
+		*taskWithFastBuilder = NULL;
+	std::map<int, ATask*>::iterator it;
 
-	/* If we're not stalling, return */
+	// if factorytask is on wait, unwait him...
+	for (it = ai->tasks->activeTasks[TASK_FACTORY].begin(); it != ai->tasks->activeTasks[TASK_FACTORY].end(); ++it) {
+		FactoryTask *task = (FactoryTask*)it->second;
+		task->setWait(false);
+	}
+
+	// if we're not stalling, return...
 	if (!mstall && !estall)
 		return;
 
-	/* Stop all guarding workers */
-	std::map<int,CTaskHandler::AssistTask*>::iterator i;
-	for (i = ai->tasks->activeAssistTasks.begin(); i != ai->tasks->activeAssistTasks.end(); i++) {
-		/* If the assisting group is moving, continue */
-		if (i->second->isMoving)
-			continue;
+	needMStallFixing = mstall;
+	needEStallFixing = estall;
 
-		/* Don't stop those workers that are trying to fix the problem */
-		if (i->second->assist->t == BUILD) {
-			CTaskHandler::BuildTask* build = dynamic_cast<CTaskHandler::BuildTask*>(i->second->assist);
+	// check if there are tasks which are fixing current resource stall problems...
+	for (it = ai->tasks->activeTasks[TASK_BUILD].begin(); it != ai->tasks->activeTasks[TASK_BUILD].end(); ++it) {
+		BuildTask *task = (BuildTask*)it->second;
+		if (needMStallFixing && task->bt == BUILD_MPROVIDER)
+			needMStallFixing = false;
+		if (needEStallFixing && task->bt == BUILD_EPROVIDER)
+			needEStallFixing = false;			
+	}
+
+	// stop all guarding workers which do not help in fixing the problem...
+	it = ai->tasks->activeTasks[TASK_ASSIST].begin();
+	while (it != ai->tasks->activeTasks[TASK_ASSIST].end()) {
+		AssistTask *task = (AssistTask*)it->second; ++it;
+		
+		// if the assisting group is moving, continue...
+		if (task->isMoving)
+			continue;
+		
+		if (task->assist->t == TASK_BUILD) {
+			// ignore builders which are fixing the problems...
+			BuildTask* build = dynamic_cast<BuildTask*>(task->assist);
 			if ((mstall || mRequest) && build->bt == BUILD_MPROVIDER)
 				continue;
-
 			if ((estall || eRequest) && build->bt == BUILD_EPROVIDER)
 				continue;
-		}
 
-		/* Don't stop factory assisters, they will be dealt with later */
-		if (i->second->assist->t == BUILD && i->second->assist->t != FACTORY_BUILD) {
-			i->second->remove();
+			task->remove();
+
 			return;
 		}
 
+	    // detect fastest & most powerful builders among factory assisters...
+		if (task->assist->t == TASK_FACTORY) {
+			if (taskWithPowerBuilder) {
+				if (task->firstGroup()->firstUnit()->type->def->buildSpeed > taskWithPowerBuilder->firstGroup()->firstUnit()->type->def->buildSpeed)
+					taskWithPowerBuilder = task;
+			}
+			else
+				taskWithPowerBuilder = task;
+
+			if (taskWithFastBuilder) {
+				if (task->firstGroup()->speed > taskWithFastBuilder->firstGroup()->speed)
+					taskWithFastBuilder = task;
+			}
+			else
+				taskWithFastBuilder = task;
+		}
+
 		/* Unless it is the commander, he should be fixing the problem */
-		if (i->second->group->units.begin()->second->def->isCommander) {
+		/*
+		if (task->firstGroup()->firstUnit()->def->isCommander) {
 			if ((mstall && !eRequest) || (estall && !mstall)) {
-				i->second->remove();
+				task->remove();
 				return;
 			}
 		}
+		*/		
 	}
 
-	/* Wait all factories and their assisters */
-	for (k = ai->tasks->activeFactoryTasks.begin(); k != ai->tasks->activeFactoryTasks.end(); k++)
-		k->second->setWait(true);
+	if (needMStallFixing && taskWithFastBuilder) {
+		taskWithFastBuilder->remove();
+		return;
+	}
+	
+	if (needEStallFixing && taskWithPowerBuilder) {
+		taskWithPowerBuilder->remove();
+		return;
+	}
+
+	// wait all factories and their assisters...
+	for (it = ai->tasks->activeTasks[TASK_FACTORY].begin(); it != ai->tasks->activeTasks[TASK_FACTORY].end(); ++it) {
+		FactoryTask *task = (FactoryTask*)it->second;
+		task->setWait(true);
+	}
 }
 
 void CEconomy::updateIncomes(int frame) {
+	if (!stallThresholdsReady) {
+		if (utCommander->cats&FACTORY) {
+			mStart = utCommander->def->metalMake;
+			eStart = 0.0f;
+		}
+		else {
+			bool oldAlgo = true;
+			int initialFactory = getNextTypeToBuild(utCommander, FACTORY, MIN_TECHLEVEL);
+			if (initialFactory) {
+				UnitType *facType = ai->unittable->canBuild(utCommander, initialFactory);
+				if (facType != NULL) {
+					float buildTime = facType->def->buildTime / utCommander->def->buildSpeed;
+					float mDrain = facType->def->metalCost / buildTime;
+					float eDrain = facType->def->energyCost / buildTime;
+					float mTotalIncome = utCommander->def->metalMake * buildTime;
+		
+					mStart = (1.5 * facType->def->metalCost - ai->cb->GetMetal() - mTotalIncome) / buildTime;
+					if (mStart < 0.0f)
+						mStart = 0.0f;
+					eStart = 0.9f * eDrain;
+				
+					oldAlgo = false;
+				}
+			}
+		
+		    if (oldAlgo) {
+				mStart = 2.0f * utCommander->def->metalMake;
+				eStart = 1.5f * utCommander->def->energyMake;
+		    }
+		}	
+
+		LOG_II("CEconomy::updateIncomes Metal stall threshold: " << mStart)
+		LOG_II("CEconomy::updateIncomes Energy stall threshold: " << eStart)
+		
+		stallThresholdsReady = true;
+	}
+
 	incomes++;
 
-	mNowSummed    += ai->cb->GetMetal();
-	eNowSummed    += ai->cb->GetEnergy();
-	mIncomeSummed += ai->cb->GetMetalIncome();
-	eIncomeSummed += ai->cb->GetEnergyIncome();
+	//mNowSummed    += ai->cb->GetMetal();
+	//eNowSummed    += ai->cb->GetEnergy();
+	//mIncomeSummed += ai->cb->GetMetalIncome();
+	//eIncomeSummed += ai->cb->GetEnergyIncome();
 	mUsageSummed  += ai->cb->GetMetalUsage();
 	eUsageSummed  += ai->cb->GetEnergyUsage();
 	mStorage       = ai->cb->GetMetalStorage();
@@ -653,9 +794,10 @@ void CEconomy::updateIncomes(int frame) {
 	mUsage   = alpha*(mUsageSummed / incomes) + (1.0f-alpha)*(ai->cb->GetMetalUsage());
 	eUsage   = beta *(eUsageSummed / incomes) + (1.0f-beta) *(ai->cb->GetEnergyUsage());
 
+	/*
 	std::map<int, CUnit*>::iterator i;
 	float mU = 0.0f, eU = 0.0f;
-	for (i = ai->unittable->activeUnits.begin(); i != ai->unittable->activeUnits.end(); i++) {
+	for (i = ai->unittable->activeUnits.begin(); i != ai->unittable->activeUnits.end(); ++i) {
 		unsigned int c = i->second->type->cats;
 		if (!(c&MMAKER) || !(c&EMAKER) || !(c&MEXTRACTOR)) {
 			mU += i->second->type->metalMake;
@@ -667,9 +809,10 @@ void CEconomy::updateIncomes(int frame) {
 	
 	uMIncome   = alpha*(uMIncomeSummed / incomes) + (1.0f-alpha)*mU;
 	uEIncome   = beta*(uEIncomeSummed / incomes) + (1.0f-beta)*eU;
+	*/
 
-	mstall     = (mNow < (mStorage*0.1f) && mUsage > mIncome) || mIncome < (mStart*2.0f);
-	estall     = (eNow < (eStorage*0.1f) && eUsage > eIncome) || eIncome < (eStart*1.5f);
+	mstall = (mNow < (mStorage*0.1f) && mUsage > mIncome) || mIncome < mStart;
+	estall = (eNow < (eStorage*0.1f) && eUsage > eIncome) || eIncome < eStart;
 
 	mexceeding = (mNow > (mStorage*0.9f) && mUsage < mIncome);
 	eexceeding = (eNow > (eStorage*0.9f) && eUsage < eIncome);
@@ -687,18 +830,21 @@ void CEconomy::updateIncomes(int frame) {
 }
 
 ATask* CEconomy::canAssist(buildType t, CGroup &group) {
-	std::map<int, CTaskHandler::BuildTask*>::iterator i;
-	std::multimap<float, CTaskHandler::BuildTask*> suited;
+	std::map<int, ATask*>::iterator i;
+	std::multimap<float, BuildTask*> suited;
 
-	for (i = ai->tasks->activeBuildTasks.begin(); i != ai->tasks->activeBuildTasks.end(); i++) {
-		CTaskHandler::BuildTask *buildtask = i->second;
+	if (!group.canAssist())
+		return NULL;
+
+	for (i = ai->tasks->activeTasks[TASK_BUILD].begin(); i != ai->tasks->activeTasks[TASK_BUILD].end(); ++i) {
+		BuildTask *buildtask = (BuildTask*)i->second;
 
 		/* Only build tasks we are interested in */
 		float travelTime;
 		if (buildtask->bt != t || !buildtask->assistable(group, travelTime))
 			continue;
 		
-		suited.insert(std::pair<float, CTaskHandler::BuildTask*>(travelTime, buildtask));
+		suited.insert(std::pair<float, BuildTask*>(travelTime, buildtask));
 	}
 
 	/* There are no suited tasks that require assistance */
@@ -712,32 +858,35 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 		float eta = ai->pathfinder->getETA(group, g);
 
 		/* Don't pursuit as commander when walkdistance is more then 10 seconds */
-		if (eta > 30*10) return NULL;
+		if (eta > 300.0f) return NULL;
 	}
 
 	return suited.begin()->second;
 }
 
 ATask* CEconomy::canAssistFactory(CGroup &group) {
-	CUnit *unit = group.units.begin()->second;
-	std::map<int, CTaskHandler::FactoryTask*>::iterator i;
-	std::map<float, CTaskHandler::FactoryTask*> candidates;
+	if (!group.canAssist())
+		return NULL;
+	
+	CUnit *unit = group.firstUnit();
 	float3 pos = group.pos();
+	std::map<int, ATask*>::iterator i;
+	std::map<float, FactoryTask*> candidates;
 
-	for (i = ai->tasks->activeFactoryTasks.begin(); i != ai->tasks->activeFactoryTasks.end(); i++) {
+	for (i = ai->tasks->activeTasks[TASK_FACTORY].begin(); i != ai->tasks->activeTasks[TASK_FACTORY].end(); ++i) {
 		/* TODO: instead of euclid distance, use pathfinder distance */
-		float dist = (pos - i->second->pos).Length2D();
-		candidates[dist] = i->second;
+		float dist = pos.distance2D(i->second->pos);
+		candidates[dist] = (FactoryTask*)i->second;
 	}
 
 	if (candidates.empty())
 		return NULL;
 
-	if (unit->def->isCommander)
-		return candidates.begin()->second;
+	//if (unit->def->isCommander)
+	//	return candidates.begin()->second;
 
-	std::map<float, CTaskHandler::FactoryTask*>::iterator j;
-	for (j = candidates.begin(); j != candidates.end(); j++) {
+	std::map<float, FactoryTask*>::iterator j;
+	for (j = candidates.begin(); j != candidates.end(); ++j) {
 		if (!j->second->assistable(group))
 			continue;
 		return j->second;
@@ -747,7 +896,8 @@ ATask* CEconomy::canAssistFactory(CGroup &group) {
 }
 
 bool CEconomy::canAffordToBuild(UnitType *builder, UnitType *utToBuild) {
-	/* NOTE: "Salary" is provided every 32 logical frames */
+	/*
+	// NOTE: "Salary" is provided every 32 logical frames
 	float buildTime   = (utToBuild->def->buildTime / builder->def->buildSpeed) * 32.0f;
 	float mCost       = utToBuild->def->metalCost;
 	float eCost       = utToBuild->def->energyCost;
@@ -755,32 +905,59 @@ bool CEconomy::canAffordToBuild(UnitType *builder, UnitType *utToBuild) {
 	float ePrediction = (eIncome - eUsage - eCost/buildTime)*buildTime - eCost + eNow;
 	mRequest          = mPrediction < 0.0f;
 	eRequest          = ePrediction < 0.0f;
+	*/
+	float buildTime = utToBuild->def->buildTime / builder->def->buildSpeed;
+	float mPrediction = mNow + (mIncome - mUsage) * buildTime - utToBuild->def->metalCost;
+	float ePrediction = eNow + (eIncome - eUsage) * buildTime - utToBuild->def->energyCost;
+
+	if (!mRequest)
+		mRequest = mPrediction < 0.0f;
+	if (!eRequest)
+		eRequest = ePrediction < 0.0f;
+
 	return (mPrediction >= 0.0f && ePrediction >= 0.0f && mNow/mStorage >= 0.1f);
 }
 
-unsigned int CEconomy::getNextFactoryToBuild(CUnit *unit, int maxteachlevel) {
+unsigned int CEconomy::getNextTypeToBuild(CUnit *unit, unsigned int cats, int maxteachlevel) {
+	return getNextTypeToBuild(unit->type, cats, maxteachlevel);
+}
+
+unsigned int CEconomy::getNextTypeToBuild(UnitType *ut, unsigned int cats, int maxteachlevel) {
+	std::list<unitCategory>::iterator f;
+
 	if (ai->intel->strategyTechUp) {
-		for(std::list<unitCategory>::iterator f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
-			for(int techlevel = maxteachlevel; techlevel >= TECH1; techlevel--) {
-			int factory = *f|techlevel;
-			if(ai->unittable->canBuild(unit->type, factory))
-				if(!ai->unittable->gotFactory(factory)) {
-					return factory;
-				}
+		for(f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); ++f) {
+			for(int techlevel = maxteachlevel; techlevel >= MIN_TECHLEVEL; techlevel--) {
+				unsigned int type = *f|(1U<<(techlevel - 1))|cats;
+				if (isTypeRequired(ut, type, maxteachlevel))
+					return type;
 			}
 		}
 	}
-	else {	
-		for(int techlevel = TECH1; techlevel <= maxteachlevel; techlevel++) {
-			for(std::list<unitCategory>::iterator f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
-				int factory = *f|techlevel;
-				if(ai->unittable->canBuild(unit->type, factory))
-					if(!ai->unittable->gotFactory(factory)) {
-						return factory;
-					}
+	else {
+		for(int techlevel = MIN_TECHLEVEL; techlevel <= maxteachlevel; techlevel++) {
+			unsigned int techlevelCat = 1U<<(techlevel - 1);
+			for(f = ai->intel->allowedFactories.begin(); f != ai->intel->allowedFactories.end(); f++) {
+				unsigned int type = *f|techlevelCat|cats;
+				if (isTypeRequired(ut, type, maxteachlevel))
+					return type;
 			}
 		}
 	}	
 	
 	return 0;
+}
+
+bool CEconomy::isTypeRequired(UnitType *builder, unsigned int cats, int maxteachlevel) {
+	UnitType *ut = ai->unittable->canBuild(builder, cats);
+	if(ut) {
+		if (cats&FACTORY) {
+			int numRequired = ut->def->canBeAssisted ? 1: maxteachlevel;
+			if (ai->unittable->factoryCount(cats) < numRequired)
+				return true;
+		}
+		else if(ai->unittable->unitCount(cats) == 0)
+			return true;
+	}
+	return false;	
 }
