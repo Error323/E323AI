@@ -121,7 +121,7 @@ class CPathfinder: public AAStar, public ARegistrar {
 		int repathGroup;
 		/* Active map (graph[activeMap]), CRUCIAL to A* */
 		int activeMap;
-		/* Controls which path may be updated, (round robin-ish) */
+		/* Controls which path may be updated (round robin-ish) */
 		unsigned int update;
 		/* The paths <group_id, path> */
 		std::map<int, std::vector<float3> > paths;

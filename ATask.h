@@ -23,6 +23,8 @@ class CGroup;
 class ATask: public ARegistrar {
 
 public:
+	enum NPriority { LOW = 0, NORMAL, HIGH };
+
 	ATask(AIClasses *_ai);
 	~ATask() {}
 
@@ -30,8 +32,8 @@ public:
 		// task is active
 	bool suspended;
 		// task is suspended
-	int priority;
-		// task priority (recommended interval: 1 .. 10)
+	NPriority priority;
+		// task priority
 	int queueID;
 		// queue ID this task belongs to
 	int initFrame;
@@ -69,13 +71,15 @@ public:
 	/* Scan and micro for damaged units */
 	bool repairScan();
 	/* Scan and micro for enemy targets */
-	bool enemyScan();
+	bool enemyScan(int& target);
 	/* Task lifetime in frames */
 	int lifeFrames() const;
 	/* Task lifetime in sec */
 	float lifeTime() const;
 	/* Update this task */
 	void update();
+
+	bool urgent() { return priority == HIGH; }
 
 	virtual void onUpdate() = 0;
 	
@@ -87,9 +91,9 @@ public:
 
 	virtual void onUnitDestroyed(int uid, int attacker) {};
 
-	RegistrarType regtype() { return REG_TASK; }
+	ARegistrar::NType regtype() const { return ARegistrar::TASK; }
 	
-	friend std::ostream& operator<<(std::ostream &out, const ATask &task);
+	friend std::ostream& operator<<(std::ostream& out, const ATask& task);
 
 protected:
 	AIClasses *ai;

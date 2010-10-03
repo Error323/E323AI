@@ -12,10 +12,10 @@
 namespace util {
 	std::string GetAbsFileName(IAICallback* cb, const std::string& relFileName, bool readonly) {
 		char dst[2048];
-		sprintf(dst, "%s", relFileName.c_str());
 
-		// get the absolute path to the file
-		// (and create folders along the way)
+		SNPRINTF(dst, sizeof(dst), "%s", relFileName.c_str());
+
+		// get the absolute path to the file (and create folders along the way)
 		if (readonly) {
 			cb->GetValue(AIVAL_LOCATE_FILE_R, dst);
 		} else {
@@ -46,13 +46,31 @@ namespace util {
 	std::string StringStripSpaces(const std::string& s1) {
 		std::string s2; s2.reserve(s1.size());
 
-		for (std::string::const_iterator it = s1.begin(); it != s1.end(); it++) {
+		for (std::string::const_iterator it = s1.begin(); it != s1.end(); ++it) {
 			if (!isspace(*it)) {
 				s2.push_back(*it);
 			}
 		}
 
 		return s2;
+	}
+
+	void StringSplit(const std::string& src, char sep, std::vector<std::string>& dest, bool empty) {
+		bool go = true;
+		size_t pos1 = 0, pos2;
+		
+		if (empty) dest.clear();
+		if (src.empty()) return;
+		
+		while (go) {
+			pos2 = src.find(sep, pos1);
+			if (pos2 == std::string::npos) {
+				pos2 = src.size();
+				go = false;
+			}
+			dest.push_back(src.substr(pos1, pos2 - pos1));
+			pos1 = pos2 + 1;
+		}
 	}
 
 	void RemoveWhiteSpaceInPlace(std::string& s) {

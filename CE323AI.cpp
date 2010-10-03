@@ -6,6 +6,7 @@
 #include <cctype>
 
 #include "CAI.h"
+#include "CRNG.h"
 #include "CConfigParser.h"
 #include "GameMap.hpp"
 #include "CUnitTable.h"
@@ -21,6 +22,7 @@
 #include "CGroup.h"
 #include "CScopedTimer.h"
 #include "Util.hpp"
+#include "CCoverageHandler.h"
 #include "ReusableObjectFactory.hpp"
 
 #include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
@@ -106,6 +108,7 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->intel         = new CIntel(ai);
 	ai->military      = new CMilitary(ai);
 	ai->defensematrix = new CDefenseMatrix(ai);
+	ai->coverage      = new CCoverageHandler(ai);
 
 #if !defined(BUILDING_AI_FOR_SPRING_0_81_2)	
 	/* Set the new graph stuff */
@@ -127,8 +130,10 @@ void CE323AI::ReleaseAI() {
 	if (instances == 0) {
 		ReusableObjectFactory<CGroup>::Shutdown();
 		ReusableObjectFactory<CUnit>::Shutdown();
+		ReusableObjectFactory<CCoverageCell>::Shutdown();
 	}
 
+	delete ai->coverage;
 	delete ai->defensematrix;
 	delete ai->military;
 	delete ai->intel;
@@ -150,39 +155,46 @@ void CE323AI::ReleaseAI() {
 
 /* Called when units are spawned in a factory or when game starts */
 void CE323AI::UnitCreated(int uid, int bid) {
-	CUnit *unit = ai->unittable->requestUnit(uid, bid);
+	CUnit* unit = ai->unittable->requestUnit(uid, bid);
 	
 	LOG_II("CE323AI::UnitCreated " << (*unit))
 
 	// unit->def->isCommander
-	if ((unit->type->cats&COMMANDER) && !ai->economy->isInitialized()) {
+	if ((unit->type->cats&COMMANDER).any() && !ai->economy->isInitialized()) {
 		ai->economy->init(*unit);
 	}
 
 	// HACK: for metal extractors & geoplants only
 	ai->economy->addUnitOnCreated(*unit);
 
+	ai->coverage->addUnit(unit);
+
 	if (bid < 0)
 		return; // unit was spawned from nowhere (e.g. commander), or given by another player
 
-	unsigned int c = unit->type->cats;
-	if (c&MOBILE) {
-		CUnit *builder = ai->unittable->getUnit(bid);
+	unitCategory c = unit->type->cats;
+	if ((c&MOBILE).any()) {
+		CUnit* builder = ai->unittable->getUnit(bid);
 		// if builder is a mobile unit (like Consul in BA) then do not 
 		// assign move command...
-		if (builder->type->cats&STATIC) {
+		if ((builder->type->cats&STATIC).any()) {
 			// NOTE: factories should be already rotated in proper direction 
 			// to prevent units going outside the map
-			if (c&AIR) {
-				if (c&ANTIAIR)
+			if ((c&AIR).any()) {
+				if ((c&ANTIAIR).any())
 					unit->guard(bid, true);
 				else
 					unit->moveRandom(450.0f, true);
 			}
-			else if (c&BUILDER)
+			else if ((c&BUILDER).any())
 				unit->moveForward(200.0f);
 			else
 				unit->moveForward(400.0f);
+		}
+	}
+	else {
+		if ((c&NANOTOWER).any()) {
+			unit->patrol(unit->getForwardPos(100.0f), true);
 		}
 	}
 
@@ -197,7 +209,7 @@ void CE323AI::UnitCreated(int uid, int bid) {
 
 /* Called when units are finished in a factory and able to move */
 void CE323AI::UnitFinished(int uid) {
-	CUnit *unit = ai->unittable->getUnit(uid);
+	CUnit* unit = ai->unittable->getUnit(uid);
 	
 	if(!unit) {
 		const UnitDef *ud = ai->cb->GetUnitDef(uid);
@@ -209,10 +221,10 @@ void CE323AI::UnitFinished(int uid) {
 
 	// NOTE: commanders and static units should start actions earlier than
 	// usual units
-	if (unit->builtBy == -1 || (unit->type->cats&STATIC))
-		ai->unittable->unitsAliveTime[uid] = IDLE_UNIT_TIMEOUT;
+	if (unit->builtBy == -1 || (unit->type->cats&STATIC).any())
+		unit->aliveFrames = IDLE_UNIT_TIMEOUT;
 	else
-		ai->unittable->unitsAliveTime[uid] = 0;
+		unit->aliveFrames = 0; // reset time at which unit was building
 			
 	ai->unittable->idle[uid] = true;
 
@@ -221,15 +233,19 @@ void CE323AI::UnitFinished(int uid) {
 		ai->unittable->builders[unit->builtBy] = true;
 	}
 
-	/* Eco unit */
-	if (unit->isEconomy())
-		ai->economy->addUnitOnFinished(*unit);
-	/* Military unit */
-	else if(unit->type->cats&ATTACKER)
-		ai->military->addUnit(*unit);
-	else
-		LOG_WW("CE323AI::UnitFinished invalid unit " << *unit)
+	bool invalid = false;
 
+	if (unit->isEconomy()) {
+		ai->economy->addUnitOnFinished(*unit);
+	}
+	else if((unit->type->cats&ATTACKER).any()) {
+		ai->military->addUnit(*unit);
+	}
+	else {
+		LOG_WW("CE323AI::UnitFinished invalid unit " << *unit)
+		invalid = true;
+	}
+	
 	// NOTE: very important to place this line AFTER registering a unit in
 	// either economy or military blocks
 	ai->unittable->unitsUnderConstruction.erase(uid);
@@ -238,7 +254,7 @@ void CE323AI::UnitFinished(int uid) {
 /* Called on a destroyed unit */
 void CE323AI::UnitDestroyed(int uid, int attacker) {
 	ai->tasks->onUnitDestroyed(uid, attacker);
-	
+
 	CUnit *unit = ai->unittable->getUnit(uid);
 	if (unit) {
 		LOG_II("CE323AI::UnitDestroyed " << (*unit))
@@ -248,7 +264,7 @@ void CE323AI::UnitDestroyed(int uid, int attacker) {
 
 /* Called when unit is idle */
 void CE323AI::UnitIdle(int uid) {
-	CUnit *unit = ai->unittable->getUnit(uid);
+	CUnit* unit = ai->unittable->getUnit(uid);
 	
 	if (unit == NULL) {
 		const UnitDef *ud = ai->cb->GetUnitDef(uid);
@@ -256,7 +272,7 @@ void CE323AI::UnitIdle(int uid) {
 		return;
 	}
 
-	if(ai->unittable->unitsUnderPlayerControl.find(uid) != ai->unittable->unitsUnderPlayerControl.end()) {
+	if (ai->unittable->unitsUnderPlayerControl.find(uid) != ai->unittable->unitsUnderPlayerControl.end()) {
 		ai->unittable->unitsUnderPlayerControl.erase(uid);
 		assert(unit->group == NULL);
 		LOG_II("CE323AI::UnitIdle " << (*unit) << " is under AI control again")
@@ -267,7 +283,7 @@ void CE323AI::UnitIdle(int uid) {
 	
 	ai->unittable->idle[uid] = true;
 	
-	if (unit->type->cats&(BUILDER|FACTORY))
+	if ((unit->type->cats&(BUILDER|FACTORY)).any())
 		ai->unittable->unitsBuilding.erase(uid);
 }
 
@@ -326,8 +342,8 @@ void CE323AI::UnitDamaged(int damaged, int attacker, float damage, float3 dir) {
 
 /* Called on move fail e.g. can't reach the point */
 void CE323AI::UnitMoveFailed(int uid) {
-	CUnit *unit = ai->unittable->getUnit(uid);
-	if (unit && (unit->type->cats&(LAND|SEA))) {
+	CUnit* unit = ai->unittable->getUnit(uid);
+	if (unit && (unit->type->cats&(LAND|SEA)).any()) {
 		// if unit is inside a factory then force moving...
 		float3 pos = ai->cb->GetUnitPos(unit->key);
 		std::map<int, CUnit*>::iterator it;
@@ -335,8 +351,8 @@ void CE323AI::UnitMoveFailed(int uid) {
 			float distance = ai->cb->GetUnitPos(it->first).distance2D(pos);
 			if (distance < 16.0) {
 				unit->moveForward(200.0f);
-				if (ai->unittable->unitsAliveTime[uid] <= IDLE_UNIT_TIMEOUT)
-					ai->unittable->unitsAliveTime[uid] = 0;
+				if (!unit->canPerformTasks())
+					unit->aliveFrames = 0; // prolong idle timeout
 			}
 		}
 	}
@@ -381,7 +397,8 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 		modEco[] = "economy",
 		modPF[] = "pathfinder",
 		modPG[] = "pathgraph",
-		modDM[] = "defensematrix";
+		modDM[] = "defensematrix",
+		modCL[] = "coverage";
 
 	// NOTE: accept AI commands from spectators only
 	if (ai->cb->GetPlayerTeam(player) >= 0)
@@ -397,8 +414,8 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 			if (ai->isMaster()) {
 				ai->cb->SendTextMsg("Usage: !e323ai <module>", 0);
 				ai->cb->SendTextMsg("where", 0);
-				ai->cb->SendTextMsg("\t<module> ::= pathfinder|pathgraph|military|threatmap|defensematrix", 0);
-				ai->cb->SendTextMsg("\t<module> ::= pf|pg|mil|tm|dm", 0);
+				ai->cb->SendTextMsg("\t<module> ::= pathfinder|pathgraph|military|threatmap|defensematrix|coverage", 0);
+				ai->cb->SendTextMsg("\t<module> ::= pf|pg|mil|tm|dm|cl", 0);
 			}
 			return;
 		}
@@ -423,6 +440,10 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 		else if (cmd == modDM || cmd == "dm") {
 			isDebugOn = ai->defensematrix->switchDebugMode();
 			cmd.assign(modDM);
+		}
+		else if (cmd == modCL || cmd == "cl") {
+			isDebugOn = ai->coverage->toggleVisualization();
+			cmd.assign(modCL);
 		}
 		else {
 			line.assign("Module \"" + cmd + "\" is unknown or unsupported for visual debugging");
@@ -605,6 +626,7 @@ void CE323AI::Update() {
 		case 5: { /* update defense matrix */
 			PROFILE(defensematrix)
 			ai->defensematrix->update();
+			ai->coverage->update();
 		}
 
 		case 6: { /* update military */
@@ -615,7 +637,7 @@ void CE323AI::Update() {
 
 		case 7: { /* update economy */
 			PROFILE(economy)
-			ai->economy->update(localFrame);
+			ai->economy->update();
 		}
 		break;
 

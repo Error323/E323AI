@@ -20,18 +20,15 @@
 #include "Util.hpp"
 
 
-CMilitary::CMilitary(AIClasses *ai): ARegistrar(200, std::string("military")) {
+CMilitary::CMilitary(AIClasses *ai): ARegistrar(200) {
 	this->ai = ai;
 
 	groups[SCOUT] = &activeScoutGroups;
 	groups[ENGAGE] = &activeAttackGroups;
 	groups[BOMBER] = &activeBomberGroups;
+	groups[AIRFIGHTER] = &activeAirFighterGroups;
 
 	drawTasks = false;
-}
-
-CMilitary::~CMilitary()
-{
 }
 
 void CMilitary::remove(ARegistrar &object) {
@@ -42,9 +39,10 @@ void CMilitary::remove(ARegistrar &object) {
 	activeScoutGroups.erase(group->key);
 	activeAttackGroups.erase(group->key);
 	activeBomberGroups.erase(group->key);
+	activeAirFighterGroups.erase(group->key);
 	mergeGroups.erase(group->key);
 	
-	for (std::map<int,CGroup*>::iterator i = assemblingGroups.begin(); i != assemblingGroups.end(); i++) {
+	for (std::map<int,CGroup*>::iterator i = assemblingGroups.begin(); i != assemblingGroups.end(); ++i) {
 		if (i->second->key == group->key) {
 			assemblingGroups.erase(i->first);
 			break;
@@ -56,26 +54,28 @@ void CMilitary::remove(ARegistrar &object) {
 	ReusableObjectFactory<CGroup>::Release(group);
 }
 
-void CMilitary::addUnit(CUnit &unit) {
+void CMilitary::addUnit(CUnit& unit) {
 	LOG_II("CMilitary::addUnit " << unit)
 	
 	assert(unit.group == NULL);
 
-	unsigned int c = unit.type->cats;
+	unitCategory c = unit.type->cats;
 
-	if (c&MOBILE && !(c&DEFENSE)) {
-		unsigned int wishedCats = ai->unittable->unitsUnderConstruction[unit.key];
+	if ((c&MOBILE).any() && (c&DEFENSE).none()) {
+		unitCategory wishedCats = ai->unittable->unitsUnderConstruction[unit.key];
 		CGroup *group;
 		
-		if (c&SCOUTER && wishedCats && !(wishedCats&SCOUTER))
+		if ((c&SCOUTER).any() && wishedCats.any() && (wishedCats&SCOUTER).none())
 			c &= ~SCOUTER; // scout was not requested
 
-		if (c&SCOUTER) {
-			/* A scout is initially alone */
+		if ((c&SCOUTER).any()) {
 			group = requestGroup(SCOUT);
 		}
-		else if((c&AIR) && (c&ARTILLERY)) {
+		else if((c&AIR).any() && (c&ARTILLERY).any()) {
 			group = requestGroup(BOMBER);
+		}
+		else if((c&AIR).any() && (c&ASSAULT).none()) {
+			group = requestGroup(AIRFIGHTER);
 		}
 		else {
 			/* If there is a new factory, or the current group is busy, request
@@ -97,6 +97,7 @@ CGroup* CMilitary::requestGroup(MilitaryGroupBehaviour type) {
 	group->ai = ai;
 	group->reset();
 	group->reg(*this);
+	
 	LOG_II("CMilitary::requestGroup " << (*group))
 
 	switch(type) {
@@ -108,6 +109,9 @@ CGroup* CMilitary::requestGroup(MilitaryGroupBehaviour type) {
 			break;
 		case ENGAGE:
 			activeAttackGroups[group->key] = group;
+			break;
+		case AIRFIGHTER:
+			activeAirFighterGroups[group->key] = group;
 			break;
 		default:
 			LOG_EE("CMilitary::requestGroup invalid group behaviour: " << type)
@@ -154,31 +158,34 @@ void CMilitary::update(int frame) {
 				// TODO: replace constant with maneuvering radius of plane?
 				tf.threatRadius = 1000.0f;
 				break;
+			case AIRFIGHTER:
+				tf.threatFactor = 100.0f;
+				break;
 		}
 
 		std::vector<std::vector<int>* > *targetBlocks = &(ai->intel->targets[behaviour]);
 
 		// NOTE: start with random group ID because some groups can't reach the 
 		// target (e.g. Fleas); this helps to overcome the problem when there 
-		// is a target, but first group can't reach it, and AI constantly trying to add 
-		// same task again and again which leads to attack stall
+		// is a target, but first group can't reach it, and AI constantly 
+		// trying to add same task again and again which leads to attack stall
 		keys.clear();
 		util::GetShuffledKeys<int, CGroup*>(keys, *(itGroup->second));
 		
-		for (int i = 0; i < keys.size(); i++) {
+		for (int i = 0; i < keys.size(); ++i) {
 			CGroup *group = (*(itGroup->second))[keys[i]];
 
 			// if group is busy, don't bother...
-			if (group->busy || !ai->unittable->canPerformTask(*group->firstUnit())) {
+			if (group->busy || !group->canPerformTasks()) {
 				if (group->busy) {
 					if (behaviour == SCOUT)
 						busyScoutGroups++;
 				
     				if (drawTasks)
     					visualizeTasks(group);
-				
-					continue;
 				}
+
+				continue;
 			}
 
 			// NOTE: each group can have different score on the same target
@@ -189,7 +196,7 @@ void CMilitary::update(int frame) {
 			// setup custom target filter params per current group...
 			switch(behaviour) {
 				case SCOUT:
-					if (group->cats&AIR)
+					if ((group->cats&AIR).any())
 						tf.threatCeiling = 1.1f;
 					else
 						tf.threatCeiling = (std::max<float>((float)MAX_SCOUTS_IN_GROUP / group->units.size(), 1.0f)) * group->strength - EPS;
@@ -234,6 +241,9 @@ void CMilitary::update(int frame) {
 							case BOMBER:
 								canAssist = assisters < 9;
 								break;
+							case AIRFIGHTER:
+								canAssist = assisters < 3;
+								break;
 						}
 						
 						if (canAssist) {
@@ -250,14 +260,15 @@ void CMilitary::update(int frame) {
 			
 			if (target >= 0) {
 				isStrongEnough = group->strength >= (tf.threatValue - EPS);
-				bool isSizeEnough = behaviour == ENGAGE ? group->units.size() >= ai->cfgparser->getMinGroupSize(group->techlvl) : true;
+				bool isSizeEnough = (behaviour == ENGAGE) ? group->units.size() >= ai->cfgparser->getMinGroupSize(group->techlvl) : true;
 
 				if (behaviour != ENGAGE)
 					isAssembling = false;
 				
 				if ((isAssembling && isSizeEnough) || (!isAssembling && isStrongEnough)) {
+					ATask::NPriority taskPriority = (behaviour == BOMBER || behaviour == AIRFIGHTER) ? ATask::HIGH : ATask::NORMAL;
 					mergeGroups.erase(group->key);
-					if (ai->tasks->addTask(new AttackTask(ai, target, *group, behaviour == BOMBER))) {
+					if (ai->tasks->addTask(new AttackTask(ai, target, *group), taskPriority)) {
 						occupied.push_back(target);
 						isOccupied[target] = true;
 					}
@@ -274,12 +285,8 @@ void CMilitary::update(int frame) {
 				case SCOUT:
 					bMerge = bMerge && activeScoutGroups.size() > 1 && group->units.size() < MAX_SCOUTS_IN_GROUP;
 					break;
-				case ENGAGE:
-					bMerge = bMerge && activeAttackGroups.size() > 1;
-					break;
-				case BOMBER:
-					bMerge = bMerge && activeBomberGroups.size() > 1;
-					break;
+				default:
+					bMerge = bMerge && groups[behaviour]->size() > 1;
 			}
 				
 			if (bMerge)
@@ -297,7 +304,7 @@ void CMilitary::update(int frame) {
 						if (base->second->canMerge(compare->second)) {
 							bool canMerge = false;
 							
-							if (base->second->cats&SCOUTER)
+							if ((base->second->cats&SCOUTER).any())
 								// TODO: replace MERGE_DISTANCE with ETA?
 								canMerge = (base->second->pos().distance2D(compare->second->pos()) < MERGE_DISTANCE);
 							else
@@ -334,34 +341,33 @@ void CMilitary::update(int frame) {
 	bool gotSeaFactory = ai->unittable->gotFactory(NAVAL|HOVER);
 	
 	if (ai->difficulty == DIFFICULTY_HARD) {
-		// if all scouts are busy create some more...
+		// when all scouts are busy create some more...
+		// FIXME: when scouts are stucked AI will not build them anymore,
+		// while there are scout targets available
 		if (busyScoutGroups == activeScoutGroups.size()) {
-			unsigned int baseType = ai->gamemap->IsWaterMap() ? SEA : LAND;
-			buildPriority priority = activeScoutGroups.size() < ai->cfgparser->getMinScouts() ? HIGH: NORMAL;
+			unitCategory baseType = ai->gamemap->IsWaterMap() ? SEA : LAND;
+			Wish::NPriority p = activeScoutGroups.size() < ai->cfgparser->getMinScouts() ? Wish::HIGH: Wish::NORMAL;
 
 			if(gotAirFactory && rng.RandFloat() > 0.66f)
 				baseType = AIR;
 				
-			ai->wishlist->push(baseType | MOBILE | SCOUTER, priority);
+			ai->wishlist->push(baseType | MOBILE | SCOUTER, p);
 		} 
 	}
 
 	/* Always build some unit */
-	if (ai->gamemap->IsWaterMap()) {
-		if(gotAirFactory && rng.RandFloat() > 0.66f)
-			ai->wishlist->push(requestUnit(AIR), NORMAL);			
-		else
-			ai->wishlist->push(requestUnit(SEA), NORMAL);
+	if(gotAirFactory && rng.RandFloat() > 0.66f) {
+		ai->wishlist->push(requestUnit(AIR), Wish::NORMAL);
 	}
 	else {
-		if(gotAirFactory && rng.RandFloat() > 0.66f)
-			ai->wishlist->push(requestUnit(AIR), NORMAL);			
+		if (ai->gamemap->IsWaterMap())
+			ai->wishlist->push(requestUnit(SEA), Wish::NORMAL);
 		else
-			ai->wishlist->push(requestUnit(LAND), NORMAL);
-	}
+			ai->wishlist->push(requestUnit(LAND), Wish::NORMAL);
+	}	
 }
 
-unsigned int CMilitary::requestUnit(unsigned int basecat) {
+unitCategory CMilitary::requestUnit(unitCategory basecat) {
 	float r = rng.RandFloat();
 	float sum = 0.0f;
 	std::multimap<float, unitCategory>::iterator i;

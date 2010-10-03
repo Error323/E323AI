@@ -12,16 +12,18 @@ class AIClasses;
 class UnitType;
 
 struct Wish {
-	unsigned int goalCats;
-	buildPriority p;
-	UnitType *ut;
+	enum NPriority { LOW = 0, NORMAL, HIGH };
+
+	unitCategory goalCats;
+	NPriority p;
+	UnitType* ut;
 
 	Wish() {
-		goalCats = 0;
+		goalCats.reset();
 		p = NORMAL;
 		ut = NULL;
 	}
-	Wish(UnitType *ut, buildPriority p, unsigned int gcats) {
+	Wish(UnitType *ut, NPriority p, unitCategory gcats) {
 		this->ut = ut;
 		this->p  = p;
 		this->goalCats = gcats;
@@ -37,30 +39,26 @@ struct Wish {
 };
 
 class CWishList {
-	public:
-		CWishList(AIClasses *ai);
-		~CWishList();
+	
+public:
+	CWishList(AIClasses *ai);
+	~CWishList();
 
-		/* Insert a unit in the wishlist, sorted by priority p */
-		void push(unsigned int categories, buildPriority p);
+	/* Insert a unit in the wishlist, sorted by priority p */
+	void push(unitCategory categories, Wish::NPriority p);
+	/* Remove the top unit from the wishlist */
+	void pop(int factory);
+	/* Is empty ? */
+	bool empty(int factory);
+	/* View the top unit from the wishlist */
+	Wish top(int factory);
 
-		/* Remove the top unit from the wishlist */
-		void pop(int factory);
-
-		/* Is empty ? */
-		bool empty(int factory);
-
-		/* View the top unit from the wishlist */
-		Wish top(int factory);
-
-	private:
-		AIClasses *ai;
-
-		int maxWishlistSize;
-
-		void unique(std::vector<Wish> &vector);
-
-		std::map<int, std::vector<Wish> > wishlist; /* <factory type, wishes> */
+private:
+	AIClasses* ai;
+	int maxWishlistSize;
+	std::map<int, std::vector<Wish> > wishlist; /* <factory_def_id, wish> */
+	
+	void unique(std::vector<Wish>& vector);
 };
 
 #endif

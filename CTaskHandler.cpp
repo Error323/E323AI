@@ -18,7 +18,7 @@
 #include "CDefenseMatrix.h"
 
 
-CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500, std::string("taskhandler")) {
+CTaskHandler::CTaskHandler(AIClasses *ai): ARegistrar(500) {
 	this->ai = ai;
 
 	statsMaxActiveTasks = 0;
@@ -36,7 +36,7 @@ CTaskHandler::~CTaskHandler() {
 
 void CTaskHandler::remove(ARegistrar &obj) {
 	switch(obj.regtype()) {
-		case REG_TASK: {
+		case ARegistrar::TASK: {
 			ATask *task = dynamic_cast<ATask*>(&obj);
 			LOG_II("CTaskHandler::remove " << (*task))
 			for(std::list<CGroup*>::iterator it = task->groups.begin(); it != task->groups.end(); ++it) {
@@ -50,14 +50,14 @@ void CTaskHandler::remove(ARegistrar &obj) {
 			obsoleteTasks.push(task);
 			break;
 		}
-		case REG_GROUP: {
+		case ARegistrar::GROUP: {
 			CGroup *group = dynamic_cast<CGroup*>(&obj);
 			LOG_II("CTaskHandler::remove " << (*group))
 			groupToTask.erase(group->key);
 			break;
 		}
 		default:
-			assert(true);
+			assert(false);
 	}
 	
 	obj.unreg(*this);
@@ -130,11 +130,13 @@ ATask* CTaskHandler::getTaskByTarget(int uid) {
 	return NULL;
 }
 
-bool CTaskHandler::addTask(ATask *task) {
+bool CTaskHandler::addTask(ATask *task, ATask::NPriority p) {
 	if (task == NULL)
 		return false;
 	
 	assert(task->t != TASK_UNDEFINED);
+
+	task->priority = p;
 
 	std::list<CGroup*>::iterator it;
 
@@ -157,7 +159,7 @@ bool CTaskHandler::addTask(ATask *task) {
 		return false;
 	}
 	
-	// TODO: after MoveTask introducing remove the code below
+	// TODO: after MoveTask is implemented remove the code below
 	for(it = task->groups.begin(); it != task->groups.end(); ++it) {
 		CGroup *group = *it;
 		if (task->isMoving && !ai->pathfinder->pathAssigned(*group)) {

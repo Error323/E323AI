@@ -16,38 +16,40 @@ class CIntel;
 class CMilitary;
 class CDefenseMatrix;
 class GameMap;
+class CCoverageHandler;
 
 /* Ensures single instantiation of classes and good reachability */
 class AIClasses {
 
 public:
 	AIClasses();
-	bool isMaster();
 
-	IAICallback    *cb;
-	IAICheats      *cbc;
-	CConfigParser  *cfgparser;
-	GameMap        *gamemap;
-	CUnitTable     *unittable;
-	CEconomy       *economy;
-	CWishList      *wishlist;
-	CTaskHandler   *tasks;
-	CThreatMap     *threatmap;
-	CPathfinder    *pathfinder;
-	CIntel         *intel;
-	CMilitary      *military;
-	CDefenseMatrix *defensematrix;
-	CLogger        *logger;
-	int            team;
-		// team ID (will be AI ID in future?)
-	int            allyTeam;
+	static std::vector<int> unitIDs;
+		// temporary container for GetEnemyUnits(), GetFriendlyUnits() etc. results
+	IAICallback*	cb;
+	IAICheats*		cbc;
+	CConfigParser*	cfgparser;
+	GameMap*		gamemap;
+	CUnitTable*		unittable;
+	CEconomy*		economy;
+	CWishList*		wishlist;
+	CTaskHandler*	tasks;
+	CThreatMap*		threatmap;
+	CPathfinder*	pathfinder;
+	CIntel*			intel;
+	CMilitary*		military;
+	CDefenseMatrix*	defensematrix;
+	CLogger*		logger;
+	CCoverageHandler*	coverage;
+	int team;
+		// team ID
+	int allyTeam;
 		// ally team ID
-	int            allyAITeam;
+	int allyAITeam;
 		// ally AI team ID (internal)
 	difficultyLevel difficulty;
-						
-	std::vector<int> unitIDs;
-		// temporary container for GetEnemyUnits(), GetFriendlyUnits() etc. results
+
+	bool isMaster();	
 };
 
 #endif

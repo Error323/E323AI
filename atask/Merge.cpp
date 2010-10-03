@@ -17,10 +17,10 @@ MergeTask::MergeTask(AIClasses *_ai, std::list<CGroup*>& groups): ATask(_ai) {
 		range += group->radius();
 	}
 	
-	unsigned int cats = firstGroup()->cats;
-	if ((cats&AIR) && !(cats&ASSAULT)) {
+	unitCategory cats = firstGroup()->cats;
+	if ((cats&AIR).any() && (cats&ASSAULT).none()) {
 		// FIXME: prefer no hardcoding
-		range = 600.0f;
+		range = 1000.0f;
 	}
 	else {
 		range = range + groups.size() * FOOTPRINT2REAL;

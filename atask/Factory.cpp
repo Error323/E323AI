@@ -16,21 +16,36 @@ FactoryTask::FactoryTask(AIClasses *_ai, CGroup& group): ATask(_ai) {
 	addGroup(group);
 }
 
-bool FactoryTask::assistable(CGroup &assister) {
+bool FactoryTask::assistable(CGroup& assister) {
 	CGroup *group = firstGroup();
 
 	if (!group->firstUnit()->def->canBeAssisted)
-		return false; // no physical ability
-	if (assister.firstUnit()->type->cats&COMMANDER)
+		return false; // there is no physical ability
+	if ((assister.firstUnit()->type->cats&COMMANDER).any())
 		return true; // commander must stay at the base
-	if (assisters.size() >= std::min(ai->cfgparser->getState() * 2, FACTORY_ASSISTERS)) {
-		if (assister.cats&AIR) {
-			// try replacing existing assisters with aircraft assisters to free
-			// factory exit...
+	
+	int maxAssisters;
+	
+	switch(ai->difficulty) {
+		case DIFFICULTY_EASY:
+			maxAssisters = FACTORY_ASSISTERS / 3;
+			break;
+		case DIFFICULTY_NORMAL:
+			maxAssisters = FACTORY_ASSISTERS / 2;
+			break;
+	 	case DIFFICULTY_HARD:
+	 		maxAssisters = FACTORY_ASSISTERS;
+	 		break;
+	}
+	
+	if (assisters.size() >= std::min(ai->cfgparser->getState() * 2, maxAssisters)) {
+		if ((assister.cats&AIR).any()) {
+			// try replacing existing assisters (except commander) with 
+			// aircraft assisters to free factory exit...
 			std::list<ATask*>::iterator it;
 			for (it = assisters.begin(); it != assisters.end(); ++it) {
 				ATask *task = *it;
-				if (!(task->firstGroup()->cats&(AIR|COMMANDER))) {
+				if ((task->firstGroup()->cats&(AIR|COMMANDER)).none()) {
 					task->remove();
 					return true;
 				}
@@ -55,7 +70,7 @@ bool FactoryTask::onValidate() {
     		if (!ai->cb->UnitBeingBuilt(uid)) {
     			CUnit *unit = ai->unittable->getUnit(uid);
     			if (unit) {
-    				if (ai->unittable->canPerformTask(*unit))
+    				if (unit->canPerformTasks())
     					// our unit stalled a factory
     					return false;
     			}
@@ -86,25 +101,25 @@ void FactoryTask::onUpdate() {
 }
 
 void FactoryTask::setWait(bool on) {
-	std::map<int, CUnit*>::iterator ui;
-	std::list<ATask*>::iterator ti;
+	std::map<int, CUnit*>::iterator itUnit;
+	std::list<ATask*>::iterator itTask;
 	CGroup *group = firstGroup();
 	CUnit *factory;
 
-	for (ui = group->units.begin(); ui != group->units.end(); ++ui) {
-		factory = ui->second;
+	for (itUnit = group->units.begin(); itUnit != group->units.end(); ++itUnit) {
+		factory = itUnit->second;
 		if(on)
 			factory->wait();
 		else
 			factory->unwait();
 	}
 
-	for (ti = assisters.begin(); ti != assisters.end(); ++ti) {
-		if ((*ti)->isMoving) continue;
+	for (itTask = assisters.begin(); itTask != assisters.end(); ++itTask) {
+		if ((*itTask)->isMoving) continue;
 		if(on)
-			(*ti)->firstGroup()->wait();
+			(*itTask)->firstGroup()->wait();
 		else
-			(*ti)->firstGroup()->unwait();
+			(*itTask)->firstGroup()->unwait();
 	}
 }
 

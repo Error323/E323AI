@@ -72,11 +72,10 @@ std::string CConfigParser::getFilename(unsigned int f) {
 int CConfigParser::determineState(int metalIncome, int energyIncome) {
 	int previous = state;
 	std::map<int, std::map<std::string, int> >::iterator i;
-	for (i = states.begin(); i != states.end(); i++) {
-		if (
-			metalIncome >= i->second["metalIncome"] &&
-			energyIncome >= i->second["energyIncome"]
-		) state = i->first;
+	for (i = states.begin(); i != states.end(); ++i) {
+		if (metalIncome >= i->second["metalIncome"] 
+		&& energyIncome >= i->second["energyIncome"])
+			state = i->first;
 	}
 	if (state != previous)
 		LOG_II("CConfigParser::determineState(mIncome=" << metalIncome << ", eIncome=" << energyIncome << ") activated state(" << state << ")")
@@ -95,15 +94,18 @@ int CConfigParser::getMaxTechLevel() {
 	return result;
 }
 
-int CConfigParser::getMinGroupSize(unsigned int techLevel) {
-	switch (techLevel) {
-		case TECH1: return states[state]["minGroupSizeTech1"];
-		case TECH2: return states[state]["minGroupSizeTech2"];
-		case TECH3: return states[state]["minGroupSizeTech3"];
-		case TECH4: return states[state]["minGroupSizeTech4"];
-		case TECH5: return states[state]["minGroupSizeTech5"];
-		default: return 0;
-	}
+int CConfigParser::getMinGroupSize(unitCategory techLevel) {
+	if (techLevel == TECH1)
+		return states[state]["minGroupSizeTech1"];
+	if (techLevel == TECH2)
+		return states[state]["minGroupSizeTech2"];
+	if (techLevel == TECH3)
+		return states[state]["minGroupSizeTech3"];
+	if (techLevel == TECH4)
+		return states[state]["minGroupSizeTech4"];
+	if (techLevel == TECH5)
+		return states[state]["minGroupSizeTech5"];
+	return 1;
 }
 
 bool CConfigParser::parseConfig(std::string filename) {
@@ -132,23 +134,23 @@ bool CConfigParser::parseConfig(std::string filename) {
 				continue;
 			}
 
-			/* New state block */
 			if (contains(line, '{')) {
+				/* New state block */
 				line.substr(0, line.size() - 1);
-				split(line, ':', splitted);
+				util::StringSplit(line, ':', splitted);
 				state = atoi(splitted[1].c_str());
 				states[state] = stateVariables;
 			}
-			/* Close state block */
 			else if (contains(line, '}')) {
+				/* Close state block */
 				if (states[state].size() == stateVariables.size())
 					LOG_II("CConfigParser::parseConfig State("<<state<<") parsed successfully")
 				else
 					LOG_EE("CConfigParser::parseConfig State("<<state<<") parsed unsuccessfully")
 			}
-			/* Add var to curState */
 			else {
-				split(line, ':', splitted);
+				/* Add var to curState */
+				util::StringSplit(line, ':', splitted);
 				states[state][splitted[0]] = atoi(splitted[1].c_str());
 			}
 		}
@@ -187,18 +189,20 @@ bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType
 	unsigned linenr = 0;
 
 	if (file.good() && file.is_open()) {
+		std::vector<std::string> splitted;
+
 		while(!file.eof()) {
 			linenr++;
+			
 			std::string line;
-			std::vector<std::string> splitted;
-
 			std::getline(file, line);
-
+			util::RemoveWhiteSpaceInPlace(line);
+			
 			if (line.empty() || line[0] == '#')
 				continue;
 
 			line = line.substr(0, line.find('#') - 1);
-			split(line, ',', splitted);
+			util::StringSplit(line, ',', splitted);
 			const UnitDef *ud = ai->cb->GetUnitDef(splitted[0].c_str());
 			if (ud == NULL) {
 				LOG_EE("Parsing config line: " << linenr << "\tunit `" << splitted[0] << "' is invalid")
@@ -206,7 +210,7 @@ bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType
 			}
 			UnitType *ut = &units[ud->id];
 
-			unsigned categories = 0;
+			unitCategory categories;
 			for (unsigned i = 1; i < splitted.size(); i++) {
 				if (CUnitTable::str2cat.find(splitted[i]) == CUnitTable::str2cat.end()) {
 					LOG_EE("Parsing config line: " << linenr << "\tcategory `" << splitted[i] << "' is invalid")
@@ -229,27 +233,9 @@ bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType
 		return false;
 	}
 	
-	LOG_II("CConfigParser::parseCategories parsed "<<linenr<<" lines from " << filename)
+	LOG_II("CConfigParser::parseCategories parsed " << linenr << " lines from " << filename)
 	
 	return true;
-}
-
-void CConfigParser::split(std::string &line, char c, std::vector<std::string> &splitted) {
-	size_t begin = 0, end = 0;
-	std::string substr;
-	splitted.clear();
-	while (true) {
-		end = line.find(c, begin);
-		if (end == std::string::npos)
-			break;
-
-		substr = line.substr(begin, end-begin);
-		splitted.push_back(substr);
-		begin  = end + 1;
-	}
-	/* Manually push the last */
-	substr = line.substr(begin, line.size()-1);
-	splitted.push_back(substr);
 }
 
 bool CConfigParser::contains(std::string &line, char c) {

@@ -9,7 +9,8 @@ AssistTask::AssistTask(AIClasses *_ai, ATask& toAssist, CGroup& group): ATask(_a
 	toAssist.assisters.push_back(this);
 	assisting = false;
 	pos = toAssist.pos;
-	validateInterval = 0;
+	targetAlt = -1;
+	
 	addGroup(group);
 }
 
@@ -23,23 +24,46 @@ void AssistTask::remove() {
 	ATask::remove();
 }
 
+bool AssistTask::onValidate() {
+	if (targetAlt >= 0) {
+		if (ai->cbc->IsUnitCloaked(targetAlt)) {
+			firstGroup()->stop();
+		}
+	}
+
+	return true;
+}
+
 void AssistTask::onUpdate() {
 	CGroup *group = firstGroup();
 
-	if (group->isMicroing() && group->isIdle())
+	if (group->isMicroing() && group->isIdle()) {
+		targetAlt = -1; // for sure
 		group->micro(false);
+	}
 
 	if (!assisting) {
 		if (isMoving) {
-			pos = assist->pos; // because task target could be mobile
+			/* Keep tracking the target */
+			pos = assist->pos;
 
-			float3 grouppos = group->pos();
-			float3 dist = grouppos - pos;
+			float3 gpos = group->pos();
+			float dist = gpos.distance2D(pos);
 			float range = group->getRange();
-
-			if (dist.Length2D() <= range) {
-				isMoving = false;
-				ai->pathfinder->remove(*group);
+			
+			if (dist <= range) {
+				bool canAssist = true;
+				/*
+				// for ground units prevent assisting across hill...
+				if ((group->cats&AIR).none()) {
+					dist = ai->pathfinder->getPathLength(*group, pos);
+					canAssist = (dist <= range * 1.1f);
+				}
+				*/
+				if (canAssist) {
+					isMoving = false;
+					ai->pathfinder->remove(*group);
+				}
 			} 
 		}
 
@@ -51,10 +75,10 @@ void AssistTask::onUpdate() {
 	}
 
 	if (!group->isMicroing()) {
-		if (group->cats&BUILDER)
+		if ((group->cats&BUILDER).any())
 			resourceScan(); // builders should not be too aggressive
-		else if (!(group->cats&AIR)) {
-			enemyScan();
+		else if ((group->cats&AIR).none()) {
+			enemyScan(targetAlt);
 		}
 	}
 }

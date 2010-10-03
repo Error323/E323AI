@@ -23,7 +23,8 @@ namespace util {
 	 */
 	void RemoveWhiteSpaceInPlace(std::string& s);
 	std::string IntToString(int i, const std::string& format = "%i");
-
+	void StringSplit(const std::string& src, char splitter, std::vector<std::string>& dest, bool empty = true);
+	
 	float WeightedAverage(std::list<float>&, std::list<float>&);
 
 	float GaussDens(float, float mu = 0.0f, float sigma = 1.0f);

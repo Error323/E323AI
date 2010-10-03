@@ -9,7 +9,7 @@ struct BuildTask: public ATask {
 	BuildTask(AIClasses *_ai): ATask(_ai) { t = TASK_BUILD; }
 	BuildTask(AIClasses *_ai, buildType build, UnitType *toBuild, CGroup &group, float3 &pos);
 
-	/* build type to string */
+	/* Build type to string */
 	static std::map<buildType, std::string> buildStr;
 	
 	bool building;
@@ -18,7 +18,7 @@ struct BuildTask: public ATask {
 	/* The ETA in frames */
 	unsigned int eta;
 	/* The UnitType to build */
-	UnitType *toBuild;
+	UnitType* toBuild;
 
 	/* overload */
 	void onUpdate();

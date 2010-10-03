@@ -6,6 +6,7 @@ GuardTask::GuardTask(AIClasses *_ai, CGroup& group, CGroup& toGuard): ATask(_ai)
 	t = TASK_GUARD;
 	pos = toGuard.pos(true);
 	this->toGuard = &toGuard;
+	
 	addGroup(group);
 }
 

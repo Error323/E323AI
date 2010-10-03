@@ -8,28 +8,42 @@
 #include "CUnit.h"
 #include "CGroup.h"
 #include "MathUtil.h"
+#include "GameMap.hpp"
 
 CThreatMap::CThreatMap(AIClasses *ai) {
 	this->ai = ai;
+	
 	X = ai->cb->GetMapWidth() / (HEIGHT2SLOPE*I_MAP_RES);
 	Z = ai->cb->GetMapHeight() / (HEIGHT2SLOPE*I_MAP_RES);
 	REAL = HEIGHT2SLOPE * HEIGHT2REAL * I_MAP_RES;
 	
-	units = &ai->unitIDs[0]; // save about 4x32KB of memory
+	lastUpdateFrame = 0;
 
 	maps[TMT_AIR] = new float[X*Z];
 	maps[TMT_SURFACE] = new float[X*Z];
+	maps[TMT_SURFACE_WATER] = new float[X*Z];
+	maps[TMT_UNDERWATER] = new float[X*Z];
 
 #if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
 	handles[TMT_AIR] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_AIR], X, Z);
-	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_AIR], -0.95f, -0.5f);
+	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_AIR], -0.95f, -0.95f);
 	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_AIR], 0.4f, 0.4f);
 	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_AIR], "Air ThreatMap");
 
 	handles[TMT_SURFACE] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_SURFACE], X, Z);
-	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_SURFACE],  0.55f, -0.5f);
+	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_SURFACE], -0.95f, -0.5f);
 	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_SURFACE], 0.4f, 0.4f);
 	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_SURFACE], "Surface ThreatMap");
+
+	handles[TMT_SURFACE_WATER] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_SURFACE_WATER], X, Z);
+	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_SURFACE_WATER], -0.95f, -0.05f);
+	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_SURFACE_WATER], 0.4f, 0.4f);
+	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_SURFACE_WATER], "Surface + Underwater ThreatMap");
+
+	handles[TMT_UNDERWATER] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_UNDERWATER], X, Z);
+	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_UNDERWATER],  -0.95f, 0.45f);
+	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_UNDERWATER], 0.4f, 0.4f);
+	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_UNDERWATER], "Underwater ThreatMap");
 #endif
 	
 	drawMap = TMT_NONE;
@@ -38,20 +52,22 @@ CThreatMap::CThreatMap(AIClasses *ai) {
 }
 
 CThreatMap::~CThreatMap() {
-	std::map<ThreatMapType,float*>::iterator i;
-	for (i = maps.begin(); i != maps.end(); i++)
-		delete[] i->second;
+	std::map<ThreatMapType, float*>::iterator itMap;
+	for (itMap = maps.begin(); itMap != maps.end(); ++itMap)
+		delete[] itMap->second;
+#if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
+	std::map<ThreatMapType, int>::iterator itHandler;
+	for (itHandler = handles.begin(); itHandler != handles.end(); ++itHandler)
+		ai->cb->DebugDrawerDelOverlayTexture(itHandler->second);
+#endif
 }
 
 void CThreatMap::reset() {
-	float *map;
-	std::map<ThreatMapType,float*>::iterator i;
+	std::map<ThreatMapType, float*>::iterator i;
 	// NOTE: no threat value equals to ONE, not ZERO!
-	for (i = maps.begin(); i != maps.end(); i++) {
+	for (i = maps.begin(); i != maps.end(); ++i) {
 		maxPower[i->first] = 1.0f;
-		map = i->second;
-		for (int i = 0; i < X*Z; i++)
-			map[i] = 1.0f;
+		std::fill_n(i->second, X*Z, 1.0f);
 	}
 }
 
@@ -63,12 +79,15 @@ float *CThreatMap::getMap(ThreatMapType type) {
 }
 
 float CThreatMap::getThreat(float3 &center, float radius, ThreatMapType type) {
+	if (type == TMT_NONE)
+		return 1.0f;
+
 	int i = center.z / REAL;
 	int j = center.x / REAL;
-	float *map = maps[type];
+	const float* map = maps[type];
 	
 	if (radius < EPS)
-		return map[ID(j,i)];
+		return map[ID(j, i)];
 	
 	int sectorsProcessed = 0;
 	int R = ceil(radius / REAL);
@@ -100,40 +119,63 @@ float CThreatMap::getThreat(float3 &center, float radius, ThreatMapType type) {
 }
 
 float CThreatMap::getThreat(float3 &center, float radius, CGroup *group) {
-	unsigned int cats = group->cats;
-	ThreatMapType type;
+	ThreatMapType type = TMT_NONE;
 	
-	if (cats&LAND)
-		type = TMT_SURFACE;
-	else
+	// TODO: deal with LAND units when they are temporary under water
+	// TODO: deal with units which have tags LAND|SUB
+	// TODO: dealth with units which have tags AIR|SUB
+	
+	// NOTE: we do not support walking ships
+
+	if ((group->cats&LAND).any())
+		type = TMT_SURFACE; // hovers go here too because they can't be hit by torpedo
+	else if ((group->cats&AIR).any())
 		type = TMT_AIR;
-	
+	else if ((group->cats&SEA).any())
+		type = TMT_SURFACE_WATER;
+	else if ((group->cats&SUB).any())
+		type = TMT_UNDERWATER;
 	return getThreat(center, radius, type);
 }
 
 void CThreatMap::update(int frame) {
+	static const unitCategory catsCanShootGround = ASSAULT|SNIPER|ARTILLERY|SCOUTER;
+	
+	if ((frame - lastUpdateFrame) < MULTIPLEXER)
+		return;
+
+	const bool isWaterMap = ai->gamemap->IsWaterMap();
 	std::list<ThreatMapType> activeTypes;
-	std::list<ThreatMapType>::iterator tmi;
+	std::list<ThreatMapType>::iterator itMapType;
 
 	reset();
 
-	int numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS_AI);
+	int numUnits = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], MAX_UNITS_AI);
 
 	/* Add enemy threats */
 	for (int i = 0; i < numUnits; i++) {
-		const int uid = units[i];
+		const int uid = ai->unitIDs[i];
 		const UnitDef *ud = ai->cbc->GetUnitDef(uid);
 		
 		if (ud == NULL)
 			continue;
 
 		const UnitType *ut = UT(ud->id);
+		const unitCategory ecats = ut->cats;
 		
-		if (!(ut->cats&ATTACKER) || ai->cbc->IsUnitParalyzed(uid) || ai->cbc->UnitBeingBuilt(uid))
+		if ((ecats&ATTACKER).none() || ai->cbc->IsUnitParalyzed(uid)
+		|| ai->cbc->UnitBeingBuilt(uid))
 			continue;
 		
-		if ((ut->cats&AIR) && !(ut->cats&ASSAULT))
-			continue;
+		if ((ecats&AIR).any() && (ecats&ASSAULT).none())
+			continue; // ignore air fighters & bombers
+
+		const float3 upos = ai->cbc->GetUnitPos(uid);
+
+		// NOTE: for now i don't know what exact "y" position for naval units,
+		// so ignoring them for sure
+		if (upos.y < 0.0f && (ecats&(SEA|SUB|TORPEDO)).none())
+			continue; // ignore units which can't shoot under the water
 
 		// FIXME: think smth cleverer
 		if (ud->maxWeaponRange > MAX_WEAPON_RANGE_FOR_TM)
@@ -141,21 +183,32 @@ void CThreatMap::update(int frame) {
 
 		activeTypes.clear();
 
-		if (ut->cats&ANTIAIR)
+		if ((ecats&ANTIAIR).any()) {
 			activeTypes.push_back(TMT_AIR);
-		// NOTE: assuming DEFENSE unit can shoot ground units
-		if (((ut->cats&AIR) && (ut->cats&ASSAULT)) || (ut->cats&LAND && ((ut->cats&DEFENSE) || !(ut->cats&ANTIAIR))))
+		}
+		
+		// TODO: remove DEFENSE hack after fixing all config files
+		if (((catsCanShootGround&ecats).any() && (ecats&SUB).none())
+		||  ((ecats&DEFENSE).any() && (ecats&ANTIAIR).none())) {
 			activeTypes.push_back(TMT_SURFACE);
-		/*
-		if (ut->cats&TORPEDO)
+			if (isWaterMap)
+				activeTypes.push_back(TMT_SURFACE_WATER);
+		}
+		
+		// NOTE: TMT_SURFACE_WATER map can exist twice in a list which is ok
+		if (isWaterMap && (ecats&TORPEDO).any()) {
 			activeTypes.push_back(TMT_UNDERWATER);
-		*/
-		const float3  upos = ai->cbc->GetUnitPos(uid);
+			activeTypes.push_back(TMT_SURFACE_WATER);
+		}
+
+		if (activeTypes.empty())
+			continue;
+
 		const float uRealX = upos.x/REAL;
 		const float uRealZ = upos.z/REAL;
-		const float  range = (ud->maxWeaponRange + 100.0f)/REAL;
+		const float  range = (ud->maxWeaponRange + 100.0f) / REAL;
 		float       powerT = ai->cbc->GetUnitPower(uid);
-		const float  power = ut->cats&COMMANDER ? powerT/20.0f : powerT;
+		const float  power = (ecats&COMMANDER).any() ? powerT/20.0f : powerT;
 		float3 pos(0.0f, 0.0f, 0.0f);
 
 		const int R = (int) ceil(range);
@@ -169,35 +222,40 @@ void CThreatMap::update(int frame) {
 					const unsigned int mx = (unsigned int) round(pos.x);
 					const unsigned int mz = (unsigned int) round(pos.z);
 					if (mx < X && mz < Z) {
-						for (tmi = activeTypes.begin(); tmi != activeTypes.end(); tmi++) {
-							maps[*tmi][ID(mx,mz)] += power;
+						for (itMapType = activeTypes.begin(); itMapType != activeTypes.end(); ++itMapType) {
+							maps[*itMapType][ID(mx, mz)] += power;
 						}
 					}
 				}
 			}
 		}
 		
-		for (tmi = activeTypes.begin(); tmi != activeTypes.end(); ++tmi) {
-			maxPower[*tmi] = std::max<float>(power, maxPower[*tmi]);
+		for (itMapType = activeTypes.begin(); itMapType != activeTypes.end(); ++itMapType) {
+			maxPower[*itMapType] = std::max<float>(power, maxPower[*itMapType]);
 		}
 	}
 
 #if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
 	if (ai->cb->IsDebugDrawerEnabled()) {
-		std::map<ThreatMapType,int>::iterator i;
-		for (i = handles.begin(); i != handles.end(); i++) {
+		std::map<ThreatMapType, int>::iterator i;
+		for (i = handles.begin(); i != handles.end(); ++i) {
 			float power = maxPower[i->first];
-			// normalize the data
+			// normalize the data...
 			for (int j = 0, N = X*Z; j < N; j++)
 				maps[i->first][j] /= power;
 			// update texturemap
 			ai->cb->DebugDrawerUpdateOverlayTexture(i->second, maps[i->first], 0, 0, X, Z);
+			// restore the original data...
+			for (int j = 0, N = X*Z; j < N; j++)
+				maps[i->first][j] *= power;
 		}
 	}
 #endif
 
 	if (drawMap != TMT_NONE)
 		visualizeMap(drawMap);
+
+	lastUpdateFrame = frame;
 }
 
 float CThreatMap::gauss(float x, float sigma, float mu) {
