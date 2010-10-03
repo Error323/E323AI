@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\..\..\..\rts;..\..\..\..\..\rts\System;..\..\..\..\..\vclibs\SDL\include;..\..\..\..\..\vclibs\boost\include;..\..\..\..\..\vclibs\libcurl\include;..\..\..\..\Wrappers"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;BUILDING_SKIRMISH_AI;BUILDING_AI;BUILDING_AI_FOR_SPRING_0_81_2;_HAS_ITERATOR_DEBUGGING=0"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;BUILDING_SKIRMISH_AI;BUILDING_AI;_HAS_ITERATOR_DEBUGGING=0"
 				MinimalRebuild="true"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
@@ -127,7 +127,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\..\..\..\rts;..\..\..\..\..\rts\System;..\..\..\..\..\vclibs\SDL\include;..\..\..\..\..\vclibs\libcurl\include;..\..\..\..\..\vclibs\boost\include;..\..\..\..\Wrappers"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;E323AI_EXPORTS;BUILDING_SKIRMISH_AI;BUILDING_AI;BUILDING_AI_FOR_SPRING_0_81_2"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;E323AI_EXPORTS;BUILDING_SKIRMISH_AI;BUILDING_AI"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -383,6 +383,14 @@
 			</File>
 			<File
 				RelativePath="..\..\CConfigParser.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\CCoverageCell.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\CCoverageHandler.cpp"
 				>
 			</File>
 			<File
