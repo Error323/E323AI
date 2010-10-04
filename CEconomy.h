@@ -68,7 +68,7 @@ public:
 	/* See if this group has finished a building */
 	bool hasFinishedBuilding(CGroup &group);
 	/* See if this group begun building */
-	bool hasBegunBuilding(CGroup &group);
+	bool hasBegunBuilding(CGroup &group) const;
 	/* Can we afford to build this ? */
 	bool canAffordToBuild(UnitType *builder, UnitType *utToBuild);
 

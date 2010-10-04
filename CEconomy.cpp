@@ -59,12 +59,12 @@ void CEconomy::init(CUnit &unit) {
 	initialized = true;
 }
 		
-bool CEconomy::hasBegunBuilding(CGroup &group) {
-	std::map<int, CUnit*>::iterator i;
+bool CEconomy::hasBegunBuilding(CGroup &group) const {
+	std::map<int, CUnit*>::const_iterator i;
 	for (i = group.units.begin(); i != group.units.end(); i++) {
 		CUnit *unit = i->second;
 		if (ai->unittable->idle.find(unit->key) == ai->unittable->idle.end()
-			|| !ai->unittable->idle[unit->key])
+		|| !ai->unittable->idle[unit->key])
 			return true;
 	}
 	
@@ -551,7 +551,7 @@ void CEconomy::update() {
 			}
 			
 			// build nearby metal extractors if possible...
-			if (mRequest && !ai->gamemap->IsMetalMap()) {
+			if (mstall && !ai->gamemap->IsMetalMap()) {
 				// NOTE: there is a special hack withing buildOrAssist() 
 				// to prevent building unnecessary MMAKERS
 				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR|catsWhere);
@@ -1140,7 +1140,7 @@ void CEconomy::tryAssistingFactory(CGroup* group) {
 void CEconomy::tryAssist(CGroup* group, buildType bt) {
 	if (group->busy)
 		return;
-	if (!(mstall || estall))
+	if (mstall || estall)
 		return;
 
 	ATask *task = canAssist(bt, *group);
