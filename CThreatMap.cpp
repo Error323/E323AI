@@ -139,7 +139,7 @@ float CThreatMap::getThreat(float3 &center, float radius, CGroup *group) {
 }
 
 void CThreatMap::update(int frame) {
-	static const unitCategory catsCanShootGround = ASSAULT|SNIPER|ARTILLERY|SCOUTER;
+	static const unitCategory catsCanShootGround = ASSAULT|SNIPER|ARTILLERY|SCOUTER|PARALYZER;
 	
 	if ((frame - lastUpdateFrame) < MULTIPLEXER)
 		return;
