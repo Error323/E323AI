@@ -205,7 +205,7 @@ float CDefenseMatrix::getValue(CUnit* unit) {
 bool CDefenseMatrix::isPosInBounds(const float3 &pos) const {
 	std::multimap<float, Cluster*>::const_iterator i;
 	for (i = clusters.begin(); i != clusters.end(); ++i) {
-		if(i->second->center.distance2D(pos) <= CLUSTER_RADIUS)
+		if(i->second->center.distance2D(pos) <= CLUSTER_RADIUS * 1.5f)
 			return true;
 	}
 	return false;
