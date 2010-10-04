@@ -1,5 +1,23 @@
 E323AI changelog
 ----------------
+v3.23.0 [2010-10-04]
+* AI can build anti-air defenses, jammers, shields, nano-towers & anti-nukes, though you need updated config files to see them in action
+* AI can't properly use anti-nukes yet
+* nano-towers are set on patrol order for now and do not have separate behaviour yet
+* refactored to support unlimited number of categorization tags
+* added new categorization tags: SUB, JAMMER, NUKE, ANTINUKE, PARALYZER, TORPEDO, TRANSPORT, EBOOSTER, MBOOSTER,SHIELD, NANOTOWER, REPAIRPAD
+* added calculation of two more threatmap layers for: floating units & underwater units
+* improved AI behaviour when starting the game without initial resources
+* assisting units will prefer to assist factories according to max techlevel state instead of strictly closest ones
+* added new attack behaviour for air fighters
+* slightly improved auto-categorization of units
+* added detection & removing of stuck unit in a moving group
+* fixed improper loading of categorization file when using DOS style EOL markers under *nix OS
+* fixed memory leak in defense matrix module
+* fixed build task ETA when builder is in micro-mode
+* fixed attack stall when target gotten via enemyScan() is cloaked
+* updated BA & CA config files
+
 v3.22.4 [2010-09-08]
 * full tech 2 support for NOTA mod (from technical point of view)
 * fixed NOTA config file so tech 2 vehicles start being built (for ARM side only, CORE side is not updated at all)
@@ -36,7 +54,7 @@ v3.22.0 [2010-08-23]
 * added NOTA config files (suitable for ARM side currently)
 
 v3.21.2 [2010-08-06]
-* implemented http://github.com/Error323/E323AI/issues#issue/26
+* removed categorization file dependence on mod version (issue#26)
 * tasks refactoring (no changes for end-user)
 * no more unlimited number of tasks being executed per update
 * possible number of tech levels increased from 3 to 5
