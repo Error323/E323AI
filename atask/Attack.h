@@ -20,7 +20,7 @@ struct AttackTask: public ATask {
 	bool onValidate();
 	/* overload */
 	void toStream(std::ostream& out) const;
-
+	/* overload */
 	void onEnemyDestroyed(int enemy, int attacker);
 };
 
