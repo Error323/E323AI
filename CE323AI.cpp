@@ -584,7 +584,7 @@ void CE323AI::Update() {
 	/* Make sure we shift the multiplexer for each instance of E323AI */
 	int aiframe = localFrame + ai->team;
 	
-	// Make sure we start playing since "eco-incomes" update
+	// Make sure we start playing from "eco-incomes" update
 	if(!isRunning) {
 		isRunning = aiframe % MULTIPLEXER == 0;
 	}
