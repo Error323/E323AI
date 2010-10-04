@@ -430,7 +430,7 @@ void CPathfinder::updateFollowers() {
 			float lateralDisp = M.rbegin()->first - M.begin()->first;
 			if (lateralDisp > maxGroupLength) {
 				regrouping[group->key] = currentFrame;
-				group->updateLatecomer(M.rbegin()->second);
+				group->updateLatecomer(M.begin()->second);
 			} else if (lateralDisp < maxGroupLength*0.6f) {
 				regrouping[group->key] = 0;
 			}
@@ -523,16 +523,25 @@ bool CPathfinder::pathExists(CGroup &group, const float3 &s, const float3 &g) {
 }
 
 bool CPathfinder::addPath(CGroup &group, float3 &start, float3 &goal) {
-	activeMap = group.pathType;
 	ThreatMapType tmt = TMT_NONE;
 
+	// NOTE: activeMap is used in subsequent calls
+	activeMap = group.pathType;
+
+	// NOTE: hovers (LAND|SEA) can't be hit by underwater weapons that is why 
+	// LAND tag check is made before SEA tag check
+	
 	// reset the nodes...
-	if (activeMap < 0)
+	if ((group.cats&SUB).any() && group.pos().y < 0.0f)
+		tmt = TMT_UNDERWATER;
+	else if ((group.cats&AIR).any())
 		tmt = TMT_AIR;
 	else if ((group.cats&LAND).any())
 		tmt = TMT_SURFACE;
 	else if ((group.cats&SEA).any())
 		tmt = TMT_SURFACE_WATER;
+
+	//assert(tmt != TMT_NONE);
 
 	resetMap(group, tmt);
 		
