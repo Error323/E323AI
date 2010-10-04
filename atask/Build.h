@@ -26,6 +26,8 @@ struct BuildTask: public ATask {
 	bool onValidate();
 	/* overload */
 	void toStream(std::ostream& out) const;
+	/* overload */
+	void onUnitDestroyed(int uid, int attacker);
 
 	bool assistable(CGroup &group, float &travelTime) const;
 };

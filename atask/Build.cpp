@@ -114,7 +114,7 @@ bool BuildTask::assistable(CGroup &assister, float &travelTime) const {
 	if (isMoving)
 		return false;
 	if (assisters.size() > 1 && (bt == BUILD_AG_DEFENSE || bt == BUILD_AG_DEFENSE || bt == BUILD_MISC_DEFENSE))
-	    return false;
+		return false;
 	
 	CGroup *group = firstGroup();
 
@@ -132,6 +132,14 @@ bool BuildTask::assistable(CGroup &assister, float &travelTime) const {
 	travelTime = ai->pathfinder->getETA(assister, gpos) + 150.0f;
 
 	return (buildTime > travelTime);
+}
+
+void BuildTask::onUnitDestroyed(int uid, int attacker) {
+	if (ai->cb->UnitBeingBuilt(uid)) {
+		CUnit* unit = ai->unittable->getUnit(uid);
+		if (unit && unit->builtBy == firstGroup()->firstUnit()->key)
+			remove();
+	}
 }
 
 void BuildTask::toStream(std::ostream& out) const {
