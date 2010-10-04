@@ -265,7 +265,13 @@ int CUnit::getStockpileQueued() {
 	return result;
 }
 
-/* From KAIK */
+bool CUnit::micro(bool on) {
+	if (on && !microing)
+		microingFrames = 0;	
+	microing = on; 
+	return microing;
+}
+
 bool CUnit::factoryBuild(UnitType *ut, bool enqueue) {
 	Command c;
 	if (enqueue)
@@ -276,7 +282,6 @@ bool CUnit::factoryBuild(UnitType *ut, bool enqueue) {
 	return true;
 }
 
-/* From KAIK */
 Command CUnit::createTargetCommand(int cmd, int target) {
 	Command c;
 	c.id = cmd;
@@ -284,7 +289,6 @@ Command CUnit::createTargetCommand(int cmd, int target) {
 	return c;
 }
 
-/* From KAIK */
 Command CUnit::createPosCommand(int cmd, float3 pos, float radius, facing f) {
 	if (pos.x > ai->cb->GetMapWidth() * 8)
 		pos.x = ai->cb->GetMapWidth() * 8;
@@ -336,7 +340,6 @@ quadrant CUnit::getQuadrant(float3 &pos) const {
 	return mapQuadrant;
 }
 
-/* From KAIK */
 facing CUnit::getBestFacing(float3 &pos) const {
 	int mapWidth = ai->cb->GetMapWidth() * 8;
 	int mapHeight = ai->cb->GetMapHeight() * 8;
