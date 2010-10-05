@@ -34,6 +34,7 @@ public:
 	bool IsVehicleMap() { return !IsKbotMap(); }
 	bool IsHooverMap() { return waterAmount > 0.2f; }
 	bool IsWaterMap() { return waterAmount > 0.7f; }
+	bool IsWaterFreeMap() { return waterAmount < 0.1f; }
 	bool IsMetalMap() { return metalCount > nonMetalCount && avgMetal > 80; }
 	bool IsMetalFreeMap() { return metalCount == 0; }
 
