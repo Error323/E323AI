@@ -1,10 +1,10 @@
 #include "CCoverageHandler.h"
 
+#include <limits>
+
 #include "ReusableObjectFactory.hpp"
 #include "CUnitTable.h"
 #include "CConfigParser.h"
-
-#include <limits>
 
 
 void CCoverageHandler::update() {
