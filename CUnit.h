@@ -74,11 +74,11 @@ public:
 	/* Move random */
 	bool moveRandom(float radius, bool enqueue = false);
 	/* Move unit with id uid to position pos */
-	bool move(float3& pos, bool enqueue = false);
+	bool move(const float3& pos, bool enqueue = false);
 	/* Set a unit (e.g. mmaker) on or off */
 	bool setOnOff(bool on);
 	/* Build a unit of "toBuild" type at position "pos" */
-	bool build(UnitType* toBuild, float3& pos);
+	bool build(UnitType* toBuild, const float3& pos);
 	/* Build a unit in a certain factory */
 	bool factoryBuild(UnitType* toBuild, bool enqueue = false);
 	/* Repair (or assist) a certain unit */
@@ -88,7 +88,7 @@ public:
 	/* Guard a certain unit */
 	bool guard(int target, bool enqueue = false);
 	
-	bool patrol(float3& pos, bool enqueue = false);
+	bool patrol(const float3& pos, bool enqueue = false);
 	/* Stop doing what you did */
 	bool stop();
 	/* Wait with what you are doing */
@@ -118,9 +118,9 @@ public:
 
 	float3 pos() const { return ai->cb->GetUnitPos(key); }
 	/* Get best facing */
-	facing getBestFacing(float3 &pos) const;
+	facing getBestFacing(const float3& pos) const;
 	/* Get quadrant */
-	quadrant getQuadrant(float3 &pos) const;
+	quadrant getQuadrant(const float3& pos) const;
 
 	float getRange() const;
 

@@ -45,7 +45,7 @@ struct UnitType {
 	std::map<int, UnitType*> buildBy;
 	std::map<int, UnitType*> canBuild;
 
-	inline int getID() const { def->id; }
+	inline int getID() const { return def->id; }
 };
 
 class CUnitTable: public ARegistrar {

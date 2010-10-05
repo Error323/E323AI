@@ -110,7 +110,7 @@ bool CUnit::moveRandom(float radius, bool enqueue) {
 	return move(newpos, enqueue);
 }
 
-bool CUnit::move(float3 &pos, bool enqueue) {
+bool CUnit::move(const float3 &pos, bool enqueue) {
 	Command c = createPosCommand(CMD_MOVE, pos);
 	
 	if (c.id != 0) {
@@ -136,7 +136,7 @@ bool CUnit::guard(int target, bool enqueue) {
 	return false;
 }
 
-bool CUnit::patrol(float3& pos, bool enqueue) {
+bool CUnit::patrol(const float3& pos, bool enqueue) {
 	Command c = createPosCommand(CMD_PATROL, pos);
 
 	if (c.id != 0) {
@@ -170,7 +170,7 @@ bool CUnit::repair(int target) {
 	return false;
 }
 
-bool CUnit::build(UnitType *toBuild, float3 &pos) {
+bool CUnit::build(UnitType* toBuild, const float3& pos) {
 	bool staticBuilder = (type->cats&STATIC).any();
 	int mindist = 8;
 	
@@ -316,7 +316,7 @@ Command CUnit::createPosCommand(int cmd, float3 pos, float radius, facing f) {
 	return c;
 }
 
-quadrant CUnit::getQuadrant(float3 &pos) const {
+quadrant CUnit::getQuadrant(const float3& pos) const {
 	int mapWidth = ai->cb->GetMapWidth() * 8;
 	int mapHeight = ai->cb->GetMapHeight() * 8;
 	quadrant mapQuadrant = NORTH_EAST;
@@ -340,7 +340,7 @@ quadrant CUnit::getQuadrant(float3 &pos) const {
 	return mapQuadrant;
 }
 
-facing CUnit::getBestFacing(float3 &pos) const {
+facing CUnit::getBestFacing(const float3& pos) const {
 	int mapWidth = ai->cb->GetMapWidth() * 8;
 	int mapHeight = ai->cb->GetMapHeight() * 8;
 	quadrant mapQuadrant = getQuadrant(pos);
