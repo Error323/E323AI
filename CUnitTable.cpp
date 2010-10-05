@@ -345,11 +345,13 @@ unitCategory CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->canfly)
 		cats |= AIR;
 	
-	if (ud->canSubmerge || ud->maxWaterDepth > 254.0f)
+	if (ud->canSubmerge || ud->maxWaterDepth > 254.0f || ud->waterline > 10.0f
+	&& !(ud->floater || ud->canhover)) {
 		cats |= SUB;
-
-	if (ud->floater || ud->canhover || ud->minWaterDepth > 0.0f)
+	}
+	else if (ud->floater || ud->canhover || ud->minWaterDepth > 0.0f || ud->waterline > 0.0f) {
 		cats |= SEA;
+	}
 
 	if ((ud->canhover || ud->minWaterDepth < 0.0f) && !ud->canfly)
 		cats |= LAND;
@@ -413,7 +415,7 @@ unitCategory CUnitTable::categorizeUnit(UnitType *ut) {
 		if ((cats&STATIC).any())
 			cats |= FACTORY;
 
-		// preprocessing stage....
+		// preprocessing stage...
 		for (j = ud->buildOptions.begin(); j != ud->buildOptions.end(); ++j) {
 			const UnitDef* canbuild = ai->cb->GetUnitDef(j->second.c_str());
 			
@@ -447,14 +449,14 @@ unitCategory CUnitTable::categorizeUnit(UnitType *ut) {
 				if (canbuild->movedata == NULL) 
 					continue;
 			
-				if (canbuild->movedata->moveFamily == MoveData::KBot &&
-					ud->minWaterDepth < 0.0f) {
+				if (canbuild->movedata->moveFamily == MoveData::KBot
+				&& ud->minWaterDepth < 0.0f) {
 					cats |= KBOT;
 					break;
 				}
 			
-				if (canbuild->movedata->moveFamily == MoveData::Tank &&
-					ud->minWaterDepth < 0.0f) {
+				if (canbuild->movedata->moveFamily == MoveData::Tank
+				&& ud->minWaterDepth < 0.0f) {
 					cats |= VEHICLE;
 					break;
 				}
@@ -549,7 +551,7 @@ bool CUnitTable::gotFactory(unitCategory c) {
 }
 
 void CUnitTable::getBuildables(UnitType *ut, unitCategory include, unitCategory exclude, std::multimap<float, UnitType*> &candidates) {
-	static const unitCategory envCats = (AIR|SEA|LAND);
+	static const unitCategory envCats = (AIR|SEA|LAND|SUB);
 	unitCategory incEnvCats = (envCats&include);
 	std::vector<unitCategory> incCats, excCats;
 	
@@ -567,8 +569,8 @@ void CUnitTable::getBuildables(UnitType *ut, unitCategory include, unitCategory 
 		unitCategory cat = j->second->cats;
 		for (unsigned int i = 0; i < incCats.size(); i++) {
 			// NOTE: evironment tags are handled differently: if requested
-			// AIR, LAND & SEA in any combination that means having at least
-			// one match automatically qualifies unit as valid
+			// AIR, LAND, SEA & SUB in any combination that means having 
+			// at least one match automatically qualifies unit as valid
 			if ((incCats[i]&envCats).any()) {
 				if (incEnvCats.any()) {
 					// filter by environment tags is active
