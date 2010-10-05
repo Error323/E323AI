@@ -4,6 +4,8 @@
 #include "CUnitTable.h"
 #include "CConfigParser.h"
 
+#include <limits>
+
 
 void CCoverageHandler::update() {
 	std::map<CCoverageCell::NType, std::list<CCoverageCell*> >::iterator itLayer;
