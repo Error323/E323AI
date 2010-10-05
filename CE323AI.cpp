@@ -159,7 +159,6 @@ void CE323AI::UnitCreated(int uid, int bid) {
 	
 	LOG_II("CE323AI::UnitCreated " << (*unit))
 
-	// unit->def->isCommander
 	if ((unit->type->cats&COMMANDER).any() && !ai->economy->isInitialized()) {
 		ai->economy->init(*unit);
 	}
