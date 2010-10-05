@@ -168,7 +168,7 @@ void CGroup::reset() {
 
 void CGroup::recalcProperties(CUnit *unit, bool reset)
 {
-	if(reset) {
+	if (reset) {
 		strength   = 0.0f;
 		speed      = std::numeric_limits<float>::max();
 		size       = 0;
@@ -180,7 +180,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		pathType   = -1; // emulate NONE
 		techlvl    = TECH1;
 		cats.reset();
-		groupRadius     = 0.0f;
+		groupRadius = 0.0f;
 		radiusUpdateRequired = false;
 		cost       = 0.0f;
 		costMetal  = 0.0f;
@@ -190,7 +190,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		latecomerWeight = 0;
 	}
 
-	if(unit == NULL)
+	if (unit == NULL)
 		return;
 
 	if (unit->builtBy >= 0) {
@@ -212,7 +212,7 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 
 	// NOTE: aircraft & static units do not have movedata
 	MoveData *md = unit->def->movedata;
-    if (md) {
+	if (md) {
 		// select base path type with the lowerst slope, so pos(true) will
 		// return valid postition for all units in a group...
 		if (md->maxSlope <= maxSlope) {
@@ -424,14 +424,19 @@ bool CGroup::canAttack(int uid) {
 	return true;
 }
 
-bool CGroup::canAdd(CUnit *unit) {
+bool CGroup::canAdd(CUnit* unit) {
 	return canBeMerged(cats, unit->type->cats);
 }
 		
-bool CGroup::canAssist(UnitType *type) {
-	if (type && !type->def->canBeAssisted)
-		return false;
-	
+bool CGroup::canAssist(UnitType* type) {
+	if (type) {
+		if (!type->def->canBeAssisted)
+			return false;
+		if ((type->cats&(SEA|SUB)).any() && (cats&(SEA|SUB|AIR)).none())
+			return false;
+		if ((type->cats&(LAND)).any() && (cats&(LAND|AIR)).none())
+			return false;
+	}
 	std::map<int, CUnit*>::const_iterator i;
 	for (i = units.begin(); i != units.end(); ++i)
 		if (i->second->type->def->canAssist)
@@ -440,7 +445,7 @@ bool CGroup::canAssist(UnitType *type) {
 	return false;
 }
 
-bool CGroup::canMerge(CGroup *group) {
+bool CGroup::canMerge(CGroup* group) {
 	return canBeMerged(cats, group->cats);
 }
 
@@ -454,7 +459,7 @@ void CGroup::mergeCats(unitCategory newcats) {
 	if (cats == 0)
 		cats = newcats;
 	else {
-		static unitCategory nonXorCats[] = {SEA, LAND, AIR, STATIC, MOBILE, SCOUTER};
+		static unitCategory nonXorCats[] = {SEA, SUB, LAND, AIR, STATIC, MOBILE, SCOUTER};
 		unitCategory oldcats = cats;
 		cats |= newcats;
 		for (int i = 0; i < sizeof(nonXorCats) / sizeof(unitCategory); i++) {

@@ -155,7 +155,7 @@ public:
 
 	bool canAdd(CUnit *unit);
 
-	bool canAssist(UnitType *type = NULL);
+	bool canAssist(UnitType* type = NULL);
 	
 	bool canMerge(CGroup *group);
 	/* Get area threat specific to current group */
