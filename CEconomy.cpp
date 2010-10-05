@@ -40,7 +40,7 @@ CEconomy::CEconomy(AIClasses *ai): ARegistrar(700) {
 	if (canBuildEnv.empty()) {
 		canBuildEnv[AIR] = LAND|SEA|SUB; // TODO: -SUB?
 		canBuildEnv[LAND] = LAND; // TODO: +SEA?
-		canBuildEnv[SEA] = SEA|SUB;
+		canBuildEnv[SEA] = SEA|SUB; // TODO: +LAND?
 		canBuildEnv[SUB] = SEA|SUB;
 	}
 }
@@ -61,7 +61,7 @@ void CEconomy::init(CUnit &unit) {
 		
 bool CEconomy::hasBegunBuilding(CGroup &group) const {
 	std::map<int, CUnit*>::const_iterator i;
-	for (i = group.units.begin(); i != group.units.end(); i++) {
+	for (i = group.units.begin(); i != group.units.end(); ++i) {
 		CUnit *unit = i->second;
 		if (ai->unittable->idle.find(unit->key) == ai->unittable->idle.end()
 		|| !ai->unittable->idle[unit->key])
@@ -203,7 +203,7 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unitCategory include, 
 			
 			if (i->second->def->needGeo && candidates.size() > 1) {
 				goal = getClosestOpenGeoSpot(group);
-	            // TODO: prevent commander walking ?
+	            // TODO: prevent commander walking?
 				if (goal == ZeroVector || (!eRequest && ai->pathfinder->getETA(group, goal) > 450.0f)) {
 					// build anything another...
 	        		i = candidates.begin();
@@ -385,8 +385,10 @@ void CEconomy::buildOrAssist(CGroup &group, buildType bt, unitCategory include, 
 	}
 }
 
-float3 CEconomy::getBestSpot(CGroup &group, std::list<float3> &resources, std::map<int, float3> &tracker, bool metal) {
+float3 CEconomy::getBestSpot(CGroup& group, std::list<float3>& resources, std::map<int, float3>& tracker, bool metal) {
 	bool staticBuilder = (group.cats&STATIC).any();
+	bool canBuildUnderWater = (group.cats&(SEA|SUB|AIR)).any();
+	bool canBuildAboveWater = (group.cats&(LAND|AIR)).any();
 	float bestDist = std::numeric_limits<float>::max();
 	float3 bestSpot = ZeroVector;
 	float3 gpos = group.pos();
@@ -400,9 +402,14 @@ float3 CEconomy::getBestSpot(CGroup &group, std::list<float3> &resources, std::m
 	std::list<float3>::iterator i;
 	std::map<int, float3>::iterator j;
 	for (i = resources.begin(); i != resources.end(); ++i) {
-		// TODO: compare with actual group properties
-		if (i->y < 0.0f)
-			continue; // spot is under water
+		if (i->y < 0.0f) {
+			if (!canBuildUnderWater)
+				continue;
+		}
+		else {
+			if (!canBuildAboveWater)
+				continue;
+		}
 		
 		bool taken = false;
 		for (j = tracker.begin(); j != tracker.end(); ++j) {
@@ -907,7 +914,7 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 	for (i = ai->tasks->activeTasks[TASK_BUILD].begin(); i != ai->tasks->activeTasks[TASK_BUILD].end(); ++i) {
 		BuildTask *buildtask = (BuildTask*)i->second;
 
-		/* Only build tasks we are interested in */
+		// only build tasks we are interested in...
 		float travelTime;
 		if (buildtask->bt != t || !buildtask->assistable(group, travelTime))
 			continue;
@@ -915,16 +922,16 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 		suited.insert(std::pair<float, BuildTask*>(travelTime, buildtask));
 	}
 
-	/* There are no suited tasks that require assistance */
+	// there are no suited tasks that require assistance
 	if (suited.empty())
 		return NULL;
 
-	bool isCommander = group.firstUnit()->def->isCommander;
+	bool isCommander = (group.cats&COMMANDER).any();
 
 	if (isCommander) {
 		float eta = (suited.begin())->first;
 
-		/* Don't pursuit as commander when walkdistance is more than 10 seconds */
+		// don't pursuit as commander when walkdistance is more than 10 seconds
 		if (eta > 450.0f) return NULL;
 	}
 
@@ -1046,13 +1053,13 @@ void CEconomy::tryBuildingDefense(CGroup* group, unitCategory where) {
 		bt = BUILD_AA_DEFENSE;
 		layer = CCoverageCell::DEFENSE_ANTIAIR;
 		incCats = STATIC|ANTIAIR;
-		excCats = 0;
+		excCats = TORPEDO;
 	}
 	else {
 		bt = BUILD_AG_DEFENSE;
 		layer = CCoverageCell::DEFENSE_GROUND;
 		incCats = DEFENSE;
-		excCats = ANTIAIR;
+		excCats = ANTIAIR|TORPEDO;
 	}
 				
 	size = ai->coverage->getLayerSize(layer);
@@ -1159,14 +1166,17 @@ unitCategory CEconomy::canBuildWhere(unitCategory unitCats) {
 			result |= it->second;
 	}
 	
-	// explicitly exclude sea units on non-water maps...
-	if (!ai->gamemap->IsWaterMap()) {
-		result &= ~(SEA|SUB); 
+	// explicitly exclude useless units on specific maps...	
+	if (ai->gamemap->IsWaterMap()) {
+		result &= ~(LAND);
+	}
+	else if (ai->gamemap->IsWaterFreeMap()) {
+		result &= ~(SEA|SUB);
 	}
 	else {	
 		// TODO: detect unit's sector land/sea percent and enforce/remove tags
 		// accordingly
 	}
-
+	
 	return result;
 }
