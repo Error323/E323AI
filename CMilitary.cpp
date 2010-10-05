@@ -338,14 +338,14 @@ void CMilitary::update(int frame) {
 	}
 
 	bool gotAirFactory = ai->unittable->gotFactory(AIRCRAFT);
-	bool gotSeaFactory = ai->unittable->gotFactory(NAVAL|HOVER);
+	bool gotSeaFactory = (ai->unittable->gotFactory(NAVAL) || ai->unittable->gotFactory(HOVER));
 	
 	if (ai->difficulty == DIFFICULTY_HARD) {
 		// when all scouts are busy create some more...
 		// FIXME: when scouts are stucked AI will not build them anymore,
 		// while there are scout targets available
 		if (busyScoutGroups == activeScoutGroups.size()) {
-			unitCategory baseType = ai->gamemap->IsWaterMap() ? SEA : LAND;
+			unitCategory baseType = ai->gamemap->IsWaterMap() && gotSeaFactory ? SEA|SUB : LAND;
 			Wish::NPriority p = activeScoutGroups.size() < ai->cfgparser->getMinScouts() ? Wish::HIGH: Wish::NORMAL;
 
 			if(gotAirFactory && rng.RandFloat() > 0.66f)
@@ -360,8 +360,8 @@ void CMilitary::update(int frame) {
 		ai->wishlist->push(requestUnit(AIR), Wish::NORMAL);
 	}
 	else {
-		if (ai->gamemap->IsWaterMap())
-			ai->wishlist->push(requestUnit(SEA), Wish::NORMAL);
+		if (ai->gamemap->IsWaterMap() && gotSeaFactory)
+			ai->wishlist->push(requestUnit(SEA|SUB), Wish::NORMAL);
 		else
 			ai->wishlist->push(requestUnit(LAND), Wish::NORMAL);
 	}	
