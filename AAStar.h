@@ -9,11 +9,25 @@ class AAStar {
 	public:
 		class ANode {
 			public:
-				ANode() { id = 0; g = 0; h = w = 0.0f; open = closed = false; }
-				ANode(unsigned int id, float w) {
-					this->id = id;
-					this->w  = w;
-					reset();
+				ANode()
+					: open(false)
+					, closed(false)
+					, id(0)
+					, g(0.0f)
+					, h(0.0f)
+					, w(0.0f)
+					, parent(NULL)
+				{
+				}
+				ANode(unsigned int id, float w)
+					: open(false)
+					, closed(false)
+					, id(id)
+					, g(0.0f)
+					, h(0.0f)
+					, w(w)
+					, parent(NULL)
+				{
 				}
 
 				virtual ~ANode() {}

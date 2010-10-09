@@ -345,8 +345,8 @@ unitCategory CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->canfly)
 		cats |= AIR;
 	
-	if (ud->canSubmerge || ud->maxWaterDepth > 254.0f || ud->waterline > 10.0f
-	&& !(ud->floater || ud->canhover)) {
+	if (ud->canSubmerge || ud->maxWaterDepth > 254.0f
+	|| (ud->waterline > 10.0f && !(ud->floater || ud->canhover))) {
 		cats |= SUB;
 	}
 	else if (ud->floater || ud->canhover || ud->minWaterDepth > 0.0f || ud->waterline > 0.0f) {
