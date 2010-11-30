@@ -53,6 +53,13 @@ local infos = {
 		value  = '0.1', -- AI Interface version - !This comment is used for parsing!
 		desc   = 'the minimum version of the AI interface this AI needs.',
 	},
+	{
+		key    = 'apiChecksum',
+		value  = '@@CHECKSUM_AI_SKIRMISH@@',
+		desc   = [[
+Describes the C API headers used for engine <-> Skirmish AI communication.
+The value is calculated at build-time and injected by the build-system.]],
+	},
 }
 
 return infos
