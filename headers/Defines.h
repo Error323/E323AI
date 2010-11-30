@@ -1,6 +1,9 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+#include <bitset>
+#include <string>
+
 #include "../AIExport.h"
 
 #define MAX_INT   2147483647
@@ -10,7 +13,6 @@
 
 #define ERRORVECTOR float3(-1.0f,0.0f,0.0f)
 #define ZEROVECTOR  float3(0.0f,0.0f,0.0f)
-
 
 /* AI meta data */
 #define AI_VERSION_NR  aiexport_getVersion()
@@ -94,55 +96,69 @@
 #define MIN_TECHLEVEL 1
 #define MAX_TECHLEVEL 5
 
-/* Unit categories */
-enum unitCategory {
-	TECH1        = (1<<0), // hardcored techlevels for now
-	TECH2        = (1<<1),
-	TECH3        = (1<<2),
-	TECH4        = (1<<3),
-	TECH5        = (1<<4),
+#define MAX_CATEGORIES 44
 
-	AIR          = (1<<5), // can fly
-	SEA          = (1<<6), // can float
-	LAND         = (1<<7), // can walk/drive
+typedef std::bitset<MAX_CATEGORIES> unitCategory;
+
+const unitCategory
+	TECH1      (1UL<<0), // hardcored techlevels for now
+	TECH2      (1UL<<1),
+	TECH3      (1UL<<2),
+	TECH4      (1UL<<3),
+	TECH5      (1UL<<4),
+
+	AIR        (1UL<<5), // can fly
+	SEA        (1UL<<6), // can float
+	LAND       (1UL<<7), // can walk/drive
+	SUB        (1UL<<8), // can dive
 	
-	STATIC       = (1<<8),
-	MOBILE       = (1<<9),
+	STATIC     (1UL<<9),
+	MOBILE     (1UL<<10),
 
-	FACTORY      = (1<<10),
-	BUILDER      = (1<<11),
-	ASSISTER     = (1<<12),
-	RESURRECTOR  = (1<<13),
+	FACTORY    (1UL<<11),
+	BUILDER    (1UL<<12),
+	ASSISTER   (1UL<<13),
+	RESURRECTOR(1UL<<14),
 
-	COMMANDER    = (1<<14),
-	ATTACKER     = (1<<15),
-	ANTIAIR      = (1<<16),
-	SCOUTER      = (1<<17),
-	ARTILLERY    = (1<<18),
-	SNIPER       = (1<<19),
-	ASSAULT      = (1<<20),
+	COMMANDER  (1UL<<15),
+	ATTACKER   (1UL<<16),
+	ANTIAIR    (1UL<<17),
+	SCOUTER    (1UL<<18),
+	ARTILLERY  (1UL<<19),
+	SNIPER     (1UL<<20),
+	ASSAULT    (1UL<<21),
 
-	MEXTRACTOR   = (1<<21),
-	MMAKER       = (1<<22),
-	EMAKER       = (1<<23),
-	MSTORAGE     = (1<<24),
-	ESTORAGE     = (1<<25),
+	MEXTRACTOR (1UL<<22),
+	MMAKER     (1UL<<23),
+	EMAKER     (1UL<<24),
+	MSTORAGE   (1UL<<25),
+	ESTORAGE   (1UL<<26),
 	
-	DEFENSE      = (1<<26),
+	DEFENSE    (1UL<<27),
 
-	KBOT         = (1<<27), // produces kbots
-	VEHICLE      = (1<<28), // produces vehicles 
-	HOVER        = (1<<29), // produces hovercraft
-	AIRCRAFT     = (1<<30), // produces aircraft
-	NAVAL        = (1<<31), // produces naval units
-};
+	KBOT       (1UL<<28), // produces kbots
+	VEHICLE    (1UL<<29), // produces vehicles
+	HOVER      (1UL<<30), // produces hovercraft
+	AIRCRAFT   (1UL<<31), // produces aircraft
+	NAVAL      ('1' + std::string(32, '0')), // produces naval units
 
-/* Build priorities */
-enum buildPriority {
-	LOW    = 0,
-	NORMAL = 1,
-	HIGH   = 2
-};
+	JAMMER     ('1' + std::string(33, '0')),
+	NUKE       ('1' + std::string(34, '0')),
+	ANTINUKE   ('1' + std::string(35, '0')),
+	PARALYZER  ('1' + std::string(36, '0')),
+	TORPEDO	   ('1' + std::string(37, '0')),
+	TRANSPORT  ('1' + std::string(38, '0')),
+	EBOOSTER   ('1' + std::string(39, '0')),
+	MBOOSTER   ('1' + std::string(40, '0')),
+	SHIELD     ('1' + std::string(41, '0')),
+	NANOTOWER  ('1' + std::string(42, '0')),
+	REPAIRPAD  ('1' + std::string(43, '0'));
+
+/*
+const unitCategory
+	CATS_ENVIRONMENT = AIR|LAND|SEA|SUB,
+	CATS_ECONOMY = FACTORY|BUILDER|ASSISTER|RESURRECTOR|COMMANDER|MEXTRACTOR|MMAKER|EMAKER|MSTORAGE|ESTORAGE|EBOOSTER|MBOOSTER;
+*/
 
 /* Build tasks */
 enum buildType {
@@ -152,7 +168,9 @@ enum buildType {
 	BUILD_AG_DEFENSE,
 	BUILD_FACTORY,
 	BUILD_MSTORAGE,
-	BUILD_ESTORAGE
+	BUILD_ESTORAGE,
+	BUILD_MISC_DEFENSE,
+	BUILD_IMP_DEFENSE
 };
 
 enum difficultyLevel {

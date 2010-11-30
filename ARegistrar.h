@@ -2,42 +2,54 @@
 #define AREGISTRAR_H
 
 #include <list>
-#include <string>
-
-enum RegistrarType {
-	REG_UNDEFINED,
-	REG_GROUP,
-	REG_TASK,
-	REG_UNIT
-};
 
 class ARegistrar {
-	public:
-		virtual ~ARegistrar() {}
 
-		/* The key of this register, e.g. group id */
-		int key;
+public:
+	enum NType {
+		UNDEFINED,
+		GROUP,
+		TASK,
+		UNIT,
+		COVERAGE_CELL,
+		COVERAGE_HANDLER
+	};
 
-		/* The name of this Registrar */
-		std::string name;
+	virtual ~ARegistrar() {}
 
-		/* Register an object */
-		void reg(ARegistrar &obj) { records.push_front(&obj); }
+	/* The key of this register, e.g. group id */
+	int key;
 
-		/* Unregister an object */
-		void unreg(ARegistrar &obj) { records.remove(&obj); }
+	/* Register an object */
+	void reg(ARegistrar& obj) { records.push_front(&obj); }
+	/* Unregister an object */
+	void unreg(ARegistrar& obj) { records.remove(&obj); }
+	/* Propagate removal through the system */
+	virtual void remove(ARegistrar& obj) = 0;
+	/* Registrar type */
+	virtual NType regtype() const { return UNDEFINED; } 
+	/* Check if current object is registered inside another type of object */
+	bool regExists(NType type) {
+		for (std::list<ARegistrar*>::const_iterator it = records.begin(); it != records.end(); ++it) {
+			if ((*it)->regtype() == type)
+				return true;
+		}
+		return false;
+	}
+	/* Count number of object registrations inside other objects of specific type */
+	int regCount(NType type) {
+		int result = 0;
+		for (std::list<ARegistrar*>::const_iterator it = records.begin(); it != records.end(); ++it) {
+			if ((*it)->regtype() == type)
+				result++;
+		}
+		return result;
+	}
 
-		/* Propagate removal through the system */
-		virtual void remove(ARegistrar &obj) = 0;
+protected:
+	ARegistrar(int _key = 0): key(_key) {}
 
-		virtual RegistrarType regtype() { return REG_UNDEFINED; } 
-
-	protected:
-		ARegistrar(): key(0), name("undefined") {}
-		ARegistrar(int _key): key(_key), name("undefined") {}
-		ARegistrar(int _key, std::string _name): key(_key), name(_name) {}
-
-		/* The other objects where this registrar is registered */
-		std::list<ARegistrar*> records;
+	/* The other objects where this registrar is registered */
+	std::list<ARegistrar*> records;
 };
 #endif

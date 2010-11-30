@@ -1,15 +1,18 @@
 #include "CIntel.h"
 
+#include <ctime>
+
 #include "CAI.h"
-#include "CUnitTable.h"
 #include "CUnit.h"
 #include "GameMap.hpp"
-#include <ctime>
+
 
 CIntel::CIntel(AIClasses *ai) {
 	this->ai = ai;
-	
-	units = &ai->unitIDs[0]; // save about 4x32KB of memory
+
+	initialized = false;
+	strategyTechUp = false;
+	enemyvector = float3(1.0f, 1.0f, 1.0f);
 
 	selector.push_back(ASSAULT);
 	selector.push_back(SCOUTER);
@@ -18,13 +21,9 @@ CIntel::CIntel(AIClasses *ai) {
 	selector.push_back(ANTIAIR);
 	selector.push_back(AIR);
 	
-	for (size_t i = 0; i < selector.size(); i++)
-		counts[selector[i]] = 1;
-	
-	enemyvector = float3(1.0f, 1.0f, 1.0f);
-	
 	targets[ENGAGE].push_back(&commanders);
 	targets[ENGAGE].push_back(&attackers);
+	targets[ENGAGE].push_back(&nukes);
 	targets[ENGAGE].push_back(&energyMakers);
 	targets[ENGAGE].push_back(&metalMakers);
 	targets[ENGAGE].push_back(&defenseAntiAir);
@@ -44,9 +43,9 @@ CIntel::CIntel(AIClasses *ai) {
 	targets[BOMBER].push_back(&factories);
 	targets[BOMBER].push_back(&energyMakers);
 	targets[BOMBER].push_back(&metalMakers);
+	targets[BOMBER].push_back(&nukes);
 	
-	initialized = false;
-	strategyTechUp = false;
+	targets[AIRFIGHTER].push_back(&airUnits);
 }
 
 float3 CIntel::getEnemyVector() {
@@ -56,12 +55,16 @@ float3 CIntel::getEnemyVector() {
 void CIntel::init() {
 	if (initialized) return;
 	
-	int numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
-	// FIXME: when commanders are spawned with wrap gate option enabled then assert raises
+	resetCounters();
+	updateRoulette();
+	
+	int numUnits = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], MAX_UNITS);
+	// FIXME: when commanders are spawned with wrap gate option enabled then 
+	// assertion raises
 	if (numUnits > 0) {
 		enemyvector = ZeroVector;
 		for (int i = 0; i < numUnits; i++) {
-			enemyvector += ai->cbc->GetUnitPos(units[i]);
+			enemyvector += ai->cbc->GetUnitPos(ai->unitIDs[i]);
 		}
 		enemyvector /= numUnits;
 	}
@@ -139,107 +142,135 @@ void CIntel::update(int frame) {
 	defenseGround.clear();
 	defenseAntiAir.clear();
 	commanders.clear();
-	
+	airUnits.clear();
+	nukes.clear();
+			
 	resetCounters();
 
-	int numUnits = ai->cbc->GetEnemyUnits(units, MAX_UNITS);
+	int numUnits = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], MAX_UNITS);
 	
 	for (int i = 0; i < numUnits; i++) {
-		const int uid = units[i];
+		const int uid = ai->unitIDs[i];
 		const UnitDef *ud = ai->cbc->GetUnitDef(uid);
-		UnitType      *ut = UT(ud->id);
-		unsigned int    c = ut->cats;
-		bool armed = !ud->weapons.empty();
+		unitCategory    c = UT(ud->id)->cats;
 
-		/* Ignore units being built and cloaked units */
-		if ((ai->cbc->UnitBeingBuilt(uid) && (armed || !(c&STATIC)))
-		|| 	ai->cbc->IsUnitCloaked(uid))
+		if (ai->cbc->IsUnitCloaked(uid))
 			continue;
 		
-		if (c&COMMANDER) {
+		if ((c&NUKE).any()) {
+			nukes.push_back(uid);
+			continue;
+		}
+		
+		/* Ignore armed & mobile units being built */
+		if ((ai->cbc->UnitBeingBuilt(uid) && ((c&ATTACKER).any() || (c&STATIC).none())))
+			continue;
+		
+		if ((c&COMMANDER).any()) {
 			commanders.push_back(uid);
 		}
-		else if (c&SEA && ai->cbc->GetUnitPos(uid).y < 0.0f) {
+		else if ((c&SEA).any() && ai->cbc->GetUnitPos(uid).y < 0.0f) {
 			underwaterUnits.push_back(uid);
 		}
-		else if (!(c&(LAND|AIR)) && c&SEA) {
+		else if ((c&(LAND|AIR)).none() && (c&SEA).any()) {
 			navalUnits.push_back(uid);
 		}
-		else if ((c&STATIC) && (c&ANTIAIR)) {
+		else if ((c&STATIC).any() && (c&ANTIAIR).any()) {
 			defenseAntiAir.push_back(uid);
 		}
-		else if ((c&STATIC) && (c&DEFENSE)) {
+		else if ((c&STATIC).any() && (c&ATTACKER).any()) {
 			defenseGround.push_back(uid);
 		}
-		else if ((c&ATTACKER) && !(c&AIR)) {
+		else if ((c&ATTACKER).any() && (c&AIR).none()) {
 			attackers.push_back(uid);
 		}
-		else if (c&FACTORY) {
+		else if ((c&AIR).any()) {
+			airUnits.push_back(uid);
+		}
+		else if ((c&FACTORY).any()) {
 			factories.push_back(uid);
 		}
-		else if (c&BUILDER && c&MOBILE && !(c&AIR)) {
+		else if ((c&BUILDER).any() && (c&MOBILE).any()) {
 			mobileBuilders.push_back(uid);
 		}
-		else if (c&(MEXTRACTOR|MMAKER)) {
+		else if ((c&(MEXTRACTOR|MMAKER)).any()) {
 			metalMakers.push_back(uid);
 		}
-		else if (c&EMAKER) {
+		else if ((c&EMAKER).any()) {
 			energyMakers.push_back(uid);
 		}
-		else if (!armed)
+		else if ((c&ATTACKER).none()) {
 			restUnarmedUnits.push_back(uid);
+		}
 		else {
 			rest.push_back(uid);
 		}
 
-		if ((c&ATTACKER) && (c&MOBILE))
-			updateCounts(c);
+		if ((c&ATTACKER).any() && (c&MOBILE).any())
+			updateCounters(c);
 	}
+
+	updateRoulette();
 }
 
 unitCategory CIntel::counter(unitCategory c) {
-	switch(c) {
-		case ASSAULT: return SNIPER;
-		case SCOUTER: return ASSAULT;
-		case SNIPER: return ARTILLERY;
-		case ARTILLERY: return ASSAULT;
-		case ANTIAIR: return ARTILLERY;
-		case AIR: return ANTIAIR;
-		default: return ARTILLERY;
+	// TODO: implement customizable by config counter units
+	if (c == ASSAULT)	return SNIPER;
+	if (c == SCOUTER)	return ASSAULT;
+	if (c == SNIPER)	return ARTILLERY;
+	if (c == ARTILLERY)	return ASSAULT;
+	if (c == ANTIAIR)	return ARTILLERY;
+	if (c == AIR)		return ANTIAIR;
+	return ARTILLERY;
+}
+
+void CIntel::updateCounters(unitCategory ecats) {
+	for (size_t i = 0; i < selector.size(); i++) {
+		const unitCategory c = selector[i];
+		if ((c&ecats).any()) {
+			enemyCounter[c]++;
+			counterCounter[counter(c)]++;
+			totalEnemyCount++;
+			totalCounterCount++;
+		}
 	}
 }
 
-void CIntel::updateCounts(unsigned c) {
-	for (size_t i = 0; i < selector.size(); i++) {
-		if (selector[i] & c) {
-			// TODO: counts[ai->cfgparser->counter(selector[i])]++
-			counts[counter(selector[i])]++;
-			totalCount++;
+void CIntel::updateRoulette() {
+	roulette.clear();
+
+	if (totalCounterCount > 0) {
+		/* Put the counts in a normalized reversed map first and reset counters */
+		for (size_t i = 0; i < selector.size(); i++) {
+			const unitCategory c = selector[i];
+			const float weight = counterCounter[c] / float(totalCounterCount);
+			roulette.insert(std::pair<float, unitCategory>(weight, c));
 		}
 	}
 }
 
 void CIntel::resetCounters() {
-	roulette.clear();
-	
-	/* Put the counts in a normalized reversed map first and reset counters*/
+	// set equal chance of building military unit for all cats by default...
 	for (size_t i = 0; i < selector.size(); i++) {
-		roulette.insert(std::pair<float,unitCategory>(counts[selector[i]]/float(totalCount), selector[i]));
-		counts[selector[i]] = 1;
+		counterCounter[selector[i]] = 1;
 	}
+	// without need do not build aircraft & anti-air units...
+	counterCounter[ANTIAIR] = 0;
+	counterCounter[AIR] = 0;
+	// boost chance of assault units to be built by default
+	counterCounter[ASSAULT] = 3;
+	// adjust scout appearance chance by default...
+	if (ai->difficulty == DIFFICULTY_EASY 
+	|| ai->military->idleScoutGroupsNum() >= MAX_IDLE_SCOUT_GROUPS)
+		counterCounter[SCOUTER] = 0;
 	
-	counts[ANTIAIR] = 0;
-	counts[AIR] = 0;
-	counts[ASSAULT] = 3;
-	
-	if (ai->difficulty == DIFFICULTY_EASY || ai->military->idleScoutGroupsNum() >= MAX_IDLE_SCOUT_GROUPS)
-		counts[SCOUTER] = 0;
-	else
-		counts[SCOUTER] = 1; // default value
-	
-	totalCount = selector.size();
+	totalCounterCount = totalEnemyCount = 0;
+	for (size_t i = 0; i < selector.size(); i++) {
+		totalCounterCount += counterCounter[selector[i]];
+	}
 }
 
 bool CIntel::enemyInbound() {
+	// TODO:
 	return false;
 }

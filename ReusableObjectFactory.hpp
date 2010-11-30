@@ -28,6 +28,7 @@ std::list<Object*> ReusableObjectFactory<Object>::objects;
 
 template<class Object>
 void ReusableObjectFactory<Object>::Shutdown() {
+	/*
 	std::cout << "ReusableObjectFactory<" 
 	          << typeid(Object).name()
 	          << ">::Shutdown Releasing "
@@ -36,9 +37,9 @@ void ReusableObjectFactory<Object>::Shutdown() {
 	          << (objects.size()*sizeof(Object)) 
 	          << " bytes"
 	          << std::endl;
-
+	*/
 	typename std::list<Object*>::iterator i;
-	for (i = objects.begin(); i != objects.end(); i++)
+	for (i = objects.begin(); i != objects.end(); ++i)
 		delete *i;
 
 	objects.clear();
@@ -47,6 +48,7 @@ void ReusableObjectFactory<Object>::Shutdown() {
  
 template<class Object>
 void ReusableObjectFactory<Object>::Free() {
+	/*
 	std::cout << "ReusableObjectFactory<" 
 	          << typeid(Object).name()
 	          << ">::Free Releasing "
@@ -55,9 +57,9 @@ void ReusableObjectFactory<Object>::Free() {
 	          << (free.size()*sizeof(Object)) 
 	          << " bytes"
 	          << std::endl;
-
+	*/
 	typename std::list<Object*>::iterator i;
-	for (i = free.begin(); i != free.end(); i++) {
+	for (i = free.begin(); i != free.end(); ++i) {
 		objects.remove(*i);
 		delete *i;
 	}

@@ -5,12 +5,12 @@
 
 struct AttackTask: public ATask {
 	AttackTask(AIClasses *_ai): ATask(_ai) { t = TASK_ATTACK; }
-	AttackTask(AIClasses *_ai, int target, CGroup &group, bool urgent = false);
+	AttackTask(AIClasses *_ai, int target, CGroup& group);
 	
-	bool urgent;
-		// if task is urgent then enemy scanning is disabled while moving
 	int target;
 		// the target to attack
+	int targetAlt;
+		// alternative target from enemyScan() subroutine
 	std::string enemy;
 		// user name of target
 	
@@ -20,7 +20,7 @@ struct AttackTask: public ATask {
 	bool onValidate();
 	/* overload */
 	void toStream(std::ostream& out) const;
-
+	/* overload */
 	void onEnemyDestroyed(int enemy, int attacker);
 };
 

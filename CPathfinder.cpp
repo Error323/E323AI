@@ -19,7 +19,7 @@
 std::vector<CPathfinder::Node*> CPathfinder::graph;
 int CPathfinder::drawPathGraph = -2;
 
-CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder")) {
+CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	this->ai   = ai;
 	// NOTE: X and Z are in slope map resolution units
 	this->X    = int(ai->cb->GetMapWidth()/HEIGHT2SLOPE);
@@ -74,7 +74,6 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600, std::string("pathfinder
 			}
 			fin.close();
 			if(!readOk)
-				// TODO: explain for user why?
 				LOG_WW("CPathfinder detected invalid cache data")
 		}
 
@@ -276,7 +275,7 @@ void CPathfinder::resetMap(CGroup &group, ThreatMapType tm_type) {
 		for(unsigned int id = 0; id < graphSize; id++) {
 			Node *n = CPathfinder::graph[id];
 			n->reset();
-			if (group.cats&LAND) {
+			if ((group.cats&LAND).any()) {
 				n->w = 1.0f + sm[idSlopeMap] * 2.0f;
 				idSlopeMap += I_MAP_RES;
 			} else {
@@ -287,7 +286,7 @@ void CPathfinder::resetMap(CGroup &group, ThreatMapType tm_type) {
 		for(unsigned int id = 0; id < graphSize; id++) {
 			Node *n = CPathfinder::graph[id];
 			n->reset();
-			if (group.cats&LAND) {
+			if ((group.cats&LAND).any()) {
 				n->w = threatMap[id] + sm[idSlopeMap] * 5.0f;
 				idSlopeMap += I_MAP_RES;
 			}
@@ -299,7 +298,7 @@ void CPathfinder::resetMap(CGroup &group, ThreatMapType tm_type) {
 
 float CPathfinder::getPathLength(CGroup &group, float3 &pos) {
 	float result = -1.0f;
-	float3 gpos = group.pos();
+	float3 gpos = group.pos(true);
 
 	if (group.pathType < 0) {
 		float distance = gpos.distance2D(pos);
@@ -307,13 +306,13 @@ float CPathfinder::getPathLength(CGroup &group, float3 &pos) {
 		if (distance < EPS)
 			result = 0.0f;
 		else {
-			unsigned int cats = group.cats;
+			unitCategory cats = group.cats;
 
-			if (cats&STATIC) {
-				if ((cats&BUILDER) && distance < group.buildRange)
+			if ((cats&STATIC).any()) {
+				if ((cats&BUILDER).any() && distance < group.buildRange)
 					result = 0.0f;
 			}
-			else if(cats&AIR)
+			else if((cats&AIR).any())
 				result = distance;
 		}
 	}
@@ -351,7 +350,7 @@ void CPathfinder::updateFollowers() {
 	repathGroup = -1;
 	
 	/* Go through all the paths */
-	for (path = paths.begin(); path != paths.end(); path++) {
+	for (path = paths.begin(); path != paths.end(); ++path) {
 		CGroup *group = groups[path->first];
 		
 		if (group->isMicroing()
@@ -361,7 +360,7 @@ void CPathfinder::updateFollowers() {
 		}
 		
 		int segment = 1;
-		int waypoint = std::min<int>((group->cats&AIR) ? 2 * MOVE_BUFFER : MOVE_BUFFER, path->second.size() - segment - 1);
+		int waypoint = std::min<int>((group->cats&AIR).any() ? 2 * MOVE_BUFFER : MOVE_BUFFER, path->second.size() - segment - 1);
 		float maxGroupLength = group->maxLength();
 		
 		if (maxGroupLength < 200.0f)
@@ -373,7 +372,7 @@ void CPathfinder::updateFollowers() {
 		// can regroup (TODO: detect this by moving behaviour?)
 		bool enableRegrouping = 
 			group->units.size() < GROUP_CRITICAL_MASS 
-			&& (!(group->cats&AIR) || (group->cats&(ASSAULT|SNIPER|ARTILLERY|ANTIAIR)) == ASSAULT);
+			&& ((group->cats&AIR).none() || (group->cats&(ASSAULT|SNIPER|ARTILLERY|ANTIAIR)) == ASSAULT);
 		
 		M.clear();
 
@@ -396,8 +395,8 @@ void CPathfinder::updateFollowers() {
 					l1 = l2;
 				l2 = upos.distance2D(path->second[segment]);
 				
-				/* When the dist between the unit and the segment is
-				 * increasing: break */
+				// when the dist between the unit and the segment 
+				// is increasing then break...
 				length += (path->second[s1] - path->second[s2]).Length2D();
 				if (l1 > sl1 || l2 > sl2) break;
 				s1       = segment - 1;
@@ -429,6 +428,7 @@ void CPathfinder::updateFollowers() {
 			float lateralDisp = M.rbegin()->first - M.begin()->first;
 			if (lateralDisp > maxGroupLength) {
 				regrouping[group->key] = currentFrame;
+				group->updateLatecomer(M.begin()->second);
 			} else if (lateralDisp < maxGroupLength*0.6f) {
 				regrouping[group->key] = 0;
 			}
@@ -477,8 +477,8 @@ void CPathfinder::updatePaths() {
 	float3 start = group->pos(true);
 	float3 goal  = ai->tasks->getPos(*group);
 
-	if (!addPath(*groups[repathGroup], start, goal)) {
-		LOG_EE("CPathfinder::updatePaths failed for " << (*groups[repathGroup]))
+	if (!addPath(*group, start, goal)) {
+		LOG_EE("CPathfinder::updatePaths failed for " << (*group))
 	}
 }
 
@@ -521,14 +521,28 @@ bool CPathfinder::pathExists(CGroup &group, const float3 &s, const float3 &g) {
 }
 
 bool CPathfinder::addPath(CGroup &group, float3 &start, float3 &goal) {
+	ThreatMapType tmt = TMT_NONE;
+
+	// NOTE: activeMap is used in subsequent calls
 	activeMap = group.pathType;
+
+	// NOTE: hovers (LAND|SEA) can't be hit by underwater weapons that is why 
+	// LAND tag check is made before SEA tag check
 	
 	// reset the nodes...
-	if (activeMap < 0)
-		resetMap(group, TMT_AIR);
-	else
-		resetMap(group, TMT_SURFACE);
+	if ((group.cats&SUB).any() && group.pos().y < 0.0f)
+		tmt = TMT_UNDERWATER;
+	else if ((group.cats&AIR).any())
+		tmt = TMT_AIR;
+	else if ((group.cats&LAND).any())
+		tmt = TMT_SURFACE;
+	else if ((group.cats&SEA).any())
+		tmt = TMT_SURFACE_WATER;
 
+	//assert(tmt != TMT_NONE);
+
+	resetMap(group, tmt);
+		
 	/* If we found a path, add it */
 	std::vector<float3> path;
 	bool success = getPath(start, goal, path, group);
@@ -624,7 +638,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGrou
 			int life = MULTIPLEXER * path.size(); // in frames
 			for (unsigned i = 2; i < path.size(); i++)
 				ai->cb->CreateLineFigure(path[i - 1], path[i], 8.0f, 0, life, group.key + 10);
-			ai->cb->SetFigureColor(group.key + 10, group.key/float(CGroup::counter), 1.0f-group.key/float(CGroup::counter), 1.0f, 1.0f);
+			ai->cb->SetFigureColor(group.key + 10, group.key/float(CGroup::getCounter()), 1.0f-group.key/float(CGroup::getCounter()), 1.0f, 1.0f);
 		}
 	}
 	else {
@@ -636,7 +650,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGrou
 
 float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 	// tie breaker, gives preference to existing paths
-	static const float p = 1.0f / (XX*ZZ) + 1.0f;
+	static const float p = 1.0f / graphSize + 1.0f;
 	Node *n1 = dynamic_cast<Node*>(an1);
 	Node *n2 = dynamic_cast<Node*>(an2);
 	int dx1 = n1->x - n2->x;
@@ -665,7 +679,7 @@ bool CPathfinder::switchDebugMode(bool graph) {
 
 	if (ai->cb->GetSelectedUnits(&ai->unitIDs[0], 1) == 1) {
 		CUnit *unit = ai->unittable->getUnit(ai->unitIDs[0]);
-		if (unit && !(unit->type->cats&STATIC)) {
+		if (unit && (unit->type->cats&STATIC).none()) {
 			int pathType;
 			MoveData *md = unit->def->movedata;
 			
@@ -700,7 +714,7 @@ void CPathfinder::drawGraph(int map) {
 		Node *p = CPathfinder::graph[i];
 		float3 fp = p->toFloat3();
 		fp.y = ai->cb->GetElevation(fp.x, fp.z) + 50.0f;
-		std::vector<unsigned short> *temp = &p->neighbours[map];
+		std::vector<unsigned short>* temp = &p->neighbours[map];
 		for (size_t j = 0; j < temp->size(); j++) {
 			Node *n = CPathfinder::graph[(*temp)[j]];
 			float3 fn = n->toFloat3();

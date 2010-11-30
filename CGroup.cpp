@@ -71,6 +71,9 @@ void CGroup::remove(ARegistrar &object) {
 	unit->unreg(*this);
 	units.erase(unit->key);
 
+	if (unit == latecomerUnit)
+		removeLatecomer();
+
 	badTargets.clear();
 
 	/* If no more units remain in this group, remove the group */
@@ -78,10 +81,10 @@ void CGroup::remove(ARegistrar &object) {
 		remove();
 	} else {
 		/* Recalculate properties of the current group */
-		
 		recalcProperties(NULL, true);
+		
 		std::map<int, CUnit*>::iterator i;
-		for (i = units.begin(); i != units.end(); i++) {
+		for (i = units.begin(); i != units.end(); ++i) {
 			recalcProperties(i->second);
 		}
 	}
@@ -97,7 +100,7 @@ void CGroup::reclaim(int entity, bool feature) {
 	}
 		
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++) {
+	for (i = units.begin(); i != units.end(); ++i) {
 		if (i->second->def->canReclaim) {
 			if (feature)
 				i->second->reclaim(pos, 16.0f);
@@ -109,7 +112,7 @@ void CGroup::reclaim(int entity, bool feature) {
 
 void CGroup::repair(int target) {
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++) {
+	for (i = units.begin(); i != units.end(); ++i) {
 		if (i->second->def->canRepair)
 			i->second->repair(target);
 	}
@@ -117,7 +120,7 @@ void CGroup::repair(int target) {
 
 void CGroup::abilities(bool on) {
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++) {
+	for (i = units.begin(); i != units.end(); ++i) {
 		if (i->second->def->canCloak)
 			i->second->cloak(on);
 	}
@@ -125,13 +128,13 @@ void CGroup::abilities(bool on) {
 
 void CGroup::micro(bool on) {
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++)
+	for (i = units.begin(); i != units.end(); ++i)
 		i->second->micro(on);
 }
 
 bool CGroup::isMicroing() {
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++) {
+	for (i = units.begin(); i != units.end(); ++i) {
 		if (i->second->isMicroing())
 			return true;
 	}
@@ -141,7 +144,7 @@ bool CGroup::isMicroing() {
 bool CGroup::isIdle() {
 	bool idle = true;
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++) {
+	for (i = units.begin(); i != units.end(); ++i) {
 		if (!ai->unittable->idle[i->second->key]) {
 			idle = false;
 			break;
@@ -165,7 +168,7 @@ void CGroup::reset() {
 
 void CGroup::recalcProperties(CUnit *unit, bool reset)
 {
-	if(reset) {
+	if (reset) {
 		strength   = 0.0f;
 		speed      = std::numeric_limits<float>::max();
 		size       = 0;
@@ -176,25 +179,40 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		maxSlope   = 1.0f;
 		pathType   = -1; // emulate NONE
 		techlvl    = TECH1;
-		cats       = 0;
-		groupRadius     = 0.0f;
+		cats.reset();
+		groupRadius = 0.0f;
 		radiusUpdateRequired = false;
 		cost       = 0.0f;
 		costMetal  = 0.0f;
 		worstSpeedUnit = NULL;
 		worstSlopeUnit = NULL;
+		latecomerUnit = NULL;
+		latecomerWeight = 0;
 	}
 
-	if(unit == NULL)
+	if (unit == NULL)
 		return;
 
 	if (unit->builtBy >= 0) {
-		techlvl = std::max<unsigned int>(techlvl, unit->techlvl);
+		for (int i = MIN_TECHLEVEL; i <= MAX_TECHLEVEL; i++) {
+			if (unit->techlvl.test(i)) {
+				for (int j = MIN_TECHLEVEL; i <= MAX_TECHLEVEL; j++) {
+					if (techlvl.test(j)) {
+						if (i > j) {
+							techlvl.reset();
+							techlvl.set(i); 
+						}
+					}
+					break;
+				}
+				break;
+			}
+		}
 	}
 
 	// NOTE: aircraft & static units do not have movedata
 	MoveData *md = unit->def->movedata;
-    if (md) {
+	if (md) {
 		// select base path type with the lowerst slope, so pos(true) will
 		// return valid postition for all units in a group...
 		if (md->maxSlope <= maxSlope) {
@@ -227,7 +245,8 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 
 void CGroup::merge(CGroup &group) {
 	std::map<int, CUnit*>::iterator i = group.units.begin();
-	// NOTE: "group" will automatically be removed when last unit is transferred
+	// NOTE: "group" will automatically be removed when last unit
+	// is transferred
 	while(i != group.units.end()) {
 		CUnit *unit = i->second; ++i;
 		assert(unit->group == &group);
@@ -249,7 +268,7 @@ float3 CGroup::pos(bool force_valid) {
 			float3 posValid = ai->pathfinder->getClosestPos(pos, this);
 			if (posValid == ERRORVECTOR) {
 				float bestDistance = std::numeric_limits<float>::max();
-				for (i = units.begin(); i != units.end(); i++) {
+				for (i = units.begin(); i != units.end(); ++i) {
 					float3 pos2 = ai->cb->GetUnitPos(i->first);
 					if (ai->pathfinder->isBlocked(pos2.x, pos2.z, pathType))
 						pos2 = ai->pathfinder->getClosestPos(pos2, this);
@@ -320,47 +339,49 @@ void CGroup::assist(ATask &t) {
 
 void CGroup::move(float3 &pos, bool enqueue) {
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++)
+	for (i = units.begin(); i != units.end(); ++i)
 		i->second->move(pos, enqueue);
 }
 
 void CGroup::wait() {
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++)
+	for (i = units.begin(); i != units.end(); ++i)
 		i->second->wait();
 }
 
 void CGroup::unwait() {
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++)
+	for (i = units.begin(); i != units.end(); ++i)
 		i->second->unwait();
 }
 
 void CGroup::attack(int target, bool enqueue) {
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++)
+	for (i = units.begin(); i != units.end(); ++i)
 		i->second->attack(target, enqueue);
 }
 
-void CGroup::build(float3 &pos, UnitType *ut) {
+bool CGroup::build(float3& pos, UnitType* ut) {
 	std::map<int, CUnit*>::iterator alpha, i;
 	alpha = units.begin();
 	if (alpha->second->build(ut, pos)) {
-		for (i = ++alpha; i != units.end(); i++)
+		for (i = ++alpha; i != units.end(); ++i)
 			i->second->guard(alpha->first);
+		return true;
 	}
+	return false;
 }
 
 void CGroup::stop() {
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++)
+	for (i = units.begin(); i != units.end(); ++i)
 		i->second->stop();
 	ai->pathfinder->remove(*this);
 }
 
 void CGroup::guard(int target, bool enqueue) {
 	std::map<int, CUnit*>::iterator i;
-	for (i = units.begin(); i != units.end(); i++)
+	for (i = units.begin(); i != units.end(); ++i)
 		i->second->guard(target, enqueue);
 }
 
@@ -380,7 +401,7 @@ bool CGroup::canReach(const float3 &goal) {
 }
 
 bool CGroup::canAttack(int uid) {
-	if (!(cats&ATTACKER) && !firstUnit()->def->canReclaim)
+	if ((cats&ATTACKER).none() && !firstUnit()->def->canReclaim)
 		return false;
 	
 	const UnitDef *ud = ai->cbc->GetUnitDef(uid);
@@ -388,19 +409,14 @@ bool CGroup::canAttack(int uid) {
 	if (ud == NULL || ai->cbc->IsUnitCloaked(uid))
 		return false;
 	
-	const unsigned int ecats = UC(ud->id);
+	const unitCategory ecats = UC(ud->id);
 	float3 epos = ai->cbc->GetUnitPos(uid);
 	
-	if ((ecats&AIR) && !(cats&ANTIAIR))
+	if ((ecats&AIR).any() && (cats&ANTIAIR).none())
 		return false;
-	/*
-	if ((ecats&SUBMARINE) && !(cats&TORPEDO))
+	if (epos.y < 0.0f && (cats&TORPEDO).none())
 		return false;
-	*/
-	if (epos.y < 0.0f && (cats&(LAND|AIR)) /*&& !(cats&TORPEDO)*/)
-		return false;
-	
-	if ((ecats&LAND) && pos().y < 0.0f)
+	if (pos().y < 0.0f && epos.y > 0.0f)
 		return false;
 
 	// TODO: add more tweaks based on physical weapon possibilities
@@ -408,23 +424,28 @@ bool CGroup::canAttack(int uid) {
 	return true;
 }
 
-bool CGroup::canAdd(CUnit *unit) {
+bool CGroup::canAdd(CUnit* unit) {
 	return canBeMerged(cats, unit->type->cats);
 }
 		
-bool CGroup::canAssist(UnitType *type) {
-	if (type && !type->def->canBeAssisted)
-		return false;
-	
+bool CGroup::canAssist(UnitType* type) {
+	if (type) {
+		if (!type->def->canBeAssisted)
+			return false;
+		if ((type->cats&(SEA|SUB)).any() && (cats&(SEA|SUB|AIR)).none())
+			return false;
+		if ((type->cats&(LAND)).any() && (cats&(LAND|AIR)).none())
+			return false;
+	}
 	std::map<int, CUnit*>::const_iterator i;
-	for (i = units.begin(); i != units.end(); i++)
+	for (i = units.begin(); i != units.end(); ++i)
 		if (i->second->type->def->canAssist)
 			return true;
 
 	return false;
 }
 
-bool CGroup::canMerge(CGroup *group) {
+bool CGroup::canMerge(CGroup* group) {
 	return canBeMerged(cats, group->cats);
 }
 
@@ -434,16 +455,16 @@ CUnit* CGroup::firstUnit() {
 	return units.begin()->second;
 }
 
-void CGroup::mergeCats(unsigned int newcats) {
+void CGroup::mergeCats(unitCategory newcats) {
 	if (cats == 0)
 		cats = newcats;
 	else {
-		static unsigned int nonXorCats[] = {SEA, LAND, AIR, STATIC, MOBILE, SCOUTER};
-		unsigned int oldcats = cats;
+		static unitCategory nonXorCats[] = {SEA, SUB, LAND, AIR, STATIC, MOBILE, SCOUTER};
+		unitCategory oldcats = cats;
 		cats |= newcats;
-		for (int i = 0; i < sizeof(nonXorCats) / sizeof(unsigned int); i++) {
-			unsigned int tag = nonXorCats[i];
-			if (!(oldcats&tag) && (cats&tag))
+		for (int i = 0; i < sizeof(nonXorCats) / sizeof(unitCategory); i++) {
+			unitCategory tag = nonXorCats[i];
+			if ((oldcats&tag).none() && (cats&tag).any())
 				cats &= ~tag;
 		}
 	}
@@ -460,8 +481,8 @@ bool CGroup::addBadTarget(int id) {
 	
 	LOG_WW("CGroup::addBadTarget " << ud->humanName << "(" << id << ") to " << (*this))
 	
-	const unsigned int ecats = UC(ud->id);
-	if (ecats&STATIC)
+	const unitCategory ecats = UC(ud->id);
+	if ((ecats&STATIC).any())
 		badTargets[id] = -1;
 	else
 		badTargets[id] = ai->cb->GetCurrentFrame();
@@ -470,8 +491,8 @@ bool CGroup::addBadTarget(int id) {
 }
 
 int CGroup::selectTarget(std::vector<int> &targets, TargetsFilter &tf) {
-	bool scout = cats&SCOUTER;
-	bool bomber = !scout && (cats&AIR) && (cats&ARTILLERY);
+	bool scout = (cats&SCOUTER).any();
+	bool bomber = !scout && (cats&AIR).any() && (cats&ARTILLERY).any();
 	int frame = ai->cb->GetCurrentFrame();
 	float bestScore = tf.scoreCeiling;
 	float unitDamageK;
@@ -501,8 +522,8 @@ int CGroup::selectTarget(std::vector<int> &targets, TargetsFilter &tf) {
 		if (ud == NULL)
 			continue;
 
-		const unsigned int ecats = UC(ud->id);
-		if (!(tf.include&ecats) || (tf.exclude&ecats))
+		const unitCategory ecats = UC(ud->id);
+		if ((tf.include&ecats).none() || (tf.exclude&ecats).any())
 			continue;
 		
 		float3 epos = ai->cbc->GetUnitPos(t);
@@ -525,17 +546,21 @@ int CGroup::selectTarget(std::vector<int> &targets, TargetsFilter &tf) {
 		if (ai->defensematrix->isPosInBounds(epos))
 			// boost in priority enemy at our base, even scout units
 			score -= 1000.0f; // TODO: better change value to the length a group can pass for 1 min (40 sec?)?
-		else if(!scout && ecats&SCOUTER) {
+		else if(!scout && (ecats&SCOUTER).any()) {
 			// remote scouts are not interesting for non-scout groups
 			score += 10000.0f;
 		}
 		
-		if (bomber && (ecats&STATIC) && (ecats&ANTIAIR))
+		if (bomber && (ecats&STATIC).any() && (ecats&ANTIAIR).any())
 			score -= 500.0f;
 
 		// do not allow land units chase after air units...
-		if (!(cats&AIR) && (ecats&AIR))
+		if ((cats&AIR).none() && (ecats&AIR).any())
 			score += 3000.0f;
+
+		// air fighters prefer aircraft...
+		if ((cats&AIR).any() && (cats&ANTIAIR).any() && (ecats&AIR).none())
+			score += 5000.0f;
 
 		if(score < tf.scoreCeiling) {
 			tf.bestTarget = t;
@@ -560,56 +585,56 @@ int CGroup::selectTarget(float search_radius, TargetsFilter &tf) {
 float CGroup::getScanRange() {
 	float result = radius();
 
-	if (cats&STATIC)
-		result += getRange();
-	else if (cats&BUILDER)
+	if ((cats&STATIC).any())
+		result = getRange();
+	else if ((cats&BUILDER).any())
 		result += buildRange * 1.5f;
-	else if (cats&SNIPER)
+	else if ((cats&SNIPER).any())
 		result += range * 1.05f;
-	else if (cats&SCOUTER)
+	else if ((cats&SCOUTER).any())
 		result += range * 3.0f;
-	else if (cats&ATTACKER)
+	else if ((cats&ATTACKER).any())
 		result += range * 1.4f;
 	
 	return result;
 }
 
 float CGroup::getRange() {
-	if (cats&BUILDER)
+	if ((cats&BUILDER).any())
 		return buildRange;
 	return range;
 }
 
-bool CGroup::canBeMerged(unsigned int bcats, unsigned int mcats) {
-	static unsigned int nonMergableCats[] = {SEA, LAND, AIR, ATTACKER, STATIC, MOBILE, BUILDER, SCOUTER};
+bool CGroup::canBeMerged(unitCategory bcats, unitCategory mcats) {
+	static unitCategory nonMergableCats[] = {SEA, LAND, AIR, ATTACKER, STATIC, MOBILE, BUILDER, SCOUTER};
 
-	if (bcats == 0)
+	if (bcats.none())
 		return true;
 
-	unsigned int c = bcats&mcats; // common categories between two groups of cats
+	unitCategory c = bcats&mcats; // common categories between two groups of cats
 	
-	if (c == 0)
+	if (c.none())
 		return false;
 	
-	for (int i = 0; i < sizeof(nonMergableCats) / sizeof(unsigned int); i++) {
-		unsigned int tag = nonMergableCats[i];
-		if ((bcats&tag) && !(c&tag))
+	for (int i = 0; i < sizeof(nonMergableCats) / sizeof(unitCategory); i++) {
+		unitCategory tag = nonMergableCats[i];
+		if ((bcats&tag).any() && (c&tag).none())
 			return false;
 	}
 
-	if (!(bcats&SCOUTER) && (mcats&SCOUTER)) {
+	if ((bcats&SCOUTER).none() && (mcats&SCOUTER).any()) {
 		// merging scout group with non-scout group...
-		static unsigned int attackCats = ANTIAIR|ARTILLERY|SNIPER|ASSAULT;
-		if (!(c&attackCats))
+		static unitCategory attackCats = ANTIAIR|ARTILLERY|SNIPER|ASSAULT;
+		if ((c&attackCats).none())
 			return false;
 	}
 
 	// NOTE: aircraft units have more restricted merge rules
 	// TODO: refactor with introducing Group behaviour property?
-	if (bcats&AIR) {
-		if ((bcats&ASSAULT) && !(c&ASSAULT))
+	if ((bcats&AIR).any()) {
+		if ((bcats&ASSAULT).any() && (c&ASSAULT).none())
 			return false;
-		if ((bcats&ARTILLERY) && !(c&ARTILLERY))
+		if ((bcats&ARTILLERY).any() && (c&ARTILLERY).none())
 			return false;
 	}
 	
@@ -617,15 +642,61 @@ bool CGroup::canBeMerged(unsigned int bcats, unsigned int mcats) {
 	
 }
 
+bool CGroup::canPerformTasks() {
+	std::map<int, CUnit*>::iterator i;
+	for (i = units.begin(); i != units.end(); ++i)
+		if (!i->second->canPerformTasks())
+			return false;
+	return true;		
+}
+
+void CGroup::updateLatecomer(CUnit* unit) {
+	if (units.size() <= 1)
+		return; // to less units to register latecomer
+
+	if (latecomerUnit && latecomerUnit != unit) {
+		removeLatecomer();
+	}
+
+	if (latecomerUnit == NULL) {
+		latecomerUnit = unit;
+		latecomerPos = unit->pos();
+		return;
+	}
+
+	float3 newPos = unit->pos();
+	if (latecomerPos.distance2D(newPos) < 32.0f) {
+		latecomerWeight++;
+		if (latecomerWeight > 10) {
+			LOG_WW("CGroup::updateLatecomer "  << unit << " is stucked")
+			unit->stop();
+			remove(*unit);
+			// on idle code will take unit back in action
+			ai->unittable->unitsUnderPlayerControl[unit->key] = unit;
+		}
+	}
+	else {
+		latecomerPos = newPos;
+		latecomerWeight = 0;		
+	}
+}
+
+void CGroup::removeLatecomer() {
+	if (latecomerUnit) {
+		latecomerUnit = NULL;
+		latecomerWeight = 0;
+	}
+}
+
 std::ostream& operator<<(std::ostream &out, const CGroup &group) {
 	std::stringstream ss;
 	ss << "Group(" << group.key << "):" << " range(" << group.range << "), buildRange(" << group.buildRange << "), los(" << group.los << "), speed(" << group.speed << "), strength(" << group.strength << "), amount(" << group.units.size() << ") [";
 	std::map<int, CUnit*>::const_iterator i = group.units.begin();
-	for (i = group.units.begin(); i != group.units.end(); i++) {
+	for (i = group.units.begin(); i != group.units.end(); ++i) {
 		ss << (*i->second) << ", ";
 	}
 	std::string s = ss.str();
-	s = s.substr(0, s.size()-2);
+	s = s.substr(0, s.size() - 2);
 	s += "]";
 	out << s;
 	return out;

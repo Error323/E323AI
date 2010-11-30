@@ -11,8 +11,12 @@ struct AssistTask: public ATask {
 	/* Task to assist */
 	ATask *assist;
 
+	int targetAlt;
+	
 	/* overload */
 	void onUpdate();
+	/* overload */
+	bool onValidate();
 	/* overload */
 	void remove();
 	/* overload */

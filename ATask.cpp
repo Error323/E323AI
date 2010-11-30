@@ -6,7 +6,7 @@
 
 int ATask::counter = 0;
 
-ATask::ATask(AIClasses *_ai):ARegistrar(++counter, std::string("task")) {
+ATask::ATask(AIClasses *_ai):ARegistrar(++counter) {
 	t = TASK_UNDEFINED;
 	ai = _ai;
 	active = false;
@@ -16,7 +16,7 @@ ATask::ATask(AIClasses *_ai):ARegistrar(++counter, std::string("task")) {
 	initFrame = ai->cb->GetCurrentFrame();
 	validateInterval = 5 * 30; // 5 sec by default
 	nextValidateFrame = validateInterval;
-	priority = 5;
+	priority = NORMAL;
 	queueID = 0;
 }
 
@@ -88,7 +88,7 @@ void ATask::addGroup(CGroup &g) {
 	g.micro(false);
 	g.abilities(true);
 	
-	if (g.cats&STATIC)
+	if ((g.cats&STATIC).any())
 		isMoving = false;
 
 	groups.push_back(&g);
@@ -108,10 +108,10 @@ void ATask::removeGroup(CGroup &g) {
 	groups.remove(&g);
 }
 
-bool ATask::enemyScan() {
+bool ATask::enemyScan(int& target) {
 	CGroup *group = firstGroup();
-	bool scout = group->cats&SCOUTER;
-	bool aircraft = group->cats&AIR;
+	bool scout = (group->cats&SCOUTER).any();
+	bool aircraft = (group->cats&AIR).any();
 	TargetsFilter tf;
 
 	if (scout) {
@@ -120,10 +120,16 @@ bool ATask::enemyScan() {
 	}
 	else {
 		if (aircraft) {
-			if (group->cats&ASSAULT)
+			if ((group->cats&ASSAULT).any()) {
+				tf.exclude = AIR;
 				tf.threatCeiling = group->strength;
-			else
+			}
+			else {
 				tf.threatCeiling = 1.1f;
+				if((group->cats&ANTIAIR).any()) {
+					tf.exclude = LAND|SEA|SUB;
+				}
+			}
 			// TODO: replace with maneuvering radius?
 			tf.threatRadius = 300.0f;
 		}
@@ -135,11 +141,11 @@ bool ATask::enemyScan() {
 		}
 	}
 
-	// do not chase after aircraft by non-aircraft groups...
+	// do not chase after aircraft with non-aircraft groups...
 	if (!aircraft)
 		tf.exclude |= AIR;
 
-	int target = group->selectTarget(group->getScanRange(), tf);
+	target = group->selectTarget(group->getScanRange(), tf);
 
 	if (target >= 0) {
 		group->attack(target);
@@ -159,7 +165,7 @@ bool ATask::resourceScan() {
 	int bestFeature = -1;
 	float bestDist = std::numeric_limits<float>::max();
 	CGroup *group = firstGroup();
-	// NOTE: do not use group->los because it is too small and do not 
+	// NOTE: do not use group->los because it is too small and does not 
 	// correspond to real map units
 	float radius = group->buildRange;
 	float3 gpos = group->pos();
@@ -229,6 +235,11 @@ bool ATask::repairScan() {
 		if (healthDamage > EPS) {
 			// TODO: somehow limit number of repairing builders per unit
 			const UnitDef *ud = ai->cb->GetUnitDef(uid);
+			const unitCategory cats = UC(ud->id);
+
+			if ((cats&AIR).any())
+				continue;
+
 			const float score = healthDamage + (CUnit::isDefense(ud) ? 10000.0f: 0.0f) + (CUnit::isStatic(ud) ? 5000.0f: 0.0f);
 			if (score > bestScore) {
 				bestUnit = uid;

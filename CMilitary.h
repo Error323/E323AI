@@ -17,58 +17,58 @@ enum MilitaryGroupBehaviour {
 	SCOUT,
 	ENGAGE,
 	BOMBER,
-	HARASS
+	HARASS,
+	AIRFIGHTER
 };
 
 class CMilitary: public ARegistrar {
-	public:
-		CMilitary(AIClasses *ai);
-		~CMilitary();
 
-		/* Overload */
-		void remove(ARegistrar &group);
+public:
+	CMilitary(AIClasses *ai);
 
-		/* Add a unit, place it in the correct group */
-		void addUnit(CUnit &unit);
+	/* Overload */
+	void remove(ARegistrar &group);
+	/* Add a unit, place it in the correct group */
+	void addUnit(CUnit &unit);
+	/* Returns a fresh CGroup instance */
+	CGroup* requestGroup(MilitaryGroupBehaviour type);
+	/* Update call-in */
+	void update(int groupsize);
+	
+	int idleScoutGroupsNum();
 
-		/* Returns a fresh CGroup instance */
-		CGroup* requestGroup(MilitaryGroupBehaviour type);
+	bool switchDebugMode();
 
-		/* update callin */
-		void update(int groupsize);
+	void onEnemyDestroyed(int enemy, int attacker);
 
-		int idleScoutGroupsNum();
+protected:	
+	AIClasses* ai;
 
-		bool switchDebugMode();
+private:
+	/* Current group per factory <factory, CGroup*> */
+	std::map<int, CGroup*> assemblingGroups;
+	/* The ingame scout groups */
+	std::map<int, CGroup*> activeScoutGroups;
+	/* The ingame attack groups */
+	std::map<int, CGroup*> activeAttackGroups;
+	/* The ingame bomber groups */
+	std::map<int, CGroup*> activeBomberGroups;
 
-		void onEnemyDestroyed(int enemy, int attacker);
+	std::map<int, CGroup*> activeAirFighterGroups;
 
-	private:
-		AIClasses *ai;
+	std::map<MilitaryGroupBehaviour, std::map<int, CGroup*>* > groups;
 
-		/* Current group per factory <factory, CGroup*> */
-		std::map<int, CGroup*> assemblingGroups;
+	/* Mergable groups */
+	std::map<int,CGroup*> mergeGroups;
 
-		/* The ingame scout groups */
-		std::map<int, CGroup*> activeScoutGroups;
-		/* The ingame attack groups */
-		std::map<int, CGroup*> activeAttackGroups;
-		/* The ingame attack groups */
-		std::map<int, CGroup*> activeBomberGroups;
+	bool drawTasks;
 
-		std::map<MilitaryGroupBehaviour, std::map<int, CGroup*>* > groups;
+	/* Request a unit for building using a roulette wheel system */
+	unitCategory requestUnit(unitCategory basecat);
 
-		/* Mergable groups */
-		std::map<int,CGroup*> mergeGroups;
+	bool isAssemblingGroup(CGroup *group);
 
-		bool drawTasks;
-
-		/* Request a unit for building using a roulette wheel system */
-		unsigned int requestUnit(unsigned int basecat);
-
-		bool isAssemblingGroup(CGroup *group);
-
-		void visualizeTasks(CGroup*);
+	void visualizeTasks(CGroup*);
 };
 
 #endif

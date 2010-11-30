@@ -1,5 +1,6 @@
 #include "Build.h"
 
+#include "../CUnit.h"
 #include "../CGroup.h"
 #include "../CUnitTable.h"
 #include "../CPathfinder.h"
@@ -18,13 +19,21 @@ BuildTask::BuildTask(AIClasses *_ai, buildType build, UnitType *toBuild, CGroup 
 		buildStr[BUILD_FACTORY] = std::string("FACTORY");
 		buildStr[BUILD_MSTORAGE] = std::string("MSTORAGE");
 		buildStr[BUILD_ESTORAGE] = std::string("ESTORAGE");
+		buildStr[BUILD_MISC_DEFENSE] = std::string("MISC_DEFENSE");
+		buildStr[BUILD_IMP_DEFENSE] = std::string("IMPORTANT_DEFENSE");
 	}
 	
 	this->t       = TASK_BUILD;
 	this->pos     = pos;
 	this->bt      = build;
 	this->toBuild = toBuild;
-	this->eta     = int((ai->pathfinder->getETA(group, pos) + 100) * 1.3f);
+	
+	float eta = ai->pathfinder->getETA(group, pos);
+	if (eta == std::numeric_limits<float>::max())
+		this->eta = 0;
+	else
+		this->eta = int((eta + 100.0f) * 1.2f);
+	
 	this->building = false;
 	
 	addGroup(group);
@@ -33,12 +42,12 @@ BuildTask::BuildTask(AIClasses *_ai, buildType build, UnitType *toBuild, CGroup 
 bool BuildTask::onValidate() {
 	if (isMoving) {
 		// decline task if metal spot is occupied by firendly unit
-		if (toBuild->cats&MEXTRACTOR) {
+		if ((toBuild->cats&MEXTRACTOR).any()) {
 			int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], pos, 1.1f * ai->cb->GetExtractorRadius());
 			for (int i = 0; i < numUnits; i++) {
 				const int uid = ai->unitIDs[i];
 				const UnitDef *ud = ai->cb->GetUnitDef(uid);
-				if (UC(ud->id)&MEXTRACTOR) {
+				if ((UC(ud->id)&MEXTRACTOR).any()) {
 					return false;
 				}
 			}
@@ -59,34 +68,36 @@ bool BuildTask::onValidate() {
 
 void BuildTask::onUpdate() {
 	CGroup *group = firstGroup();
-	float3 gpos = group->pos();
 
 	if (group->isMicroing()) {
-		if (group->isIdle())
+		if (group->isIdle()) {
+			CUnit* unit = group->firstUnit();
 			group->micro(false); // if idle, our micro is done
+			eta += unit->microingFrames;
+			unit->microingFrames = 0; // reset
+		}
 		else
 			return; // if microing, break
 	}
 	
 	if (!building) {
 		if (isMoving) {
-			/* See if we can build yet */
-			if (gpos.distance2D(pos) <= group->buildRange) {
-				isMoving = false;
-				ai->pathfinder->remove(*group);
-			}
-			/* See if we can suck wreckages */
-			else if (!group->isMicroing()) {
-				// TODO: increase ETA on success
-				if (!resourceScan())
+			if (!resourceScan()) {
+				const float3 gpos = group->pos();
+				if (gpos.distance2D(pos) <= group->buildRange) {
+					isMoving = false;
+					ai->pathfinder->remove(*group);
+				}
+				else
 					repairScan();
-			}
+			}				
 		}
 
-		if (!isMoving) {
-			group->build(pos, toBuild);
-			building = true;
-			group->micro(true);	
+		if (!isMoving && !group->isMicroing()) {
+			if (group->build(pos, toBuild)) {
+				building = true;
+				group->micro(true);	
+			}
 		}
 	}
 
@@ -100,10 +111,11 @@ void BuildTask::onUpdate() {
 bool BuildTask::assistable(CGroup &assister, float &travelTime) const {
 	if (!toBuild->def->canBeAssisted)
 		return false;
-	
-	if ((bt == BUILD_AG_DEFENSE && assisters.size() >= 2) || isMoving)
+	if (isMoving)
 		return false;
-
+	if (assisters.size() > 1 && (bt == BUILD_AG_DEFENSE || bt == BUILD_AG_DEFENSE || bt == BUILD_MISC_DEFENSE))
+		return false;
+	
 	CGroup *group = firstGroup();
 
 	float buildSpeed = group->buildSpeed;
@@ -120,6 +132,14 @@ bool BuildTask::assistable(CGroup &assister, float &travelTime) const {
 	travelTime = ai->pathfinder->getETA(assister, gpos) + 150.0f;
 
 	return (buildTime > travelTime);
+}
+
+void BuildTask::onUnitDestroyed(int uid, int attacker) {
+	if (ai->cb->UnitBeingBuilt(uid)) {
+		CUnit* unit = ai->unittable->getUnit(uid);
+		if (unit && unit->builtBy == firstGroup()->firstUnit()->key)
+			remove();
+	}
 }
 
 void BuildTask::toStream(std::ostream& out) const {

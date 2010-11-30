@@ -5,19 +5,28 @@
 #include "../CDefenseMatrix.h"
 #include "../CPathfinder.h"
 
-AttackTask::AttackTask(AIClasses *_ai, int target, CGroup &group, bool urgent): ATask(_ai) {
+AttackTask::AttackTask(AIClasses *_ai, int target, CGroup &group): ATask(_ai) {
 	const UnitDef *eud = ai->cbc->GetUnitDef(target);
 	
-	this->t      = TASK_ATTACK;
+	this->t = TASK_ATTACK;
 	this->target = target;
 	this->pos    = ai->cbc->GetUnitPos(target);
-	this->urgent = urgent;
 	if (eud)
 		this->enemy = eud->humanName;
+	targetAlt = -1;
+
 	addGroup(group);
 }
 
 bool AttackTask::onValidate() {
+	CGroup *group = firstGroup();
+
+	if (targetAlt >= 0) {
+		if (ai->cbc->IsUnitCloaked(targetAlt) || !group->canAttack(targetAlt)) {
+			group->stop();
+		}
+	}
+	
 	const UnitDef *eud = ai->cbc->GetUnitDef(target);
 	if (eud == NULL)
 		return false;
@@ -27,18 +36,20 @@ bool AttackTask::onValidate() {
 			return false;
 		return true;
 	}
+
 	
-	CGroup *group = firstGroup();
-	bool scoutGroup = group->cats&SCOUTER;
-	float targetDistance = pos.distance2D(group->pos());
-	
+	if (!group->canAttack(target))
+		return false;
+
 	// don't chase scout groups too long if they are out of base...
+	bool scoutGroup = (group->cats&SCOUTER).any();
 	if (!scoutGroup && lifeTime() > 20.0f) {
-		const unsigned int ecats = UC(eud->id);
-		if (ecats&SCOUTER && !ai->defensematrix->isPosInBounds(pos))
+		const unitCategory ecats = UC(eud->id);
+		if ((ecats&SCOUTER).any() && !ai->defensematrix->isPosInBounds(pos))
 			return false; 
 	}
 	
+	float targetDistance = pos.distance2D(group->pos());
 	if (targetDistance > 1000.0f)
 		return true; // too far to panic
 
@@ -66,42 +77,50 @@ bool AttackTask::onValidate() {
 void AttackTask::onUpdate() {
 	CGroup *group = firstGroup();
 
-	if (group->isMicroing() && group->isIdle())
+	if (group->isMicroing() && group->isIdle()) {
+		targetAlt = -1; // for sure
 		group->micro(false);
-
-	/* If the target is destroyed, remove the task, unreg groups */
-	/*
-	if (ai->cbc->GetUnitHealth(target) <= 0.0f) {
-		remove();
-		return;
 	}
-	*/
 
 	if (isMoving) {
 		/* Keep tracking the target */
 		pos = ai->cbc->GetUnitPos(target);
 	
-		float range = group->getRange();
 		float3 gpos = group->pos();
+		float dist = gpos.distance2D(pos);
+		float range = group->getRange();
 
 		/* See if we can attack our target already */
-		if (gpos.distance2D(pos) <= range) {
-			if (group->cats&BUILDER)
-				group->reclaim(target);
-			else
-				group->attack(target);
-			isMoving = false;
-			ai->pathfinder->remove(*group);
-			group->micro(true);
+		if (dist <= range) {
+			bool canAttack = true;
+
+			/*
+			// for ground units prevent shooting across hill...
+			if ((group->cats&AIR).none()) {
+				// FIXME: improve
+				dist = ai->pathfinder->getPathLength(*group, pos);
+				canAttack = (dist <= range * 1.1f);
+			}
+			*/
+
+			if (canAttack) {
+				if ((group->cats&BUILDER).any())
+					group->reclaim(target);
+				else
+					group->attack(target);
+				isMoving = false;
+				ai->pathfinder->remove(*group);
+				group->micro(true);
+			}
 		}
 	}
 	
 	/* See if we can attack a target we found on our path */
-	if (!(group->isMicroing() || urgent)) {
-		if (group->cats&BUILDER)
+	if (!(group->isMicroing() || urgent())) {
+		if ((group->cats&BUILDER).any())
 			resourceScan(); // builders should not be too aggressive
 		else
-			enemyScan();
+			enemyScan(targetAlt);
 	}
 }
 

@@ -7,8 +7,8 @@
 #include "ARegistrar.h"
 #include "headers/HEngine.h"
 #include "headers/Defines.h"
+#include "CAI.h"
 
-class AIClasses;
 class UnitType;
 class CGroup;
 
@@ -19,114 +19,126 @@ enum facing{ SOUTH, EAST, NORTH, WEST, NONE };
 enum quadrant { NORTH_WEST, NORTH_EAST, SOUTH_WEST, SOUTH_EAST };
 
 class CUnit: public ARegistrar {
-	public:
-		CUnit(): ARegistrar() {
-			def = NULL;
-			type = NULL;
-			builtBy = 0;
-		}
-		CUnit(AIClasses *ai, int uid, int bid): ARegistrar(uid) {
-			this->ai = ai;
-			reset(uid, bid);
-		}
-		~CUnit(){}
 
-		const UnitDef *def;
-		UnitType *type;
-		int builtBy;
-		unsigned int techlvl;
-		CGroup *group; // group unit belongs to
+public:
+	CUnit(): ARegistrar() {
+		def = NULL;
+		type = NULL;
+		builtBy = 0;
+	}
+	CUnit(AIClasses *_ai, int uid, int bid): ARegistrar(uid) {
+		ai = _ai;
+		reset(uid, bid);
+	}
+	~CUnit() {}
 
-		/* Remove the unit from everywhere registered */
-		void remove();
+	const UnitDef *def;
+	UnitType *type;
+	int builtBy;
+	unitCategory techlvl;
+	CGroup *group; // a group unit belongs to
+	int aliveFrames; // excluding microing time
+	int microingFrames;
+	bool waiting;
 
-		/* Overloaded */
-		void remove(ARegistrar &reg);
+	static bool isMilitary(const UnitDef* ud) { return !ud->weapons.empty(); }
+	
+	static bool isStatic(const UnitDef* ud) { return ud->speed < EPS; }
+	
+	static bool isDefense(const UnitDef* ud) { return isStatic(ud) && isMilitary(ud); }
+		
+	static bool hasAntiAirWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons);
+	
+	static bool hasNukeWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons);
 
-		/* Reset this object */
-		void reset(int uid, int bid);
+	static bool hasParalyzerWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons);
 
-		int queueSize();
+	static bool hasInterceptorWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons);
 
-		/* Determine if this unit belongs to economic tracker */
-		bool isEconomy();
+	static bool hasShield(const std::vector<UnitDef::UnitDefWeapon>& weapons);
+		
+	/* Remove the unit from everywhere registered */
+	void remove();
+	/* Overloaded */
+	void remove(ARegistrar &reg);
+	/* Reset this object */
+	void reset(int uid, int bid);
+	
+	int queueSize();
+	/* Determine if this unit belongs to economic tracker */
+	bool isEconomy();
+	/* Attack a unit */
+	bool attack(int target, bool enqueue = false);
+	/* Move a unit forward by dist */
+	bool moveForward(float dist, bool enqueue = false);
+	/* Move random */
+	bool moveRandom(float radius, bool enqueue = false);
+	/* Move unit with id uid to position pos */
+	bool move(const float3& pos, bool enqueue = false);
+	/* Set a unit (e.g. mmaker) on or off */
+	bool setOnOff(bool on);
+	/* Build a unit of "toBuild" type at position "pos" */
+	bool build(UnitType* toBuild, const float3& pos);
+	/* Build a unit in a certain factory */
+	bool factoryBuild(UnitType* toBuild, bool enqueue = false);
+	/* Repair (or assist) a certain unit */
+	bool repair(int target);
+	/* Cloak a unit */
+	bool cloak(bool on);
+	/* Guard a certain unit */
+	bool guard(int target, bool enqueue = false);
+	
+	bool patrol(const float3& pos, bool enqueue = false);
+	/* Stop doing what you did */
+	bool stop();
+	/* Wait with what you are doing */
+	bool wait();
 
-		/* Attack a unit */
-		bool attack(int target, bool enqueue = false);
+	bool reclaim(float3 pos, float radius);
+	
+	bool reclaim(int target, bool enqueue = false);
+	/* Undo wait command */
+	bool unwait();
 
-		/* Move a unit forward by dist */
-		bool moveForward(float dist, bool enqueue = false);
+	bool stockpile();
 
-		/* Move random */
-		bool moveRandom(float radius, bool enqueue = false);
+	int getStockpileReady();
+	
+	int getStockpileQueued();
 
-		/* Move unit with id uid to position pos */
-		bool move(float3 &pos, bool enqueue = false);
+	bool micro(bool on);
 
-		/* Set a unit (e.g. mmaker) on or off */
-		bool setOnOff(bool on);
+	bool isMicroing() const { return microing; }
 
-		/* Let unit with id uid build a unit with a certain facing (NORTH,
-		 * SOUTH, EAST, WEST) at position pos 
-		 */
-		bool build(UnitType *toBuild, float3 &pos);
+	bool isOn() const { return ai->cb->IsUnitActivated(key); }
 
-		/* Build a unit in a certain factory */
-		bool factoryBuild(UnitType *toBuild, bool enqueue = false);
+	bool canPerformTasks() const { return aliveFrames > IDLE_UNIT_TIMEOUT; }
 
-		/* Repair (or assist) a certain unit */
-		bool repair(int target);
+	bool isDamaged() const { return (ai->cb->GetUnitMaxHealth(key) - ai->cb->GetUnitHealth(key)) > EPS; }
 
-		/* Cloak a unit */
-		bool cloak(bool on);
+	float3 pos() const { return ai->cb->GetUnitPos(key); }
+	/* Get best facing */
+	facing getBestFacing(const float3& pos) const;
+	/* Get quadrant */
+	quadrant getQuadrant(const float3& pos) const;
 
-		/* Guard a certain unit */
-		bool guard(int target, bool enqueue = false);
+	float getRange() const;
 
-		/* Stop doing what you did */
-		bool stop();
+	float3 getForwardPos(float distance) const;
 
-		/* Wait with what you are doing */
-		bool wait();
+	ARegistrar::NType regtype() const { return ARegistrar::UNIT; } 
+	/* output stream */
+	friend std::ostream& operator<<(std::ostream& out, const CUnit& unit);
 
-		bool reclaim(float3 pos, float radius);
-		bool reclaim(int target, bool enqueue = false);
+//protected:
+	AIClasses *ai;
 
-		/* Undo wait command */
-		bool unwait();
+private:
+	bool microing;
 
-		bool waiting;
-
-		bool micro(bool on);
-
-		bool isMicroing();
-
-		bool isOn();
-
-		float3 pos();
-
-		/* Get best facing */
-		facing getBestFacing(float3 &pos);
-
-		/* Get quadrant */
-		quadrant getQuadrant(float3 &pos);
-
-		RegistrarType regtype() { return REG_UNIT; } 
-
-		static bool isMilitary(const UnitDef* ud) { return !ud->weapons.empty(); }
-		static bool isStatic(const UnitDef* ud) { return ud->speed < 0.0001f; }
-		static bool isDefense(const UnitDef* ud) { return isStatic(ud) && isMilitary(ud); }
-
-		/* output stream */
-		friend std::ostream& operator<<(std::ostream &out, const CUnit &unit);
-
-		AIClasses *ai;
-
-	private:
-		bool microing;
-
-		Command createPosCommand(int cmd, float3 pos, float radius = -1.0f, facing f = NONE);
-		Command createTargetCommand(int cmd, int target);
+	Command createPosCommand(int cmd, float3 pos, float radius = -1.0f, facing f = NONE);
+		
+	Command createTargetCommand(int cmd, int target);
 };
 
 #endif

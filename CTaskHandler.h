@@ -11,6 +11,7 @@
 #include "atask/Assist.h"
 #include "atask/Merge.h"
 #include "atask/Guard.h"
+#include "atask/Repair.h"
 
 class UnitType;
 class AIClasses;
@@ -29,7 +30,7 @@ public:
 	/* Overload */
 	void remove(ARegistrar &task);
 
-	bool addTask(ATask *task);
+	bool addTask(ATask *task, ATask::NPriority p = ATask::NORMAL);
 
 	/* Get active task of group */
 	ATask* getTask(CGroup &group);

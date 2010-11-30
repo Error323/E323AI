@@ -6,6 +6,7 @@
 #include "CConfigParser.h"
 #include "CEconomy.h"
 
+
 CWishList::CWishList(AIClasses *ai) {
 	this->ai = ai;
 	maxWishlistSize = 0;
@@ -15,7 +16,7 @@ CWishList::~CWishList() {
 	LOG_II("CWishList::Stats MaxWishListSize = " << maxWishlistSize)
 }
 
-void CWishList::push(unsigned categories, buildPriority p) {
+void CWishList::push(unitCategory categories, Wish::NPriority p) {
 	std::map<int, CUnit*>::iterator itFac = ai->unittable->factories.begin();
 	UnitType *fac;
 	for (;itFac != ai->unittable->factories.end(); ++itFac) {
@@ -24,9 +25,9 @@ void CWishList::push(unsigned categories, buildPriority p) {
 		ai->unittable->getBuildables(fac, categories, 0, candidates);
 		if (!candidates.empty()) {
 			/* Initialize new std::vector */
-			if (wishlist.find(fac->id) == wishlist.end()) {
+			if (wishlist.find(fac->def->id) == wishlist.end()) {
 				std::vector<Wish> L;
-				wishlist[fac->id] = L;
+				wishlist[fac->def->id] = L;
 			}
 
 			/* Determine which buildables we can afford */
@@ -45,9 +46,9 @@ void CWishList::push(unsigned categories, buildPriority p) {
 				i++;
 			}
 			
-			wishlist[fac->id].push_back(Wish(i->second, p, categories));
-			unique(wishlist[fac->id]);
-			std::stable_sort(wishlist[fac->id].begin(), wishlist[fac->id].end());
+			wishlist[fac->def->id].push_back(Wish(i->second, p, categories));
+			unique(wishlist[fac->def->id]);
+			std::stable_sort(wishlist[fac->def->id].begin(), wishlist[fac->def->id].end());
 		}
 		else {
 			CUnit *unit = ai->unittable->getUnit(itFac->first);
@@ -75,11 +76,11 @@ bool CWishList::empty(int factory) {
 	return itList == wishlist.end() || itList->second.empty();
 }
 
-void CWishList::unique(std::vector<Wish> &vector) {
+void CWishList::unique(std::vector<Wish>& vector) {
 	std::vector<Wish>::iterator i;
 	Wish *w = &(vector.back());
 	for (i = vector.begin(); i != --vector.end(); i++) {
-		if (i->ut->id == w->ut->id) {
+		if (i->ut->def->id == w->ut->def->id) {
 			i->p = (i->p > w->p) ? i->p : w->p;
 			vector.pop_back();
 			return;

@@ -36,43 +36,44 @@ class CScopedTimer {
 			if (std::find(tasks.begin(), tasks.end(), task) == tasks.end()) {
 				taskIDs[task] = tasks.size();
 #if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
-				cb->DebugDrawerSetGraphLineColor(taskIDs[task], colors[taskIDs[task]%8]);
+				cb->DebugDrawerSetGraphLineColor(taskIDs[task], colors[taskIDs[task] % 8]);
 				cb->DebugDrawerSetGraphLineLabel(taskIDs[task], task.c_str());
 #endif
 				tasks.push_back(task);
+				
 				curTime[task] = cb->GetCurrentFrame();
 				prevTime[task] = 0;
 			}
 
-			t1 = GetEngineRuntimeMillis();
+			t1 = GetEngineRuntimeMSec();
 		}
 
 		~CScopedTimer() {
-			t2 = GetEngineRuntimeMillis();
+			t2 = GetEngineRuntimeMSec();
 
 			if (!initialized)
 				return;
 #if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
 			unsigned int curFrame = cb->GetCurrentFrame();
+			
 			for (size_t i = 0; i < tasks.size(); i++) {
-				if (tasks[i] == task) {
-					cb->DebugDrawerAddGraphPoint(taskIDs[task], curFrame, (t2-t1));
-					prevTime[task] = t2-t1;
-				}
-				else {
-					cb->DebugDrawerAddGraphPoint(taskIDs[tasks[i]], curFrame, prevTime[tasks[i]]);
-				}
+				const int taskID = taskIDs[tasks[i]];
+				
+				if (tasks[i] == task)
+					prevTime[task] = t2 - t1;
+				
+				cb->DebugDrawerAddGraphPoint(taskID, curFrame, prevTime[tasks[i]]);
 
 				if ((curFrame - curTime[tasks[i]]) >= TIME_INTERVAL)
-					cb->DebugDrawerDelGraphPoints(taskIDs[tasks[i]], 1);
+					cb->DebugDrawerDelGraphPoints(taskID, 1);
 			}
 #endif
 		}
 
-		static unsigned int GetEngineRuntimeMillis() {
+		static unsigned int GetEngineRuntimeMSec() {
 			boost::xtime t;
 			boost::xtime_get(&t, boost::TIME_UTC);
-			const unsigned int milliSeconds = t.sec * 1000 + (t.nsec / 1000000);   
+			const unsigned int milliSeconds = t.sec * 1000 + (t.nsec / 1000000);
 			return milliSeconds;
 		}
 
