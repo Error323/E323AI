@@ -12,7 +12,6 @@ CIntel::CIntel(AIClasses *ai) {
 
 	initialized = false;
 	strategyTechUp = false;
-	enemyvector = float3(1.0f, 1.0f, 1.0f);
 
 	selector.push_back(ASSAULT);
 	selector.push_back(SCOUTER);
@@ -20,32 +19,37 @@ CIntel::CIntel(AIClasses *ai) {
 	selector.push_back(ARTILLERY);
 	selector.push_back(ANTIAIR);
 	selector.push_back(AIR);
+	selector.push_back(SUB);
 	
-	targets[ENGAGE].push_back(&commanders);
-	targets[ENGAGE].push_back(&attackers);
-	targets[ENGAGE].push_back(&nukes);
-	targets[ENGAGE].push_back(&energyMakers);
-	targets[ENGAGE].push_back(&metalMakers);
-	targets[ENGAGE].push_back(&defenseAntiAir);
-	targets[ENGAGE].push_back(&defenseGround);
-	targets[ENGAGE].push_back(&mobileBuilders);
-	targets[ENGAGE].push_back(&factories);
-	targets[ENGAGE].push_back(&restUnarmedUnits);
+	// NOTE: the order is somewhat target priority
+	targets[ENGAGE].push_back(CategoryMatcher(COMMANDER));
+	targets[ENGAGE].push_back(CategoryMatcher(ATTACKER));
+	targets[ENGAGE].push_back(CategoryMatcher(EMAKER));
+	targets[ENGAGE].push_back(CategoryMatcher(MMAKER));
+	targets[ENGAGE].push_back(CategoryMatcher(DEFENSE));
+	targets[ENGAGE].push_back(CategoryMatcher(BUILDER|MOBILE));
+	targets[ENGAGE].push_back(CategoryMatcher(FACTORY));
+	targets[ENGAGE].push_back(CategoryMatcher(CATS_ANY, ATTACKER));
 	
-	targets[SCOUT].push_back(&mobileBuilders);
-	targets[SCOUT].push_back(&metalMakers);
-	targets[SCOUT].push_back(&energyMakers);
-	targets[SCOUT].push_back(&restUnarmedUnits);
+	targets[SCOUT].push_back(CategoryMatcher(BUILDER|MOBILE));
+	targets[SCOUT].push_back(CategoryMatcher(MMAKER|MEXTRACTOR));
+	targets[SCOUT].push_back(CategoryMatcher(EMAKER));
+	targets[SCOUT].push_back(CategoryMatcher(CATS_ANY, ATTACKER));
 
-	targets[BOMBER].push_back(&defenseAntiAir);
-	targets[BOMBER].push_back(&defenseGround);
-	targets[BOMBER].push_back(&commanders);
-	targets[BOMBER].push_back(&factories);
-	targets[BOMBER].push_back(&energyMakers);
-	targets[BOMBER].push_back(&metalMakers);
-	targets[BOMBER].push_back(&nukes);
+	targets[BOMBER].push_back(CategoryMatcher(DEFENSE));
+	targets[BOMBER].push_back(CategoryMatcher(COMMANDER));
+	targets[BOMBER].push_back(CategoryMatcher(FACTORY));
+	targets[BOMBER].push_back(CategoryMatcher(EMAKER));
+	targets[BOMBER].push_back(CategoryMatcher(MMAKER));
+	targets[BOMBER].push_back(CategoryMatcher(NUKE));
 	
-	targets[AIRFIGHTER].push_back(&airUnits);
+	targets[AIRFIGHTER].push_back(CategoryMatcher(AIR));
+
+	for (TargetCategoryMap::iterator it = targets.begin(); it != targets.end(); ++it) {
+		for (int i = 0; i < it->second.size(); i++) {
+			enemies.registerMatcher(it->second[i]);
+		}
+	}
 }
 
 float3 CIntel::getEnemyVector() {
@@ -58,26 +62,15 @@ void CIntel::init() {
 	resetCounters();
 	updateRoulette();
 	
-	int numUnits = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], MAX_UNITS);
-	// FIXME: when commanders are spawned with wrap gate option enabled then 
-	// assertion raises
-	if (numUnits > 0) {
-		enemyvector = ZeroVector;
-		for (int i = 0; i < numUnits; i++) {
-			enemyvector += ai->cbc->GetUnitPos(ai->unitIDs[i]);
-		}
-		enemyvector /= numUnits;
-	}
-
-	LOG_II("CIntel::init Number of enemy units: " << numUnits)
+	updateEnemyVector();
 	
 	/* FIXME:
 		I faced situation that on maps with less land there is a direct
 		path to enemy unit, but algo below starts to play a non-land game. 
-		I could not think up an apporpiate algo to avoid this. I though tracing
-		a path in the beginning of the game from my commander to enemy would 
-		be ok, but commander is an amphibious unit. It is not trivial stuff 
-		without external helpers in config files.
+		I could not think up an appropriate algo to avoid this. I thought about
+		tracing a path in the beginning of the game from my commander to enemy 
+		would be ok, but commander is an amphibious unit. It is not trivial 
+		stuff without external helpers in config files or terrain analysis.
 	*/
 	if(ai->gamemap->IsWaterMap()) {
 		allowedFactories.push_back(NAVAL);
@@ -110,7 +103,7 @@ void CIntel::init() {
 	allowedFactories.push_back(AIRCRAFT);
 
 	// vary first factory among allied AIs...
-	int i = ai->allyAITeam;
+	int i = ai->allyIndex;
 	while (i > 1) {
 		allowedFactories.push_back(allowedFactories.front());
 		allowedFactories.pop_front();
@@ -130,81 +123,21 @@ void CIntel::init() {
 }
 
 void CIntel::update(int frame) {
-	mobileBuilders.clear();
-	factories.clear();
-	attackers.clear();
-	metalMakers.clear();
-	energyMakers.clear();
-	navalUnits.clear();
-	underwaterUnits.clear();
-	restUnarmedUnits.clear();
-	rest.clear();
-	defenseGround.clear();
-	defenseAntiAir.clear();
-	commanders.clear();
-	airUnits.clear();
-	nukes.clear();
-			
 	resetCounters();
+
+	if (enemyvector == ZeroVector)
+		updateEnemyVector();
 
 	int numUnits = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], MAX_UNITS);
 	
 	for (int i = 0; i < numUnits; i++) {
 		const int uid = ai->unitIDs[i];
-		const UnitDef *ud = ai->cbc->GetUnitDef(uid);
-		unitCategory    c = UT(ud->id)->cats;
+		const UnitDef* ud = ai->cbc->GetUnitDef(uid);
+		
+		if (ud == NULL)
+			continue;
 
-		if (ai->cbc->IsUnitCloaked(uid))
-			continue;
-		
-		if ((c&NUKE).any()) {
-			nukes.push_back(uid);
-			continue;
-		}
-		
-		/* Ignore armed & mobile units being built */
-		if ((ai->cbc->UnitBeingBuilt(uid) && ((c&ATTACKER).any() || (c&STATIC).none())))
-			continue;
-		
-		if ((c&COMMANDER).any()) {
-			commanders.push_back(uid);
-		}
-		else if ((c&SEA).any() && ai->cbc->GetUnitPos(uid).y < 0.0f) {
-			underwaterUnits.push_back(uid);
-		}
-		else if ((c&(LAND|AIR)).none() && (c&SEA).any()) {
-			navalUnits.push_back(uid);
-		}
-		else if ((c&STATIC).any() && (c&ANTIAIR).any()) {
-			defenseAntiAir.push_back(uid);
-		}
-		else if ((c&STATIC).any() && (c&ATTACKER).any()) {
-			defenseGround.push_back(uid);
-		}
-		else if ((c&ATTACKER).any() && (c&AIR).none()) {
-			attackers.push_back(uid);
-		}
-		else if ((c&AIR).any()) {
-			airUnits.push_back(uid);
-		}
-		else if ((c&FACTORY).any()) {
-			factories.push_back(uid);
-		}
-		else if ((c&BUILDER).any() && (c&MOBILE).any()) {
-			mobileBuilders.push_back(uid);
-		}
-		else if ((c&(MEXTRACTOR|MMAKER)).any()) {
-			metalMakers.push_back(uid);
-		}
-		else if ((c&EMAKER).any()) {
-			energyMakers.push_back(uid);
-		}
-		else if ((c&ATTACKER).none()) {
-			restUnarmedUnits.push_back(uid);
-		}
-		else {
-			rest.push_back(uid);
-		}
+		unitCategory c = UT(ud->id)->cats;
 
 		if ((c&ATTACKER).any() && (c&MOBILE).any())
 			updateCounters(c);
@@ -215,12 +148,18 @@ void CIntel::update(int frame) {
 
 unitCategory CIntel::counter(unitCategory c) {
 	// TODO: implement customizable by config counter units
+	
+	// NOTE: current algo is not perfect because does not consider 
+	// environmental tags
+
+	if (c == AIR)		return ANTIAIR;
+	if (c == SUB)		return TORPEDO;
 	if (c == ASSAULT)	return SNIPER;
 	if (c == SCOUTER)	return ASSAULT;
 	if (c == SNIPER)	return ARTILLERY;
 	if (c == ARTILLERY)	return ASSAULT;
 	if (c == ANTIAIR)	return ARTILLERY;
-	if (c == AIR)		return ANTIAIR;
+	
 	return ARTILLERY;
 }
 
@@ -254,9 +193,11 @@ void CIntel::resetCounters() {
 	for (size_t i = 0; i < selector.size(); i++) {
 		counterCounter[selector[i]] = 1;
 	}
-	// without need do not build aircraft & anti-air units...
+	// without need do not build the following unit cats...
+	counterCounter[TORPEDO] = 0;
 	counterCounter[ANTIAIR] = 0;
 	counterCounter[AIR] = 0;
+	counterCounter[SUB] = 0;
 	// boost chance of assault units to be built by default
 	counterCounter[ASSAULT] = 3;
 	// adjust scout appearance chance by default...
@@ -273,4 +214,28 @@ void CIntel::resetCounters() {
 bool CIntel::enemyInbound() {
 	// TODO:
 	return false;
+}
+
+void CIntel::onEnemyCreated(int enemy) {
+	const UnitDef* ud = ai->cbc->GetUnitDef(enemy);
+	if (ud) {
+		LOG_II("CIntel::onEnemyCreated Unit(" << enemy << ")")
+		//assert(ai->cbc->GetUnitTeam(enemy) != ai->team);
+		enemies.addUnit(UT(ud->id), enemy);
+	}
+}
+
+void CIntel::onEnemyDestroyed(int enemy, int attacker) {
+	LOG_II("CIntel::onEnemyDestroyed Unit(" << enemy << ")")
+	enemies.removeUnit(enemy);
+}
+
+void CIntel::updateEnemyVector() {
+	int numUnits = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], MAX_PLAYERS);
+	
+	enemyvector = ZeroVector;
+	for (int i = 0; i < numUnits; i++) {
+		enemyvector += ai->cbc->GetUnitPos(ai->unitIDs[i]);
+	}
+	enemyvector /= numUnits;
 }
