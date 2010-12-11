@@ -20,6 +20,7 @@ public:
 		UNDEFINED,
 		DEFENSE_GROUND,   // autofire at ground
 		DEFENSE_ANTIAIR,  // atuofire at air
+		DEFENSE_UNDERWATER,
 		DEFENSE_ANTINUKE, // stockpile required, autofire at nuke missles
 		DEFENSE_SHIELD,   // on-offable defense, does not shoot
 		DEFENSE_JAMMER,
@@ -35,6 +36,7 @@ public:
 			type2str[UNDEFINED] = "UNDEFINED";
 			type2str[DEFENSE_GROUND] = "DEFENSE_GROUND";
 			type2str[DEFENSE_ANTIAIR] = "DEFENSE_ANTIAIR";
+			type2str[DEFENSE_UNDERWATER] = "DEFENSE_UNDERWATER";
 			type2str[DEFENSE_ANTINUKE] = "DEFENSE_ANTINUKE";
 			type2str[DEFENSE_SHIELD] = "DEFENSE_SHIELD";
 			type2str[DEFENSE_JAMMER] = "DEFENSE_JAMMER";
@@ -42,8 +44,7 @@ public:
 			type2str[ECONOMY_BOOSTER] = "ECONOMY_BOOSTER";
 		}
 	} 
-	CCoverageCell(AIClasses* _ai, NType _type = UNDEFINED, CUnit* _unit = NULL):type(_type) {
-		ai = _ai;
+	CCoverageCell(AIClasses* _ai, NType _type = UNDEFINED, CUnit* _unit = NULL):ai(_ai),type(_type) {
 		if (_unit) 
 			setCore(_unit); 
 		else { 
