@@ -18,6 +18,7 @@
 #include "ReusableObjectFactory.hpp"
 #include "GameMap.hpp"
 #include "Util.hpp"
+#include "CCataloguer.h"
 
 
 CMilitary::CMilitary(AIClasses *ai): ARegistrar(200) {
@@ -29,6 +30,15 @@ CMilitary::CMilitary(AIClasses *ai): ARegistrar(200) {
 	groups[AIRFIGHTER] = &activeAirFighterGroups;
 
 	drawTasks = false;
+
+	unitCategory forbiddenCats;
+
+	if (ai->gamemap->IsWaterMap())
+		forbiddenCats |= LAND;
+	else if (!ai->gamemap->IsHooverMap())
+		forbiddenCats |= (SEA|SUB);
+
+	allowedEnvCats = CATS_ENV & ~forbiddenCats;
 }
 
 void CMilitary::remove(ARegistrar &object) {
@@ -163,8 +173,6 @@ void CMilitary::update(int frame) {
 				break;
 		}
 
-		std::vector<std::vector<int>* > *targetBlocks = &(ai->intel->targets[behaviour]);
-
 		// NOTE: start with random group ID because some groups can't reach the 
 		// target (e.g. Fleas); this helps to overcome the problem when there 
 		// is a target, but first group can't reach it, and AI constantly 
@@ -172,6 +180,8 @@ void CMilitary::update(int frame) {
 		keys.clear();
 		util::GetShuffledKeys<int, CGroup*>(keys, *(itGroup->second));
 		
+		std::vector<CategoryMatcher>& targetBlocks = ai->intel->targets[behaviour];
+
 		for (int i = 0; i < keys.size(); ++i) {
 			CGroup *group = (*(itGroup->second))[keys[i]];
 
@@ -208,9 +218,8 @@ void CMilitary::update(int frame) {
 
 			// basic target selection...
 			if (target != -1) {
-				for(int b = 0; b < targetBlocks->size(); b++) {
-					std::vector<int> *targets = (*targetBlocks)[b];
-					target = group->selectTarget(*targets, tf);
+				for(int b = 0; b < targetBlocks.size(); b++) {
+					target = group->selectTarget(ai->intel->enemies.getUnits(targetBlocks[b]), tf);
 				}
 			}
 
@@ -337,41 +346,46 @@ void CMilitary::update(int frame) {
 		}
 	}
 
-	bool gotAirFactory = ai->unittable->gotFactory(AIRCRAFT);
-	bool gotSeaFactory = (ai->unittable->gotFactory(NAVAL) || ai->unittable->gotFactory(HOVER));
+	//bool gotAirFactory = ai->unittable->gotFactory(AIRCRAFT);
+	//bool gotSeaFactory = (ai->unittable->gotFactory(NAVAL) || ai->unittable->gotFactory(HOVER));
 	
 	if (ai->difficulty == DIFFICULTY_HARD) {
 		// when all scouts are busy create some more...
+		
 		// FIXME: when scouts are stucked AI will not build them anymore,
 		// while there are scout targets available
+		
 		if (busyScoutGroups == activeScoutGroups.size()) {
-			unitCategory baseType = ai->gamemap->IsWaterMap() && gotSeaFactory ? SEA|SUB : LAND;
+			//unitCategory baseType = ai->gamemap->IsWaterMap() && gotSeaFactory ? SEA|SUB : LAND;
 			Wish::NPriority p = activeScoutGroups.size() < ai->cfgparser->getMinScouts() ? Wish::HIGH: Wish::NORMAL;
 
-			if(gotAirFactory && rng.RandFloat() > 0.66f)
-				baseType = AIR;
-				
-			ai->wishlist->push(baseType | MOBILE | SCOUTER, p);
+			//if(gotAirFactory && rng.RandFloat() > 0.66f)
+			//	baseType = AIR;
+			ai->wishlist->push(MOBILE | SCOUTER | allowedEnvCats, 0, p);
 		} 
 	}
 
-	/* Always build some unit */
-	if(gotAirFactory && rng.RandFloat() > 0.66f) {
-		ai->wishlist->push(requestUnit(AIR), Wish::NORMAL);
+	// TODO: build units on real need only, not always
+	ai->wishlist->push(requestUnit(allowedEnvCats), 0, Wish::NORMAL);
+	
+	/*
+	if (gotAirFactory && rng.RandFloat() > 0.66f) {
+		ai->wishlist->push(requestUnit(AIR), forbiddenCats);
 	}
 	else {
 		if (ai->gamemap->IsWaterMap() && gotSeaFactory)
-			ai->wishlist->push(requestUnit(SEA|SUB), Wish::NORMAL);
+			ai->wishlist->push(requestUnit(SEA|SUB), forbiddenCats, Wish::NORMAL);
 		else
-			ai->wishlist->push(requestUnit(LAND), Wish::NORMAL);
-	}	
+			ai->wishlist->push(requestUnit(LAND), forbiddenCats, Wish::NORMAL);
+	}
+	*/
 }
 
 unitCategory CMilitary::requestUnit(unitCategory basecat) {
 	float r = rng.RandFloat();
 	float sum = 0.0f;
 	std::multimap<float, unitCategory>::iterator i;
-	
+
 	for (i = ai->intel->roulette.begin(); i != ai->intel->roulette.end(); i++) {
 		sum += i->first;
 		if (r <= sum) {

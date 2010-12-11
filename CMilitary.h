@@ -45,6 +45,7 @@ protected:
 	AIClasses* ai;
 
 private:
+	unitCategory allowedEnvCats;
 	/* Current group per factory <factory, CGroup*> */
 	std::map<int, CGroup*> assemblingGroups;
 	/* The ingame scout groups */
@@ -64,7 +65,7 @@ private:
 	bool drawTasks;
 
 	/* Request a unit for building using a roulette wheel system */
-	unitCategory requestUnit(unitCategory basecat);
+	unitCategory requestUnit(unitCategory basecat = 0);
 
 	bool isAssemblingGroup(CGroup *group);
 
