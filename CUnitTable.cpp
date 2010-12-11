@@ -76,6 +76,9 @@ CUnitTable::CUnitTable(AIClasses *ai): ARegistrar(100) {
 		cat2str[SHIELD]      = "SHIELD";
 		cat2str[NANOTOWER]   = "NANOTOWER";
 		cat2str[REPAIRPAD]   = "REPAIRPAD";
+
+		cat2str[WIND]        = "WIND";
+		cat2str[TIDAL]       = "TIDAL";
 		
 		assert(cat2str.size() == MAX_CATEGORIES);
 	}
@@ -190,6 +193,7 @@ void CUnitTable::remove(ARegistrar& object) {
 	unitsUnderConstruction.erase(unit->key);
 	unitsBuilding.erase(unit->key);
 	staticUnits.erase(unit->key);
+	staticWaterUnits.erase(unit->key);
 	staticEconomyUnits.erase(unit->key);
 
 	unit->unreg(*this);
@@ -243,6 +247,8 @@ CUnit* CUnitTable::requestUnit(int uid, int bid) {
 		staticUnits[unit->key] = unit;
 		if (unit->isEconomy())
 			staticEconomyUnits[unit->key] = unit;
+		if ((cats&(SEA|SUB)).any())
+			staticWaterUnits[unit->key] = unit;
 	}
 	
 	return unit;
@@ -345,7 +351,7 @@ unitCategory CUnitTable::categorizeUnit(UnitType *ut) {
 	if (ud->canfly)
 		cats |= AIR;
 	
-	if (ud->canSubmerge || ud->maxWaterDepth > 254.0f
+	if (ud->canSubmerge || ud->maxWaterDepth > 254.0f 
 	|| (ud->waterline > 10.0f && !(ud->floater || ud->canhover))) {
 		cats |= SUB;
 	}
@@ -369,9 +375,14 @@ unitCategory CUnitTable::categorizeUnit(UnitType *ut) {
 		cats |= MMAKER;
 
 	if ((ud->energyMake - ud->energyUpkeep) / ut->cost > 0.002 
-	|| ud->tidalGenerator || ud->windGenerator)
+	|| ud->tidalGenerator || ud->windGenerator) {
 		cats |= EMAKER;
-	
+		if (ud->tidalGenerator)
+			cats |= TIDAL;
+		if (ud->windGenerator)
+			cats |= WIND;
+	}
+		
 	if (ud->extractsMetal)
 		cats |= MEXTRACTOR;
 	
@@ -550,17 +561,20 @@ bool CUnitTable::gotFactory(unitCategory c) {
 	return factoryCount(c) > 0;
 }
 
-void CUnitTable::getBuildables(UnitType *ut, unitCategory include, unitCategory exclude, std::multimap<float, UnitType*> &candidates) {
-	static const unitCategory envCats = (AIR|SEA|LAND|SUB);
-	unitCategory incEnvCats = (envCats&include);
+void CUnitTable::getBuildables(UnitType* ut, unitCategory include, unitCategory exclude, std::multimap<float, UnitType*>& candidates) {
+	if (include.none())
+		return;
+
+	unitCategory incEnvCats = (CATS_ENV&include);
 	std::vector<unitCategory> incCats, excCats;
 	
 	// split categories...
 	for (unsigned int i = 0; i < cats.size(); i++) {
-		if ((include&cats[i]).any())
-			incCats.push_back(cats[i]);
-		else if ((exclude&cats[i]).any())
+		// NOTE: excluding tags have priority over including tags
+		if ((exclude&cats[i]).any())
 			excCats.push_back(cats[i]);
+		else if ((include&cats[i]).any())
+			incCats.push_back(cats[i]);
 	}
 
 	std::map<int, UnitType*>::iterator j;
@@ -571,7 +585,7 @@ void CUnitTable::getBuildables(UnitType *ut, unitCategory include, unitCategory 
 			// NOTE: evironment tags are handled differently: if requested
 			// AIR, LAND, SEA & SUB in any combination that means having 
 			// at least one match automatically qualifies unit as valid
-			if ((incCats[i]&envCats).any()) {
+			if ((incCats[i]&CATS_ENV).any()) {
 				if (incEnvCats.any()) {
 					// filter by environment tags is active
 					if ((incEnvCats&cat).none()) {
