@@ -35,10 +35,9 @@
 #include "AIExport.h"
 #include "CE323AI.h"
 
-// NOTE: myAIs is not static cause we need to count AI instances from outside
 
 // teamId -> AI map
-std::map<int, CAIGlobalAI*> myAIs;
+static std::map<int, CAIGlobalAI*> myAIs;
 // filled in init() of the first instance of this AI
 static const char* aiVersion = NULL;
 // callbacks for all the teams controlled by this Skirmish AI
