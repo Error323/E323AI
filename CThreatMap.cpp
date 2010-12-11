@@ -135,6 +135,7 @@ float CThreatMap::getThreat(float3 &center, float radius, CGroup *group) {
 		type = TMT_SURFACE_WATER;
 	else if ((group->cats&SUB).any())
 		type = TMT_UNDERWATER;
+	
 	return getThreat(center, radius, type);
 }
 
