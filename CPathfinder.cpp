@@ -16,8 +16,6 @@
 #include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
 
 
-extern std::map<int, CAIGlobalAI*> myAIs;
-
 std::vector<CPathfinder::Node*> CPathfinder::graph;
 int CPathfinder::drawPathGraph = -2;
 
@@ -106,7 +104,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 }
 
 CPathfinder::~CPathfinder() {
-	if(myAIs.size() > 1)
+	if(!ai->isSole())
 		return; // there are another instances of current AI type
 
 	for (unsigned int i = 0; i < CPathfinder::graph.size(); i++)
@@ -661,7 +659,7 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 }
 
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
-	std::vector<unsigned short int> &V = dynamic_cast<Node*>(an)->neighbours[activeMap];
+	std::vector<unsigned short int>& V = dynamic_cast<Node*>(an)->neighbours[activeMap];
 	for (size_t u = 0, N = V.size(); u < N; u++)
 		succ.push(CPathfinder::graph[V[u]]);
 }
