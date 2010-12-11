@@ -96,7 +96,7 @@
 #define MIN_TECHLEVEL 1
 #define MAX_TECHLEVEL 5
 
-#define MAX_CATEGORIES 44
+#define MAX_CATEGORIES 46
 
 typedef std::bitset<MAX_CATEGORIES> unitCategory;
 
@@ -152,13 +152,15 @@ const unitCategory
 	MBOOSTER   ('1' + std::string(40, '0')),
 	SHIELD     ('1' + std::string(41, '0')),
 	NANOTOWER  ('1' + std::string(42, '0')),
-	REPAIRPAD  ('1' + std::string(43, '0'));
+	REPAIRPAD  ('1' + std::string(43, '0')),
 
-/*
+	WIND       ('1' + std::string(44, '0')),
+	TIDAL      ('1' + std::string(45, '0'));
+
 const unitCategory
-	CATS_ENVIRONMENT = AIR|LAND|SEA|SUB,
-	CATS_ECONOMY = FACTORY|BUILDER|ASSISTER|RESURRECTOR|COMMANDER|MEXTRACTOR|MMAKER|EMAKER|MSTORAGE|ESTORAGE|EBOOSTER|MBOOSTER;
-*/
+	CATS_ANY     (std::string(MAX_CATEGORIES, '1')),
+	CATS_ENV     (AIR|LAND|SEA|SUB),
+	CATS_ECONOMY (FACTORY|BUILDER|ASSISTER|RESURRECTOR|COMMANDER|MEXTRACTOR|MMAKER|EMAKER|MSTORAGE|ESTORAGE|EBOOSTER|MBOOSTER);
 
 /* Build tasks */
 enum buildType {
@@ -166,6 +168,7 @@ enum buildType {
 	BUILD_EPROVIDER,
 	BUILD_AA_DEFENSE,
 	BUILD_AG_DEFENSE,
+	BUILD_UW_DEFENSE,
 	BUILD_FACTORY,
 	BUILD_MSTORAGE,
 	BUILD_ESTORAGE,
