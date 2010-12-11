@@ -13,10 +13,10 @@
 
 #include "headers/HEngine.h"
 
+std::list<float3> GameMap::metalspots;
 std::list<float3> GameMap::geospots;
 std::list<float3> GameMap::metalfeatures;
 std::list<float3> GameMap::energyfeatures;
-std::list<float3> GameMap::metalspots;
 
 GameMap::GameMap(AIClasses *ai) {
 	this->ai = ai;
@@ -25,9 +25,9 @@ GameMap::GameMap(AIClasses *ai) {
 	metalCount = nonMetalCount = 0;
 	debug = false;
 	CalcMapHeightFeatures();
-	if (GameMap::metalspots.empty())
+	if (metalspots.empty())
 		CalcMetalSpots();
-	if (GameMap::geospots.empty())
+	if (geospots.empty())
 		CalcGeoSpots();
 }
 
@@ -89,7 +89,7 @@ void GameMap::CalcMetalSpots() {
 			for (int x = R; x < X-R; x+=step) {
 				if (metalmap[ID(x,z)] > 1) {
 					float3 metalspot(x*METAL2REAL, ai->cb->GetElevation(x*METAL2REAL,z*METAL2REAL), z*METAL2REAL);
-					GameMap::metalspots.push_back(metalspot);
+					metalspots.push_back(metalspot);
 					if (debug)
 						ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
 				}
@@ -135,7 +135,7 @@ void GameMap::CalcMetalSpots() {
 
 			// Store metal spot
 			float3 metalspot(bestX, ai->cb->GetElevation(bestX,bestZ), bestZ);
-			GameMap::metalspots.push_back(metalspot);
+			metalspots.push_back(metalspot);
 
 			if (debug)
 				ai->cb->DrawUnit("armmex", metalspot, 0.0f, 10000, 0, false, false, 0);
@@ -153,7 +153,7 @@ void GameMap::CalcMetalSpots() {
 		maptype = "normal metalmap";
 	
 	LOG_II("GameMap::CalcMetalSpots map type: " << maptype)
-	LOG_II("GameMap::CalcMetalSpots found " << GameMap::metalspots.size() << " metal spots")
+	LOG_II("GameMap::CalcMetalSpots found " << metalspots.size() << " metal spots")
 	LOG_II("GameMap::CalcMetalSpots minMetal(" << minMetal << ") maxMetal(" << maxMetal << ") avgMetal(" << avgMetal << ")")
 }
 
@@ -162,7 +162,7 @@ void GameMap::CalcGeoSpots() {
 	for (int i = 0; i < numFeatures; i++) {
 		const int fid = ai->unitIDs[i];
 		const FeatureDef *fd = ai->cb->GetFeatureDef(fid);
-		if (fd->geoThermal) {
+		if (fd && fd->geoThermal) {
 			geospots.push_back(ai->cb->GetFeaturePos(fid));
 		}
 	}
@@ -212,5 +212,7 @@ void GameMap::CalcMapHeightFeatures() {
 
 	std::string type(IsKbotMap() ? "Kbot" : "Vehicle");
 	std::string hoover(IsHooverMap() ? "Enabled" : "Disabled");
-	LOG_II("GameMap::CalcMapHeightFeatures Primary lab: "<< type <<", Hoover lab: " << hoover)
+	
+	LOG_II("GameMap::CalcMapHeightFeatures Primary lab: " << type << ", Hoover lab: " << hoover)
+	LOG_II("GameMap::CalcMapHeightFeatures Water amount: " << waterAmount)
 }
