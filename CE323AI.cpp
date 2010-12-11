@@ -27,9 +27,6 @@
 
 #include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
 
-extern std::map<int, CAIGlobalAI*> myAIs;
-
-int CE323AI::instances = 0;
 
 CE323AI::CE323AI() {
 	isRunning = false;
@@ -43,14 +40,8 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
   
 	CLogger::logLevel loggingLevel = CLogger::VERBOSE;
 	
-	instances++;
-	
-	ai                = new AIClasses();
-	ai->cb            = callback->GetAICallback();
-	ai->cbc           = callback->GetCheatInterface();
-	ai->team          = team;
-	ai->allyTeam      = ai->cb->GetMyAllyTeam();
-	
+	ai = new AIClasses(callback);
+
 	std::map<std::string, std::string> options = ai->cb->GetMyOptionValues();
 	if (options.find(optionDifficulty) != options.end()) {
 		ai->difficulty = static_cast<difficultyLevel>(atoi(options[optionDifficulty].c_str()));
@@ -58,22 +49,13 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	if (options.find(optionLoggingLevel) != options.end()) {
 		loggingLevel = static_cast<CLogger::logLevel>(atoi(options[optionLoggingLevel].c_str()));
 	}
-	
-	ai->logger        = new CLogger(ai, /*CLogger::LOG_STDOUT |*/ CLogger::LOG_FILE, loggingLevel);
-	ai->cfgparser     = new CConfigParser(ai);
-	ai->unittable     = new CUnitTable(ai);
 
-	ai->allyAITeam    = 1;
-#if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
-	std::map<int, CAIGlobalAI*>::iterator it;
-	for (it = myAIs.begin(); it != myAIs.end(); ++it) {
-		if (it->first != team) {
-			if (ai->cb->GetTeamAllyTeam(it->first) == ai->allyTeam)
-				ai->allyAITeam++;
-		}
-	}
-#endif
-	LOG_II("CE323AI::InitAI allyAITeam = " << ai->allyAITeam)
+	ai->logger = new CLogger(ai, /*CLogger::LOG_STDOUT |*/ CLogger::LOG_FILE, loggingLevel);
+	
+	LOG_II("CE323AI::InitAI allyIndex = " << ai->allyIndex)
+
+	ai->cfgparser = new CConfigParser(ai);
+	ai->unittable = new CUnitTable(ai);
 	
 	std::string configfile = ai->cfgparser->getFilename(GET_CFG);
 	ai->cfgparser->parseConfig(configfile);
@@ -115,19 +97,11 @@ void CE323AI::InitAI(IGlobalAICallback* callback, int team) {
 	ai->cb->DebugDrawerSetGraphPos(-0.4f, -0.4f);
 	ai->cb->DebugDrawerSetGraphSize(0.8f, 0.6f);
 #endif
-
-	/*
-	ai->uploader->AddString("aiversion", AI_VERSION_NR);
-	ai->uploader->AddString("ainame",    AI_NAME);
-	ai->uploader->AddString("modname",   ai->cb->GetModName());
-	ai->uploader->AddString("mapname",   ai->cb->GetMapName());
-	*/
 }
 
 void CE323AI::ReleaseAI() {
-	instances--;
 	
-	if (instances == 0) {
+	if (ai->isSole()) {
 		ReusableObjectFactory<CGroup>::Shutdown();
 		ReusableObjectFactory<CUnit>::Shutdown();
 		ReusableObjectFactory<CCoverageCell>::Shutdown();
@@ -374,13 +348,17 @@ void CE323AI::EnemyEnterRadar(int enemy) {
 void CE323AI::EnemyLeaveRadar(int enemy) {
 }
 
+void CE323AI::EnemyCreated(int enemy) {
+	ai->intel->onEnemyCreated(enemy);
+}
+
 void CE323AI::EnemyDestroyed(int enemy, int attacker) {
 	ai->military->onEnemyDestroyed(enemy, attacker);
 	ai->tasks->onEnemyDestroyed(enemy, attacker);
+	ai->intel->onEnemyDestroyed(enemy, attacker);
 }
 
 void CE323AI::EnemyDamaged(int damaged, int attacker, float damage, float3 dir) {
-
 }
 
 

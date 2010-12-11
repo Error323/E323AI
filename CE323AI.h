@@ -26,6 +26,7 @@ public:
 	void EnemyLeaveLOS(int enemy);
 	void EnemyEnterRadar(int enemy);
 	void EnemyLeaveRadar(int enemy);
+	void EnemyCreated(int enemy);
 	void EnemyDestroyed(int enemy, int attacker);
 
 	void GotChatMsg(const char* msg, int player);
@@ -36,13 +37,12 @@ public:
 protected:
 	AIClasses* ai;
 		// shared structure among other AI modules
+
 private:
 	bool isRunning;
 		// AI is fully initialized and running
 	int attachedAtFrame;
 		// frame when AI was attached
-	static int instances;
-		// number of AI instanses
 };
 
 #endif
