@@ -1,5 +1,9 @@
 E323AI changelog
 ----------------
+v3.24.0 [2010-12-12]
+* naval units support
+* updated config files for BA only
+
 v3.23.0 [2010-10-04]
 * AI can build anti-air defenses, jammers, shields, nano-towers & anti-nukes, though you need updated config files to see them in action
 * AI can't properly use anti-nukes yet
