@@ -140,7 +140,7 @@ float CThreatMap::getThreat(float3 &center, float radius, CGroup *group) {
 }
 
 void CThreatMap::update(int frame) {
-	static const unitCategory catsCanShootGround = ASSAULT|SNIPER|ARTILLERY|SCOUTER|PARALYZER;
+	static const unitCategory catsCanShootGround = ASSAULT|SNIPER|ARTILLERY|SCOUTER/*|PARALYZER*/;
 	
 	if ((frame - lastUpdateFrame) < MULTIPLEXER)
 		return;
@@ -156,31 +156,31 @@ void CThreatMap::update(int frame) {
 	/* Add enemy threats */
 	for (int i = 0; i < numUnits; i++) {
 		const int uid = ai->unitIDs[i];
-		const UnitDef *ud = ai->cbc->GetUnitDef(uid);
+		const UnitDef* ud = ai->cbc->GetUnitDef(uid);
 		
 		if (ud == NULL)
 			continue;
 
-		const UnitType *ut = UT(ud->id);
+		const UnitType* ut = UT(ud->id);
 		const unitCategory ecats = ut->cats;
 		
 		if ((ecats&ATTACKER).none() || ai->cbc->IsUnitParalyzed(uid)
 		|| ai->cbc->UnitBeingBuilt(uid))
-			continue;
+			continue; // ignore unamred, paralyzed & being built units
 		
 		if ((ecats&AIR).any() && (ecats&ASSAULT).none())
 			continue; // ignore air fighters & bombers
 
-		const float3 upos = ai->cbc->GetUnitPos(uid);
-
-		// NOTE: for now i don't know what exact "y" position for naval units,
-		// so ignoring them for sure
-		if (upos.y < 0.0f && (ecats&(SEA|SUB|TORPEDO)).none())
-			continue; // ignore units which can't shoot under the water
-
 		// FIXME: think smth cleverer
 		if (ud->maxWeaponRange > MAX_WEAPON_RANGE_FOR_TM)
-			continue;
+			continue; // ignore units with extra large range
+		
+		const float3 upos = ai->cbc->GetUnitPos(uid);
+
+		/*
+		if (upos.y < 0.0f && (ecats&TORPEDO).none())
+			continue; // ignore units which can't shoot under the water
+		*/
 
 		activeTypes.clear();
 
@@ -188,9 +188,8 @@ void CThreatMap::update(int frame) {
 			activeTypes.push_back(TMT_AIR);
 		}
 		
-		// TODO: remove DEFENSE hack after fixing all config files
-		if (((catsCanShootGround&ecats).any() && (ecats&SUB).none())
-		||  ((ecats&DEFENSE).any() && (ecats&ANTIAIR).none())) {
+		if (((ecats&SEA).any() || upos.y >= 0.0f)
+		&&  ((ecats&ANTIAIR).none() || (catsCanShootGround&ecats).any())) {
 			activeTypes.push_back(TMT_SURFACE);
 			if (isWaterMap)
 				activeTypes.push_back(TMT_SURFACE_WATER);
