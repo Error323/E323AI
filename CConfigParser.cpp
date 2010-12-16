@@ -38,10 +38,11 @@ bool CConfigParser::fileExists(const std::string& filename) {
 }
 
 std::string CConfigParser::getFilename(unsigned int f) {
-	static const char 
+	static const char
 		ext[] =".cfg",
 		cfg[] = "-config",
-		cat[] = "-categorization";
+		cat[] = "-categorization",
+		patch[] = "-patch";
 
 	std::string result(ai->cb->GetModShortName());
 	
@@ -60,6 +61,9 @@ std::string CConfigParser::getFilename(unsigned int f) {
 		sprintf(team, "-%d", ai->team);
 		result += team;
 	}
+
+	if ((f&GET_CAT) && (f&GET_PATCH))
+		result += patch;
 
 	result += ext;
 
@@ -134,14 +138,14 @@ bool CConfigParser::parseConfig(std::string filename) {
 				continue;
 			}
 
-			if (contains(line, '{')) {
+			if (util::StringContainsChar(line, '{')) {
 				/* New state block */
 				line.substr(0, line.size() - 1);
 				util::StringSplit(line, ':', splitted);
 				state = atoi(splitted[1].c_str());
 				states[state] = stateVariables;
 			}
-			else if (contains(line, '}')) {
+			else if (util::StringContainsChar(line, '}')) {
 				/* Close state block */
 				if (states[state].size() == stateVariables.size())
 					LOG_II("CConfigParser::parseConfig State("<<state<<") parsed successfully")
@@ -183,7 +187,7 @@ bool CConfigParser::isUsable() const {
 #endif
 }
 
-bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType> &units) {
+bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType> &units, bool patchMode) {
 	filename = util::GetAbsFileName(ai->cb, std::string(CFG_FOLDER)+filename, true);
 	std::ifstream file(filename.c_str());
 	unsigned linenr = 0;
@@ -208,24 +212,62 @@ bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType
 				LOG_EE("Parsing config line: " << linenr << "\tunit `" << splitted[0] << "' is invalid")
 				continue;
 			}
-			UnitType *ut = &units[ud->id];
+			UnitType* ut = &units[ud->id];
 
 			unitCategory categories;
-			for (unsigned i = 1; i < splitted.size(); i++) {
-				if (CUnitTable::str2cat.find(splitted[i]) == CUnitTable::str2cat.end()) {
-					LOG_EE("Parsing config line: " << linenr << "\tcategory `" << splitted[i] << "' is invalid")
+
+			if (patchMode) {
+				categories = ut->cats;
+
+				// NOTE: first item is unitdef system name, so skipping it...
+				for (unsigned int i = 1; i < splitted.size(); i++) {
+					const std::string& block = splitted[i];
+					
+					if (block.size() == 0)
+						continue;
+					
+					if (block[0] != '-' && block[0] != '+') {
+						LOG_EE("Parsing config line in patch mode: " << linenr << "\tcategory `" << block << "' has no valid action prefix")
+						continue;
+					}
+						
+					const std::string tag = block.substr(1);
+
+					if (CUnitTable::str2cat.find(tag) == CUnitTable::str2cat.end()) {
+						LOG_EE("Parsing config line in patch mode: " << linenr << "\tcategory `" << tag << "' is invalid")
+						continue;
+					}
+
+					if (block[0] == '+')
+						categories |= CUnitTable::str2cat[tag];
+					else
+						categories &= ~CUnitTable::str2cat[tag];
+				}
+			}
+			else {
+				for (unsigned int i = 1; i < splitted.size(); i++) {
+					const std::string& block = splitted[i];
+					
+					if (block.size() == 0)
+						continue;
+					
+					if (CUnitTable::str2cat.find(block) == CUnitTable::str2cat.end()) {
+						LOG_EE("Parsing config line: " << linenr << "\tcategory `" << block << "' is invalid")
+						continue;
+					}
+					
+					categories |= CUnitTable::str2cat[block];
+				}
+
+				if (categories == 0) {
+					LOG_EE("Parsing config line: " << linenr << "\t" << ut->def->humanName << " is uncategorized, falling back to standard")
 					continue;
 				}
-				categories |= CUnitTable::str2cat[splitted[i]];
 			}
-
-			if (categories == 0) {
-				LOG_EE("Parsing config line: " << linenr << "\t" << ut->def->humanName << " is uncategorized, falling back to standard")
-				continue;
-			}
-
+			
 			ut->cats = categories;
 		}
+		
 		file.close();
 	}
 	else {
@@ -236,14 +278,6 @@ bool CConfigParser::parseCategories(std::string filename, std::map<int, UnitType
 	LOG_II("CConfigParser::parseCategories parsed " << linenr << " lines from " << filename)
 	
 	return true;
-}
-
-bool CConfigParser::contains(std::string &line, char c) {
-	for ( int i = 0; i < line.length(); i++ ) {
-		if (line[i] == c)
-			return true;
-	}
-	return false;
 }
 
 void CConfigParser::debugConfig() {
