@@ -76,7 +76,6 @@ class CPathfinder: public AAStar, public ARegistrar {
 		float getPathLength(CGroup&, float3&);
 		/* Get estimated time of arrival */
 		float getETA(CGroup&, float3&);
-
 		/* Update groups following paths */
 		void updateFollowers();
 
