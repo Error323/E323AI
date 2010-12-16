@@ -56,6 +56,8 @@ public:
 	static bool hasInterceptorWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons);
 
 	static bool hasShield(const std::vector<UnitDef::UnitDefWeapon>& weapons);
+
+	static bool hasTorpedoWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons);
 		
 	/* Remove the unit from everywhere registered */
 	void remove();

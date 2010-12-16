@@ -386,7 +386,9 @@ bool CUnit::hasNukeWeapon(const std::vector<UnitDef::UnitDefWeapon> &weapons) {
 	for (unsigned int i = 0; i < weapons.size(); i++) {
 		const UnitDef::UnitDefWeapon *weapon = &weapons[i];
 		if (weapon->def->stockpile && weapon->def->range > 10000 
-		&& weapon->def->fixedLauncher && !weapon->def->paralyzer)
+		/*&& weapon->def->fixedLauncher*/ && !weapon->def->paralyzer
+		&& !weapon->def->interceptor && weapon->def->targetable
+		&& weapon->def->damages.GetDefaultDamage() > 1000.0f)
 			return true;
 	}
 	return false;
@@ -405,7 +407,16 @@ bool CUnit::hasInterceptorWeapon(const std::vector<UnitDef::UnitDefWeapon>& weap
 	for (unsigned int i = 0; i < weapons.size(); i++) {
 		const UnitDef::UnitDefWeapon *weapon = &weapons[i];
 		if (weapon->def->stockpile && weapon->def->interceptor
-		&& weapon->def->fixedLauncher)
+		/*&& weapon->def->fixedLauncher*/)
+			return true;
+	}
+	return false;
+}
+
+bool CUnit::hasTorpedoWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons) {
+	for (unsigned int i = 0; i < weapons.size(); i++) {
+		const UnitDef::UnitDefWeapon *weapon = &weapons[i];
+		if (weapon->def->submissile || weapon->def->waterweapon /*&& weapon->def->tracks*/)
 			return true;
 	}
 	return false;
