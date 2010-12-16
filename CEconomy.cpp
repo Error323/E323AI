@@ -944,7 +944,7 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 	if (isCommander) {
 		float eta = (suited.begin())->first;
 
-		// don't pursuit as commander when walkdistance is more than 10 seconds
+		// don't pursuit as commander when walkdistance is more than 15 seconds
 		if (eta > 450.0f) return NULL;
 	}
 
@@ -1065,12 +1065,14 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 	if (ai->intel->getEnemyCount(AIR) > 0 && rng.RandFloat() > 0.66f) {
 		bt = BUILD_AA_DEFENSE;
 		layer = CCoverageCell::DEFENSE_ANTIAIR;
+		// TODO: replace STATIC with DEFENSE after all config files updated
 		incCats = STATIC|ANTIAIR;
 		excCats = TORPEDO;
 	}
 	else if (ai->gamemap->IsWaterMap() && rng.RandFloat() > 0.5f) {
 		bt = BUILD_UW_DEFENSE;
 		layer = CCoverageCell::DEFENSE_UNDERWATER;
+		// TODO: replace STATIC with DEFENSE after all config files updated
 		incCats = STATIC|TORPEDO;
 		// NOTE: we do not support coastal torpedo launchers
 		excCats = LAND;
@@ -1079,7 +1081,7 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 	{
 		bt = BUILD_AG_DEFENSE;
 		layer = CCoverageCell::DEFENSE_GROUND;
-		incCats = DEFENSE;
+		incCats = ATTACKER|DEFENSE;
 		excCats = ANTIAIR|TORPEDO;
 	}
 				
