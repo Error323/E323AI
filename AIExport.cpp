@@ -28,7 +28,7 @@
 // AI interface stuff
 #include "ExternalAI/Interface/SSkirmishAILibrary.h"
 #include "ExternalAI/Interface/SSkirmishAICallback.h"
-#include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
+#include "LegacyCpp/AIGlobalAI.h"
 #include "Game/GameVersion.h"
 
 // E323AI stuff

@@ -2,6 +2,8 @@
 
 #include "CUnit.h"
 
+#include <stdexcept>
+
 void CCataloguer::registerMatcher(const CategoryMatcher& m) {
 	if (cache.find(m) == cache.end()) {
 		cache[m];
@@ -32,7 +34,7 @@ std::map<int, UnitType*>& CCataloguer::getUnits(const CategoryMatcher& m) {
 	CacheMapIt it = cache.find(m);
 	if (it != cache.end())
 		return it->second;
-	throw std::exception("Internal error");
+	throw std::runtime_error("No unit found for category");
 }
 
 std::map<int, UnitType*>* CCataloguer::getUnits(const unitCategory& inc, const unitCategory& exc) {

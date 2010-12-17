@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <memory>
 #include "CUnitTable.h"
 
 class AContainer {

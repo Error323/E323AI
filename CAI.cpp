@@ -1,6 +1,8 @@
 #include "CAI.h"
 
-#include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
+#include "LegacyCpp/IGlobalAICallback.h"
+#include "LegacyCpp/IAICallback.h"
+#include "LegacyCpp/IAICheats.h"
 
 
 std::vector<int> AIClasses::unitIDs;
