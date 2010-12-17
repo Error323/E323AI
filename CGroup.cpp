@@ -504,7 +504,19 @@ bool CGroup::addBadTarget(int id) {
 	return true;
 }
 
-int CGroup::selectTarget(CContainer targets, TargetsFilter &tf) {
+int CGroup::selectTarget(const std::map<int, UnitType*>& targets, TargetsFilter &tf) {
+
+	std::vector<int> targetsVec;
+	targetsVec.reserve(targets.size());
+	std::map<int, UnitType*>::const_iterator ti = targets.begin();
+	for (ti = targets.begin(); ti != targets.end(); ++ti) {
+		targetsVec.push_back(ti->first);
+	}
+
+	return selectTarget(targetsVec, tf);
+}
+
+int CGroup::selectTarget(const std::vector<int>& targets, TargetsFilter &tf) {
 	bool scout = (cats&SCOUTER).any();
 	bool bomber = !scout && (cats&AIR).any() && (cats&ARTILLERY).any();
 	int frame = ai->cb->GetCurrentFrame();
@@ -514,8 +526,9 @@ int CGroup::selectTarget(CContainer targets, TargetsFilter &tf) {
 	if (targets.empty() || tf.candidatesLimit == 0)
 		return tf.bestTarget;
 
-	for (int i = 0; !targets.end() && i < tf.candidatesLimit; i++) {
-		int t = targets.fetch();
+	std::vector<int>::const_iterator ti = targets.begin();
+	for (int i = 0; ti != targets.end() && i < tf.candidatesLimit; ++ti, i++) {
+		const int t = *ti;
 
 		if (!canAttack(t) || (tf.excludeId && (*(tf.excludeId))[t]))
 			continue;
