@@ -22,8 +22,13 @@ class CCoverageHandler;
 class AIClasses {
 
 public:
-	AIClasses();
+	AIClasses(IGlobalAICallback* callback);
+	~AIClasses();
 
+	static std::map<int, AIClasses*> instances;
+		// AI instances grouped by team ID
+	static std::map<int, std::map<int, AIClasses*> > instancesByAllyTeam;
+	    // AI instances grouped by ally team ID
 	static std::vector<int> unitIDs;
 		// temporary container for GetEnemyUnits(), GetFriendlyUnits() etc. results
 	IAICallback*	cb;
@@ -45,13 +50,15 @@ public:
 		// team ID
 	int allyTeam;
 		// ally team ID
-	int allyAITeam;
-		// ally AI team ID (internal)
-	int            skirmishAIId;
-		// this AIs ID, comparable to a playerId
+	int allyIndex;
+		// team index within ally E323AIs (base = 1)
 	difficultyLevel difficulty;
+		// TODO: move to CIntel?
 
-	bool isMaster();
+	bool isMaster() { return (instances.begin()->first == team); }
+	bool isMasterAlly() { return instancesByAllyTeam[allyTeam].begin()->first == team; }
+	bool isSole() { return instances.size() == 1; }
+	void updateAllyIndex();
 };
 
 #endif

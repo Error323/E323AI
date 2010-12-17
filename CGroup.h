@@ -8,7 +8,6 @@
 #include "headers/HEngine.h"
 #include "headers/Defines.h"
 
-
 class ATask;
 class CUnit;
 class AIClasses;
@@ -17,8 +16,8 @@ class UnitType;
 struct TargetsFilter {
 	unitCategory include, exclude;
 		// unit category tags filter
-	std::map<int, bool> *excludeId;
-		// unit Ids to exclude
+	std::map<int, bool>* excludeId;
+		// unit Ids to be excluded
 	int bestTarget; 
 		// best target score; can be updated after passing to selectTarget()
 	int candidatesLimit;
@@ -46,8 +45,8 @@ struct TargetsFilter {
 		excludeId = NULL;
 		bestTarget = -1;
 		candidatesLimit = std::numeric_limits<int>::max();
-		include = std::numeric_limits<unsigned int>::max();
-		exclude = 0;
+		include.set();
+		exclude.reset();
 		threatRadius = 0.0f;
 		scoreCeiling = threatCeiling = std::numeric_limits<float>::max();
 		threatFactor = 1.0f;
@@ -66,6 +65,7 @@ public:
 	CGroup(): ARegistrar(counter++) {};
 	~CGroup() {};
 
+	// TODO: replace "cats" with "commonCats" & "mergedCats"?
 	/* Group category tags */
 	unitCategory cats;
 	/* Max tech level of all units in a group */
@@ -153,15 +153,16 @@ public:
 	/* Can group attack another unit? */
 	bool canAttack(int uid);
 
-	bool canAdd(CUnit *unit);
+	bool canAdd(CUnit* unit);
 
 	bool canAssist(UnitType* type = NULL);
 	
-	bool canMerge(CGroup *group);
+	bool canMerge(CGroup* group);
 	/* Get area threat specific to current group */
 	float getThreat(float3& target, float radius = 0.0f);
 
-	int selectTarget(std::vector<int>& targets, TargetsFilter& tf);
+	int selectTarget(const std::map<int, UnitType*>& targets, TargetsFilter &tf);
+	int selectTarget(const std::vector<int>& targets, TargetsFilter& tf);
 	
 	int selectTarget(float search_radius, TargetsFilter& tf);
 	

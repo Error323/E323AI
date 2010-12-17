@@ -36,7 +36,6 @@ bool AttackTask::onValidate() {
 			return false;
 		return true;
 	}
-
 	
 	if (!group->canAttack(target))
 		return false;

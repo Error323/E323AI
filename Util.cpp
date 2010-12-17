@@ -77,6 +77,14 @@ namespace util {
 		s.erase(remove_if(s.begin(), s.end(), isspace), s.end());
 	}
 	
+	bool StringContainsChar(const std::string& src, const char c) {
+		for (int i = 0; i < src.length(); i++ ) {
+			if (src[i] == c)
+				return true;
+		}
+		return false;
+	}
+
 	std::string IntToString(int i, const std::string& format) {
 		char buf[64];
 		SNPRINTF(buf, sizeof(buf), format.c_str(), i);

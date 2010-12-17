@@ -16,13 +16,13 @@ CWishList::~CWishList() {
 	LOG_II("CWishList::Stats MaxWishListSize = " << maxWishlistSize)
 }
 
-void CWishList::push(unitCategory categories, Wish::NPriority p) {
+void CWishList::push(unitCategory include, unitCategory exclude, Wish::NPriority p) {
 	std::map<int, CUnit*>::iterator itFac = ai->unittable->factories.begin();
 	UnitType *fac;
 	for (;itFac != ai->unittable->factories.end(); ++itFac) {
 		fac = itFac->second->type;
 		std::multimap<float, UnitType*> candidates;
-		ai->unittable->getBuildables(fac, categories, 0, candidates);
+		ai->unittable->getBuildables(fac, include, exclude, candidates);
 		if (!candidates.empty()) {
 			/* Initialize new std::vector */
 			if (wishlist.find(fac->def->id) == wishlist.end()) {
@@ -46,13 +46,13 @@ void CWishList::push(unitCategory categories, Wish::NPriority p) {
 				i++;
 			}
 			
-			wishlist[fac->def->id].push_back(Wish(i->second, p, categories));
+			wishlist[fac->def->id].push_back(Wish(i->second, p, include));
 			unique(wishlist[fac->def->id]);
 			std::stable_sort(wishlist[fac->def->id].begin(), wishlist[fac->def->id].end());
 		}
 		else {
 			CUnit *unit = ai->unittable->getUnit(itFac->first);
-			LOG_WW("CWishList::push failed for " << (*unit) << " categories: " << ai->unittable->debugCategories(categories))
+			//LOG_WW("CWishList::push failed for " << (*unit) << " categories: " << ai->unittable->debugCategories(include))
 		}
 	}
 

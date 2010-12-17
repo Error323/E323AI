@@ -34,7 +34,7 @@ struct UnitCategoryCompare {
 
 /* Unit wrapper struct */
 struct UnitType {
-	const UnitDef *def; /* As defined by spring */
+	const UnitDef* def; /* As defined by spring */
 	int techLevel;      /* By looking at the factory cost in which it can be build */
 	float dps;          /* A `briljant' measurement for the power of a unit :P */
 	float cost;         /* Cost defined in energy units */
@@ -77,6 +77,7 @@ public:
 	std::map<int, CUnit*>       factories;
 	std::map<int, CUnit*>       defenses;
 	std::map<int, CUnit*>       staticUnits;
+	std::map<int, CUnit*>       staticWaterUnits;
 	std::map<int, CUnit*>       staticEconomyUnits;
 	std::map<int, CUnit*>       energyStorages;
 	std::map<int, CUnit*>       unitsUnderPlayerControl;

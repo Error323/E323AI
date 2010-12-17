@@ -166,7 +166,7 @@ void CGroup::reset() {
 	badTargets.clear();
 }
 
-void CGroup::recalcProperties(CUnit *unit, bool reset)
+void CGroup::recalcProperties(CUnit* unit, bool reset)
 {
 	if (reset) {
 		strength   = 0.0f;
@@ -194,10 +194,10 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		return;
 
 	if (unit->builtBy >= 0) {
-		for (int i = MIN_TECHLEVEL; i <= MAX_TECHLEVEL; i++) {
-			if (unit->techlvl.test(i)) {
-				for (int j = MIN_TECHLEVEL; i <= MAX_TECHLEVEL; j++) {
-					if (techlvl.test(j)) {
+		for (int i = MIN_TECHLEVEL - 1; i < MAX_TECHLEVEL; i++) {
+			if (unit->techlvl[i]) {
+				for (int j = MIN_TECHLEVEL - 1; i < MAX_TECHLEVEL; j++) {
+					if (techlvl[j]) {
 						if (i > j) {
 							techlvl.reset();
 							techlvl.set(i); 
@@ -210,15 +210,28 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		}
 	}
 
+	mergeCats(unit->type->cats);
+
 	// NOTE: aircraft & static units do not have movedata
-	MoveData *md = unit->def->movedata;
+	MoveData* md = unit->def->movedata;
 	if (md) {
-		// select base path type with the lowerst slope, so pos(true) will
-		// return valid postition for all units in a group...
-		if (md->maxSlope <= maxSlope) {
-			pathType = md->pathType;
-			maxSlope = md->maxSlope;
-			worstSlopeUnit = unit;
+		bool validCandidate = true;
+		
+		if (units.size() > 1) {
+			unitCategory
+				envCatsOfGroup = CATS_ENV&cats,
+				envCatsOfUnit = CATS_ENV&unit->type->cats;
+			validCandidate = (envCatsOfGroup == envCatsOfUnit);
+		}
+		
+		if (validCandidate) {
+			// select base path type with the lowerest slope, so pos(true) will
+			// return valid postition for all units in a group...
+			if (md->maxSlope <= maxSlope) {
+				pathType = md->pathType;
+				maxSlope = md->maxSlope;
+				worstSlopeUnit = unit;
+			}
 		}
 	}
 
@@ -237,8 +250,6 @@ void CGroup::recalcProperties(CUnit *unit, bool reset)
 		speed = temp;
 		worstSpeedUnit = unit;
 	}
-
-	mergeCats(unit->type->cats);
 
 	radiusUpdateRequired = true;
 }
@@ -416,9 +427,9 @@ bool CGroup::canAttack(int uid) {
 		return false;
 	if (epos.y < 0.0f && (cats&TORPEDO).none())
 		return false;
-	if (pos().y < 0.0f && epos.y > 0.0f)
+	if (epos.y >= 0.0f && pos().y < 0.0f)
 		return false;
-
+	
 	// TODO: add more tweaks based on physical weapon possibilities
 
 	return true;
@@ -437,6 +448,7 @@ bool CGroup::canAssist(UnitType* type) {
 		if ((type->cats&(LAND)).any() && (cats&(LAND|AIR)).none())
 			return false;
 	}
+	
 	std::map<int, CUnit*>::const_iterator i;
 	for (i = units.begin(); i != units.end(); ++i)
 		if (i->second->type->def->canAssist)
@@ -459,6 +471,8 @@ void CGroup::mergeCats(unitCategory newcats) {
 	if (cats == 0)
 		cats = newcats;
 	else {
+		// NOTE: here is a list of cats which can't be left after merging
+		// if they are absent initially, i.e. LAND + LAND|SEA = LAND
 		static unitCategory nonXorCats[] = {SEA, SUB, LAND, AIR, STATIC, MOBILE, SCOUTER};
 		unitCategory oldcats = cats;
 		cats |= newcats;
@@ -475,7 +489,7 @@ float CGroup::getThreat(float3 &target, float radius) {
 }
 
 bool CGroup::addBadTarget(int id) {
-	const UnitDef *ud = ai->cbc->GetUnitDef(id);
+	const UnitDef* ud = ai->cbc->GetUnitDef(id);
 	if (ud == NULL)
 		return false;
 	
@@ -490,16 +504,31 @@ bool CGroup::addBadTarget(int id) {
 	return true;
 }
 
-int CGroup::selectTarget(std::vector<int> &targets, TargetsFilter &tf) {
+int CGroup::selectTarget(const std::map<int, UnitType*>& targets, TargetsFilter &tf) {
+
+	std::vector<int> targetsVec;
+	targetsVec.reserve(targets.size());
+	std::map<int, UnitType*>::const_iterator ti = targets.begin();
+	for (ti = targets.begin(); ti != targets.end(); ++ti) {
+		targetsVec.push_back(ti->first);
+	}
+
+	return selectTarget(targetsVec, tf);
+}
+
+int CGroup::selectTarget(const std::vector<int>& targets, TargetsFilter &tf) {
 	bool scout = (cats&SCOUTER).any();
 	bool bomber = !scout && (cats&AIR).any() && (cats&ARTILLERY).any();
 	int frame = ai->cb->GetCurrentFrame();
-	float bestScore = tf.scoreCeiling;
 	float unitDamageK;
 	float3 gpos = pos();
 
-	for (int i = 0; i < std::min<int>(targets.size(), tf.candidatesLimit); i++) {
-		int t = targets[i];
+	if (targets.empty() || tf.candidatesLimit == 0)
+		return tf.bestTarget;
+
+	std::vector<int>::const_iterator ti = targets.begin();
+	for (int i = 0; ti != targets.end() && i < tf.candidatesLimit; ++ti, i++) {
+		const int t = *ti;
 
 		if (!canAttack(t) || (tf.excludeId && (*(tf.excludeId))[t]))
 			continue;
@@ -518,7 +547,7 @@ int CGroup::selectTarget(std::vector<int> &targets, TargetsFilter &tf) {
 			}
 		}
 		
-		const UnitDef *ud = ai->cbc->GetUnitDef(t);
+		const UnitDef* ud = ai->cbc->GetUnitDef(t);
 		if (ud == NULL)
 			continue;
 
@@ -562,7 +591,7 @@ int CGroup::selectTarget(std::vector<int> &targets, TargetsFilter &tf) {
 		if ((cats&AIR).any() && (cats&ANTIAIR).any() && (ecats&AIR).none())
 			score += 5000.0f;
 
-		if(score < tf.scoreCeiling) {
+		if (score < tf.scoreCeiling) {
 			tf.bestTarget = t;
 			tf.scoreCeiling = score;
 			tf.threatValue = threat;
@@ -606,16 +635,18 @@ float CGroup::getRange() {
 }
 
 bool CGroup::canBeMerged(unitCategory bcats, unitCategory mcats) {
-	static unitCategory nonMergableCats[] = {SEA, LAND, AIR, ATTACKER, STATIC, MOBILE, BUILDER, SCOUTER};
+	static unitCategory nonMergableCats[] = { AIR, LAND, ATTACKER, STATIC, MOBILE, BUILDER, SCOUTER };
 
 	if (bcats.none())
 		return true;
 
-	unitCategory c = bcats&mcats; // common categories between two groups of cats
+	unitCategory c = (bcats&mcats); // common cats between two groups of cats
 	
-	if (c.none())
+	if (c.none() || (c&CATS_ENV).none())
 		return false;
 	
+	// NOTE: if one tag of "nonMergableCats" has been disappeared after logical 
+	// addition then unit or group with "mcats" can't be merged
 	for (int i = 0; i < sizeof(nonMergableCats) / sizeof(unitCategory); i++) {
 		unitCategory tag = nonMergableCats[i];
 		if ((bcats&tag).any() && (c&tag).none())
@@ -639,7 +670,6 @@ bool CGroup::canBeMerged(unitCategory bcats, unitCategory mcats) {
 	}
 	
 	return true;
-	
 }
 
 bool CGroup::canPerformTasks() {
@@ -668,7 +698,7 @@ void CGroup::updateLatecomer(CUnit* unit) {
 	if (latecomerPos.distance2D(newPos) < 32.0f) {
 		latecomerWeight++;
 		if (latecomerWeight > 10) {
-			LOG_WW("CGroup::updateLatecomer "  << unit << " is stucked")
+			LOG_WW("CGroup::updateLatecomer " << unit << " is stuck")
 			unit->stop();
 			remove(*unit);
 			// on idle code will take unit back in action
@@ -690,7 +720,15 @@ void CGroup::removeLatecomer() {
 
 std::ostream& operator<<(std::ostream &out, const CGroup &group) {
 	std::stringstream ss;
-	ss << "Group(" << group.key << "):" << " range(" << group.range << "), buildRange(" << group.buildRange << "), los(" << group.los << "), speed(" << group.speed << "), strength(" << group.strength << "), amount(" << group.units.size() << ") [";
+	
+	ss << "Group(" << group.key
+		<< "): range(" << group.range
+		<< "), buildRange(" << group.buildRange 
+		<< "), los(" << group.los 
+		<< "), speed(" << group.speed 
+		<< "), strength(" << group.strength
+		<< "), amount(" << group.units.size() << ") [";
+	
 	std::map<int, CUnit*>::const_iterator i = group.units.begin();
 	for (i = group.units.begin(); i != group.units.end(); ++i) {
 		ss << (*i->second) << ", ";
@@ -699,5 +737,6 @@ std::ostream& operator<<(std::ostream &out, const CGroup &group) {
 	s = s.substr(0, s.size() - 2);
 	s += "]";
 	out << s;
+	
 	return out;
 }

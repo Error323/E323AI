@@ -32,11 +32,11 @@ public:
 	}
 	~CUnit() {}
 
-	const UnitDef *def;
-	UnitType *type;
+	const UnitDef* def;
+	UnitType* type;
 	int builtBy;
 	unitCategory techlvl;
-	CGroup *group; // a group unit belongs to
+	CGroup* group; // a group unit belongs to
 	int aliveFrames; // excluding microing time
 	int microingFrames;
 	bool waiting;
@@ -56,6 +56,8 @@ public:
 	static bool hasInterceptorWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons);
 
 	static bool hasShield(const std::vector<UnitDef::UnitDefWeapon>& weapons);
+
+	static bool hasTorpedoWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons);
 		
 	/* Remove the unit from everywhere registered */
 	void remove();

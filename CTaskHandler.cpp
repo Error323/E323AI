@@ -7,7 +7,6 @@
 #include <limits>
 
 #include "CUnitTable.h"
-#include "CWishList.h"
 #include "CPathfinder.h"
 #include "CUnit.h"
 #include "CGroup.h"

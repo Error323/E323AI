@@ -18,9 +18,9 @@ public:
 	/* Register unit */
 	void addUnit(CUnit* unit);
 	/* Get closest build site */
-	float3 getNextBuildSite(UnitType* toBuild, const float3& pos);
+	float3 getNextClosestBuildSite(const CUnit* builder, UnitType* toBuild);
 	/* Get the most valuable build site */
-	float3 getNextBuildSite(UnitType* toBuild);
+	float3 getNextImportantBuildSite(UnitType* toBuild);
 	
 	float3 getClosestDefendedPos(float3& pos) const;
 	/* Not implemented */
@@ -34,7 +34,7 @@ public:
 	/* Get number of cores in a layer */
 	int getLayerSize(CCoverageCell::NType layer);
 	/* Get coverage type which can be based upon units of this type */
-	CCoverageCell::NType getCoreType(UnitType* ut) const;
+	CCoverageCell::NType getCoreType(const UnitType* ut) const;
 
 	bool isUnitCovered(int uid, CCoverageCell::NType layer);
 

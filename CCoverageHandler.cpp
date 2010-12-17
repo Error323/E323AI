@@ -108,7 +108,7 @@ void CCoverageHandler::addUnit(CUnit* unit) {
 	}
 }
 
-CCoverageCell::NType CCoverageHandler::getCoreType(UnitType* ut) const {
+CCoverageCell::NType CCoverageHandler::getCoreType(const UnitType* ut) const {
 	const unitCategory cats = ut->cats;
 	
 	// NOTE: core unit should never belong to different types of layers
@@ -119,7 +119,7 @@ CCoverageCell::NType CCoverageHandler::getCoreType(UnitType* ut) const {
 	if ((cats&EBOOSTER).any())
 		return CCoverageCell::ECONOMY_BOOSTER;
 	
-	// FIXME: though mobile defense can be passed below it is not supported
+	// FIXME: though mobile defense can be passed, it is not supported below
 	if ((cats&DEFENSE).any()) {
 		if ((cats&JAMMER).any())
 			return CCoverageCell::DEFENSE_JAMMER;
@@ -127,6 +127,8 @@ CCoverageCell::NType CCoverageHandler::getCoreType(UnitType* ut) const {
 			return CCoverageCell::DEFENSE_ANTINUKE;
 		if ((cats&SHIELD).any())
 			return CCoverageCell::DEFENSE_SHIELD;
+		if ((cats&TORPEDO).any())
+			return CCoverageCell::DEFENSE_UNDERWATER;
 		if ((cats&ANTIAIR).any())
 			return CCoverageCell::DEFENSE_ANTIAIR;
 		if ((cats&ATTACKER).any())
@@ -144,6 +146,8 @@ std::map<int, CUnit*>* CCoverageHandler::getScanList(CCoverageCell::NType layer)
 		case CCoverageCell::DEFENSE_SHIELD:
 		case CCoverageCell::DEFENSE_JAMMER:
 			return &ai->unittable->staticUnits;
+		case CCoverageCell::DEFENSE_UNDERWATER:
+			return &ai->unittable->staticWaterUnits;
 		case CCoverageCell::BUILD_ASSISTER:
 			return &ai->unittable->factories; // TODO: +defenses?
 		case CCoverageCell::ECONOMY_BOOSTER:
@@ -153,7 +157,10 @@ std::map<int, CUnit*>* CCoverageHandler::getScanList(CCoverageCell::NType layer)
 	}
 }
 
-float3 CCoverageHandler::getNextBuildSite(UnitType* toBuild, const float3& pos) {
+float3 CCoverageHandler::getNextClosestBuildSite(const CUnit* builder, UnitType* toBuild) {
+	bool allowLand = (toBuild->cats&(LAND|AIR)).any();
+	bool allowWater = (toBuild->cats&(SEA|SUB|AIR)).any();
+	float3 pos = builder->pos();
 	float3 goal = ERRORVECTOR;
 	
 	CCoverageCell::NType layer = getCoreType(toBuild);
@@ -169,10 +176,16 @@ float3 CCoverageHandler::getNextBuildSite(UnitType* toBuild, const float3& pos) 
 	
 	for (std::map<int, CUnit*>::iterator it = scanList->begin(); it != scanList->end(); ++it) {
 		CUnit* unit = it->second;
+		
 		if (getCoreType(unit->type) == layer)
 			continue;
+		
+		float3 upos = unit->pos();
+		
+		if ((!allowLand && upos.y >= 0.0f) || (!allowWater && upos.y < 0.0f))
+			continue;			
+		
 		if (coveredUnits->find(unit->key) == coveredUnits->end()) {
-			float3 upos = unit->pos();
 			// NOTE: i would use getETA but this is a great CPU hit
 			float distance = upos.distance2D(pos);
 			if (distance < minDistance) {
@@ -187,7 +200,9 @@ float3 CCoverageHandler::getNextBuildSite(UnitType* toBuild, const float3& pos) 
 	return goal;
 }
 
-float3 CCoverageHandler::getNextBuildSite(UnitType* toBuild) {
+float3 CCoverageHandler::getNextImportantBuildSite(UnitType* toBuild) {
+	bool allowLand = (toBuild->cats&(LAND|AIR)).any();
+	bool allowWater = (toBuild->cats&(SEA|SUB|AIR)).any();
 	float3 goal = ERRORVECTOR;
 
 	CCoverageCell::NType layer = getCoreType(toBuild);
@@ -202,10 +217,17 @@ float3 CCoverageHandler::getNextBuildSite(UnitType* toBuild) {
 	CUnit* bestUnit = NULL;
 	std::map<int, CCoverageCell*>* coveredUnits = &unitsCoveredBy[layer];
 	
-	for (std::map<int, CUnit*>::iterator it = ai->unittable->staticUnits.begin(); it != ai->unittable->staticUnits.end(); ++it)	{
+	for (std::map<int, CUnit*>::iterator it = scanList->begin(); it != scanList->end(); ++it)	{
 		CUnit* unit = it->second;
+		
 		if (getCoreType(unit->type) == layer)
 			continue;
+		
+		float3 upos = unit->pos();
+
+		if ((!allowLand && upos.y >= 0.0f) || (!allowWater && upos.y < 0.0f))
+			continue;			
+		
 		if (coveredUnits->find(unit->key) == coveredUnits->end()) {
 			if (maxCost < unit->type->cost) {
 				maxCost = unit->type->cost;
@@ -378,6 +400,7 @@ float CCoverageHandler::getCoreRange(CCoverageCell::NType type, UnitType* ut) {
 		case CCoverageCell::DEFENSE_GROUND:
 		case CCoverageCell::DEFENSE_ANTIAIR:
 		case CCoverageCell::DEFENSE_ANTINUKE:
+		case CCoverageCell::DEFENSE_UNDERWATER:
 			result = ut->def->maxWeaponRange;
 			break;
 		case CCoverageCell::DEFENSE_SHIELD:
@@ -403,6 +426,7 @@ float CCoverageHandler::getCoreRange(CCoverageCell::NType type, UnitType* ut) {
 	switch (type) {
 		case CCoverageCell::DEFENSE_GROUND:
 		case CCoverageCell::DEFENSE_ANTIAIR:
+		case CCoverageCell::DEFENSE_UNDERWATER:
 			switch (ai->difficulty) {
 				case DIFFICULTY_EASY:
 					result *= 2.0f;

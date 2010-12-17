@@ -86,7 +86,7 @@ void ATask::addGroup(CGroup &g) {
 	g.reg(*this);
 	g.busy = true;
 	g.micro(false);
-	g.abilities(true);
+	//g.abilities(true);
 	
 	if ((g.cats&STATIC).any())
 		isMoving = false;
@@ -101,7 +101,7 @@ void ATask::removeGroup(CGroup &g) {
 		g.busy = false;
 		g.unwait();
 		g.micro(false);
-		g.abilities(false);
+		//g.abilities(false);
 		if (isMoving) g.stop();
 	}
 

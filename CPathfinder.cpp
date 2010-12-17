@@ -12,8 +12,8 @@
 #include "MathUtil.h"
 #include "Util.hpp"
 #include "CScopedTimer.h"
-#include "AIExport.h"
 
+#include "LegacyCpp/IAICallback.h"
 
 
 std::vector<CPathfinder::Node*> CPathfinder::graph;
@@ -104,8 +104,8 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 }
 
 CPathfinder::~CPathfinder() {
-	if(aiexport_getNumAIInstances() > 1)
-		return; // there are other instances of the current AI type
+	if(!ai->isSole())
+		return; // there are another instances of current AI type
 
 	for (unsigned int i = 0; i < CPathfinder::graph.size(); i++)
 		delete CPathfinder::graph[i];
@@ -659,7 +659,7 @@ float CPathfinder::heuristic(ANode *an1, ANode *an2) {
 }
 
 void CPathfinder::successors(ANode *an, std::queue<ANode*> &succ) {
-	std::vector<unsigned short int> &V = dynamic_cast<Node*>(an)->neighbours[activeMap];
+	std::vector<unsigned short int>& V = dynamic_cast<Node*>(an)->neighbours[activeMap];
 	for (size_t u = 0, N = V.size(); u < N; u++)
 		succ.push(CPathfinder::graph[V[u]]);
 }

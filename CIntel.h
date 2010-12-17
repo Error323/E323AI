@@ -9,40 +9,29 @@
 #include "headers/HEngine.h"
 #include "CMilitary.h"
 #include "CUnitTable.h"
+#include "CCataloguer.h"
 
 class AIClasses;
 class CUnit;
 
+// NOTE: actually it is a simple StrategyManager
 class CIntel {
 
 public:
+	typedef std::map<MilitaryGroupBehaviour, std::vector<CategoryMatcher> > TargetCategoryMap;
+
 	CIntel(AIClasses *ai);
-	~CIntel() {};
 
 	bool strategyTechUp;
 
-	// TODO: replace this shit below with universal cataloguer
-	std::vector<int> factories;
-	std::vector<int> attackers;
-	std::vector<int> mobileBuilders;
-	std::vector<int> metalMakers;
-	std::vector<int> energyMakers;
-	std::vector<int> navalUnits;
-	std::vector<int> underwaterUnits;
-	std::vector<int> restUnarmedUnits;
-	std::vector<int> rest;
-	std::vector<int> defenseGround;
-	std::vector<int> defenseAntiAir;
-	std::vector<int> commanders;
-	std::vector<int> airUnits;
-	std::vector<int> nukes;
-	
+	CCataloguer enemies;
+		// all enemies sorted by requested categories
 	std::multimap<float, unitCategory> roulette; // <weight, unit_cat>
 		// containts counter-enemy unit categories sorted by weight
 	std::list<unitCategory> allowedFactories;
 		// contains allowed factories for current map, and also preferable 
 		// order of their appearance
-	std::map<MilitaryGroupBehaviour, std::vector<std::vector<int>* > > targets;
+	TargetCategoryMap targets;
 		// contains lists of targets per each military group behaviour
 	
 	void update(int frame);
@@ -50,6 +39,8 @@ public:
 	bool enemyInbound();
 	float3 getEnemyVector();
 	unsigned int getEnemyCount(unitCategory c) { return enemyCounter[c]; }
+	void onEnemyCreated(int enemy);
+	void onEnemyDestroyed(int enemy, int attacker);
 
 protected:
     AIClasses *ai;
@@ -78,6 +69,8 @@ private:
 	unitCategory counter(unitCategory ecats);
 
 	void updateRoulette();
+
+	void updateEnemyVector();
 };
 
 #endif

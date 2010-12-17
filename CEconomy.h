@@ -94,6 +94,8 @@ private:
 	bool eRequest, mRequest;
 	/* Is this a windmap ? */
 	bool windmap;
+	
+	bool worthBuildingTidal;
 	/* updateIncomes counter */
 	unsigned int incomes;
 	
@@ -104,39 +106,39 @@ private:
 
 	float3 getBestSpot(CGroup& group, std::list<float3>& resources, std::map<int, float3>& tracker, bool metal);
 	/* Fills takenMexes also */
-	float3 getClosestOpenMetalSpot(CGroup &group);
+	float3 getClosestOpenMetalSpot(CGroup& group);
 
-	float3 getClosestOpenGeoSpot(CGroup &group);
+	float3 getClosestOpenGeoSpot(CGroup& group);
 	/* Prevent stalling */
 	void preventStalling();
 	/* See what is best for our economy */
 	void controlMetalMakers();
 	/* Build or assist on a certain task */
-	void buildOrAssist(CGroup &group, buildType bt, unitCategory include, unitCategory exclude = unitCategory());
+	void buildOrAssist(CGroup& group, buildType bt, unitCategory include, unitCategory exclude = 0);
 	/* See if a buildtask is in progress */
 	bool taskInProgress(buildType bt);
 	/* Get next allowed factory to build */
-	unitCategory getNextTypeToBuild(UnitType *ut, unitCategory cats, int maxteachlevel);
+	unitCategory getNextTypeToBuild(UnitType* ut, unitCategory cats, int maxteachlevel);
 	
-	unitCategory getNextTypeToBuild(CUnit *unit, unitCategory cats, int maxteachlevel);
+	unitCategory getNextTypeToBuild(CUnit* unit, unitCategory cats, int maxteachlevel);
 
-	bool isTypeRequired(UnitType *builder, unitCategory cats, int maxteachlevel);
+	bool isTypeRequired(UnitType* builder, unitCategory cats, int maxteachlevel);
 
-	void tryBuildingDefense(CGroup*, unitCategory where);
+	void tryBuildingDefense(CGroup*);
 
-	void tryBuildingShield(CGroup*, unitCategory where);
+	void tryBuildingShield(CGroup*);
 
-	void tryBuildingStaticAssister(CGroup*, unitCategory where);
+	void tryBuildingStaticAssister(CGroup*);
 
-	void tryBuildingJammer(CGroup*, unitCategory where);
+	void tryBuildingJammer(CGroup*);
 
-	void tryBuildingAntiNuke(CGroup*, unitCategory where);
+	void tryBuildingAntiNuke(CGroup*);
 
 	void tryAssistingFactory(CGroup*);
 
 	void tryAssist(CGroup*, buildType bt);
 
-	unitCategory canBuildWhere(unitCategory unitCats);
+	unitCategory canBuildWhere(unitCategory unitCats, bool strictly = false);
 };
 
 #endif

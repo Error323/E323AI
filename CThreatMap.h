@@ -32,7 +32,7 @@ public:
 	int RES;
 
 private:
-	AIClasses *ai;
+	AIClasses* ai;
 	int lastUpdateFrame;
 	float REAL;
 	ThreatMapType drawMap;

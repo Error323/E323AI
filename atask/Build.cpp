@@ -16,6 +16,7 @@ BuildTask::BuildTask(AIClasses *_ai, buildType build, UnitType *toBuild, CGroup 
 		buildStr[BUILD_EPROVIDER] = std::string("EPROVIDER");
 		buildStr[BUILD_AA_DEFENSE] = std::string("AA_DEFENSE");
 		buildStr[BUILD_AG_DEFENSE] = std::string("AG_DEFENSE");
+		buildStr[BUILD_UW_DEFENSE] = std::string("UW_DEFENSE");
 		buildStr[BUILD_FACTORY] = std::string("FACTORY");
 		buildStr[BUILD_MSTORAGE] = std::string("MSTORAGE");
 		buildStr[BUILD_ESTORAGE] = std::string("ESTORAGE");
