@@ -13,7 +13,7 @@
 #include "Util.hpp"
 #include "CScopedTimer.h"
 
-#include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
+#include "LegacyCpp/IAICallback.h"
 
 
 std::vector<CPathfinder::Node*> CPathfinder::graph;

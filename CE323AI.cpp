@@ -25,7 +25,8 @@
 #include "CCoverageHandler.h"
 #include "ReusableObjectFactory.hpp"
 
-#include "../AI/Wrappers/LegacyCpp/AIGlobalAI.h"
+class IGlobalAICallback;
+#include "LegacyCpp/IAICallback.h"
 
 
 CE323AI::CE323AI() {

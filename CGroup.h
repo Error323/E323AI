@@ -7,7 +7,6 @@
 #include "ARegistrar.h"
 #include "headers/HEngine.h"
 #include "headers/Defines.h"
-#include "CContainer.h"
 
 class ATask;
 class CUnit;
@@ -162,7 +161,8 @@ public:
 	/* Get area threat specific to current group */
 	float getThreat(float3& target, float radius = 0.0f);
 
-	int selectTarget(CContainer targets, TargetsFilter& tf);
+	int selectTarget(const std::map<int, UnitType*>& targets, TargetsFilter &tf);
+	int selectTarget(const std::vector<int>& targets, TargetsFilter& tf);
 	
 	int selectTarget(float search_radius, TargetsFilter& tf);
 	
