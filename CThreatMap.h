@@ -23,7 +23,7 @@ public:
 	~CThreatMap();
 
 	void update(int frame);
-	float getThreat(float3 &center, float radius, ThreatMapType type = TMT_SURFACE);
+	float getThreat(float3 center, float radius, ThreatMapType type = TMT_SURFACE);
 	float getThreat(float3 &center, float radius, CGroup *group);
 	float *getMap(ThreatMapType);
 	bool switchDebugMode();

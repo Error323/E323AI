@@ -78,9 +78,11 @@ float *CThreatMap::getMap(ThreatMapType type) {
 	return i->second;
 }
 
-float CThreatMap::getThreat(float3 &center, float radius, ThreatMapType type) {
+float CThreatMap::getThreat(float3 center, float radius, ThreatMapType type) {
 	if (type == TMT_NONE)
 		return 1.0f;
+
+	center.CheckInBounds();
 
 	int i = center.z / REAL;
 	int j = center.x / REAL;
