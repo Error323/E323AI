@@ -11,7 +11,7 @@
 class ATask;
 class CUnit;
 class AIClasses;
-class UnitType;
+struct UnitType;
 
 struct TargetsFilter {
 	unitCategory include, exclude;
@@ -170,7 +170,7 @@ public:
 	/* Get a range usually used for scanning enemies while moving */
 	float getScanRange();
 
-	float getRange();
+	float getRange() const;
 
 	CUnit* getWorstSlopeUnit() { return worstSlopeUnit; }
 
