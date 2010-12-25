@@ -113,7 +113,7 @@ public:
 	/* Debugging functions */
 	std::string debugCategories(UnitType* ut);
 	
-	std::string debugCategories(unitCategory categories);
+	std::string debugCategories(const unitCategory& categories);
 	
 	void debugUnitDefs(UnitType* ut);
 	
