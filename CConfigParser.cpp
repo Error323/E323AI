@@ -75,6 +75,7 @@ std::string CConfigParser::getFilename(unsigned int f) {
 
 int CConfigParser::determineState(int metalIncome, int energyIncome) {
 	int previous = state;
+	state = 0;
 	std::map<int, std::map<std::string, int> >::iterator i;
 	for (i = states.begin(); i != states.end(); ++i) {
 		if (metalIncome >= i->second["metalIncome"] 
