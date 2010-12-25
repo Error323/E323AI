@@ -27,9 +27,9 @@ public:
 	CMilitary(AIClasses *ai);
 
 	/* Overload */
-	void remove(ARegistrar &group);
+	void remove(ARegistrar& group);
 	/* Add a unit, place it in the correct group */
-	void addUnit(CUnit &unit);
+	bool addUnit(CUnit& unit);
 	/* Returns a fresh CGroup instance */
 	CGroup* requestGroup(MilitaryGroupBehaviour type);
 	/* Update call-in */
