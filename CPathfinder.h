@@ -17,144 +17,139 @@
 // number of frames to give a group for regrouping
 #define FRAMES_TO_REGROUP 30
 // cache version (stored in file header)
-#define CACHE_VERSION "CACHEv03"
+#define CACHE_VERSION "CACHEv04"
 
 class CGroup;
 class AIClasses;
 
 class CPathfinder: public AAStar, public ARegistrar {
+
+public:
+	CPathfinder(AIClasses *ai);
+	~CPathfinder();
+
+	class Node: public ANode {
+
 	public:
-		CPathfinder(AIClasses *ai);
-		~CPathfinder();
+		Node(unsigned short int id, unsigned char x, unsigned char z, float w) : ANode(id, w) {
+			this->x = x;
+			this->z = z;
+		}
+		std::map<int, std::vector<unsigned short int> > neighbours;
+		unsigned char x, z;
 
-		class Node : public ANode {
-			public:
-				Node(unsigned short int id, unsigned char x, unsigned char z, float w) : ANode(id, w) {
-					this->x = x;
-					this->z = z;
+		float3 toFloat3() const {
+			float fx = x * PATH2REAL;
+			float fy = 0.0f;
+			float fz = z * PATH2REAL;
+			return float3(fx, fy, fz);
+		}
+
+		void serialize(std::ostream& os);
+
+		static Node* unserialize(std::istream& is) {
+			unsigned char x, z;
+			unsigned short int m, id;
+			char N, M, K;
+
+			is.read((char*)&id, sizeof(unsigned short int));
+			is.read((char*)&x, sizeof(unsigned char));
+			is.read((char*)&z, sizeof(unsigned char));
+
+			Node *n = new Node(id, x, z, 1.0f);
+
+			is.read((char*)&N, sizeof(char));
+			for (unsigned int i = 0; i < N; i++) {
+				is.read((char*)&K, sizeof(char));
+				std::vector<unsigned short int> V;
+				n->neighbours[(int)K] = V;
+				is.read((char*)&M, sizeof(char));
+				for (unsigned int j = 0; j < M; j++) {
+					is.read((char*)&m, sizeof(unsigned short int));
+					n->neighbours[(int)K].push_back(m);
 				}
-				std::map<int, std::vector<unsigned short int> > neighbours;
-				unsigned char x, z;
+			}
 
-				float3 toFloat3() const {
-					float fx = x * HEIGHT2REAL * HEIGHT2SLOPE * I_MAP_RES;
-					float fy = 0.0f;
-					float fz = z * HEIGHT2REAL * HEIGHT2SLOPE * I_MAP_RES;
-					return float3(fx, fy, fz);
-				}
+			return n;
+		}
+	};
 
-				void serialize(std::ostream &os);
+	/* Get estimated path lenfth a group need to travel */
+	float getPathLength(CGroup&, float3&);
+	/* Get estimated time of arrival */
+	float getETA(CGroup&, float3&);
+	/* Update groups following paths */
+	void updateFollowers();
+	/* update the path itself NOTE: should always be called after updateFollowers() */
+	void updatePaths();
+	/* Add a group to the pathfinder */
+	bool addGroup(CGroup &group);
+	/* Overload */
+	void remove(ARegistrar &obj);
+	/* Get closest Node id to real world vector f, return NULL on failure */
+	Node* getClosestNode(const float3& f, float radius = PATH2REAL, CGroup* group = NULL);
+	/* Returns ERRORVECTOR on failure */
+	float3 getClosestPos(const float3& f, float radius = PATH2REAL, CGroup* group = NULL);
+	
+	bool isBlocked(float x, float z, int movetype);
 
-				static Node* unserialize(std::istream &is) {
-					unsigned char x, z;
-					unsigned short int m, id;
-					char N, M, K;
+	bool isBlocked(int x, int z, int movetype);
+	
+	bool pathExists(CGroup &group, const float3 &s, const float3 &g);
 
-					is.read((char*)&id, sizeof(unsigned short int));
-					is.read((char*)&x, sizeof(unsigned char));
-					is.read((char*)&z, sizeof(unsigned char));
+	bool pathAssigned(CGroup &group);
 
-					Node *n = new Node(id, x, z, 1.0f);
+	bool switchDebugMode(bool graph);
+	float REAL;
+protected:
+	AIClasses *ai;
 
-					is.read((char*)&N, sizeof(char));
-					for (unsigned int i = 0; i < N; i++) {
-						is.read((char*)&K, sizeof(char));
-						std::vector<unsigned short int> V;
-						n->neighbours[(int)K] = V;
-						is.read((char*)&M, sizeof(char));
-						for (unsigned int j = 0; j < M; j++) {
-							is.read((char*)&m, sizeof(unsigned short int));
-							n->neighbours[(int)K].push_back(m);
-						}
-					}
+private:
+	/* Node Graph */
+	static std::vector<Node*> graph;
+	/* Group to receive repathing event next updatePaths() call */
+	int repathGroup;
+	/* Active map (graph[activeMap]), CRUCIAL to A* */
+	int activeMap;
+	/* Controls which path may be updated (round robin-ish) */
+	unsigned int update;
+	/* The paths <group_id, path> */
+	std::map<int, std::vector<float3> > paths;
+	/* The groups <group_id, CGroup*> */
+	std::map<int, CGroup*> groups;
+	/* Regrouping <group_id, frame_number> */
+	std::map<int, int> regrouping;
+	
+	int X,Z,XX,ZZ;
+	
+	unsigned int graphSize;
 
-					return n;
-				}
-		};
+	bool drawPaths;
+	static int drawPathGraph;
 
-		/* Get estimated path lenfth a group need to travel */
-		float getPathLength(CGroup&, float3&);
-		/* Get estimated time of arrival */
-		float getETA(CGroup&, float3&);
-		/* Update groups following paths */
-		void updateFollowers();
+	const float *sm;
+	const float *hm;
 
-		/* update the path itself NOTE: should always be called after
-		 * updateFollowers() 
-		 */
-		void updatePaths();
-
-		/* Add a group to the pathfinder */
-		bool addGroup(CGroup &group);
-
-		/* Overload */
-		void remove(ARegistrar &obj);
-
-		/* Get closest Node id to real world vector f, return NULL on failure */
-		Node* getClosestNode(const float3 &f, CGroup *group = NULL);
-		float3 getClosestPos(const float3 &f, CGroup *group = NULL);
-
-		/* x and z are in slopemap resolution */
-		bool isBlocked(int x, int z, int movetype);
-		
-		bool pathExists(CGroup &group, const float3 &s, const float3 &g);
-
-		bool pathAssigned(CGroup &group);
-
-		bool switchDebugMode(bool graph);
-
-		/* NOTE: slopemap 1:2 heightmap 1:8 realmap, GetMapWidth() and
-		 * GetMapHeight() give map dimensions in heightmap resolution
-		 */
-		int X,Z,XX,ZZ;
-		float REAL;
-
-	private:
-		AIClasses *ai;
-
-		/* Node Graph */
-		static std::vector<Node*> graph;
-		/* Number of threads (NOT used currently) */
-		size_t nrThreads;
-		/* Group to receive repathing event next updatePaths() call */
-		int repathGroup;
-		/* Active map (graph[activeMap]), CRUCIAL to A* */
-		int activeMap;
-		/* Controls which path may be updated (round robin-ish) */
-		unsigned int update;
-		/* The paths <group_id, path> */
-		std::map<int, std::vector<float3> > paths;
-		/* The groups <group_id, CGroup*> */
-		std::map<int, CGroup*> groups;
-		/* Regrouping <group_id, frame_number> */
-		std::map<int, int> regrouping;
-
-		unsigned int graphSize;
-
-		bool drawPaths;
-		static int drawPathGraph;
-
-		const float *sm;
-		const float *hm;
-
-		/* overload */
-		void successors(ANode *an, std::queue<ANode*> &succ);
-		/* overload */
-		float heuristic(ANode *an1, ANode *an2);
-		/* Add a path to a unit or group */
-		bool addPath(CGroup&, float3 &start, float3 &goal);
-		/* Reset the map nodes */
-		void resetMap(CGroup&, ThreatMapType = TMT_NONE);
-		/* Calculate the nodes */
-		void calcNodes();
-		/* Determine the nodes their neighbours */
-		void calcGraph();
-		/* Start pathfinding ("radius" not implemented yet) */
-		bool getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup&, float radius = EPSILON);
-		/* Draw the map */
-		void drawGraph(int map);
-		
-		void drawNode(Node *n);
+	/* overload */
+	void successors(ANode *an, std::queue<ANode*> &succ);
+	/* overload */
+	float heuristic(ANode *an1, ANode *an2);
+	/* Add a path to a unit or group */
+	bool addPath(CGroup&, float3 &start, float3 &goal);
+	/* Reset weights of all nodes */
+	void resetWeights(CGroup&);
+	/* Adjust weights of all nodes based on threatmap layer */
+	void applyThreatMap(ThreatMapType tm_type);
+	/* Calculate the nodes */
+	void calcNodes();
+	/* Determine the nodes their neighbours */
+	void calcGraph();
+	/* Start pathfinding ("radius" not implemented yet) */
+	bool getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup&);
+	/* Draw the map */
+	void drawGraph(int map);
+	
+	void drawNode(Node *n);
 };
 
 #endif

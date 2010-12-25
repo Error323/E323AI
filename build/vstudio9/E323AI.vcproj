@@ -51,7 +51,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
-				DisableSpecificWarnings="4244;4099;4018;4305;4996;4800"
+				DisableSpecificWarnings="4244;4018;4305;4996;4800"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -135,7 +135,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="0"
-				DisableSpecificWarnings="4244;4099;4018;4305;4996;4800"
+				DisableSpecificWarnings="4244;4018;4305;4996;4800"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -219,7 +219,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
-				DisableSpecificWarnings="4244;4099;4018;4305;4996;4800"
+				DisableSpecificWarnings="4244;4018;4305;4996;4800"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -290,7 +290,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\CCataloguer.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\CConfigParser.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\CContainer.h"
 				>
 			</File>
 			<File
@@ -379,6 +387,10 @@
 			</File>
 			<File
 				RelativePath="..\..\CAI.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\CCataloguer.cpp"
 				>
 			</File>
 			<File
@@ -487,6 +499,10 @@
 				</File>
 				<File
 					RelativePath="..\..\atask\Merge.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\atask\Repair.cpp"
 					>
 				</File>
 			</Filter>

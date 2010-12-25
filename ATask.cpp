@@ -73,7 +73,7 @@ CGroup* ATask::firstGroup() const {
 }
 
 void ATask::addGroup(CGroup &g) {
-	// FIXME: remove this when queue tasks will be supported
+	// FIXME: remove this when task queue will be supported
 	assert(!g.busy);
 	/*
 	if (g->busy) {
@@ -151,9 +151,9 @@ bool ATask::enemyScan(int& target) {
 		group->attack(target);
 		group->micro(true);
 		if (scout)
-			LOG_II("ATask::enemyScan scout " << (*group) << " is microing enemy target Unit(" << target << ")")
+			LOG_II("ATask::enemyScan scout " << (*group) << " is microing enemy target Unit(" << target << ") (threat = " << tf.threatValue << ")")
 		else
-			LOG_II("ATask::enemyScan engage " << (*group) << " is microing enemy target Unit(" << target << ")")
+			LOG_II("ATask::enemyScan engage " << (*group) << " is microing enemy target Unit(" << target << ") (threat = " << tf.threatValue << ")")
 		return true;
 	}
 

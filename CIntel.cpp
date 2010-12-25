@@ -20,6 +20,7 @@ CIntel::CIntel(AIClasses *ai) {
 	selector.push_back(ANTIAIR);
 	selector.push_back(AIR);
 	selector.push_back(SUB);
+	selector.push_back(COMMANDER);
 	
 	// NOTE: the order is somewhat target priority
 	targets[ENGAGE].push_back(CategoryMatcher(COMMANDER));
@@ -27,11 +28,11 @@ CIntel::CIntel(AIClasses *ai) {
 	targets[ENGAGE].push_back(CategoryMatcher(EMAKER));
 	targets[ENGAGE].push_back(CategoryMatcher(MMAKER));
 	targets[ENGAGE].push_back(CategoryMatcher(DEFENSE));
-	targets[ENGAGE].push_back(CategoryMatcher(BUILDER|MOBILE));
+	targets[ENGAGE].push_back(CategoryMatcher(BUILDER));
 	targets[ENGAGE].push_back(CategoryMatcher(FACTORY));
 	targets[ENGAGE].push_back(CategoryMatcher(CATS_ANY, ATTACKER));
 	
-	targets[SCOUT].push_back(CategoryMatcher(BUILDER|MOBILE));
+	targets[SCOUT].push_back(CategoryMatcher(BUILDER, COMMANDER|FACTORY));
 	targets[SCOUT].push_back(CategoryMatcher(MMAKER|MEXTRACTOR));
 	targets[SCOUT].push_back(CategoryMatcher(EMAKER));
 	targets[SCOUT].push_back(CategoryMatcher(CATS_ANY, ATTACKER));
@@ -159,6 +160,7 @@ unitCategory CIntel::counter(unitCategory c) {
 	if (c == SNIPER)	return ARTILLERY;
 	if (c == ARTILLERY)	return ASSAULT;
 	if (c == ANTIAIR)	return ARTILLERY;
+	if (c == COMMANDER) return ASSAULT;
 	
 	return ARTILLERY;
 }
@@ -198,6 +200,7 @@ void CIntel::resetCounters() {
 	counterCounter[ANTIAIR] = 0;
 	counterCounter[AIR] = 0;
 	counterCounter[SUB] = 0;
+	counterCounter[COMMANDER] = 0;
 	// boost chance of assault units to be built by default
 	counterCounter[ASSAULT] = 3;
 	// adjust scout appearance chance by default...

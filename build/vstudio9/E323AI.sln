@@ -5,10 +5,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "E323AI", "E323AI.vcproj", "
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug optimized|Win32 = Debug optimized|Win32
 		Debug|Win32 = Debug|Win32
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{36122A16-A130-4C9C-8656-460C4604BC7F}.Debug optimized|Win32.ActiveCfg = Debug optimized|Win32
+		{36122A16-A130-4C9C-8656-460C4604BC7F}.Debug optimized|Win32.Build.0 = Debug optimized|Win32
 		{36122A16-A130-4C9C-8656-460C4604BC7F}.Debug|Win32.ActiveCfg = Debug|Win32
 		{36122A16-A130-4C9C-8656-460C4604BC7F}.Debug|Win32.Build.0 = Debug|Win32
 		{36122A16-A130-4C9C-8656-460C4604BC7F}.Release|Win32.ActiveCfg = Release|Win32

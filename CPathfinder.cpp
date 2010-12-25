@@ -21,16 +21,23 @@ int CPathfinder::drawPathGraph = -2;
 
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	this->ai   = ai;
-	// NOTE: X and Z are in slope map resolution units
-	this->X    = int(ai->cb->GetMapWidth()/HEIGHT2SLOPE);
-	this->Z    = int(ai->cb->GetMapHeight()/HEIGHT2SLOPE);
-	// NOTE: XX and ZZ are in pathgraph map resolution units
-	this->XX   = this->X / I_MAP_RES;
-	this->ZZ   = this->Z / I_MAP_RES;
-	graphSize  = XX * ZZ;
-	update     = 0;
+	
+	/* NOTE: 
+		slopemap = 1/2 heightmap = 1/8 realmap. GetMapWidth() and
+		GetMapHeight() give map dimensions in heightmap resolution.
+	*/	 
+	
+	// NOTE: X and Z are in slope map resolution
+	X  = ai->cb->GetMapWidth() / SLOPE2HEIGHT;
+	Z  = ai->cb->GetMapHeight() / SLOPE2HEIGHT;
+	// NOTE: XX and ZZ are in pathgraph map resolution
+	XX = X / PATH2SLOPE;
+	ZZ = Z / PATH2SLOPE;
+
+	graphSize = XX * ZZ;
+	update = 0;
 	repathGroup = -1;
-	drawPaths  = false;
+	drawPaths = false;
 
 	hm = ai->cb->GetHeightMap();
 	sm = ai->cb->GetSlopeMap();
@@ -94,13 +101,9 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 			fout.close();
 		}
 	}
-
-	this->REAL = HEIGHT2REAL*HEIGHT2SLOPE;
 	
 	LOG_II("CPathfinder::CPathfinder Heightmap dimensions: " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
 	LOG_II("CPathfinder::CPathfinder Pathmap dimensions:   " << XX << "x" << ZZ)
-
-	nrThreads = 1;
 }
 
 CPathfinder::~CPathfinder() {
@@ -131,17 +134,29 @@ void CPathfinder::Node::serialize(std::ostream &os) {
 	}
 }
 
+bool CPathfinder::isBlocked(float x, float z, int movetype) {
+	static const float slope2real = SLOPE2HEIGHT * HEIGHT2REAL;
+
+	int smX, smZ;
+
+	// convert real coordinates into slopemap coordinates...
+	smX = int(round(x / slope2real));
+	smZ = int(round(z / slope2real));
+
+	return isBlocked(smX, smZ, movetype);
+}
+
 bool CPathfinder::isBlocked(int x, int z, int movetype) {
-	MoveData *md = ai->unittable->moveTypes[movetype];
+	const MoveData* md = ai->unittable->moveTypes[movetype];
 	if (md == NULL)
 		return false;
 
-	int smidx = ID(x,z);
-	int hmidx = (z*HEIGHT2SLOPE)*(X*HEIGHT2SLOPE)+(x*HEIGHT2SLOPE);
-
-	/* Block edges and out of bounds */
-	if (z <= 0 || z >= Z-1 || x <= 0 || x >= X-1)
+	// block out of bounds...
+	if (z < 0 || z >= Z || x < 0 || x >= X)
 		return true;
+
+	int smidx = ID(x, z);
+	int hmidx = (z*SLOPE2HEIGHT)*(X*SLOPE2HEIGHT) + (x*SLOPE2HEIGHT);
 
 	/* Block too steep slopes */
 	if (sm[smidx] > md->maxSlope)
@@ -167,6 +182,8 @@ bool CPathfinder::isBlocked(int x, int z, int movetype) {
 }
 
 void CPathfinder::calcGraph() {
+	assert(CPathfinder::graph.empty());
+
 	/* Initialize nodes */
 	for (int z = 0; z < ZZ; z++)
 		for (int x = 0; x < XX; x++)
@@ -175,7 +192,8 @@ void CPathfinder::calcGraph() {
 	/* Precalculate surrounding nodes */
 	std::vector<int> surrounding;
 	float radius = 0.0f;
-	while (radius < I_MAP_RES*HEIGHT2SLOPE+EPSILON) {
+	float threshold = PATH2SLOPE*SLOPE2HEIGHT + EPS;
+	while (radius < threshold) {
 		radius += 1.0f;
 		for (int z = -radius; z <= radius; z++) {
 			for (int x = -radius; x <= radius; x++) {
@@ -199,15 +217,17 @@ void CPathfinder::calcGraph() {
 
 	/* Define closest neighbours */
 	std::map<int, MoveData*>::iterator k;
-	for (k = ai->unittable->moveTypes.begin(); k != ai->unittable->moveTypes.end(); k++) {
+	for (k = ai->unittable->moveTypes.begin(); k != ai->unittable->moveTypes.end(); ++k) {
 		int map = k->first;
-		for (int x = 0; x < X; x += I_MAP_RES) {
-			for (int z = 0; z < Z; z += I_MAP_RES) {
-				Node *parent = CPathfinder::graph[ID_GRAPH(x/I_MAP_RES,z/I_MAP_RES)];
+		// NOTE: x & z are in slopemap resolution
+		for (int x = 0; x < X; x += PATH2SLOPE) {
+			for (int z = 0; z < Z; z += PATH2SLOPE) {
 				if (isBlocked(x, z, map))
 					continue;
+				
+				Node* parent = CPathfinder::graph[ID_GRAPH(x/PATH2SLOPE, z/PATH2SLOPE)];
 
-				bool s[] = {false, false, false, false, false, false, false, false};
+				bool s[] = { false, false, false, false, false, false, false, false };
 				for (size_t p = 0; p < surrounding.size(); p += 2) {
 					int i = surrounding[p]; //z
 					int j = surrounding[p + 1]; //x
@@ -221,7 +241,7 @@ void CPathfinder::calcGraph() {
 					if (zz > Z-1) {s[5] = s[4] = s[3] = true; continue;} // south
 
 					if (
-						(xx % I_MAP_RES != 0 || zz % I_MAP_RES != 0)
+						(xx % PATH2SLOPE != 0 || zz % PATH2SLOPE != 0)
 						&& !isBlocked(xx, zz, map)
 					) continue;
 
@@ -255,7 +275,7 @@ void CPathfinder::calcGraph() {
 					if (!s[index]) {
 						s[index] = true;
 						if (!isBlocked(xx, zz, map))
-							parent->neighbours[map].push_back(ID_GRAPH(xx/I_MAP_RES,zz/I_MAP_RES));
+							parent->neighbours[map].push_back(ID_GRAPH(xx/PATH2SLOPE, zz/PATH2SLOPE));
 					}
 					
 					if (s[0] && s[1] && s[2] && s[3] && s[4] && s[5] && s[6] && s[7]) {
@@ -267,32 +287,34 @@ void CPathfinder::calcGraph() {
 	}
 }
 
-void CPathfinder::resetMap(CGroup &group, ThreatMapType tm_type) {
-	int idSlopeMap = 0;
-	float *threatMap = ai->threatmap->getMap(tm_type);
+void CPathfinder::resetWeights(CGroup &group) {
+	if ((group.cats&LAND).any()) {
+		// FIXME: do not consider slope for hovers on water surface
+		int idSlopeMap = 0;
+		for(unsigned int id = 0; id < graphSize; id++) {
+			Node* n = graph[id];
+			n->reset();
+			n->w = 1.0f + sm[idSlopeMap] * 5.0f;
+			idSlopeMap += PATH2SLOPE;
+		}
+	}
+	else {
+		for(unsigned int id = 0; id < graphSize; id++) {
+			Node* n = graph[id];
+			n->reset();
+			n->w = 1.0f;
+		}
+	}
+}
 
-	if (!threatMap) {
-		for(unsigned int id = 0; id < graphSize; id++) {
-			Node *n = CPathfinder::graph[id];
-			n->reset();
-			if ((group.cats&LAND).any()) {
-				n->w = 1.0f + sm[idSlopeMap] * 2.0f;
-				idSlopeMap += I_MAP_RES;
-			} else {
-				n->w = 1.0f;
-			}
-		}
-	} else {
-		for(unsigned int id = 0; id < graphSize; id++) {
-			Node *n = CPathfinder::graph[id];
-			n->reset();
-			if ((group.cats&LAND).any()) {
-				n->w = threatMap[id] + sm[idSlopeMap] * 5.0f;
-				idSlopeMap += I_MAP_RES;
-			}
-			else
-				n->w = threatMap[id] + 1.0f;				
-		}
+void CPathfinder::applyThreatMap(ThreatMapType tm_type) {
+	const float* threatMap = ai->threatmap->getMap(tm_type);
+
+	if (threatMap == NULL)
+		return;
+
+	for(unsigned int id = 0; id < graphSize; id++) {
+		graph[id]->w += threatMap[id];
 	}
 }
 
@@ -464,7 +486,7 @@ void CPathfinder::updatePaths() {
 	// group is absent
 	if (it == groups.end())
 		return;
-	CGroup *group = it->second;
+	CGroup* group = it->second;
 
 	// group has no real task
 	if (!group->busy)
@@ -509,39 +531,35 @@ bool CPathfinder::addGroup(CGroup &group) {
 	return success;
 }
 
-bool CPathfinder::pathExists(CGroup &group, const float3 &s, const float3 &g) {
+bool CPathfinder::pathExists(CGroup& group, const float3& s, const float3& g) {
 	activeMap = group.pathType;
 
-	resetMap(group);
+	resetWeights(group);
 	
 	this->start = getClosestNode(s);
-	this->goal = getClosestNode(g);
+	this->goal = getClosestNode(g, group.getRange());
 	
 	return (start != NULL && goal != NULL && findPath());
 }
 
-bool CPathfinder::addPath(CGroup &group, float3 &start, float3 &goal) {
-	ThreatMapType tmt = TMT_NONE;
-
+bool CPathfinder::addPath(CGroup& group, float3& start, float3& goal) {
 	// NOTE: activeMap is used in subsequent calls
 	activeMap = group.pathType;
 
-	// NOTE: hovers (LAND|SEA) can't be hit by underwater weapons that is why 
-	// LAND tag check is made before SEA tag check
+	// reset node weights...
+	resetWeights(group);
 	
-	// reset the nodes...
-	if ((group.cats&SUB).any() && group.pos().y < 0.0f)
-		tmt = TMT_UNDERWATER;
-	else if ((group.cats&AIR).any())
-		tmt = TMT_AIR;
-	else if ((group.cats&LAND).any())
-		tmt = TMT_SURFACE;
-	else if ((group.cats&SEA).any())
-		tmt = TMT_SURFACE_WATER;
-
-	//assert(tmt != TMT_NONE);
-
-	resetMap(group, tmt);
+	// apply threatmaps...
+	if ((group.cats&AIR).any())
+		applyThreatMap(TMT_AIR);
+	if ((group.cats&SUB).any())
+		applyThreatMap(TMT_UNDERWATER);
+	// NOTE: hovers (LAND|SEA) can't be hit by underwater weapons that is why 
+	// LAND tag check is a priority over SEA below
+	if ((group.cats&LAND).any())
+		applyThreatMap(TMT_SURFACE);
+	else if ((group.cats&SEA).any() && (group.cats&SUB).none())
+		applyThreatMap(TMT_UNDERWATER);
 		
 	/* If we found a path, add it */
 	std::vector<float3> path;
@@ -552,19 +570,21 @@ bool CPathfinder::addPath(CGroup &group, float3 &start, float3 &goal) {
 	return success;
 }
 
-float3 CPathfinder::getClosestPos(const float3 &f, CGroup *group) {
-	CPathfinder::Node *node = getClosestNode(f, group);
+float3 CPathfinder::getClosestPos(const float3& f, float radius, CGroup* group) {
+	CPathfinder::Node* node = getClosestNode(f, radius, group);
 	if (node)
 		return node->toFloat3();
 	return ERRORVECTOR;
 }
 
-CPathfinder::Node* CPathfinder::getClosestNode(const float3 &f, CGroup *group) {
+CPathfinder::Node* CPathfinder::getClosestNode(const float3& f, float radius, CGroup* group) {
 	if(f == ERRORVECTOR)
 		return NULL;
 
-	int fx = int(round(f.x/REAL/I_MAP_RES));
-	int fz = int(round(f.z/REAL/I_MAP_RES));
+	int pgX = int(round(f.x / PATH2REAL));
+	int pgZ = int(round(f.z / PATH2REAL));
+	// TODO: round pgRadius when searching within circle is implemented below
+	int pgRadius = int(radius / PATH2REAL);
 	int pathType;
 	
 	if (group)
@@ -572,18 +592,19 @@ CPathfinder::Node* CPathfinder::getClosestNode(const float3 &f, CGroup *group) {
 	else
 		pathType = activeMap;
 
-	Node *bestNode = NULL;
+	Node* bestNode = NULL;
 	float bestScore = std::numeric_limits<float>::max();
 
-	for (int i = -1; i <= 1; i++) {
-		for (int j = -1; j <= 1; j++) {
-			int z = fz + i;
-			int x = fx + j;
+	// FIXME: search within circle instead of square
+	for (int i = -pgRadius; i <= pgRadius; i++) {
+		for (int j = -pgRadius; j <= pgRadius; j++) {
+			int x = pgX + j;
+			int z = pgZ + i;
 			
-			if (z < 0 || z > ZZ-1 || x < 0 || x > XX-1)
+			if (z < 0 || z >= ZZ || x < 0 || x >= XX)
 				continue;
 			
-			if (!isBlocked(x * I_MAP_RES, z * I_MAP_RES, pathType)) {
+			if (!isBlocked(x * PATH2SLOPE, z * PATH2SLOPE, pathType)) {
 				Node *n = CPathfinder::graph[ID_GRAPH(x, z)];
 				float3 s = n->toFloat3();
 				float dist = (s - f).Length2D();
@@ -596,15 +617,14 @@ CPathfinder::Node* CPathfinder::getClosestNode(const float3 &f, CGroup *group) {
 	}
 
 	if (bestNode == NULL)
-		LOG_EE("CPathfinder::getClosestNode failed to lock node("<<fx<<","<<fz<<") for pos("<<f.x<<","<<f.z<<")")
+		LOG_EE("CPathfinder::getClosestNode failed to lock node(" << pgX << "," << pgZ << ") for pos("<<f.x<<","<<f.z<<")")
 	
 	return bestNode;
 }
 
-bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup &group, float radius) {
-	//PROFILE(A*)
+bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup &group) {
 	this->start = getClosestNode(s);
-	this->goal = getClosestNode(g);
+	this->goal = getClosestNode(g, group.getRange());
 
 	std::list<ANode*> nodepath;
 	

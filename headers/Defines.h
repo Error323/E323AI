@@ -8,7 +8,6 @@
 
 #define MAX_INT   2147483647
 #define MAX_FLOAT float(MAX_INT)
-#define EPSILON   1/MAX_FLOAT
 #define EPS 0.0001f
 
 #define ERRORVECTOR float3(-1.0f,0.0f,0.0f)
@@ -45,14 +44,15 @@
 /* Max enemies for range scan */
 #define MAX_ENEMIES 30
 
-/* Max enemy units (used by CThreatMap) */
+/* Max enemy units (used by CThreatMap; TODO: avoid) */
 #define MAX_UNITS_AI 500
 
 /* Map ratios */
-#define HEIGHT2REAL 8
-#define I_MAP_RES 8 /* Inverse map resolution (must be even) */
-#define HEIGHT2SLOPE 2
 #define FOOTPRINT2REAL 8
+#define HEIGHT2REAL FOOTPRINT2REAL
+#define SLOPE2HEIGHT 2
+#define PATH2SLOPE 8
+#define PATH2REAL (PATH2SLOPE * SLOPE2HEIGHT * HEIGHT2REAL)
 
 /* Max factory Assisters */
 #define FACTORY_ASSISTERS 6

@@ -276,13 +276,13 @@ float3 CGroup::pos(bool force_valid) {
 
 	if (force_valid) {
 		if (ai->pathfinder->isBlocked(pos.x, pos.z, pathType)) {
-			float3 posValid = ai->pathfinder->getClosestPos(pos, this);
+			float3 posValid = ai->pathfinder->getClosestPos(pos, PATH2REAL, this);
 			if (posValid == ERRORVECTOR) {
 				float bestDistance = std::numeric_limits<float>::max();
 				for (i = units.begin(); i != units.end(); ++i) {
 					float3 pos2 = ai->cb->GetUnitPos(i->first);
 					if (ai->pathfinder->isBlocked(pos2.x, pos2.z, pathType))
-						pos2 = ai->pathfinder->getClosestPos(pos2, this);
+						pos2 = ai->pathfinder->getClosestPos(pos2, PATH2REAL, this);
 					if (pos2 != ERRORVECTOR) {
 						float distance = pos.distance2D(pos2);
 						if (distance < bestDistance) {
@@ -387,7 +387,6 @@ void CGroup::stop() {
 	std::map<int, CUnit*>::iterator i;
 	for (i = units.begin(); i != units.end(); ++i)
 		i->second->stop();
-	ai->pathfinder->remove(*this);
 }
 
 void CGroup::guard(int target, bool enqueue) {
@@ -425,9 +424,14 @@ bool CGroup::canAttack(int uid) {
 	
 	if ((ecats&AIR).any() && (cats&ANTIAIR).none())
 		return false;
-	if (epos.y < 0.0f && (cats&TORPEDO).none())
+	
+	const float enemyRadiusDiv2 = ai->cb->GetUnitDefRadius(ud->id) / 2.0f;
+	bool underwater = (epos.y + enemyRadiusDiv2) < 0.0f;
+	bool outofwater = (epos.y - enemyRadiusDiv2) >= 0.0f;
+	
+	if (underwater && (cats&TORPEDO).none())
 		return false;
-	if (epos.y >= 0.0f && pos().y < 0.0f)
+	if (outofwater && (CATS_ENV&cats) == SUB)
 		return false;
 	
 	// TODO: add more tweaks based on physical weapon possibilities
@@ -484,7 +488,7 @@ void CGroup::mergeCats(unitCategory newcats) {
 	}
 }
 
-float CGroup::getThreat(float3 &target, float radius) {
+float CGroup::getThreat(float3& target, float radius) {
 	return ai->threatmap->getThreat(target, radius, this);
 }
 
@@ -505,7 +509,6 @@ bool CGroup::addBadTarget(int id) {
 }
 
 int CGroup::selectTarget(const std::map<int, UnitType*>& targets, TargetsFilter &tf) {
-
 	std::vector<int> targetsVec;
 	targetsVec.reserve(targets.size());
 	std::map<int, UnitType*>::const_iterator ti = targets.begin();
@@ -628,7 +631,7 @@ float CGroup::getScanRange() {
 	return result;
 }
 
-float CGroup::getRange() {
+float CGroup::getRange() const {
 	if ((cats&BUILDER).any())
 		return buildRange;
 	return range;
@@ -722,9 +725,7 @@ std::ostream& operator<<(std::ostream &out, const CGroup &group) {
 	std::stringstream ss;
 	
 	ss << "Group(" << group.key
-		<< "): range(" << group.range
-		<< "), buildRange(" << group.buildRange 
-		<< "), los(" << group.los 
+		<< "): range(" << group.getRange()
 		<< "), speed(" << group.speed 
 		<< "), strength(" << group.strength
 		<< "), amount(" << group.units.size() << ") [";

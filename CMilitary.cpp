@@ -7,12 +7,12 @@
 #include "CRNG.h"
 #include "CAI.h"
 #include "CUnit.h"
+#include "CUnitTable.h"
 #include "CGroup.h"
 #include "CTaskHandler.h"
 #include "CThreatMap.h"
 #include "CIntel.h"
 #include "CWishList.h"
-#include "CUnitTable.h"
 #include "CConfigParser.h"
 #include "CDefenseMatrix.h"
 #include "ReusableObjectFactory.hpp"
@@ -64,16 +64,16 @@ void CMilitary::remove(ARegistrar &object) {
 	ReusableObjectFactory<CGroup>::Release(group);
 }
 
-void CMilitary::addUnit(CUnit& unit) {
+bool CMilitary::addUnit(CUnit& unit) {
 	LOG_II("CMilitary::addUnit " << unit)
 	
 	assert(unit.group == NULL);
 
 	unitCategory c = unit.type->cats;
 
-	if ((c&MOBILE).any() && (c&DEFENSE).none()) {
+	if ((c&ATTACKER).any() && (c&MOBILE).any() && (c&DEFENSE).none()) {
 		unitCategory wishedCats = ai->unittable->unitsUnderConstruction[unit.key];
-		CGroup *group;
+		CGroup* group;
 		
 		if ((c&SCOUTER).any() && wishedCats.any() && (wishedCats&SCOUTER).none())
 			c &= ~SCOUTER; // scout was not requested
@@ -99,7 +99,11 @@ void CMilitary::addUnit(CUnit& unit) {
 			}
 		}
 		group->addUnit(unit);
+
+		return true;
 	}
+
+	return false;
 }
 
 CGroup* CMilitary::requestGroup(MilitaryGroupBehaviour type) {
@@ -180,7 +184,7 @@ void CMilitary::update(int frame) {
 		keys.clear();
 		util::GetShuffledKeys<int, CGroup*>(keys, *(itGroup->second));
 		
-		std::vector<CategoryMatcher>& targetBlocks = ai->intel->targets[behaviour];
+		const std::vector<CategoryMatcher>& targetBlocks = ai->intel->targets[behaviour];
 
 		for (int i = 0; i < keys.size(); ++i) {
 			CGroup *group = (*(itGroup->second))[keys[i]];
@@ -257,6 +261,7 @@ void CMilitary::update(int frame) {
 						
 						if (canAssist) {
 							mergeGroups.erase(group->key);
+							
 							if (!ai->tasks->addTask(new AssistTask(ai, *task, *group)))
 								group->addBadTarget(assistTarget);
 							break;
@@ -437,25 +442,26 @@ bool CMilitary::switchDebugMode() {
 }
 
 void CMilitary::visualizeTasks(CGroup *g) {
-	ATask *task = ai->tasks->getTask(*g);
+	const ATask* task = ai->tasks->getTask(*g);
     
 	if (task == NULL)
 		return;
     
-    float R, G, B;
-    switch(task->t) {
-    	case TASK_ATTACK:
-    		R = 1.0f; G = 0.0f; B = 0.0f;
-    		break;
-    	case TASK_MERGE:
-    		R = 1.0f; G = 1.0f; B = 0.0f;
-    		break;
-    	case TASK_ASSIST:
-    		R = 1.0f; G = 0.0f; B = 1.0f;
-    		break;
-    	default:
-    		R = G = B = 0.0f;
-    }
+	float R, G, B;
+    
+	switch(task->t) {
+		case TASK_ATTACK:
+			R = 1.0f; G = 0.0f; B = 0.0f;
+			break;
+		case TASK_MERGE:
+			R = 1.0f; G = 1.0f; B = 0.0f;
+			break;
+		case TASK_ASSIST:
+			R = 1.0f; G = 0.0f; B = 1.0f;
+			break;
+		default:
+			R = G = B = 0.0f;
+	}
 
 	float3 fp = g->pos();
 	fp.y = ai->cb->GetElevation(fp.x, fp.z) + 50.0f;

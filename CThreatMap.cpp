@@ -13,35 +13,29 @@
 CThreatMap::CThreatMap(AIClasses *ai) {
 	this->ai = ai;
 	
-	X = ai->cb->GetMapWidth() / (HEIGHT2SLOPE*I_MAP_RES);
-	Z = ai->cb->GetMapHeight() / (HEIGHT2SLOPE*I_MAP_RES);
-	REAL = HEIGHT2SLOPE * HEIGHT2REAL * I_MAP_RES;
+	// NOTE: X & Z are in pathgraph resolution
+	X = int(ai->cb->GetMapWidth() / (PATH2SLOPE * SLOPE2HEIGHT));
+	Z = int(ai->cb->GetMapHeight() / (PATH2SLOPE * SLOPE2HEIGHT));
 	
 	lastUpdateFrame = 0;
 
 	maps[TMT_AIR] = new float[X*Z];
 	maps[TMT_SURFACE] = new float[X*Z];
-	maps[TMT_SURFACE_WATER] = new float[X*Z];
 	maps[TMT_UNDERWATER] = new float[X*Z];
 
 #if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
 	handles[TMT_AIR] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_AIR], X, Z);
-	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_AIR], -0.95f, -0.95f);
+	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_AIR], -0.95f, -0.8f);
 	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_AIR], 0.4f, 0.4f);
 	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_AIR], "Air ThreatMap");
 
 	handles[TMT_SURFACE] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_SURFACE], X, Z);
-	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_SURFACE], -0.95f, -0.5f);
+	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_SURFACE], -0.95f, -0.2f);
 	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_SURFACE], 0.4f, 0.4f);
 	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_SURFACE], "Surface ThreatMap");
 
-	handles[TMT_SURFACE_WATER] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_SURFACE_WATER], X, Z);
-	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_SURFACE_WATER], -0.95f, -0.05f);
-	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_SURFACE_WATER], 0.4f, 0.4f);
-	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_SURFACE_WATER], "Surface + Underwater ThreatMap");
-
 	handles[TMT_UNDERWATER] = ai->cb->DebugDrawerAddOverlayTexture(maps[TMT_UNDERWATER], X, Z);
-	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_UNDERWATER],  -0.95f, 0.45f);
+	ai->cb->DebugDrawerSetOverlayTexturePos(handles[TMT_UNDERWATER],  -0.95f, 0.4f);
 	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_UNDERWATER], 0.4f, 0.4f);
 	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_UNDERWATER], "Underwater ThreatMap");
 #endif
@@ -63,80 +57,93 @@ CThreatMap::~CThreatMap() {
 }
 
 void CThreatMap::reset() {
-	std::map<ThreatMapType, float*>::iterator i;
+	std::map<ThreatMapType, float*>::iterator it;
 	// NOTE: no threat value equals to ONE, not ZERO!
-	for (i = maps.begin(); i != maps.end(); ++i) {
-		maxPower[i->first] = 1.0f;
-		std::fill_n(i->second, X*Z, 1.0f);
+	for (it = maps.begin(); it != maps.end(); ++it) {
+		maxPower[it->first] = 1.0f;
+		std::fill_n(it->second, X*Z, 1.0f);
 	}
 }
 
-float *CThreatMap::getMap(ThreatMapType type) {
-	std::map<ThreatMapType,float*>::iterator i = maps.find(type);
+const float* CThreatMap::getMap(ThreatMapType type) {
+	std::map<ThreatMapType,float*>::const_iterator i = maps.find(type);
 	if (i == maps.end())
 		return NULL;
 	return i->second;
 }
 
-float CThreatMap::getThreat(float3 &center, float radius, ThreatMapType type) {
+float CThreatMap::getThreat(float3 center, float radius, ThreatMapType type) {
 	if (type == TMT_NONE)
 		return 1.0f;
 
-	int i = center.z / REAL;
-	int j = center.x / REAL;
-	const float* map = maps[type];
+	int i = int(round(center.z / PATH2REAL));
+	int j = int(round(center.x / PATH2REAL));
+	const float* tmData = maps[type];
+
+	assert(tmData != NULL);
 	
-	if (radius < EPS)
-		return map[ID(j, i)];
+	if (radius < EPS) {
+		checkInBounds(j, i);
+		return tmData[ID(j, i)];
+	}
 	
 	int sectorsProcessed = 0;
-	int R = ceil(radius / REAL);
+	int R = int(round(radius / PATH2REAL));
 	float power = 0.0f;
+	
+	// FIXME: search within circle instead of square
 	for (int z = -R; z <= R; z++) {
-		int zz = z + i;
+		int zz = i + z;
 		
-		if (zz > Z-1 || zz < 0)
-			continue;
-		
-		for (int x = -R; x <= R; x++) {
-			int xx = x+j;
-			if (xx < X-1 && xx >= 0) {
-				power += map[ID(xx,zz)];
-				sectorsProcessed++;
+		if (zz >= 0 && zz < Z) {
+			for (int x = -R; x <= R; x++) {
+				int xx = j + x;
+				if (xx >= 0 && xx < X) {
+					power += tmData[ID(xx, zz)];
+					sectorsProcessed++;
+				}
 			}
 		}
 	}
 
-	// calculate number of sectors in R x R...
-	R = 2 * R + 1;
+	// calculate total number of sectors within requested area...
+	R = R + R + 1;
 	R *= R;
 
 	// fixing area threat for map edges...
 	if (sectorsProcessed < R)
 		power += (R - sectorsProcessed);
 	
-	return power / R;
+	return (power / R);
 }
 
-float CThreatMap::getThreat(float3 &center, float radius, CGroup *group) {
-	ThreatMapType type = TMT_NONE;
+float CThreatMap::getThreat(const float3& center, float radius, CGroup* group) {
+	float temp, result = 1.0f;
 	
 	// TODO: deal with LAND units when they are temporary under water
 	// TODO: deal with units which have tags LAND|SUB
 	// TODO: dealth with units which have tags AIR|SUB
 	
-	// NOTE: we do not support walking ships
-
-	if ((group->cats&LAND).any())
-		type = TMT_SURFACE; // hovers go here too because they can't be hit by torpedo
-	else if ((group->cats&AIR).any())
-		type = TMT_AIR;
-	else if ((group->cats&SEA).any())
-		type = TMT_SURFACE_WATER;
-	else if ((group->cats&SUB).any())
-		type = TMT_UNDERWATER;
+	if ((group->cats&AIR).any()) {
+		temp = getThreat(center, radius, TMT_AIR);
+		if (temp > 1.0f) result += temp - 1.0f;
+	}
+	if ((group->cats&SUB).any()) {
+		temp = getThreat(center, radius, TMT_UNDERWATER);
+		if (temp > 1.0f) result += temp - 1.0f;
+	}
+	// NOTE: hovers (LAND|SEA) can't be hit by underwater weapons that is why 
+	// LAND tag check is a priority over SEA below
+	if ((group->cats&LAND).any()) {
+		temp = getThreat(center, radius, TMT_SURFACE);
+		if (temp > 1.0f) result += temp - 1.0f;
+	}
+	else if ((group->cats&SEA).any() && (group->cats&SUB).none()) {
+		temp = getThreat(center, radius, TMT_UNDERWATER);
+		if (temp > 1.0f) result += temp - 1.0f;
+	}
 	
-	return getThreat(center, radius, type);
+	return result;
 }
 
 void CThreatMap::update(int frame) {
@@ -145,9 +152,9 @@ void CThreatMap::update(int frame) {
 	if ((frame - lastUpdateFrame) < MULTIPLEXER)
 		return;
 
-	const bool isWaterMap = ai->gamemap->IsWaterMap();
+	const bool isWaterMap = !ai->gamemap->IsWaterFreeMap();
 	std::list<ThreatMapType> activeTypes;
-	std::list<ThreatMapType>::iterator itMapType;
+	std::list<ThreatMapType>::const_iterator itMapType;
 
 	reset();
 
@@ -171,42 +178,36 @@ void CThreatMap::update(int frame) {
 		if ((ecats&AIR).any() && (ecats&ASSAULT).none())
 			continue; // ignore air fighters & bombers
 
+		// FIXME: using maxWeaponRange below (twice) is WRONG; we need
+		// to calculate different max. ranges per each threatmap layer
+
 		// FIXME: think smth cleverer
 		if (ud->maxWeaponRange > MAX_WEAPON_RANGE_FOR_TM)
 			continue; // ignore units with extra large range
 		
 		const float3 upos = ai->cbc->GetUnitPos(uid);
 
-		/*
-		if (upos.y < 0.0f && (ecats&TORPEDO).none())
-			continue; // ignore units which can't shoot under the water
-		*/
-
 		activeTypes.clear();
 
-		if ((ecats&ANTIAIR).any()) {
+		if ((ecats&ANTIAIR).any() && upos.y >= 0.0f) {
 			activeTypes.push_back(TMT_AIR);
 		}
 		
 		if (((ecats&SEA).any() || upos.y >= 0.0f)
 		&&  ((ecats&ANTIAIR).none() || (catsCanShootGround&ecats).any())) {
 			activeTypes.push_back(TMT_SURFACE);
-			if (isWaterMap)
-				activeTypes.push_back(TMT_SURFACE_WATER);
 		}
 		
-		// NOTE: TMT_SURFACE_WATER map can exist twice in a list which is ok
 		if (isWaterMap && (ecats&TORPEDO).any()) {
 			activeTypes.push_back(TMT_UNDERWATER);
-			activeTypes.push_back(TMT_SURFACE_WATER);
 		}
 
 		if (activeTypes.empty())
 			continue;
 
-		const float uRealX = upos.x/REAL;
-		const float uRealZ = upos.z/REAL;
-		const float  range = (ud->maxWeaponRange + 100.0f) / REAL;
+		const float uRealX = upos.x / PATH2REAL;
+		const float uRealZ = upos.z / PATH2REAL;
+		const float  range = (ud->maxWeaponRange + 100.0f) / PATH2REAL;
 		float       powerT = ai->cbc->GetUnitPower(uid);
 		const float  power = (ecats&COMMANDER).any() ? powerT/20.0f : powerT;
 		float3 pos(0.0f, 0.0f, 0.0f);
@@ -219,20 +220,24 @@ void CThreatMap::update(int frame) {
 				if (pos.Length2D() <= range) {
 					pos.x += uRealX;
 					pos.z += uRealZ;
-					const unsigned int mx = (unsigned int) round(pos.x);
-					const unsigned int mz = (unsigned int) round(pos.z);
-					if (mx < X && mz < Z) {
+					const int mx = int(round(pos.x));
+					const int mz = int(round(pos.z));
+					if (isInBounds(mx, mz)) {
 						for (itMapType = activeTypes.begin(); itMapType != activeTypes.end(); ++itMapType) {
-							maps[*itMapType][ID(mx, mz)] += power;
+							int id = ID(mx, mz);
+							maps[*itMapType][id] += power;
+							maxPower[*itMapType] = std::max(maps[*itMapType][id], maxPower[*itMapType]);
 						}
 					}
 				}
 			}
 		}
 		
+		/*
 		for (itMapType = activeTypes.begin(); itMapType != activeTypes.end(); ++itMapType) {
 			maxPower[*itMapType] = std::max<float>(power, maxPower[*itMapType]);
 		}
+		*/
 	}
 
 #if !defined(BUILDING_AI_FOR_SPRING_0_81_2)
@@ -264,21 +269,40 @@ float CThreatMap::gauss(float x, float sigma, float mu) {
 	return a * b;
 }
 
+void CThreatMap::checkInBounds(int& x, int& z) {
+	if (x < 0)
+		x = 0;
+	else if (x >= X)
+		x = X - 1;
+
+	if (z < 0)
+		z = 0;
+	else if (z >= Z)
+		z = Z - 1;
+}
+
 void CThreatMap::visualizeMap(ThreatMapType type) {
-	float *map = maps[type];
+	static const int figureID = 5;
+
+	std::map<ThreatMapType,float*>::const_iterator i = maps.find(type);
+	
+	if (i == maps.end())
+		return;	
+
+	const float* map = i->second;
 	float total = maxPower[type];
 	
 	for (int z = 0; z < Z; z++) {
 		for (int x = 0; x < X; x++) {
-			if (map[ID(x,z)] > 1.0f + EPSILON) {
-				float3 p0(x*REAL, ai->cb->GetElevation(x*REAL,z*REAL), z*REAL);
+			if (map[ID(x,z)] > 1.0f + EPS) {
+				float3 p0(x * PATH2REAL, ai->cb->GetElevation(x*PATH2REAL,z*PATH2REAL), z*PATH2REAL);
 				float3 p1(p0);
-				p1.y += (map[ID(x,z)]/total) * 300.0f;
-				ai->cb->CreateLineFigure(p0, p1, 4, 10.0, MULTIPLEXER, 5);
+				p1.y += (map[ID(x,z)]/total) * 250.0f;
+				ai->cb->CreateLineFigure(p0, p1, 4, 10.0f, MULTIPLEXER, figureID);
 			}
 		}
 	}
-	ai->cb->SetFigureColor(5, 1.0f, 0.0f, 0.0f, 1.0f);
+	ai->cb->SetFigureColor(figureID, 1.0f, 0.0f, 0.0f, 1.0f);
 }
 
 bool CThreatMap::switchDebugMode() {

@@ -131,6 +131,8 @@ void AttackTask::toStream(std::ostream& out) const {
 }
 
 void AttackTask::onEnemyDestroyed(int enemy, int attacker) {
-	if (target == enemy)
+	if (target == enemy) {
+		LOG_II("AttackTask::onEnemyDestroyed")
 		remove();
+	}
 }

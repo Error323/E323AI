@@ -116,8 +116,8 @@ void CE323AI::ReleaseAI() {
 	delete ai->tasks;
 	delete ai->wishlist;
 	delete ai->economy;
-	delete ai->unittable;
 	delete ai->gamemap;
+	delete ai->unittable;
 	delete ai->cfgparser;
 	delete ai->logger;
 	delete ai;
@@ -206,17 +206,11 @@ void CE323AI::UnitFinished(int uid) {
 		ai->unittable->builders[unit->builtBy] = true;
 	}
 
-	bool invalid = false;
-
 	if (unit->isEconomy()) {
 		ai->economy->addUnitOnFinished(*unit);
 	}
-	else if((unit->type->cats&ATTACKER).any()) {
-		ai->military->addUnit(*unit);
-	}
-	else {
-		LOG_WW("CE323AI::UnitFinished invalid unit " << *unit)
-		invalid = true;
+	else if(!ai->military->addUnit(*unit)) {
+		LOG_WW("CE323AI::UnitFinished unit " << (*unit) << " is NOT under AI control")
 	}
 	
 	// NOTE: very important to place this line AFTER registering a unit in
@@ -423,8 +417,57 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 			cmd.assign(modCL);
 		}
 		else {
-			line.assign("Module \"" + cmd + "\" is unknown or unsupported for visual debugging");
-			ai->cb->SendTextMsg(line.c_str(), 0);
+			if (cmd == "unit") {
+				// dump selected unit info...
+				line.clear();
+
+				if (ai->cb->GetSelectedUnits(&ai->unitIDs[0], 1) > 0) {
+					std::stringstream buffer;
+					CUnit* unit = ai->unittable->getUnit(ai->unitIDs[0]);
+					if (unit) {
+						buffer << ".id = " << unit->key << "\n";
+						buffer << ".humanName = " << unit->def->humanName << "\n";
+						buffer << ".isMicroing = " << unit->isMicroing() << "\n";
+						buffer << ".microingFrames = " << unit->microingFrames << "\n";
+						buffer << ".aliveFrames = " << unit->aliveFrames << "\n";
+						buffer << ".waiting = " << unit->waiting << "\n";
+						buffer << ".idle = " << ai->unittable->idle[unit->key] << "\n";
+						
+						ai->cb->SendTextMsg(buffer.str().c_str(), 0);
+					}
+				}
+			}
+			else if (cmd == "tmv") {
+				// dump threat value at mouse cursor...
+				float value = 0.0f;
+				float3 pos = ai->cb->GetMousePos();
+				CUnit* unit = NULL;				
+				if (ai->cb->GetSelectedUnits(&ai->unitIDs[0], 1) > 0) {
+					unit = ai->unittable->getUnit(ai->unitIDs[0]);
+					if (unit && unit->group) {
+						value = ai->threatmap->getThreat(pos, 0.0f, unit->group);
+					}
+				}
+				else {
+					value = ai->threatmap->getThreat(pos, 0.0f);
+				}
+				
+				std::stringstream buffer;
+				buffer << "Threat value";
+				if (unit)
+					buffer << " for " << unit->def->humanName;
+				buffer << " at position (" << pos.x << "," << pos.z << ") is " << value;
+				
+				ai->cb->SendTextMsg(buffer.str().c_str(), 0);				
+			}
+			else {
+				line.assign("Module \"" + cmd + "\" is unknown or unsupported for visual debugging");
+				
+			}
+
+			if (!line.empty())
+				ai->cb->SendTextMsg(line.c_str(), 0);
+			
 			return;
 		}
 		

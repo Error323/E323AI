@@ -108,12 +108,12 @@ void CTaskHandler::update() {
 	}
 }
 
-float3 CTaskHandler::getPos(CGroup &group) {
+float3 CTaskHandler::getPos(const CGroup& group) {
 	assert(groupToTask.find(group.key) != groupToTask.end());
 	return groupToTask[group.key]->pos;
 }
 
-ATask* CTaskHandler::getTask(CGroup &group) {
+ATask* CTaskHandler::getTask(const CGroup& group) {
 	std::map<int, ATask*>::iterator i = groupToTask.find(group.key);
 	if (i == groupToTask.end())
 		return NULL;
@@ -129,7 +129,7 @@ ATask* CTaskHandler::getTaskByTarget(int uid) {
 	return NULL;
 }
 
-bool CTaskHandler::addTask(ATask *task, ATask::NPriority p) {
+bool CTaskHandler::addTask(ATask* task, ATask::NPriority p) {
 	if (task == NULL)
 		return false;
 	
@@ -160,7 +160,7 @@ bool CTaskHandler::addTask(ATask *task, ATask::NPriority p) {
 	
 	// TODO: after MoveTask is implemented remove the code below
 	for(it = task->groups.begin(); it != task->groups.end(); ++it) {
-		CGroup *group = *it;
+		CGroup* group = *it;
 		if (task->isMoving && !ai->pathfinder->pathAssigned(*group)) {
 			if(!ai->pathfinder->addGroup(*group)) {
 				task->remove();

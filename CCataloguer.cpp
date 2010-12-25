@@ -1,8 +1,9 @@
 #include "CCataloguer.h"
 
+#include <stdexcept>
+
 #include "CUnit.h"
 
-#include <stdexcept>
 
 void CCataloguer::registerMatcher(const CategoryMatcher& m) {
 	if (cache.find(m) == cache.end()) {

@@ -13,7 +13,7 @@ class ATask;
 class CGroup;
 class CUnit;
 class AIClasses;
-class UnitType;
+struct UnitType;
 class float3;
 
 const float alpha = 0.2f;

@@ -3,7 +3,7 @@
 
 #include "../ATask.h"
 
-class UnitType;
+struct UnitType;
 
 struct BuildTask: public ATask {
 	BuildTask(AIClasses *_ai): ATask(_ai) { t = TASK_BUILD; }

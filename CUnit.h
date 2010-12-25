@@ -9,7 +9,7 @@
 #include "headers/Defines.h"
 #include "CAI.h"
 
-class UnitType;
+struct UnitType;
 class CGroup;
 
 /* Building facings, NOTE: this order is important! */
@@ -95,12 +95,12 @@ public:
 	bool stop();
 	/* Wait with what you are doing */
 	bool wait();
-
+	/* Undo wait command */
+	bool unwait();
+	
 	bool reclaim(float3 pos, float radius);
 	
 	bool reclaim(int target, bool enqueue = false);
-	/* Undo wait command */
-	bool unwait();
 
 	bool stockpile();
 

@@ -16,7 +16,7 @@ enum GetFilenameFlags {
 	GET_PATCH = (1<<4)
 };
 
-class UnitType;
+struct UnitType;
 class AIClasses;
 
 class CConfigParser {
