@@ -11,7 +11,7 @@
 
 class AIClasses;
 class ARegistrar;
-class UnitType;
+struct UnitType;
 
 class CCoverageCell: public ARegistrar {
 

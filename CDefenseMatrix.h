@@ -9,7 +9,7 @@
 #define CLUSTER_RADIUS 320.0f
 
 class AIClasses;
-class UnitType;
+struct UnitType;
 class CUnit;
 
 class CDefenseMatrix {

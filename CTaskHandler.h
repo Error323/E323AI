@@ -13,7 +13,7 @@
 #include "atask/Guard.h"
 #include "atask/Repair.h"
 
-class UnitType;
+struct UnitType;
 class AIClasses;
 class CGroup;
 class CUnit;
@@ -30,14 +30,14 @@ public:
 	/* Overload */
 	void remove(ARegistrar &task);
 
-	bool addTask(ATask *task, ATask::NPriority p = ATask::NORMAL);
+	bool addTask(ATask* task, ATask::NPriority p = ATask::NORMAL);
 
 	/* Get active task of group */
-	ATask* getTask(CGroup &group);
+	ATask* getTask(const CGroup& group);
 
 	ATask* getTaskByTarget(int);
 	/* Get the group destination */
-	float3 getPos(CGroup &group);
+	float3 getPos(const CGroup& group);
 	/* Update call */
 	void update();
 	/* Propagate "EnemyDestroyed" event to tasks */

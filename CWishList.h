@@ -9,7 +9,7 @@
 #include "headers/Defines.h"
 
 class AIClasses;
-class UnitType;
+struct UnitType;
 
 struct Wish {
 	enum NPriority { LOW = 0, NORMAL, HIGH };
