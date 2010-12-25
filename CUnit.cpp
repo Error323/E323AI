@@ -429,7 +429,6 @@ bool CUnit::hasShield(const std::vector<UnitDef::UnitDefWeapon>& weapons) {
 			return true;
 	}
 	return false;
-	
 }
 
 float3 CUnit::getForwardPos(float distance) const {
