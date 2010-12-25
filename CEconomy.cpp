@@ -836,6 +836,8 @@ void CEconomy::preventStalling() {
 }
 
 void CEconomy::updateIncomes() {
+	const int currentFrame = ai->cb->GetCurrentFrame();
+
 	// FIXME:
 	// 1) algo sucks when game is started without initial resources
 	// 2) these values should be recalculated each time AI has lost almost
@@ -857,7 +859,7 @@ void CEconomy::updateIncomes() {
 					float eDrain = facType->def->energyCost / buildTime;
 					float mTotalIncome = utCommander->def->metalMake * buildTime;
 		
-					mStart = (1.5 * facType->def->metalCost - ai->cb->GetMetal() - mTotalIncome) / buildTime;
+					mStart = (2.0 * facType->def->metalCost - ai->cb->GetMetal() - mTotalIncome) / buildTime;
 					if (mStart < 0.0f)
 						mStart = 0.0f;
 					eStart = 0.9f * eDrain;
@@ -866,10 +868,10 @@ void CEconomy::updateIncomes() {
 				}
 			}
 		
-		    if (oldAlgo) {
+			if (oldAlgo) {
 				mStart = 2.0f * utCommander->def->metalMake;
 				eStart = 1.5f * utCommander->def->energyMake;
-		    }
+			}
 		}	
 
 		LOG_II("CEconomy::updateIncomes Metal stall threshold: " << mStart)
@@ -892,14 +894,29 @@ void CEconomy::updateIncomes() {
 	mUsage   = alpha*(mUsageSummed / incomes) + (1.0f-alpha)*(ai->cb->GetMetalUsage());
 	eUsage   = beta *(eUsageSummed / incomes) + (1.0f-beta) *(ai->cb->GetEnergyUsage());
 
-	// FIXME: think more to avoid hardcoding e.g. implement decaying
-	if (ai->unittable->activeUnits.size() < 5) {
-		mstall = (mNow < (mStorage*0.1f) && mUsage > mIncome) || mIncome < mStart;
-		estall = (eNow < (eStorage*0.1f) && eUsage > eIncome) || eIncome < eStart;
+	//LOG_II("mIncome = " << mIncome << "; mNow = " << mNow << "; mStorage = " << mStorage)
+	//LOG_II("eIncome = " << eIncome << "; eNow = " << eNow << "; eStorage = " << eStorage)
+
+	// FIXME: think smth better to avoid hardcoding, e.g. implement decaying
+
+	if (mIncome < EPS && currentFrame > 32) {
+		mstall = (mNow < (mStorage*0.1f));
 	}
 	else {
-		mstall = (mNow < (mStorage*0.1f) && mUsage > mIncome);
-		estall = (eNow < (eStorage*0.1f) && eUsage > eIncome);
+		if (ai->unittable->activeUnits.size() < 5)
+			mstall = (mNow < (mStorage*0.1f) && mUsage > mIncome) || mIncome < mStart;
+		else
+			mstall = (mNow < (mStorage*0.1f) && mUsage > mIncome);
+	}
+
+	if (eIncome < EPS && currentFrame > 32) {
+	    estall = (eNow < (eStorage*0.1f));
+	}
+	else {
+		if (ai->unittable->activeUnits.size() < 5)
+			estall = (eNow < (eStorage*0.1f) && eUsage > eIncome) || eIncome < eStart;
+		else
+			estall = (eNow < (eStorage*0.1f) && eUsage > eIncome);
 	}
 
 	mexceeding = (mNow > (mStorage*0.9f) && mUsage < mIncome);
@@ -910,7 +927,7 @@ void CEconomy::updateIncomes() {
 
 	int tstate = ai->cfgparser->determineState(mIncome, eIncome);
 	if (tstate != state) {
-		char buf[255];
+		char buf[64];
 		sprintf(buf, "State changed to %d, activated techlevel %d", tstate, ai->cfgparser->getMaxTechLevel());
 		LOG_II(buf);
 		state = tstate;
