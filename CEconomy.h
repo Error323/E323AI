@@ -138,6 +138,8 @@ private:
 
 	void tryAssist(CGroup*, buildType bt);
 
+	void tryFixingStall(CGroup*);
+
 	unitCategory canBuildWhere(unitCategory unitCats, bool strictly = false);
 };
 
