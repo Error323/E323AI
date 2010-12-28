@@ -1,5 +1,12 @@
 E323AI changelog
 ----------------
+v3.25.0 [2010-12-26]
+* improved naval gameplay
+* implemented support of categorization patch-files
+* improved unit auto-categorizer
+* fixed bugs with getting threat values & calculation threat maps
+* fixed attack stall when non-primary target was destroyed
+
 v3.24.0 [2010-12-12]
 * naval units support
 * updated config files for BA only

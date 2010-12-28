@@ -525,17 +525,8 @@ void CEconomy::update() {
 		// NOTE: we're using special algo for commander to prevent
 		// it walking outside the base
 		if ((unit->type->cats&COMMANDER).any()) {
-			/* If we are estalling deal with it */
-			if (estall && !eexceeding) {
-				buildOrAssist(*group, BUILD_EPROVIDER, EMAKER);
-				if (group->busy) continue;
-			}
-			
-			/* If we are mstalling deal with it */
-			if (mstall && !mexceeding) {
-				buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR);
-				if (group->busy) continue;
-			}
+			tryFixingStall(group);
+			if (group->busy) continue;
 			
 			/* If we don't have a factory, build one */
 			if (ai->unittable->factories.empty() || mexceeding) {
@@ -584,25 +575,13 @@ void CEconomy::update() {
 			if (group->busy) continue;
 		}
 		else if ((unit->type->cats&BUILDER).any()) {
-    		/* If we are estalling deal with it */
-    		if (estall) {
-    			buildOrAssist(*group, BUILD_EPROVIDER, EMAKER);
-    			if (group->busy) continue;
-    		}
-    		/* If we are mstalling deal with it */
-    		if (mstall) {
-    			buildOrAssist(*group, BUILD_MPROVIDER, MEXTRACTOR);
-    			if (group->busy) continue;
-    		}
+			tryFixingStall(group);
+			if (group->busy) continue;
     		
     		/* See if this unit can build desired factory */
     		unitCategory factory = getNextTypeToBuild(unit, FACTORY, maxTechLevel);
     		if (factory.any())
     			buildOrAssist(*group, BUILD_FACTORY, factory);
-    		if (group->busy) continue;
-    		
-    		/* See if we can build defense */
-    		tryBuildingDefense(group);
     		if (group->busy) continue;
     		
     		/* If we are overflowing energy build an estorage */
@@ -627,6 +606,10 @@ void CEconomy::update() {
     			if (group->busy) continue;
     		}
     		
+    		/* See if we can build defense */
+    		tryBuildingDefense(group);
+    		if (group->busy) continue;
+    		
     		tryBuildingAntiNuke(group);
     		if (group->busy) continue;
     		
@@ -636,7 +619,7 @@ void CEconomy::update() {
     		tryBuildingStaticAssister(group);
     		if (group->busy) continue;
     		
-    		/* Else just provide that which is requested */
+    		/* Else just provide what is requested */
     		if (eRequest) {
     			buildOrAssist(*group, BUILD_EPROVIDER, EMAKER);
     			if (group->busy) continue;
@@ -727,7 +710,8 @@ void CEconomy::controlMetalMakers() {
 	if (eRatio < 0.3f) {
 		int count = ai->unittable->setOnOff(ai->unittable->metalMakers, false);
 		if (count > 0) {
-			estall = false;
+			if (METAL2ENERGY < 1.0f)
+				estall = false;
 			areMMakersEnabled = false;
 			return;
 		}
@@ -736,7 +720,8 @@ void CEconomy::controlMetalMakers() {
 	if (eRatio > 0.7f) {
 		int count = ai->unittable->setOnOff(ai->unittable->metalMakers, true);
 		if (count > 0) {
-			mstall = false;
+			if (METAL2ENERGY > 1.0f)
+				mstall = false;
 			areMMakersEnabled = true;
 			return;
 		}
@@ -744,7 +729,8 @@ void CEconomy::controlMetalMakers() {
 }
 
 void CEconomy::preventStalling() {
-	bool taskRemoved = false; // for tracking only one task is removed per update
+	bool taskRemoved = false;
+		// for tracking so only one task is removed per update
 	bool needMStallFixing, needEStallFixing;
 	AssistTask
 		*taskWithPowerBuilder = NULL,
@@ -859,7 +845,7 @@ void CEconomy::updateIncomes() {
 					float eDrain = facType->def->energyCost / buildTime;
 					float mTotalIncome = utCommander->def->metalMake * buildTime;
 		
-					mStart = (2.0 * facType->def->metalCost - ai->cb->GetMetal() - mTotalIncome) / buildTime;
+					mStart = (1.5f * facType->def->metalCost - ai->cb->GetMetal() - mTotalIncome) / buildTime;
 					if (mStart < 0.0f)
 						mStart = 0.0f;
 					eStart = 0.9f * eDrain;
@@ -942,7 +928,7 @@ ATask* CEconomy::canAssist(buildType t, CGroup &group) {
 		return NULL;
 
 	for (i = ai->tasks->activeTasks[TASK_BUILD].begin(); i != ai->tasks->activeTasks[TASK_BUILD].end(); ++i) {
-		BuildTask *buildtask = (BuildTask*)i->second;
+		BuildTask* buildtask = (BuildTask*)i->second;
 
 		// only build tasks we are interested in...
 		float travelTime;
@@ -1069,7 +1055,7 @@ bool CEconomy::isTypeRequired(UnitType* builder, unitCategory cats, int maxteach
 void CEconomy::tryBuildingDefense(CGroup* group) {
 	if (group->busy)
 		return;
-	if (mstall)
+	if (mstall || estall)
 		return;
 
 	bool allow;
@@ -1194,6 +1180,32 @@ void CEconomy::tryAssist(CGroup* group, buildType bt) {
 	if (task != NULL) {
 		ai->tasks->addTask(new AssistTask(ai, *task, *group));
 		return;
+	}
+}
+
+void CEconomy::tryFixingStall(CGroup* group) {
+	bool mStall = (mstall && !mexceeding);
+	bool eStall = (estall && !eexceeding);
+	std::list<buildType> order;
+
+	if (group->busy)
+		return;
+	
+	if (mStall && eStall
+	&& (((mIncome - mUsage) * METAL2ENERGY) < (eIncome - eUsage))) {
+		order.push_back(BUILD_MPROVIDER);
+		order.push_back(BUILD_EPROVIDER);
+	}
+	else {
+		if (eStall)
+			order.push_back(BUILD_EPROVIDER);
+		if (mStall)
+			order.push_back(BUILD_MPROVIDER);
+	}
+
+	for (std::list<buildType>::const_iterator it = order.begin(); it != order.end(); ++it) {
+		buildOrAssist(*group, *it, *it == BUILD_EPROVIDER ? EMAKER : MEXTRACTOR);
+		if (group->busy) break;
 	}
 }
 

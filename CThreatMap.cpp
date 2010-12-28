@@ -128,18 +128,15 @@ float CThreatMap::getThreat(const float3& center, float radius, CGroup* group) {
 		temp = getThreat(center, radius, TMT_AIR);
 		if (temp > 1.0f) result += temp - 1.0f;
 	}
-	if ((group->cats&SUB).any()) {
+	
+	// NOTE: hovers (LAND|SEA) can't be hit by underwater weapons
+	if ((group->cats&SUB).any() || ((group->cats&SEA).any() && (group->cats&LAND).none())) {
 		temp = getThreat(center, radius, TMT_UNDERWATER);
 		if (temp > 1.0f) result += temp - 1.0f;
 	}
-	// NOTE: hovers (LAND|SEA) can't be hit by underwater weapons that is why 
-	// LAND tag check is a priority over SEA below
-	if ((group->cats&LAND).any()) {
+	
+	if ((group->cats&(LAND|SEA)).any()) {
 		temp = getThreat(center, radius, TMT_SURFACE);
-		if (temp > 1.0f) result += temp - 1.0f;
-	}
-	else if ((group->cats&SEA).any() && (group->cats&SUB).none()) {
-		temp = getThreat(center, radius, TMT_UNDERWATER);
 		if (temp > 1.0f) result += temp - 1.0f;
 	}
 	

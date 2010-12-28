@@ -114,7 +114,7 @@ bool BuildTask::assistable(CGroup &assister, float &travelTime) const {
 		return false;
 	if (isMoving)
 		return false;
-	if (assisters.size() > 1 && (bt == BUILD_AG_DEFENSE || bt == BUILD_AG_DEFENSE || bt == BUILD_MISC_DEFENSE))
+	if (assisters.size() > 1 && (bt == BUILD_AG_DEFENSE || bt == BUILD_AA_DEFENSE || bt == BUILD_MISC_DEFENSE))
 		return false;
 	
 	CGroup *group = firstGroup();
