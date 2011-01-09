@@ -488,7 +488,8 @@ float3 CEconomy::getClosestOpenGeoSpot(CGroup &group) {
 }
 
 void CEconomy::update() {
-	int builderGroupsNum = 0;
+	int buildersCount = 0;
+	int assistersCount = 0;
 	int maxTechLevel = ai->cfgparser->getMaxTechLevel();
 
 	/* See if we can improve our eco by controlling metalmakers */
@@ -503,8 +504,10 @@ void CEconomy::update() {
 		CGroup *group = i->second;
 		CUnit *unit = group->firstUnit();
 
-		if ((group->cats&MOBILE).any())
-			builderGroupsNum++;
+		if ((group->cats&MOBILE).any() && (group->cats&BUILDER).any())
+			buildersCount++;
+		if ((group->cats&MOBILE).any() && (group->cats&ASSISTER).any() && (group->cats&BUILDER).none())
+			assistersCount++;
 
 		if (group->busy || !group->canPerformTasks())
 			continue;
@@ -662,13 +665,15 @@ void CEconomy::update() {
 		}
 	}
 
-	if (builderGroupsNum < ai->cfgparser->getMaxWorkers() 
-	&& (builderGroupsNum < ai->cfgparser->getMinWorkers()))
+	// TODO: consider assistersCount & military groups count for
+	// requesting assisters
+
+	if (buildersCount < ai->cfgparser->getMaxWorkers()
+	&& (buildersCount < ai->cfgparser->getMinWorkers()))
 		ai->wishlist->push(BUILDER, 0, Wish::HIGH);
 	else {
-		if (builderGroupsNum < ai->cfgparser->getMaxWorkers())
-		ai->wishlist->push(BUILDER, 0, Wish::NORMAL);
-		// TODO: build assisters in some proportion to builders
+		if (buildersCount < ai->cfgparser->getMaxWorkers())
+			ai->wishlist->push(BUILDER, 0, Wish::NORMAL);
 	}
 }
 
