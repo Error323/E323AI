@@ -15,6 +15,8 @@
 	#include "LegacyCpp/IAICallback.h"             /* Callback functions */
 	#include "LegacyCpp/IGlobalAICallback.h"       /* AI Interface */
 	#include "LegacyCpp/IAICheats.h"               /* AI Cheat Interface */
+
+	using namespace springLegacyAI;
 #endif
 
 #endif

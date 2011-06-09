@@ -8,7 +8,9 @@
 #include <vector>
 #include <map>
 
-class IAICallback;
+namespace springLegacyAI {
+	class IAICallback;
+}
 
 namespace util {
 	std::string GetAbsFileName(IAICallback*, const std::string&, bool readonly = false);

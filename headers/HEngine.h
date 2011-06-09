@@ -9,4 +9,6 @@
 #include "LegacyCpp/WeaponDef.h"     /* Weapon Definitions */
 #include "System/float3.h"           /* 3D vector operations */
 
-#endif 
+using namespace springLegacyAI;
+
+#endif

@@ -24,7 +24,9 @@
 #include "CCoverageHandler.h"
 #include "ReusableObjectFactory.hpp"
 
-class IGlobalAICallback;
+namespace springLegacyAI {
+	class IGlobalAICallback;
+}
 #include "LegacyCpp/IAICallback.h"
 
 
