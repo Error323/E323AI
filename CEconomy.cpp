@@ -170,11 +170,12 @@ void CEconomy::buildOrAssist(CGroup& group, buildType bt, unitCategory include, 
 	else if (bt == BUILD_MPROVIDER) {
 		if ((include&MEXTRACTOR).any()) {
 			goal = getClosestOpenMetalSpot(group);
-			if (goal != ERRORVECTOR)
+			if (goal != ERRORVECTOR) {
 				if (goal.y < 0.0f)
 					exclude |= (LAND|AIR);
 				else
 					exclude |= (SEA|SUB);
+			}
 		}
 	}
 
@@ -846,7 +847,7 @@ void CEconomy::updateIncomes() {
 				UnitType* facType = ai->unittable->canBuild(utCommander, initialFactory);
 				if (facType != NULL) {
 					float buildTime = facType->def->buildTime / utCommander->def->buildSpeed;
-					float mDrain = facType->def->metalCost / buildTime;
+					//float mDrain = facType->def->metalCost / buildTime;
 					float eDrain = facType->def->energyCost / buildTime;
 					float mTotalIncome = utCommander->def->metalMake * buildTime;
 		
@@ -963,7 +964,6 @@ ATask* CEconomy::canAssistFactory(CGroup &group) {
 	if (!group.canAssist())
 		return NULL;
 	
-	CUnit* unit = group.firstUnit();
 	float3 pos = group.pos();
 	std::map<int, ATask*>::iterator i;
 	std::map<float, FactoryTask*> candidates;

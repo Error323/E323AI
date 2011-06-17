@@ -51,7 +51,7 @@ void CWishList::push(unitCategory include, unitCategory exclude, Wish::NPriority
 			std::stable_sort(wishlist[fac->def->id].begin(), wishlist[fac->def->id].end());
 		}
 		else {
-			CUnit *unit = ai->unittable->getUnit(itFac->first);
+			//CUnit *unit = ai->unittable->getUnit(itFac->first);
 			//LOG_WW("CWishList::push failed for " << (*unit) << " categories: " << ai->unittable->debugCategories(include))
 		}
 	}

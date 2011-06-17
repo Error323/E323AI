@@ -18,21 +18,22 @@ class CCoverageCell: public ARegistrar {
 public:	
 	enum NType {
 		UNDEFINED,
-		DEFENSE_GROUND,   // autofire at ground
-		DEFENSE_ANTIAIR,  // atuofire at air
+		DEFENSE_GROUND,   ///< autofire at ground
+		DEFENSE_ANTIAIR,  ///< autofire at air
 		DEFENSE_UNDERWATER,
-		DEFENSE_ANTINUKE, // stockpile required, autofire at nuke missles
-		DEFENSE_SHIELD,   // on-offable defense, does not shoot
+		DEFENSE_ANTINUKE, ///< stockpile required, autofire at nuke missles
+		DEFENSE_SHIELD,   ///< on-offable defense, does not shoot
 		DEFENSE_JAMMER,
-		BUILD_ASSISTER,   // static builders or assisters
-		ECONOMY_BOOSTER   // pylons in CA
+		BUILD_ASSISTER,   ///< static builders or assisters
+		ECONOMY_BOOSTER   ///< pylons in CA
 	};
 
 	CCoverageCell()
+			: type(UNDEFINED)
+			, ai(NULL)
+			, range(0.0f)
+			, unit(NULL)
 	{
-		ai = NULL; unit = NULL;
-		range = 0.0f;
-		type = UNDEFINED;
 		if (type2str.empty()) {
 			type2str[UNDEFINED] = "UNDEFINED";
 			type2str[DEFENSE_GROUND] = "DEFENSE_GROUND";
@@ -46,21 +47,15 @@ public:
 		}
 	} 
 	CCoverageCell(AIClasses* ai, NType type = UNDEFINED, CUnit* unit = NULL)
-			: ai(ai)
-			, type(type)
+			: type(type)
+			, ai(ai)
+			, range(0.0f)
+			, unit(NULL)
 	{
 		if (unit) {
 			setCore(unit);
-
-		else { 
-			this->unit = NULL;
-			range = 0.0f;
 		}
 	}
-
-	static std::map<NType, std::string> type2str;
-	NType type;
-	std::map<int, CUnit*> units; // untis covered by current cell
 
 	bool isVacant() const { return unit == NULL; }
 	
@@ -86,12 +81,20 @@ public:
 	/* Output stream */
 	friend std::ostream& operator<<(std::ostream& out, const CCoverageCell& obj);
 
+
+	static std::map<NType, std::string> type2str;
+	NType type;
+	/// units covered by current cell
+	std::map<int, CUnit*> units;
+
 //protected:
 	AIClasses* ai;
 
 private:
-	float range; // cell range
-	CUnit* unit; // cell core unit: the source of coverage
+	/// cell range
+	float range;
+	/// cell core unit: the source of coverage
+	CUnit* unit;
 };
 
-#endif
+#endif // E323_CCOVERAGECELL_H

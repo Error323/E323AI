@@ -421,6 +421,9 @@ float CCoverageHandler::getCoreRange(CCoverageCell::NType type, UnitType* ut) {
 		case CCoverageCell::BUILD_ASSISTER:
 			result = ut->def->buildDistance;
 			break;
+		case CCoverageCell::UNDEFINED:
+			result = 0.0f;
+			break;
 	}
 
 	switch (type) {
@@ -443,8 +446,10 @@ float CCoverageHandler::getCoreRange(CCoverageCell::NType type, UnitType* ut) {
 		case CCoverageCell::DEFENSE_ANTINUKE:
 		case CCoverageCell::ECONOMY_BOOSTER:
 			result *= 0.95f;	
-		default:
-			return result;
+		case CCoverageCell::DEFENSE_SHIELD:
+		case CCoverageCell::BUILD_ASSISTER:
+		case CCoverageCell::UNDEFINED:
+			break;
 	}
 	
 	return result;
