@@ -4,6 +4,7 @@
 #include <queue>
 #include <vector>
 #include <list>
+#include <cstddef> // for NULL
 
 class AAStar {
 	public:
