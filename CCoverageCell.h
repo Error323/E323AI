@@ -28,7 +28,8 @@ public:
 		ECONOMY_BOOSTER   // pylons in CA
 	};
 
-	CCoverageCell() {
+	CCoverageCell()
+	{
 		ai = NULL; unit = NULL;
 		range = 0.0f;
 		type = UNDEFINED;
@@ -44,11 +45,15 @@ public:
 			type2str[ECONOMY_BOOSTER] = "ECONOMY_BOOSTER";
 		}
 	} 
-	CCoverageCell(AIClasses* _ai, NType _type = UNDEFINED, CUnit* _unit = NULL):ai(_ai),type(_type) {
-		if (_unit) 
-			setCore(_unit); 
+	CCoverageCell(AIClasses* ai, NType type = UNDEFINED, CUnit* unit = NULL)
+			: ai(ai)
+			, type(type)
+	{
+		if (unit) {
+			setCore(unit);
+
 		else { 
-			unit = NULL;
+			this->unit = NULL;
 			range = 0.0f;
 		}
 	}
