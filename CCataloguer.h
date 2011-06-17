@@ -10,7 +10,7 @@ class CUnit;
 
 struct CategoryMatcher {
 	CategoryMatcher(const unitCategory& inc, const unitCategory& exc = 0):include(inc),exclude(exc) {}
-	
+
 	bool operator < (const CategoryMatcher& other) const {
 		UnitCategoryCompare cmp;
 		if (cmp(include, other.include))
@@ -43,7 +43,7 @@ public:
 private:
 	typedef std::map<CategoryMatcher, std::map<int, UnitType*> > CacheMap;
 	typedef CacheMap::iterator CacheMapIt;
-	
+
 	CacheMap cache;
 };
 

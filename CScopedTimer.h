@@ -29,7 +29,7 @@ static const float3 colors[] = {
 };
 
 class CScopedTimer {
-	
+
 public:
 	CScopedTimer(const std::string& s, IAICallback *_cb);
 	~CScopedTimer();
@@ -45,7 +45,7 @@ private:
 	static std::vector<std::string> tasks;
 	static std::map<std::string, int> taskIDs;
 	static std::map<std::string, unsigned int> curTime, prevTime;
-	
+
 	IAICallback *cb;
 	bool initialized;
 	unsigned int t1, t2;

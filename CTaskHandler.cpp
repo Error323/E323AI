@@ -58,7 +58,7 @@ void CTaskHandler::remove(ARegistrar &obj) {
 		default:
 			assert(false);
 	}
-	
+
 	obj.unreg(*this);
 }
 
@@ -85,7 +85,7 @@ void CTaskHandler::update() {
 			int c = 0; // active tasks counter
 			std::list<ATask*>::iterator it = processQueue.begin();
 			ATask *taskFirst = *it;
-			
+
 			do {
 				task = *it;
 
@@ -93,7 +93,7 @@ void CTaskHandler::update() {
 					task->update();
 					c++;
 				}
-				
+
 				++it;
 
 				// imitate circle queue...
@@ -132,32 +132,32 @@ ATask* CTaskHandler::getTaskByTarget(int uid) {
 bool CTaskHandler::addTask(ATask* task, ATask::NPriority p) {
 	if (task == NULL)
 		return false;
-	
+
 	assert(task->t != TASK_UNDEFINED);
 
 	task->priority = p;
 
 	std::list<CGroup*>::iterator it;
 
-	// NOTE: this is required because otherwise memory used by task will never 
+	// NOTE: this is required because otherwise memory used by task will never
 	// be freed
 	task->reg(*this);
 	processQueue.push_back(task);
-	// NOTE: this is required because within ATask::onValidate() a path 
-	// (or even paths) can be added, which in its turn calls 
+	// NOTE: this is required because within ATask::onValidate() a path
+	// (or even paths) can be added, which in its turn calls
 	// CTaskHandler::getPos()
 	for (it = task->groups.begin(); it != task->groups.end(); ++it) {
 		(*it)->reg(*this);
 		groupToTask[(*it)->key] = task;
 	}
-	
+
 	LOG_II((*task))
 
 	if (!task->onValidate()) {
 		task->remove();
 		return false;
 	}
-	
+
 	// TODO: after MoveTask is implemented remove the code below
 	for(it = task->groups.begin(); it != task->groups.end(); ++it) {
 		CGroup* group = *it;
@@ -167,8 +167,8 @@ bool CTaskHandler::addTask(ATask* task, ATask::NPriority p) {
 				return false;
 			}
 		}
-	}	
-		
+	}
+
 	activeTasks[task->t][task->key] = task;
 
 	task->active = true;

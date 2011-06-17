@@ -42,13 +42,13 @@ public:
 	bool waiting;
 
 	static bool isMilitary(const UnitDef* ud) { return !ud->weapons.empty(); }
-	
+
 	static bool isStatic(const UnitDef* ud) { return ud->speed < EPS; }
-	
+
 	static bool isDefense(const UnitDef* ud) { return isStatic(ud) && isMilitary(ud); }
-		
+
 	static bool hasAntiAirWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons);
-	
+
 	static bool hasNukeWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons);
 
 	static bool hasParalyzerWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons);
@@ -58,14 +58,14 @@ public:
 	static bool hasShield(const std::vector<UnitDef::UnitDefWeapon>& weapons);
 
 	static bool hasTorpedoWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons);
-		
+
 	/* Remove the unit from everywhere registered */
 	void remove();
 	/* Overloaded */
 	void remove(ARegistrar &reg);
 	/* Reset this object */
 	void reset(int uid, int bid);
-	
+
 	int queueSize();
 	/* Determine if this unit belongs to economic tracker */
 	bool isEconomy();
@@ -89,7 +89,7 @@ public:
 	bool cloak(bool on);
 	/* Guard a certain unit */
 	bool guard(int target, bool enqueue = false);
-	
+
 	bool patrol(const float3& pos, bool enqueue = false);
 	/* Stop doing what you did */
 	bool stop();
@@ -97,15 +97,15 @@ public:
 	bool wait();
 	/* Undo wait command */
 	bool unwait();
-	
+
 	bool reclaim(float3 pos, float radius);
-	
+
 	bool reclaim(int target, bool enqueue = false);
 
 	bool stockpile();
 
 	int getStockpileReady();
-	
+
 	int getStockpileQueued();
 
 	bool micro(bool on);
@@ -128,7 +128,7 @@ public:
 
 	float3 getForwardPos(float distance) const;
 
-	ARegistrar::NType regtype() const { return ARegistrar::UNIT; } 
+	ARegistrar::NType regtype() const { return ARegistrar::UNIT; }
 	/* output stream */
 	friend std::ostream& operator<<(std::ostream& out, const CUnit& unit);
 
@@ -139,7 +139,7 @@ private:
 	bool microing;
 
 	Command createPosCommand(int cmd, float3 pos, float radius = -1.0f, facing f = NONE);
-		
+
 	Command createTargetCommand(int cmd, int target);
 };
 

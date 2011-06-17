@@ -8,7 +8,7 @@
 
 class AContainer {
 
-public:	
+public:
 	virtual bool empty() = 0;
 	virtual int size() = 0;
 	virtual int fetch() = 0;
@@ -17,8 +17,8 @@ public:
 };
 
 class CVectorContainer: public AContainer {
-	
-public:	
+
+public:
 	CVectorContainer(std::vector<int>& src):ref(src) { reset(); };
 
 	bool empty() { return ref.empty(); }
@@ -33,8 +33,8 @@ private:
 };
 
 class CMapContainer: public AContainer {
-	
-public:	
+
+public:
 	CMapContainer(std::map<int, UnitType*>& src):ref(src) { reset(); }
 
 	bool empty() { return ref.empty(); }

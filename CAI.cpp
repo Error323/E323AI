@@ -12,10 +12,10 @@ std::map<int, std::map<int, AIClasses*> > AIClasses::instancesByAllyTeam;
 AIClasses::AIClasses(IGlobalAICallback* callback):difficulty(DIFFICULTY_HARD) {
 	if (unitIDs.empty())
 		unitIDs.resize(MAX_UNITS);
-	
+
 	cb = callback->GetAICallback();
 	cbc = callback->GetCheatInterface();
-	
+
 	cbc->EnableCheatEvents(true);
 
 	team = cb->GetMyTeam();

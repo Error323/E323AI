@@ -14,14 +14,14 @@ void CCoverageHandler::update() {
 
 	for (itLayer = layers.begin(); itLayer != layers.end(); ++itLayer) {
 		uncovered.clear();
-		
+
 		for (itCell = itLayer->second.begin(); itCell != itLayer->second.end(); ++itCell)
 			(*itCell)->update(uncovered);
-		
+
 		if (!uncovered.empty()) {
 			std::list<CUnit*>::iterator itUnit;
 			std::map<int, CCoverageCell*>* coveredUnits = &unitsCoveredBy[itLayer->first];
-			
+
 			for (itUnit = uncovered.begin(); itUnit != uncovered.end(); ++itUnit) {
 				CUnit* unit = *itUnit;
 				coveredUnits->erase(unit->key);
@@ -48,7 +48,7 @@ void CCoverageHandler::addUnit(CUnit* unit) {
 	LOG_II("CCoverageHandler::addUnit " << (*unit))
 
 	CCoverageCell::NType coreType = getCoreType(unit->type);
-	
+
 	if (coreType != CCoverageCell::UNDEFINED) {
 		if (coreUnits.find(unit->key) == coreUnits.end()) {
 			// register new core...
@@ -59,7 +59,7 @@ void CCoverageHandler::addUnit(CUnit* unit) {
 			c->reg(*this);
 			layers[c->type].push_back(c);
 			coreUnits[unit->key] = c;
-		
+
 			addUncoveredUnits(c);
 
 			LOG_II((*c))
@@ -79,12 +79,12 @@ void CCoverageHandler::addUnit(CUnit* unit) {
 
 			if (unitsCoveredBy[layer].find(unit->key) != unitsCoveredBy[layer].end())
 				continue; // unit already covered by current layer
-			
+
 			std::map<int, CUnit*>* validUnits = getScanList(layer);
-			
+
 			if (validUnits == NULL)
 				continue;
-			
+
 			// OPTIMIZE: replace this check with category tags?
 			if (validUnits->find(unit->key) == validUnits->end())
 				continue; // this unit can't be registered in current layer
@@ -110,7 +110,7 @@ void CCoverageHandler::addUnit(CUnit* unit) {
 
 CCoverageCell::NType CCoverageHandler::getCoreType(const UnitType* ut) const {
 	const unitCategory cats = ut->cats;
-	
+
 	// NOTE: core unit should never belong to different types of layers
 	// simultaneously
 
@@ -118,7 +118,7 @@ CCoverageCell::NType CCoverageHandler::getCoreType(const UnitType* ut) const {
 		return CCoverageCell::BUILD_ASSISTER;
 	if ((cats&EBOOSTER).any())
 		return CCoverageCell::ECONOMY_BOOSTER;
-	
+
 	// FIXME: though mobile defense can be passed, it is not supported below
 	if ((cats&DEFENSE).any()) {
 		if ((cats&JAMMER).any())
@@ -134,7 +134,7 @@ CCoverageCell::NType CCoverageHandler::getCoreType(const UnitType* ut) const {
 		if ((cats&ATTACKER).any())
 			return CCoverageCell::DEFENSE_GROUND;
 	}
-	
+
 	return CCoverageCell::UNDEFINED;
 }
 
@@ -162,7 +162,7 @@ float3 CCoverageHandler::getNextClosestBuildSite(const CUnit* builder, UnitType*
 	bool allowWater = (toBuild->cats&(SEA|SUB|AIR)).any();
 	float3 pos = builder->pos();
 	float3 goal = ERRORVECTOR;
-	
+
 	CCoverageCell::NType layer = getCoreType(toBuild);
 	if (layer == CCoverageCell::UNDEFINED)
 		return goal;
@@ -173,18 +173,18 @@ float3 CCoverageHandler::getNextClosestBuildSite(const CUnit* builder, UnitType*
 
 	float minDistance = std::numeric_limits<float>::max();
 	std::map<int, CCoverageCell*>* coveredUnits = &(unitsCoveredBy[layer]);
-	
+
 	for (std::map<int, CUnit*>::iterator it = scanList->begin(); it != scanList->end(); ++it) {
 		CUnit* unit = it->second;
-		
+
 		if (getCoreType(unit->type) == layer)
 			continue;
-		
+
 		float3 upos = unit->pos();
-		
+
 		if ((!allowLand && upos.y >= 0.0f) || (!allowWater && upos.y < 0.0f))
-			continue;			
-		
+			continue;
+
 		if (coveredUnits->find(unit->key) == coveredUnits->end()) {
 			// NOTE: i would use getETA but this is a great CPU hit
 			float distance = upos.distance2D(pos);
@@ -216,18 +216,18 @@ float3 CCoverageHandler::getNextImportantBuildSite(UnitType* toBuild) {
 	float maxCost = std::numeric_limits<float>::min();
 	CUnit* bestUnit = NULL;
 	std::map<int, CCoverageCell*>* coveredUnits = &unitsCoveredBy[layer];
-	
+
 	for (std::map<int, CUnit*>::iterator it = scanList->begin(); it != scanList->end(); ++it)	{
 		CUnit* unit = it->second;
-		
+
 		if (getCoreType(unit->type) == layer)
 			continue;
-		
+
 		float3 upos = unit->pos();
 
 		if ((!allowLand && upos.y >= 0.0f) || (!allowWater && upos.y < 0.0f))
-			continue;			
-		
+			continue;
+
 		if (coveredUnits->find(unit->key) == coveredUnits->end()) {
 			if (maxCost < unit->type->cost) {
 				maxCost = unit->type->cost;
@@ -251,21 +251,21 @@ void CCoverageHandler::updateBestBuildSite(UnitType* toBuild, float3& pos) {
 	CCoverageCell::NType layer = getCoreType(toBuild);
 	float range = getCoreRange(layer, toBuild);
 	float3 oldPos, basePos;
-	
+
 	basePos = pos;
 
 	do {
 		oldPos = pos; pos = ZeroVector;
 		int numAppended = 0;
 		int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], oldPos, range);
-		
+
 		for (int i = 0; i < numUnits; i++) {
 			const int uid = ai->unitIDs[i];
 			const UnitDef* ud = ai->cb->GetUnitDef(uid);
-			
+
 			if (ud == NULL)
 				continue;
-			
+
 			UnitType* ut = UT(ud->id);
 			bool append = ((ut->cats&STATIC).any() && getCoreType(ut) != layer);
 
@@ -275,7 +275,7 @@ void CCoverageHandler::updateBestBuildSite(UnitType* toBuild, float3& pos) {
 					append = (unitsCoveredBy[layer].find(uid) == unitsCoveredBy[layer].end());
 				else
 					append = true; // allied unit
-			
+
 				if (append) {
 					pos += ai->cb->GetUnitPos(uid);
 					numAppended++;
@@ -287,14 +287,14 @@ void CCoverageHandler::updateBestBuildSite(UnitType* toBuild, float3& pos) {
 			pos = oldPos;
 			break;
 		}
-		
+
 		pos /= numAppended;
 
 		if (basePos.distance2D(pos) > range) {
 			// center has moved too far from base position => break
 			pos = oldPos;
 			break;
-		}			
+		}
 	} while (pos.distance2D(oldPos) > FOOTPRINT2REAL);
 
 	pos.y = ai->cb->GetElevation(pos.x, pos.z);
@@ -324,13 +324,13 @@ float3 CCoverageHandler::getClosestDefendedPos(float3& pos) const {
 float3 CCoverageHandler::getBestDefendedPos(float safetyLevel) const {
 	return ZeroVector;
 }
-		
+
 /*
 bool CCoverageHandler::isPosInBounds(float3& pos) const {
 }
 
 float CCoverageHandler::distance2D(float3& pos) const {
-	
+
 }
 */
 
@@ -369,20 +369,20 @@ void CCoverageHandler::remove(ARegistrar& obj) {
 						it->second->unreg(*this); // no need to track unit anymore
 				}
 			}
-			
+
 			c->unreg(*this);
 			layers[layer].remove(c);
 			assert(c->getCore() != NULL);
 			coreUnits.erase(c->getCore()->key);
 			ReusableObjectFactory<CCoverageCell>::Release(c);
-			
+
 			if (!(uncoveredUnits.empty() || layers[layer].empty())) {
 				// re-assign uncovered units to existing cores of current layer...
 				for (std::list<CUnit*>::iterator itUnit = uncoveredUnits.begin(); itUnit != uncoveredUnits.end(); ++itUnit) {
 					addUnit(*itUnit);
 				}
-			}	 
-			
+			}
+
 			break;
 		}
 		default:
@@ -445,13 +445,13 @@ float CCoverageHandler::getCoreRange(CCoverageCell::NType type, UnitType* ut) {
 		case CCoverageCell::DEFENSE_JAMMER:
 		case CCoverageCell::DEFENSE_ANTINUKE:
 		case CCoverageCell::ECONOMY_BOOSTER:
-			result *= 0.95f;	
+			result *= 0.95f;
 		case CCoverageCell::DEFENSE_SHIELD:
 		case CCoverageCell::BUILD_ASSISTER:
 		case CCoverageCell::UNDEFINED:
 			break;
 	}
-	
+
 	return result;
 }
 
@@ -460,7 +460,7 @@ void CCoverageHandler::addUncoveredUnits(CCoverageCell* c) {
 	float3 pos = c->getCenter();
 	std::map<int, CUnit*>* units = getScanList(c->type);
 	std::map<int, CCoverageCell*>* coveredUnits = &unitsCoveredBy[c->type];
-	
+
 	if (units == NULL)
 		return;
 
@@ -487,7 +487,7 @@ bool CCoverageHandler::isUnitCovered(int uid, CCoverageCell::NType layer) {
 
 bool CCoverageHandler::toggleVisualization() {
 	visualizationEnabled = !visualizationEnabled;
-	
+
 	if (visualizationEnabled) {
 		// NOTE: to enable visualization at least one unit should be selected
 		if (ai->cb->GetSelectedUnits(&ai->unitIDs[0], 1) > 0) {
@@ -499,7 +499,7 @@ bool CCoverageHandler::toggleVisualization() {
 			}
 		}
 		visualizationEnabled = false;
-	}	
+	}
 	return visualizationEnabled;
 }
 

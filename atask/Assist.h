@@ -12,7 +12,7 @@ struct AssistTask: public ATask {
 	ATask *assist;
 
 	int targetAlt;
-	
+
 	/* overload */
 	void onUpdate();
 	/* overload */

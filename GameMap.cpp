@@ -38,7 +38,7 @@ void GameMap::CalcMetalSpots() {
 	int R = int(round(ai->cb->GetExtractorRadius() / METAL2REAL));
 	const unsigned char *metalmapData = ai->cb->GetMetalMap();
 	unsigned char *metalmap;
-		
+
 	metalmap = new unsigned char[X*Z];
 
 	// Calculate circular stamp
@@ -129,7 +129,7 @@ void GameMap::CalcMetalSpots() {
 			// "Erase" metal under the bestX bestZ radius
 			for (size_t c = 0; c < circle.size(); c+=2)
 				metalmap[ID(circle[c+1]+bestX,circle[c]+bestZ)] = 0;
-			
+
 			// Increase to world size
 			bestX *= METAL2REAL; bestZ *= METAL2REAL;
 
@@ -151,7 +151,7 @@ void GameMap::CalcMetalSpots() {
 		maptype = "non-metalmap";
 	else
 		maptype = "normal metalmap";
-	
+
 	LOG_II("GameMap::CalcMetalSpots map type: " << maptype)
 	LOG_II("GameMap::CalcMetalSpots found " << metalspots.size() << " metal spots")
 	LOG_II("GameMap::CalcMetalSpots minMetal(" << minMetal << ") maxMetal(" << maxMetal << ") avgMetal(" << avgMetal << ")")
@@ -201,7 +201,7 @@ void GameMap::CalcMapHeightFeatures() {
 	for (int z = 0; z < Z; z++) {
 		for (int x = 0; x < X; x++) {
 			float h = hm[ID(x,z)];
-			if (h >= 0.0f) 
+			if (h >= 0.0f)
 				heightVariance += (h/fsum) * pow((h - favg), 2);
 		}
 	}
@@ -212,7 +212,7 @@ void GameMap::CalcMapHeightFeatures() {
 
 	std::string type(IsKbotMap() ? "Kbot" : "Vehicle");
 	std::string hoover(IsHooverMap() ? "Enabled" : "Disabled");
-	
+
 	LOG_II("GameMap::CalcMapHeightFeatures Primary lab: " << type << ", Hoover lab: " << hoover)
 	LOG_II("GameMap::CalcMapHeightFeatures Water amount: " << waterAmount)
 }

@@ -10,14 +10,14 @@ AssistTask::AssistTask(AIClasses *_ai, ATask& toAssist, CGroup& group): ATask(_a
 	assisting = false;
 	pos = toAssist.pos;
 	targetAlt = -1;
-	
+
 	addGroup(group);
 }
 
 void AssistTask::remove() {
 	LOG_II("AssistTask::remove " << (*this))
-	
-	// NOTE: we have to remove manually because assisting tasks are not 
+
+	// NOTE: we have to remove manually because assisting tasks are not
 	// completely built upon ARegistrar pattern
 	assist->assisters.remove(this);
 
@@ -50,7 +50,7 @@ void AssistTask::onUpdate() {
 			float3 gpos = group->pos();
 			float dist = gpos.distance2D(pos);
 			float range = group->getRange();
-			
+
 			if (dist <= range) {
 				bool canAssist = true;
 				/*
@@ -64,7 +64,7 @@ void AssistTask::onUpdate() {
 					isMoving = false;
 					ai->pathfinder->remove(*group);
 				}
-			} 
+			}
 		}
 
 		if (!isMoving) {

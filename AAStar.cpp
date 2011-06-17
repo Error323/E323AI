@@ -32,7 +32,7 @@ bool AAStar::findPath(std::list<ANode*>* path) {
 		successors(x, succs);
 		while (!succs.empty()) {
 			y = succs.front(); succs.pop();
-			
+
 			if (y->closed)
 				continue;
 

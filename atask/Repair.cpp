@@ -8,7 +8,7 @@ RepairTask::RepairTask(AIClasses* _ai, int target, CGroup& group): ATask(_ai) {
 	this->target = target;
 	pos = ai->cb->GetUnitPos(target);
 	repairing = false;
-		
+
 	addGroup(group);
 }
 
@@ -27,7 +27,7 @@ void RepairTask::onUpdate() {
 			float3 gpos = group->pos();
 			float dist = gpos.distance2D(pos);
 			float range = group->getRange();
-			
+
 			if (dist <= range) {
 				bool canRepair = true;
 				/*
@@ -41,7 +41,7 @@ void RepairTask::onUpdate() {
 					isMoving = false;
 					ai->pathfinder->remove(*group);
 				}
-			} 
+			}
 		}
 
 		if (!isMoving) {

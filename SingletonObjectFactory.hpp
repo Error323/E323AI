@@ -10,7 +10,7 @@ class SingletonObjectFactory {
 		~SingletonObjectFactory();
 
 		static Object* Instance(int i = -1);
-	
+
 	private:
 		static std::map<int,Object*> objects;
 };

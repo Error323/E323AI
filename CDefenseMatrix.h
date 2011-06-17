@@ -26,7 +26,7 @@ public:
 	int getClusters();
 	/* Get the nth best defended pos */
 	float3 getBestDefendedPos(int n);
-	
+
 	bool isPosInBounds(const float3& pos) const;
 	/* Distance to defense matrix border */
 	float distance2D(const float3& pos) const;

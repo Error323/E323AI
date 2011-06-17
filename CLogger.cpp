@@ -42,18 +42,18 @@ CLogger::CLogger(AIClasses *_ai, unsigned int lt, logLevel lf): ai(_ai), logType
 
 		char relFileName[2048];
 		std::sprintf(
-			relFileName, "%s%s-%s-%2.2d%2.2d%2.2d%2.2d%2.2d-team-%d.log", 
+			relFileName, "%s%s-%s-%2.2d%2.2d%2.2d%2.2d%2.2d-team-%d.log",
 			LOG_FOLDER,
 			modShortName.c_str(),
-			mapName.c_str(), 
-			now2->tm_year + 1900, 
-			now2->tm_mon + 1, 
-			now2->tm_mday, 
-			now2->tm_hour, 
-			now2->tm_min, 
+			mapName.c_str(),
+			now2->tm_year + 1900,
+			now2->tm_mon + 1,
+			now2->tm_mday,
+			now2->tm_hour,
+			now2->tm_min,
 			ai->team
 		);
-		
+
 		fileName = util::GetAbsFileName(ai->cb, std::string(relFileName), false);
 		ofs.open(fileName.c_str(), std::ios::app);
 		if (ofs.good()) {
@@ -61,7 +61,7 @@ CLogger::CLogger(AIClasses *_ai, unsigned int lt, logLevel lf): ai(_ai), logType
 			ofs << "Version: " << AI_VERSION << "\n";
 			ofs << "Developers: " << AI_CREDITS << "\n";
 			ofs << "Markers: ";
-			
+
 			std::map<logLevel, std::string>::iterator i;
 			for (i = logDesc.begin(); i != logDesc.end(); ++i)
 				ofs << i->second;
@@ -75,11 +75,11 @@ CLogger::CLogger(AIClasses *_ai, unsigned int lt, logLevel lf): ai(_ai), logType
 			logType -= CLogger::LOG_FILE;
 		}
 	}
-	
+
 	if (lt & CLogger::LOG_STDOUT) {
 		std::cout << "Logging to screen...\n";
 	}
-	
+
 	if (lt & CLogger::LOG_SPRING) {
 		ai->cb->SendTextMsg("Logging to Spring...", 0);
 	}
@@ -113,7 +113,7 @@ void CLogger::log(logLevel level, std::string &msg) {
 	if (logType & CLogger::LOG_STDOUT) {
 		std::cout << output;
 	}
-	
+
 	if ((logType & CLogger::LOG_SPRING) && level == ERROR) {
 		ai->cb->SendTextMsg(msg.c_str(), 0);
 	}

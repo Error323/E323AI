@@ -25,7 +25,7 @@ void ATask::remove() {
 
 	// NOTE: removal order below is VERY important
 
-	// remove current task from CTaskHandler, so it will mark this task 
+	// remove current task from CTaskHandler, so it will mark this task
 	// to be killed on next update
 	std::list<ARegistrar*>::iterator j = records.begin();
 	while (j != records.end()) {
@@ -54,11 +54,11 @@ void ATask::remove() {
 // called on Group removing
 void ATask::remove(ARegistrar &group) {
 	CGroup *g = dynamic_cast<CGroup*>(&group);
-	
+
 	assert(g != NULL);
-	
+
 	removeGroup(*g);
-	
+
 	if (groups.empty()) {
 		LOG_II("ATask::remove " << (*g))
 
@@ -87,7 +87,7 @@ void ATask::addGroup(CGroup &g) {
 	g.busy = true;
 	g.micro(false);
 	//g.abilities(true);
-	
+
 	if ((g.cats&STATIC).any())
 		isMoving = false;
 
@@ -96,7 +96,7 @@ void ATask::addGroup(CGroup &g) {
 
 void ATask::removeGroup(CGroup &g) {
 	g.unreg(*this);
-	
+
 	if (!suspended) {
 		g.busy = false;
 		g.unwait();
@@ -165,7 +165,7 @@ bool ATask::resourceScan() {
 	int bestFeature = -1;
 	float bestDist = std::numeric_limits<float>::max();
 	CGroup *group = firstGroup();
-	// NOTE: do not use group->los because it is too small and does not 
+	// NOTE: do not use group->los because it is too small and does not
 	// correspond to real map units
 	float radius = group->buildRange;
 	float3 gpos = group->pos();
@@ -189,7 +189,7 @@ bool ATask::resourceScan() {
 		}
 	}
 
-	// if there is no feature available then reclaim enemy unarmed building, 
+	// if there is no feature available then reclaim enemy unarmed building,
 	// hehe :)
 	if (bestFeature == -1) {
 		std::map<int, bool> occupied;
@@ -198,12 +198,12 @@ bool ATask::resourceScan() {
 		tf.exclude = ATTACKER;
 		tf.threatCeiling = 1.1f;
 		tf.threatRadius = radius;
-		
+
 		bestFeature = group->selectTarget(radius, tf);
-		
+
 		isFeature = false;
-	}			
-	
+	}
+
 	if (bestFeature != -1) {
 		group->reclaim(bestFeature, isFeature);
 		group->micro(true);
@@ -217,7 +217,7 @@ bool ATask::resourceScan() {
 bool ATask::repairScan() {
 	if (ai->economy->mstall || ai->economy->estall)
 		return false;
-	
+
 	int bestUnit = -1;
 	float bestScore = 0.0f;
 	CGroup *group = firstGroup();
@@ -227,10 +227,10 @@ bool ATask::repairScan() {
 	const int numUnits = ai->cb->GetFriendlyUnits(&ai->unitIDs[0], gpos, 2.0f * radius, MAX_FEATURES);
 	for (int i = 0; i < numUnits; i++) {
 		const int uid = ai->unitIDs[i];
-		
+
 		if (ai->cb->UnitBeingBuilt(uid) || group->firstUnit()->key == uid)
 			continue;
-		
+
 		const float healthDamage = ai->cb->GetUnitMaxHealth(uid) - ai->cb->GetUnitHealth(uid);
 		if (healthDamage > EPS) {
 			// TODO: somehow limit number of repairing builders per unit
@@ -299,6 +299,6 @@ std::ostream& operator<<(std::ostream &out, const ATask &atask) {
 		}
 		out << "]";
 	}
-	
+
 	return out;
 }

@@ -34,7 +34,7 @@ struct Wish {
 };
 
 class CWishList {
-	
+
 public:
 	CWishList(AIClasses *ai);
 	~CWishList();
@@ -50,11 +50,11 @@ public:
 
 private:
 	AIClasses* ai;
-	
+
 	int maxWishlistSize;
-	
+
 	std::map<int, std::vector<Wish> > wishlist; /* <factory_def_id, wish> */
-	
+
 	void unique(std::vector<Wish>& vector);
 };
 

@@ -11,7 +11,7 @@ struct RepairTask: public ATask {
 
 	/* build type to string */
 	static std::map<buildType, std::string> buildStr;
-	
+
 	bool repairing;
 
 	int target;

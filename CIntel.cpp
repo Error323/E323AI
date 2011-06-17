@@ -21,7 +21,7 @@ CIntel::CIntel(AIClasses *ai) {
 	selector.push_back(AIR);
 	selector.push_back(SUB);
 	selector.push_back(COMMANDER);
-	
+
 	// NOTE: the order is somewhat target priority
 	targets[ENGAGE].push_back(CategoryMatcher(COMMANDER));
 	targets[ENGAGE].push_back(CategoryMatcher(ATTACKER));
@@ -31,7 +31,7 @@ CIntel::CIntel(AIClasses *ai) {
 	targets[ENGAGE].push_back(CategoryMatcher(BUILDER));
 	targets[ENGAGE].push_back(CategoryMatcher(FACTORY));
 	targets[ENGAGE].push_back(CategoryMatcher(CATS_ANY, ATTACKER));
-	
+
 	targets[SCOUT].push_back(CategoryMatcher(BUILDER, COMMANDER|FACTORY));
 	targets[SCOUT].push_back(CategoryMatcher(MMAKER|MEXTRACTOR));
 	targets[SCOUT].push_back(CategoryMatcher(EMAKER));
@@ -43,7 +43,7 @@ CIntel::CIntel(AIClasses *ai) {
 	targets[BOMBER].push_back(CategoryMatcher(EMAKER));
 	targets[BOMBER].push_back(CategoryMatcher(MMAKER));
 	targets[BOMBER].push_back(CategoryMatcher(NUKE));
-	
+
 	targets[AIRFIGHTER].push_back(CategoryMatcher(AIR));
 
 	for (TargetCategoryMap::iterator it = targets.begin(); it != targets.end(); ++it) {
@@ -59,35 +59,35 @@ float3 CIntel::getEnemyVector() {
 
 void CIntel::init() {
 	if (initialized) return;
-	
+
 	resetCounters();
 	updateRoulette();
-	
+
 	updateEnemyVector();
-	
+
 	/* FIXME:
 		I faced situation that on maps with less land there is a direct
-		path to enemy unit, but algo below starts to play a non-land game. 
+		path to enemy unit, but algo below starts to play a non-land game.
 		I could not think up an appropriate algo to avoid this. I thought about
-		tracing a path in the beginning of the game from my commander to enemy 
-		would be ok, but commander is an amphibious unit. It is not trivial 
+		tracing a path in the beginning of the game from my commander to enemy
+		would be ok, but commander is an amphibious unit. It is not trivial
 		stuff without external helpers in config files or terrain analysis.
 	*/
 	if(ai->gamemap->IsWaterMap()) {
 		allowedFactories.push_back(NAVAL);
 		allowedFactories.push_back(HOVER);
-	} 
+	}
 	else {
 		unitCategory nextFactory;
 		if (ai->gamemap->IsKbotMap()) {
 			allowedFactories.push_back(KBOT);
 			nextFactory = VEHICLE;
-		} 
+		}
 		else {
 			allowedFactories.push_back(VEHICLE);
 			nextFactory = KBOT;
 		}
-		
+
 		if (ai->gamemap->IsHooverMap()) {
 			if (ai->gamemap->GetAmountOfWater() > 0.5) {
 				allowedFactories.push_back(HOVER);
@@ -97,7 +97,7 @@ void CIntel::init() {
 				nextFactory = HOVER;
 			}
 		}
-		
+
 		allowedFactories.push_back(nextFactory);
 	}
 	// TODO: do not build air on too small maps?
@@ -110,7 +110,7 @@ void CIntel::init() {
 		allowedFactories.pop_front();
 		i--;
 	}
-	
+
 	// FIXME: engineer better decision algo
 	if (ai->gamemap->IsMetalMap())
 		strategyTechUp = true;
@@ -130,11 +130,11 @@ void CIntel::update(int frame) {
 		updateEnemyVector();
 
 	int numUnits = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], MAX_UNITS);
-	
+
 	for (int i = 0; i < numUnits; i++) {
 		const int uid = ai->unitIDs[i];
 		const UnitDef* ud = ai->cbc->GetUnitDef(uid);
-		
+
 		if (ud == NULL)
 			continue;
 
@@ -149,8 +149,8 @@ void CIntel::update(int frame) {
 
 unitCategory CIntel::counter(unitCategory c) {
 	// TODO: implement customizable by config counter units
-	
-	// NOTE: current algo is not perfect because does not consider 
+
+	// NOTE: current algo is not perfect because does not consider
 	// environmental tags
 
 	if (c == AIR)		return ANTIAIR;
@@ -161,7 +161,7 @@ unitCategory CIntel::counter(unitCategory c) {
 	if (c == ARTILLERY)	return ASSAULT;
 	if (c == ANTIAIR)	return ARTILLERY;
 	if (c == COMMANDER) return ASSAULT;
-	
+
 	return ARTILLERY;
 }
 
@@ -204,10 +204,10 @@ void CIntel::resetCounters() {
 	// boost chance of assault units to be built by default
 	counterCounter[ASSAULT] = 3;
 	// adjust scout appearance chance by default...
-	if (ai->difficulty == DIFFICULTY_EASY 
+	if (ai->difficulty == DIFFICULTY_EASY
 	|| ai->military->idleScoutGroupsNum() >= MAX_IDLE_SCOUT_GROUPS)
 		counterCounter[SCOUTER] = 0;
-	
+
 	totalCounterCount = totalEnemyCount = 0;
 	for (size_t i = 0; i < selector.size(); i++) {
 		totalCounterCount += counterCounter[selector[i]];
@@ -235,7 +235,7 @@ void CIntel::onEnemyDestroyed(int enemy, int attacker) {
 
 void CIntel::updateEnemyVector() {
 	int numUnits = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], MAX_PLAYERS);
-	
+
 	enemyvector = ZeroVector;
 	for (int i = 0; i < numUnits; i++) {
 		enemyvector += ai->cbc->GetUnitPos(ai->unitIDs[i]);

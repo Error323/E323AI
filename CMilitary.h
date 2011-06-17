@@ -34,14 +34,14 @@ public:
 	CGroup* requestGroup(MilitaryGroupBehaviour type);
 	/* Update call-in */
 	void update(int groupsize);
-	
+
 	int idleScoutGroupsNum();
 
 	bool switchDebugMode();
 
 	void onEnemyDestroyed(int enemy, int attacker);
 
-protected:	
+protected:
 	AIClasses* ai;
 
 private:

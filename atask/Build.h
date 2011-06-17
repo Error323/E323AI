@@ -11,7 +11,7 @@ struct BuildTask: public ATask {
 
 	/* Build type to string */
 	static std::map<buildType, std::string> buildStr;
-	
+
 	bool building;
 	/* The build task */
 	buildType bt;

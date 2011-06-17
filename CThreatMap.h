@@ -50,9 +50,9 @@ private:
 		// for visual debugging purposes
 #endif
 	float gauss(float x, float sigma, float mu);
-		
+
 	void reset();
-		
+
 	void visualizeMap(ThreatMapType type = TMT_SURFACE);
 };
 

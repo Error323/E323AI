@@ -45,7 +45,7 @@ void CWishList::push(unitCategory include, unitCategory exclude, Wish::NPriority
 				iterations--;
 				i++;
 			}
-			
+
 			wishlist[fac->def->id].push_back(Wish(i->second, p, include));
 			unique(wishlist[fac->def->id]);
 			std::stable_sort(wishlist[fac->def->id].begin(), wishlist[fac->def->id].end());

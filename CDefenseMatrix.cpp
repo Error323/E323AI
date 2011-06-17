@@ -35,7 +35,7 @@ float3 CDefenseMatrix::getBestDefendedPos(int n) {
 			break;
 		j++;
 	}
-	
+
 	return i->second->center;
 }
 
@@ -44,18 +44,18 @@ float3 CDefenseMatrix::getDefenseBuildSite(UnitType* tower) {
 	float3 dir = ai->intel->getEnemyVector() - c->center;
 	dir.SafeNormalize();
 	float alpha = 0.0f;
-	
+
 	switch(c->defenses) {
 		case 1:  alpha = M_PI;       break;
 		case 2:  alpha = -M_PI/2.0f; break;
 		case 3:  alpha = M_PI/2.0f;  break;
 		default: alpha = 0.0f;       break;
 	}
-	
+
 	dir.x = dir.x*cos(alpha)-dir.z*sin(alpha);
 	dir.z = dir.x*sin(alpha)+dir.z*cos(alpha);
 	dir *= tower->def->maxWeaponRange*0.5f;
-	
+
 	float3 pos = dir + c->center;
 	float3 best = pos;
 	float radius = tower->def->maxWeaponRange*0.3f;
@@ -64,7 +64,7 @@ float3 CDefenseMatrix::getDefenseBuildSite(UnitType* tower) {
 	float maxHeight = std::numeric_limits<float>::min();
 	float D = ((ai->intel->getEnemyVector() - pos).Length2D() + radius)/HEIGHT2REAL;
 	int R = ceil(radius);
-	
+
 	for (int i = -R; i <= R; i++) {
 		for (int j = -R; j <= R; j++) {
 			int x = round((pos.x+j)/HEIGHT2REAL);
@@ -86,9 +86,9 @@ float3 CDefenseMatrix::getDefenseBuildSite(UnitType* tower) {
 				max = hm[ID(x,z)];
 		}
 	}
-	
+
 	best.y = ai->cb->GetElevation(best.x, best.z);
-	
+
 	return (max - min) > 20.0f ? best : pos;
 }
 
@@ -112,11 +112,11 @@ void CDefenseMatrix::update() {
 	std::multimap<float, Cluster*>::iterator x;
 	std::map<int, Cluster*> buildingToCluster;
 	std::map<int, CUnit*> buildings;
-	
+
 	for (x = clusters.begin(); x != clusters.end(); ++x)
 		delete x->second;
 	clusters.clear();
-	
+
 	totalValue = 0.0f;
 
 	/* Gather the non attacking, non mobile buildings */
@@ -150,7 +150,7 @@ void CDefenseMatrix::update() {
 			/* Continue if the building is already contained in a cluster */
 			if (buildingToCluster.find(j->first) != buildingToCluster.end())
 				continue;
-			
+
 			/* If the unit is within range of the cluster, add it to the cluster */
 			const float3 pos1 = j->second->pos();
 			for (k = c->members.begin(); k != c->members.end(); ++k) {
@@ -184,7 +184,7 @@ void CDefenseMatrix::update() {
 			if (hasDefense)
 				c->defenses++;
 		}
-		
+
 		/* Add the cluster */
 		clusters.insert(std::pair<float, Cluster*>(c->value, c));
 		totalValue += c->value;

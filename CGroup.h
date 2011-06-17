@@ -18,7 +18,7 @@ struct TargetsFilter {
 		// unit category tags filter
 	std::map<int, bool>* excludeId;
 		// unit Ids to be excluded
-	int bestTarget; 
+	int bestTarget;
 		// best target score; can be updated after passing to selectTarget()
 	int candidatesLimit;
 		// number of possible targets to consider
@@ -26,7 +26,7 @@ struct TargetsFilter {
 		// radius to calculate area threat value
 	float threatCeiling;
 		// max threat threshold allowed at target position
-	float scoreCeiling; 
+	float scoreCeiling;
 		// max target score allowed; can be updated after passing to selectTarget()
 	float threatFactor;
 		// impacts heuristic formula which calculates target score
@@ -39,7 +39,7 @@ struct TargetsFilter {
 
 	TargetsFilter() {
 		reset();
-	}	
+	}
 
 	void reset() {
 		excludeId = NULL;
@@ -57,7 +57,7 @@ struct TargetsFilter {
 };
 
 class CGroup: public ARegistrar {
-	
+
 public:
 	CGroup(AIClasses *_ai): ARegistrar(counter++), ai(_ai) {
 		reset();
@@ -80,7 +80,7 @@ public:
 	float speed;
 	/* The group's buildSpeed */
 	float buildSpeed;
-	
+
 	float cost;
 
 	float costMetal;
@@ -102,7 +102,7 @@ public:
 	void remove();
 	/* Overloaded */
 	void remove(ARegistrar &unit);
-	
+
 	void removeLatecomer();
 	/* Reset for object re-usage */
 	void reset();
@@ -130,19 +130,19 @@ public:
 	float radius();
 
 	void assist(ATask& task);
-	
+
 	void attack(int target, bool enqueue = false);
-	
+
 	bool build(float3& pos, UnitType* ut);
-	
+
 	void stop();
-	
+
 	void move(float3 &pos, bool enqueue = false);
-	
+
 	void guard(int target, bool enqueue = false);
-	
+
 	void wait();
-	
+
 	void unwait();
 	/* Get the maximal lateral dispersion */
 	int maxLength();
@@ -156,16 +156,16 @@ public:
 	bool canAdd(CUnit* unit);
 
 	bool canAssist(UnitType* type = NULL);
-	
+
 	bool canMerge(CGroup* group);
 	/* Get area threat specific to current group */
 	float getThreat(float3& target, float radius = 0.0f);
 
 	int selectTarget(const std::map<int, UnitType*>& targets, TargetsFilter &tf);
 	int selectTarget(const std::vector<int>& targets, TargetsFilter& tf);
-	
+
 	int selectTarget(float search_radius, TargetsFilter& tf);
-	
+
 	bool addBadTarget(int id);
 	/* Get a range usually used for scanning enemies while moving */
 	float getScanRange();
@@ -203,7 +203,7 @@ private:
 	CUnit* latecomerUnit;
 
 	float3 latecomerPos;
-	
+
 	/* Recalculate group properties based on new unit */
 	void recalcProperties(CUnit *unit, bool reset = false);
 	/* Implements rules of mering unit categories */

@@ -15,7 +15,7 @@ struct UnitType;
 
 class CCoverageCell: public ARegistrar {
 
-public:	
+public:
 	enum NType {
 		UNDEFINED,
 		DEFENSE_GROUND,   ///< autofire at ground
@@ -45,7 +45,7 @@ public:
 			type2str[BUILD_ASSISTER] = "BUILD_ASSISTER";
 			type2str[ECONOMY_BOOSTER] = "ECONOMY_BOOSTER";
 		}
-	} 
+	}
 	CCoverageCell(AIClasses* ai, NType type = UNDEFINED, CUnit* unit = NULL)
 			: type(type)
 			, ai(ai)
@@ -58,19 +58,19 @@ public:
 	}
 
 	bool isVacant() const { return unit == NULL; }
-	
+
 	float3 getCenter() const { return unit ? unit->pos() : ERRORVECTOR; }
-	
+
 	float getRange() { return range; }
-	
+
 	bool isInRange(const float3& pos) const;
-	
+
 	void setCore(CUnit* u);
-	
+
 	CUnit* getCore() const { return unit; }
 
 	void update(std::list<CUnit*>& uncovered);
-	
+
 	void remove();
 	/* Overloaded */
 	void remove(ARegistrar& obj);

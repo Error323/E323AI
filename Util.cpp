@@ -58,10 +58,10 @@ namespace util {
 	void StringSplit(const std::string& src, char sep, std::vector<std::string>& dest, bool empty) {
 		bool go = true;
 		size_t pos1 = 0, pos2;
-		
+
 		if (empty) dest.clear();
 		if (src.empty()) return;
-		
+
 		while (go) {
 			pos2 = src.find(sep, pos1);
 			if (pos2 == std::string::npos) {
@@ -76,7 +76,7 @@ namespace util {
 	void RemoveWhiteSpaceInPlace(std::string& s) {
 		s.erase(remove_if(s.begin(), s.end(), isspace), s.end());
 	}
-	
+
 	bool StringContainsChar(const std::string& src, const char c) {
 		for (int i = 0; i < src.length(); i++ ) {
 			if (src[i] == c)
@@ -90,7 +90,7 @@ namespace util {
 		SNPRINTF(buf, sizeof(buf), format.c_str(), i);
 		return std::string(buf);
 	}
-	
+
 	float WeightedAverage(std::list<float>& V, std::list<float>& W) {
 		float wavg = 0.0f;
 		std::list<float>::const_iterator v, w;

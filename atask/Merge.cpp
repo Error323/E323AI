@@ -16,7 +16,7 @@ MergeTask::MergeTask(AIClasses *_ai, std::list<CGroup*>& groups): ATask(_ai) {
 		addGroup(*group);
 		range += group->radius();
 	}
-	
+
 	unitCategory cats = firstGroup()->cats;
 	if ((cats&AIR).any() && (cats&ASSAULT).none()) {
 		// FIXME: prefer no hardcoding
@@ -30,11 +30,11 @@ MergeTask::MergeTask(AIClasses *_ai, std::list<CGroup*>& groups): ATask(_ai) {
 // called on Group removing
 void MergeTask::remove(ARegistrar &group) {
 	CGroup *g = dynamic_cast<CGroup*>(&group);
-	
-	assert(g != NULL);	
+
+	assert(g != NULL);
 
 	bool isReelectionNeeded = (masterGroup && masterGroup->key == g->key);
-	
+
 	mergable.erase(g->key);
 	removeGroup(*g);
 
@@ -53,26 +53,26 @@ void MergeTask::onUpdate() {
 	std::list<CGroup*>::iterator it;
 	for (it = groups.begin(); it != groups.end(); ++it) {
 		CGroup *g = *it;
-		
+
 		if (g->isMicroing())
 			continue;
-		
+
 		if (pos.distance2D(g->pos()) < range) {
 			mergable[g->key] = g;
 			g->micro(true);
 		}
 	}
-	
+
 	/* We have at least two groups, now we can merge */
 	if (mergable.size() >= 2) {
 		std::vector<int> keys;
 		std::map<int, CGroup*>::iterator it;
-		
+
 		// get keys because while merging "mergable" is reducing...
 		for (it = mergable.begin(); it != mergable.end(); ++it) {
 			keys.push_back(it->first);
 		}
-		
+
 		for (int i = 0; i < keys.size(); i++) {
 			int key = keys[i];
 			if (key != masterGroup->key) {
@@ -82,7 +82,7 @@ void MergeTask::onUpdate() {
 				masterGroup->merge(*g);
 			}
 		}
-		
+
 		assert(mergable.size() == 1);
 		mergable.clear();
 		masterGroup->micro(false);
@@ -106,7 +106,7 @@ bool MergeTask::reelectMasterGroup() {
 		if (threat <= EPS || (masterGroup->strength / threat) > 2.0f)
 			reelect = false;
 	}
-	
+
 	if (reelect) {
 		float minThreat = std::numeric_limits<float>::max();
 		float maxDistance = std::numeric_limits<float>::min();
@@ -140,7 +140,7 @@ bool MergeTask::reelectMasterGroup() {
 			}
 		}
 	}
-	
+
 	return (masterGroup != NULL);
 }
 

@@ -82,9 +82,9 @@ private:
 	static UnitCategory2UnitCategoryMap canBuildEnv;
 
 	bool initialized;
-	
+
 	bool stallThresholdsReady;
-	
+
 	UnitType *utCommander;
 
 	std::map<int, float3> takenMexes, takenGeo;
@@ -94,11 +94,11 @@ private:
 	bool eRequest, mRequest;
 	/* Is this a windmap ? */
 	bool windmap;
-	
+
 	bool worthBuildingTidal;
 	/* updateIncomes counter */
 	unsigned int incomes;
-	
+
 	/* Can we afford to assist a factory? */
 	ATask* canAssistFactory(CGroup& group);
 	/* See if we can help with a certain task */
@@ -119,7 +119,7 @@ private:
 	bool taskInProgress(buildType bt);
 	/* Get next allowed factory to build */
 	unitCategory getNextTypeToBuild(UnitType* ut, unitCategory cats, int maxteachlevel);
-	
+
 	unitCategory getNextTypeToBuild(CUnit* unit, unitCategory cats, int maxteachlevel);
 
 	bool isTypeRequired(UnitType* builder, unitCategory cats, int maxteachlevel);

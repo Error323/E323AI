@@ -12,11 +12,11 @@
 
 CThreatMap::CThreatMap(AIClasses *ai) {
 	this->ai = ai;
-	
+
 	// NOTE: X & Z are in pathgraph resolution
 	X = int(ai->cb->GetMapWidth() / (PATH2SLOPE * SLOPE2HEIGHT));
 	Z = int(ai->cb->GetMapHeight() / (PATH2SLOPE * SLOPE2HEIGHT));
-	
+
 	lastUpdateFrame = 0;
 
 	maps[TMT_AIR] = new float[X*Z];
@@ -39,7 +39,7 @@ CThreatMap::CThreatMap(AIClasses *ai) {
 	ai->cb->DebugDrawerSetOverlayTextureSize(handles[TMT_UNDERWATER], 0.4f, 0.4f);
 	ai->cb->DebugDrawerSetOverlayTextureLabel(handles[TMT_UNDERWATER], "Underwater ThreatMap");
 #endif
-	
+
 	drawMap = TMT_NONE;
 
 	reset();
@@ -81,20 +81,20 @@ float CThreatMap::getThreat(float3 center, float radius, ThreatMapType type) {
 	const float* tmData = maps[type];
 
 	assert(tmData != NULL);
-	
+
 	if (radius < EPS) {
 		checkInBounds(j, i);
 		return tmData[ID(j, i)];
 	}
-	
+
 	int sectorsProcessed = 0;
 	int R = int(round(radius / PATH2REAL));
 	float power = 0.0f;
-	
+
 	// FIXME: search within circle instead of square
 	for (int z = -R; z <= R; z++) {
 		int zz = i + z;
-		
+
 		if (zz >= 0 && zz < Z) {
 			for (int x = -R; x <= R; x++) {
 				int xx = j + x;
@@ -113,39 +113,39 @@ float CThreatMap::getThreat(float3 center, float radius, ThreatMapType type) {
 	// fixing area threat for map edges...
 	if (sectorsProcessed < R)
 		power += (R - sectorsProcessed);
-	
+
 	return (power / R);
 }
 
 float CThreatMap::getThreat(const float3& center, float radius, CGroup* group) {
 	float temp, result = 1.0f;
-	
+
 	// TODO: deal with LAND units when they are temporary under water
 	// TODO: deal with units which have tags LAND|SUB
 	// TODO: dealth with units which have tags AIR|SUB
-	
+
 	if ((group->cats&AIR).any()) {
 		temp = getThreat(center, radius, TMT_AIR);
 		if (temp > 1.0f) result += temp - 1.0f;
 	}
-	
+
 	// NOTE: hovers (LAND|SEA) can't be hit by underwater weapons
 	if ((group->cats&SUB).any() || ((group->cats&SEA).any() && (group->cats&LAND).none())) {
 		temp = getThreat(center, radius, TMT_UNDERWATER);
 		if (temp > 1.0f) result += temp - 1.0f;
 	}
-	
+
 	if ((group->cats&(LAND|SEA)).any()) {
 		temp = getThreat(center, radius, TMT_SURFACE);
 		if (temp > 1.0f) result += temp - 1.0f;
 	}
-	
+
 	return result;
 }
 
 void CThreatMap::update(int frame) {
 	static const unitCategory catsCanShootGround = ASSAULT|SNIPER|ARTILLERY|SCOUTER/*|PARALYZER*/;
-	
+
 	if ((frame - lastUpdateFrame) < MULTIPLEXER)
 		return;
 
@@ -161,17 +161,17 @@ void CThreatMap::update(int frame) {
 	for (int i = 0; i < numUnits; i++) {
 		const int uid = ai->unitIDs[i];
 		const UnitDef* ud = ai->cbc->GetUnitDef(uid);
-		
+
 		if (ud == NULL)
 			continue;
 
 		const UnitType* ut = UT(ud->id);
 		const unitCategory ecats = ut->cats;
-		
+
 		if ((ecats&ATTACKER).none() || ai->cbc->IsUnitParalyzed(uid)
 		|| ai->cbc->UnitBeingBuilt(uid))
 			continue; // ignore unamred, paralyzed & being built units
-		
+
 		if ((ecats&AIR).any() && (ecats&ASSAULT).none())
 			continue; // ignore air fighters & bombers
 
@@ -181,7 +181,7 @@ void CThreatMap::update(int frame) {
 		// FIXME: think smth cleverer
 		if (ud->maxWeaponRange > MAX_WEAPON_RANGE_FOR_TM)
 			continue; // ignore units with extra large range
-		
+
 		const float3 upos = ai->cbc->GetUnitPos(uid);
 
 		activeTypes.clear();
@@ -189,12 +189,12 @@ void CThreatMap::update(int frame) {
 		if ((ecats&ANTIAIR).any() && upos.y >= 0.0f) {
 			activeTypes.push_back(TMT_AIR);
 		}
-		
+
 		if (((ecats&SEA).any() || upos.y >= 0.0f)
 		&&  ((ecats&ANTIAIR).none() || (catsCanShootGround&ecats).any())) {
 			activeTypes.push_back(TMT_SURFACE);
 		}
-		
+
 		if (isWaterMap && (ecats&TORPEDO).any()) {
 			activeTypes.push_back(TMT_UNDERWATER);
 		}
@@ -229,7 +229,7 @@ void CThreatMap::update(int frame) {
 				}
 			}
 		}
-		
+
 		/*
 		for (itMapType = activeTypes.begin(); itMapType != activeTypes.end(); ++itMapType) {
 			maxPower[*itMapType] = std::max<float>(power, maxPower[*itMapType]);
@@ -282,13 +282,13 @@ void CThreatMap::visualizeMap(ThreatMapType type) {
 	static const int figureID = 5;
 
 	std::map<ThreatMapType,float*>::const_iterator i = maps.find(type);
-	
+
 	if (i == maps.end())
-		return;	
+		return;
 
 	const float* map = i->second;
 	float total = maxPower[type];
-	
+
 	for (int z = 0; z < Z; z++) {
 		for (int x = 0; x < X; x++) {
 			if (map[ID(x,z)] > 1.0f + EPS) {

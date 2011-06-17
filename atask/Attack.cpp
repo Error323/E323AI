@@ -7,7 +7,7 @@
 
 AttackTask::AttackTask(AIClasses *_ai, int target, CGroup &group): ATask(_ai) {
 	const UnitDef *eud = ai->cbc->GetUnitDef(target);
-	
+
 	this->t = TASK_ATTACK;
 	this->target = target;
 	this->pos    = ai->cbc->GetUnitPos(target);
@@ -26,17 +26,17 @@ bool AttackTask::onValidate() {
 			group->stop();
 		}
 	}
-	
+
 	const UnitDef *eud = ai->cbc->GetUnitDef(target);
 	if (eud == NULL)
 		return false;
-	
+
 	if (!isMoving) {
 		if (ai->cbc->IsUnitCloaked(target))
 			return false;
 		return true;
 	}
-	
+
 	if (!group->canAttack(target))
 		return false;
 
@@ -45,16 +45,16 @@ bool AttackTask::onValidate() {
 	if (!scoutGroup && lifeTime() > 20.0f) {
 		const unitCategory ecats = UC(eud->id);
 		if ((ecats&SCOUTER).any() && !ai->defensematrix->isPosInBounds(pos))
-			return false; 
+			return false;
 	}
-	
+
 	float targetDistance = pos.distance2D(group->pos());
 	if (targetDistance > 1000.0f)
 		return true; // too far to panic
 
 	if (ai->cbc->IsUnitCloaked(target))
 		return false;
-	
+
 	bool isBaseThreat = ai->defensematrix->isPosInBounds(pos);
 
 	// if there is no threat to our base then prevent useless attack for groups
@@ -84,7 +84,7 @@ void AttackTask::onUpdate() {
 	if (isMoving) {
 		/* Keep tracking the target */
 		pos = ai->cbc->GetUnitPos(target);
-	
+
 		float3 gpos = group->pos();
 		float dist = gpos.distance2D(pos);
 		float range = group->getRange();
@@ -113,7 +113,7 @@ void AttackTask::onUpdate() {
 			}
 		}
 	}
-	
+
 	/* See if we can attack a target we found on our path */
 	if (!(group->isMicroing() || urgent())) {
 		if ((group->cats&BUILDER).any())

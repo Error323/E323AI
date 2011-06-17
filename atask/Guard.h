@@ -15,6 +15,6 @@ struct GuardTask: public ATask {
 	bool onValidate();
 	/* overload */
 	void toStream(std::ostream& out) const;
-};		
+};
 
 #endif

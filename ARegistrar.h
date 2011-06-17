@@ -27,7 +27,7 @@ public:
 	/* Propagate removal through the system */
 	virtual void remove(ARegistrar& obj) = 0;
 	/* Registrar type */
-	virtual NType regtype() const { return UNDEFINED; } 
+	virtual NType regtype() const { return UNDEFINED; }
 	/* Check if current object is registered inside another type of object */
 	bool regExists(NType type) {
 		for (std::list<ARegistrar*>::const_iterator it = records.begin(); it != records.end(); ++it) {

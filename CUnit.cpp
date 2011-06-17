@@ -10,16 +10,16 @@ void CUnit::remove() {
 
 void CUnit::remove(ARegistrar &reg) {
 	LOG_II("CUnit::remove " << (*this))
-	
+
 	std::list<ARegistrar*>::iterator i = records.begin();
 	while(i != records.end()) {
 		ARegistrar *regobj = *i; ++i;
 		// remove from CUnitTable, CGroup
 		regobj->remove(reg);
 	}
-	
+
 	assert(records.empty());
-	
+
 	// TODO: remove next line when prev assertion is never raised
 	records.clear();
 }
@@ -39,7 +39,7 @@ void CUnit::reset(int uid, int bid) {
 }
 
 bool CUnit::isEconomy() {
-	static const unitCategory economic = 
+	static const unitCategory economic =
 		FACTORY|BUILDER|ASSISTER|RESURRECTOR|COMMANDER|MEXTRACTOR|MMAKER
 		|EMAKER|MSTORAGE|ESTORAGE;
 	return (type->cats&economic).any();
@@ -65,7 +65,7 @@ bool CUnit::reclaim(int target, bool enqueue) {
 		return true;
 	}
 	return false;
-}	
+}
 
 int CUnit::queueSize() {
 	return ai->cb->GetCurrentUnitCommands(key)->size();
@@ -95,7 +95,7 @@ bool CUnit::setOnOff(bool on) {
 		ai->cb->GiveOrder(key, &c);
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -112,7 +112,7 @@ bool CUnit::moveRandom(float radius, bool enqueue) {
 
 bool CUnit::move(const float3 &pos, bool enqueue) {
 	Command c = createPosCommand(CMD_MOVE, pos);
-	
+
 	if (c.id != 0) {
 		if (enqueue)
 			c.options |= SHIFT_KEY;
@@ -173,7 +173,7 @@ bool CUnit::repair(int target) {
 bool CUnit::build(UnitType* toBuild, const float3& pos) {
 	bool staticBuilder = (type->cats&STATIC).any();
 	int mindist = 8;
-	
+
 	// FIXME: remove hardcoding; we need analyzer of the largest footprint
 	// per tech level
 	if ((toBuild->cats&(FACTORY|EMAKER)).any()) {
@@ -191,7 +191,7 @@ bool CUnit::build(UnitType* toBuild, const float3& pos) {
 	if (goal.x < 0.0f) {
 		if (staticBuilder)
 			return false;
-		
+
 		int i = 0;
 		while (goal.x < 0.0f) {
 			startRadius += def->buildDistance;
@@ -258,7 +258,7 @@ int CUnit::getStockpileReady() {
 	ai->cb->GetProperty(key, AIVAL_STOCKPILED, &result);
 	return result;
 }
-	
+
 int CUnit::getStockpileQueued() {
 	int result;
 	ai->cb->GetProperty(key, AIVAL_STOCKPILE_QUED, &result);
@@ -267,8 +267,8 @@ int CUnit::getStockpileQueued() {
 
 bool CUnit::micro(bool on) {
 	if (on && !microing)
-		microingFrames = 0;	
-	microing = on; 
+		microingFrames = 0;
+	microing = on;
 	return microing;
 }
 
@@ -375,7 +375,7 @@ float CUnit::getRange() const {
 bool CUnit::hasAntiAirWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons) {
 	for (unsigned int i = 0; i < weapons.size(); i++) {
 		const UnitDef::UnitDefWeapon *weapon = &weapons[i];
-		if (weapon->def->tracks && !weapon->def->waterweapon 
+		if (weapon->def->tracks && !weapon->def->waterweapon
 		&& !weapon->def->stockpile && !weapon->def->canAttackGround)
 			return true;
 	}
@@ -385,7 +385,7 @@ bool CUnit::hasAntiAirWeapon(const std::vector<UnitDef::UnitDefWeapon>& weapons)
 bool CUnit::hasNukeWeapon(const std::vector<UnitDef::UnitDefWeapon> &weapons) {
 	for (unsigned int i = 0; i < weapons.size(); i++) {
 		const UnitDef::UnitDefWeapon *weapon = &weapons[i];
-		if (weapon->def->stockpile && weapon->def->range > 10000 
+		if (weapon->def->stockpile && weapon->def->range > 10000
 		/*&& weapon->def->fixedLauncher*/ && !weapon->def->paralyzer
 		&& !weapon->def->interceptor && weapon->def->targetable
 		&& weapon->def->damages.GetDefaultDamage() > 1000.0f)
@@ -434,7 +434,7 @@ bool CUnit::hasShield(const std::vector<UnitDef::UnitDefWeapon>& weapons) {
 float3 CUnit::getForwardPos(float distance) const {
 	float3 result = pos();
 	facing f = getBestFacing(result);
-	
+
 	switch(f) {
 		case NORTH:
 			result.z -= distance;
@@ -450,7 +450,7 @@ float3 CUnit::getForwardPos(float distance) const {
 			break;
 		default: break;
 	}
-	
+
 	result.y = ai->cb->GetElevation(result.x, result.z);
 
 	return result;

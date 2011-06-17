@@ -20,7 +20,7 @@ struct UnitType;
 class AIClasses;
 
 class CConfigParser {
-	
+
 public:
 	CConfigParser(AIClasses* ai);
 	~CConfigParser() {};

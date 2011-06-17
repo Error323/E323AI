@@ -27,7 +27,7 @@ struct UnitCategoryCompare {
 			}
 			else if(b[bit])
 				return false;
-		}				
+		}
 		return false;
 	}
 };
@@ -49,7 +49,7 @@ struct UnitType {
 };
 
 class CUnitTable: public ARegistrar {
-	
+
 public:
 	typedef std::map<unitCategory, std::string, UnitCategoryCompare> UnitCategory2StrMap;
 
@@ -83,10 +83,10 @@ public:
 	std::map<int, CUnit*>       unitsUnderPlayerControl;
 	std::map<int, unitCategory> unitsUnderConstruction; // <unit_id, cats_from_wishlist>
 	std::map<int, Wish>         unitsBuilding; // <builder_id, wish>
-	
+
 
 	static CUnit* getUnitByDef(std::map<int, CUnit*>& dic, const UnitDef* udef);
-	
+
 	static CUnit* getUnitByDef(std::map<int, CUnit*>& dic, int did);
 	/* Returns a fresh CUnit instance */
 	CUnit* requestUnit(int uid, int bid);
@@ -98,25 +98,25 @@ public:
 	void remove(ARegistrar &unit);
 	/* Returns a unittype with categories that ut can build */
 	UnitType* canBuild(UnitType *ut, unitCategory categories);
-	
+
 	void getBuildables(UnitType *ut, unitCategory include, unitCategory exclude, std::multimap<float, UnitType*>& candidates);
-	
+
 	int factoryCount(unitCategory c);
-	
+
 	bool gotFactory(unitCategory c);
-	
+
 	int unitCount(unitCategory c);
 	/* Select first unit type which matches requested cats */
 	UnitType* getUnitTypeByCats(unitCategory c);
-	
+
 	int setOnOff(std::map<int, CUnit*>& list, bool value);
 	/* Debugging functions */
 	std::string debugCategories(UnitType* ut);
-	
+
 	std::string debugCategories(const unitCategory& categories);
-	
+
 	void debugUnitDefs(UnitType* ut);
-	
+
 	void debugWeapons(UnitType* ut);
 
 protected:

@@ -90,11 +90,11 @@ public:
 	Node* getClosestNode(const float3& f, float radius = PATH2REAL, CGroup* group = NULL);
 	/* Returns ERRORVECTOR on failure */
 	float3 getClosestPos(const float3& f, float radius = PATH2REAL, CGroup* group = NULL);
-	
+
 	bool isBlocked(float x, float z, int movetype);
 
 	bool isBlocked(int x, int z, int movetype);
-	
+
 	bool pathExists(CGroup &group, const float3 &s, const float3 &g);
 
 	bool pathAssigned(CGroup &group);
@@ -119,9 +119,9 @@ private:
 	std::map<int, CGroup*> groups;
 	/* Regrouping <group_id, frame_number> */
 	std::map<int, int> regrouping;
-	
+
 	int X,Z,XX,ZZ;
-	
+
 	unsigned int graphSize;
 
 	bool drawPaths;
@@ -148,7 +148,7 @@ private:
 	bool getPath(float3 &s, float3 &g, std::vector<float3> &path, CGroup&);
 	/* Draw the map */
 	void drawGraph(int map);
-	
+
 	void drawNode(Node *n);
 };
 

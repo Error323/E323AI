@@ -55,7 +55,7 @@ public:
 	float3 pos;
 		// the position to navigate too
 		// TODO: make it as method because for assisting task this position
-		// may vary depending on master task 
+		// may vary depending on master task
 
 	CGroup* firstGroup() const;
 	/* Remove this task, unreg groups involved, and make them available again */
@@ -82,7 +82,7 @@ public:
 	bool urgent() { return priority == HIGH; }
 
 	virtual void onUpdate() = 0;
-	
+
 	virtual bool onValidate() { return true; }
 
 	virtual void toStream(std::ostream& out) const = 0;
@@ -92,7 +92,7 @@ public:
 	virtual void onUnitDestroyed(int uid, int attacker) {};
 
 	ARegistrar::NType regtype() const { return ARegistrar::TASK; }
-	
+
 	friend std::ostream& operator<<(std::ostream& out, const ATask& task);
 
 protected:

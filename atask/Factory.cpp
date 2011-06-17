@@ -8,7 +8,7 @@
 
 FactoryTask::FactoryTask(AIClasses *_ai, CGroup& group): ATask(_ai) {
 	t = TASK_FACTORY;
-	// NOTE: currently if factories are joined into one group then assisters 
+	// NOTE: currently if factories are joined into one group then assisters
 	// will assist the first factory only
 	//factoryTask->pos = group.pos();
 	pos = group.firstUnit()->pos();
@@ -23,9 +23,9 @@ bool FactoryTask::assistable(CGroup& assister) {
 		return false; // there is no physical ability
 	if ((assister.firstUnit()->type->cats&COMMANDER).any())
 		return true; // commander must stay at the base
-	
+
 	int maxAssisters;
-	
+
 	switch(ai->difficulty) {
 		case DIFFICULTY_EASY:
 			maxAssisters = FACTORY_ASSISTERS / 3;
@@ -37,10 +37,10 @@ bool FactoryTask::assistable(CGroup& assister) {
 	 		maxAssisters = FACTORY_ASSISTERS;
 	 		break;
 	}
-	
+
 	if (assisters.size() >= std::min(ai->cfgparser->getState() * 2, maxAssisters)) {
 		if ((assister.cats&AIR).any()) {
-			// try replacing existing assisters (except commander) with 
+			// try replacing existing assisters (except commander) with
 			// aircraft assisters to free factory exit...
 			std::list<ATask*>::iterator it;
 			for (it = assisters.begin(); it != assisters.end(); ++it) {
@@ -49,11 +49,11 @@ bool FactoryTask::assistable(CGroup& assister) {
 					task->remove();
 					return true;
 				}
-			}		
+			}
 		}
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -63,10 +63,10 @@ bool FactoryTask::onValidate() {
 		int factoryID = firstGroup()->firstUnit()->key;
 		for (int i = 0; i < numUnits; i++) {
     		int uid = ai->unitIDs[i];
-    		
+
     		if (factoryID == uid)
     			continue;
-    		
+
     		if (!ai->cb->UnitBeingBuilt(uid)) {
     			CUnit *unit = ai->unittable->getUnit(uid);
     			if (unit) {
@@ -87,7 +87,7 @@ void FactoryTask::onUpdate() {
 	std::map<int, CUnit*>::iterator i;
 	CGroup *group = firstGroup();
 	CUnit *factory;
-	
+
 	for(i = group->units.begin(); i != group->units.end(); ++i) {
 		factory = i->second;
 		if (ai->unittable->idle[factory->key] && !ai->wishlist->empty(factory->key)) {

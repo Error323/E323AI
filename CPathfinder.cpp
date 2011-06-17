@@ -21,12 +21,12 @@ int CPathfinder::drawPathGraph = -2;
 
 CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 	this->ai   = ai;
-	
-	/* NOTE: 
+
+	/* NOTE:
 		slopemap = 1/2 heightmap = 1/8 realmap. GetMapWidth() and
 		GetMapHeight() give map dimensions in heightmap resolution.
-	*/	 
-	
+	*/
+
 	// NOTE: X and Z are in slope map resolution
 	X  = ai->cb->GetMapWidth() / SLOPE2HEIGHT;
 	Z  = ai->cb->GetMapHeight() / SLOPE2HEIGHT;
@@ -53,13 +53,13 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 		bool readOk = false;
 		unsigned int N;
 		std::string cacheMarker;
-		std::string filename = 
+		std::string filename =
 			std::string(CACHE_FOLDER) + modShortName + "-" + modVersion + "-" +
 			modHash + "/" + mapName + "-" + mapHash + "-graph.bin";
 
 		util::SanitizeFileNameInPlace(filename);
 		filename = util::GetAbsFileName(ai->cb, filename);
-		
+
 		cacheMarker.resize(cacheVersion.size());
 
 		/* See if we can read from binary */
@@ -89,9 +89,9 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 			std::ofstream fout;
 
 			LOG_II("CPathfinder creating graph at " << filename)
-			
+
 			calcGraph();
-			
+
 			fout.open(filename.c_str(), std::ios::binary | std::ios::out);
 			N = CPathfinder::graph.size();
 			fout.write(&cacheVersion[0], cacheVersion.size());
@@ -101,7 +101,7 @@ CPathfinder::CPathfinder(AIClasses *ai): ARegistrar(600) {
 			fout.close();
 		}
 	}
-	
+
 	LOG_II("CPathfinder::CPathfinder Heightmap dimensions: " << ai->cb->GetMapWidth() << "x" << ai->cb->GetMapHeight())
 	LOG_II("CPathfinder::CPathfinder Pathmap dimensions:   " << XX << "x" << ZZ)
 }
@@ -224,14 +224,14 @@ void CPathfinder::calcGraph() {
 			for (int z = 0; z < Z; z += PATH2SLOPE) {
 				if (isBlocked(x, z, map))
 					continue;
-				
+
 				Node* parent = CPathfinder::graph[ID_GRAPH(x/PATH2SLOPE, z/PATH2SLOPE)];
 
 				bool s[] = { false, false, false, false, false, false, false, false };
 				for (size_t p = 0; p < surrounding.size(); p += 2) {
 					int i = surrounding[p]; //z
 					int j = surrounding[p + 1]; //x
-					
+
 					int zz = i + z;
 					int xx = j + x;
 
@@ -277,7 +277,7 @@ void CPathfinder::calcGraph() {
 						if (!isBlocked(xx, zz, map))
 							parent->neighbours[map].push_back(ID_GRAPH(xx/PATH2SLOPE, zz/PATH2SLOPE));
 					}
-					
+
 					if (s[0] && s[1] && s[2] && s[3] && s[4] && s[5] && s[6] && s[7]) {
 						break;
 					}
@@ -363,39 +363,39 @@ float CPathfinder::getETA(CGroup &group, float3 &pos) {
 
 void CPathfinder::updateFollowers() {
 	const int currentFrame = ai->cb->GetCurrentFrame();
-	
+
 	unsigned int groupnr = 0;
 	std::map<int, std::vector<float3> >::iterator path;
 	std::map<int, CUnit*>::iterator u;
 	std::map<float, CUnit*> M; // key = <distance>
-	
+
 	repathGroup = -1;
-	
+
 	/* Go through all the paths */
 	for (path = paths.begin(); path != paths.end(); ++path) {
 		CGroup *group = groups[path->first];
-		
+
 		if (group->isMicroing()
 		|| (currentFrame - regrouping[group->key]) <= FRAMES_TO_REGROUP) {
 			groupnr++;
 			continue;
 		}
-		
+
 		int segment = 1;
 		int waypoint = std::min<int>((group->cats&AIR).any() ? 2 * MOVE_BUFFER : MOVE_BUFFER, path->second.size() - segment - 1);
 		float maxGroupLength = group->maxLength();
-		
+
 		if (maxGroupLength < 200.0f)
 			maxGroupLength += 200.0f;
 		else
 			maxGroupLength *= 2.0f;
-	
-		// NOTE: among aircraft units only Brawler type units (ASSAULT) 
+
+		// NOTE: among aircraft units only Brawler type units (ASSAULT)
 		// can regroup (TODO: detect this by moving behaviour?)
-		bool enableRegrouping = 
-			group->units.size() < GROUP_CRITICAL_MASS 
+		bool enableRegrouping =
+			group->units.size() < GROUP_CRITICAL_MASS
 			&& ((group->cats&AIR).none() || (group->cats&(ASSAULT|SNIPER|ARTILLERY|ANTIAIR)) == ASSAULT);
-		
+
 		M.clear();
 
 		/* Go through all the units in a group */
@@ -407,8 +407,8 @@ void CPathfinder::updateFollowers() {
 			CUnit *unit = u->second;
 
 			float3 upos = unit->pos();
-			
-			// go through the path to determine the unit's segment 
+
+			// go through the path to determine the unit's segment
 			// on the path...
 			for (segment = 1; segment < path->second.size() - waypoint; segment++) {
 				if (segment == 1)
@@ -416,17 +416,17 @@ void CPathfinder::updateFollowers() {
 				else
 					l1 = l2;
 				l2 = upos.distance2D(path->second[segment]);
-				
-				// when the dist between the unit and the segment 
+
+				// when the dist between the unit and the segment
 				// is increasing then break...
 				length += (path->second[s1] - path->second[s2]).Length2D();
 				if (l1 > sl1 || l2 > sl2) break;
 				s1       = segment - 1;
 				s2       = segment;
-				sl1      = l1; 
-				sl2      = l2; 
+				sl1      = l1;
+				sl2      = l2;
 			}
-			
+
 			segment--;
 
 			if (enableRegrouping) {
@@ -457,7 +457,7 @@ void CPathfinder::updateFollowers() {
 		} else {
 			regrouping[group->key] = 0;
 		}
-		
+
 		if (regrouping[group->key] == 0) {
 			/* If not under fine control, advance on the path */
 			group->move(path->second[segment + waypoint]);
@@ -481,7 +481,7 @@ void CPathfinder::updatePaths() {
 	// nothing to update
 	if (repathGroup < 0)
 		return;
-	
+
 	std::map<int, CGroup*>::iterator it = groups.find(repathGroup);
 	// group is absent
 	if (it == groups.end())
@@ -535,10 +535,10 @@ bool CPathfinder::pathExists(CGroup& group, const float3& s, const float3& g) {
 	activeMap = group.pathType;
 
 	resetWeights(group);
-	
+
 	this->start = getClosestNode(s);
 	this->goal = getClosestNode(g, group.getRange());
-	
+
 	return (start != NULL && goal != NULL && findPath());
 }
 
@@ -548,19 +548,19 @@ bool CPathfinder::addPath(CGroup& group, float3& start, float3& goal) {
 
 	// reset node weights...
 	resetWeights(group);
-	
+
 	// apply threatmaps...
 	if ((group.cats&AIR).any())
 		applyThreatMap(TMT_AIR);
 	if ((group.cats&SUB).any())
 		applyThreatMap(TMT_UNDERWATER);
-	// NOTE: hovers (LAND|SEA) can't be hit by underwater weapons that is why 
+	// NOTE: hovers (LAND|SEA) can't be hit by underwater weapons that is why
 	// LAND tag check is a priority over SEA below
 	if ((group.cats&LAND).any())
 		applyThreatMap(TMT_SURFACE);
 	else if ((group.cats&SEA).any() && (group.cats&SUB).none())
 		applyThreatMap(TMT_UNDERWATER);
-		
+
 	/* If we found a path, add it */
 	std::vector<float3> path;
 	bool success = getPath(start, goal, path, group);
@@ -586,7 +586,7 @@ CPathfinder::Node* CPathfinder::getClosestNode(const float3& f, float radius, CG
 	// TODO: round pgRadius when searching within circle is implemented below
 	int pgRadius = int(radius / PATH2REAL);
 	int pathType;
-	
+
 	if (group)
 		pathType = group->pathType;
 	else
@@ -600,10 +600,10 @@ CPathfinder::Node* CPathfinder::getClosestNode(const float3& f, float radius, CG
 		for (int j = -pgRadius; j <= pgRadius; j++) {
 			int x = pgX + j;
 			int z = pgZ + i;
-			
+
 			if (z < 0 || z >= ZZ || x < 0 || x >= XX)
 				continue;
-			
+
 			if (!isBlocked(x * PATH2SLOPE, z * PATH2SLOPE, pathType)) {
 				Node *n = CPathfinder::graph[ID_GRAPH(x, z)];
 				float3 s = n->toFloat3();
@@ -618,7 +618,7 @@ CPathfinder::Node* CPathfinder::getClosestNode(const float3& f, float radius, CG
 
 	if (bestNode == NULL)
 		LOG_EE("CPathfinder::getClosestNode failed to lock node(" << pgX << "," << pgZ << ") for pos("<<f.x<<","<<f.z<<")")
-	
+
 	return bestNode;
 }
 
@@ -627,7 +627,7 @@ bool CPathfinder::getPath(float3 &s, float3 &g, std::vector<float3> &path, CGrou
 	this->goal = getClosestNode(g, group.getRange());
 
 	std::list<ANode*> nodepath;
-	
+
 	bool success = (start != NULL && goal != NULL && findPath(&nodepath));
 	if (success) {
 		/* Insert a pre-waypoint at the starting of the path */
@@ -702,7 +702,7 @@ bool CPathfinder::switchDebugMode(bool graph) {
 		if (unit && (unit->type->cats&STATIC).none()) {
 			int pathType;
 			MoveData *md = unit->def->movedata;
-			
+
 			if (md)
 				pathType = md->pathType;
 			else
@@ -718,9 +718,9 @@ bool CPathfinder::switchDebugMode(bool graph) {
 			return true;
 		}
 	}
-	
+
 	if (drawPathGraph > -2) {
-		ai->cb->DeleteFigureGroup(10);		
+		ai->cb->DeleteFigureGroup(10);
 		drawPathGraph = -2;
 	}
 

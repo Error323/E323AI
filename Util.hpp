@@ -34,8 +34,8 @@ namespace util {
 
 	unsigned int CountOneBits(unsigned int n);
 
-	/** 
-	 * Determines if A is a binary subset of B 
+	/**
+	 * Determines if A is a binary subset of B
 	 *
 	 * @param unsigned, binary mask A
 	 * @param unsigned, binary mask B
@@ -57,10 +57,10 @@ namespace util {
 		return r;
 	}
 
-	template<class T> 
+	template<class T>
 	std::set<T> UnionSets(const std::set<T>& s1, const std::set<T>& s2) {
 		std::set<T> r;
-		
+
 		r.insert(s1.begin(), s1.end());
 		r.insert(s2.begin(), s2.end());
 

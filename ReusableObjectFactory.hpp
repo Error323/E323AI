@@ -14,7 +14,7 @@ public:
 	static void Release(Object*);
 	static void Shutdown();
 	static void Free();
- 
+
 private:
 	static std::list<Object*> free;
 	static std::list<Object*> objects;
@@ -29,12 +29,12 @@ std::list<Object*> ReusableObjectFactory<Object>::objects;
 template<class Object>
 void ReusableObjectFactory<Object>::Shutdown() {
 	/*
-	std::cout << "ReusableObjectFactory<" 
+	std::cout << "ReusableObjectFactory<"
 	          << typeid(Object).name()
 	          << ">::Shutdown Releasing "
-	          << (objects.size()) 
-	          << " objects, " 
-	          << (objects.size()*sizeof(Object)) 
+	          << (objects.size())
+	          << " objects, "
+	          << (objects.size()*sizeof(Object))
 	          << " bytes"
 	          << std::endl;
 	*/
@@ -45,16 +45,16 @@ void ReusableObjectFactory<Object>::Shutdown() {
 	objects.clear();
 	free.clear();
 }
- 
+
 template<class Object>
 void ReusableObjectFactory<Object>::Free() {
 	/*
-	std::cout << "ReusableObjectFactory<" 
+	std::cout << "ReusableObjectFactory<"
 	          << typeid(Object).name()
 	          << ">::Free Releasing "
-	          << (free.size()) 
-	          << " objects, " 
-	          << (free.size()*sizeof(Object)) 
+	          << (free.size())
+	          << " objects, "
+	          << (free.size()*sizeof(Object))
 	          << " bytes"
 	          << std::endl;
 	*/
@@ -80,21 +80,21 @@ Object* ReusableObjectFactory<Object>::Instance() {
 		free.pop_front();
 	}
 
-	//std::cout << "ReusableObjectFactory<" 
-	//          << typeid(Object).name() 
-	//          << ">::Instance " 
-	//          << (*object) 
+	//std::cout << "ReusableObjectFactory<"
+	//          << typeid(Object).name()
+	//          << ">::Instance "
+	//          << (*object)
 	//          << std::endl;
 	return object;
 }
- 
+
 template<class Object>
 void ReusableObjectFactory<Object>::Release(Object* object) {
 	free.push_back(object);
-	//std::cout << "ReusableObjectFactory<" 
-	//          << typeid(Object).name() 
-	//          << ">::Release " 
-	//          << (*object) 
+	//std::cout << "ReusableObjectFactory<"
+	//          << typeid(Object).name()
+	//          << ">::Release "
+	//          << (*object)
 	//          << std::endl;
 }
 

@@ -63,7 +63,7 @@
 /* Max number of idle scout groups to prevent building unnecessary scouts */
 #define MAX_IDLE_SCOUT_GROUPS 3
 
-/* Critical number of units per group when regrouping for moving group 
+/* Critical number of units per group when regrouping for moving group
    stalls the game */
 #define GROUP_CRITICAL_MASS 20
 
@@ -74,7 +74,7 @@
 #define MERGE_DISTANCE 1500.0f
 
 /* Number of multiplex iterations */
-#define MULTIPLEXER 10 
+#define MULTIPLEXER 10
 
 /* Number of frames a new unit can not accept tasks */
 #define IDLE_UNIT_TIMEOUT (5*30)
@@ -111,7 +111,7 @@ const unitCategory
 	SEA        (1UL<<6), // can float
 	LAND       (1UL<<7), // can walk/drive
 	SUB        (1UL<<8), // can dive
-	
+
 	STATIC     (1UL<<9),
 	MOBILE     (1UL<<10),
 
@@ -133,7 +133,7 @@ const unitCategory
 	EMAKER     (1UL<<24),
 	MSTORAGE   (1UL<<25),
 	ESTORAGE   (1UL<<26),
-	
+
 	DEFENSE    (1UL<<27),
 
 	KBOT       (1UL<<28), // produces kbots

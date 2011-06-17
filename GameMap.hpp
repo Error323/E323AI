@@ -12,7 +12,7 @@ class CGroup;
 class AIClasses;
 
 class GameMap {
-	
+
 public:
 	GameMap(AIClasses*);
 
@@ -20,7 +20,7 @@ public:
 	static std::list<float3> geospots;
 	static std::list<float3> metalfeatures; // not used yet
 	static std::list<float3> energyfeatures; // not used yet
-	
+
 	/** @return float, height variance */
 	float GetHeightVariance() { return heightVariance; }
 	/** @return float, amount of water in [0, 1] */

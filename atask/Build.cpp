@@ -23,20 +23,20 @@ BuildTask::BuildTask(AIClasses *_ai, buildType build, UnitType *toBuild, CGroup 
 		buildStr[BUILD_MISC_DEFENSE] = std::string("MISC_DEFENSE");
 		buildStr[BUILD_IMP_DEFENSE] = std::string("IMPORTANT_DEFENSE");
 	}
-	
+
 	this->t       = TASK_BUILD;
 	this->pos     = pos;
 	this->bt      = build;
 	this->toBuild = toBuild;
-	
+
 	float eta = ai->pathfinder->getETA(group, pos);
 	if (eta == std::numeric_limits<float>::max())
 		this->eta = 0;
 	else
 		this->eta = int((eta + 100.0f) * 1.2f);
-	
+
 	this->building = false;
-	
+
 	addGroup(group);
 }
 
@@ -80,7 +80,7 @@ void BuildTask::onUpdate() {
 		else
 			return; // if microing, break
 	}
-	
+
 	if (!building) {
 		if (isMoving) {
 			if (!resourceScan()) {
@@ -91,13 +91,13 @@ void BuildTask::onUpdate() {
 				}
 				else
 					repairScan();
-			}				
+			}
 		}
 
 		if (!isMoving && !group->isMicroing()) {
 			if (group->build(pos, toBuild)) {
 				building = true;
-				group->micro(true);	
+				group->micro(true);
 			}
 		}
 	}
@@ -116,7 +116,7 @@ bool BuildTask::assistable(CGroup &assister, float &travelTime) const {
 		return false;
 	if (assisters.size() > 1 && (bt == BUILD_AG_DEFENSE || bt == BUILD_AA_DEFENSE || bt == BUILD_MISC_DEFENSE))
 		return false;
-	
+
 	CGroup *group = firstGroup();
 
 	float buildSpeed = group->buildSpeed;
@@ -124,11 +124,11 @@ bool BuildTask::assistable(CGroup &assister, float &travelTime) const {
 	for (it = assisters.begin(); it != assisters.end(); ++it)
 		buildSpeed += (*it)->firstGroup()->buildSpeed;
 
-	// NOTE: we should calculate distance to group position instead of target 
+	// NOTE: we should calculate distance to group position instead of target
 	// position because build place can be reachable within build range only
 	float3 gpos = group->pos();
 	float buildTime = (toBuild->def->buildTime / buildSpeed) * 32.0f;
-	
+
 	/* travelTime + 5 seconds to make it worth the trip */
 	travelTime = ai->pathfinder->getETA(assister, gpos) + 150.0f;
 
@@ -146,7 +146,7 @@ void BuildTask::onUnitDestroyed(int uid, int attacker) {
 void BuildTask::toStream(std::ostream& out) const {
 	out << "BuildTask(" << key << ") " << buildStr[bt];
 	out << "(" << toBuild->def->humanName << ") ETA(" << eta << ")";
-	out << " lifetime(" << lifeFrames() << ") "; 
+	out << " lifetime(" << lifeFrames() << ") ";
 	CGroup *group = firstGroup();
 	if (group)
 		out << (*group);

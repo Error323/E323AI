@@ -36,7 +36,7 @@ void CCoverageCell::update(std::list<CUnit*>& uncovered) {
 
 void CCoverageCell::setCore(CUnit* u) {
 	assert(unit == NULL);
-	
+
 	u->reg(*this);
 
 	unit = u;
@@ -50,7 +50,7 @@ void CCoverageCell::remove() {
 	for (std::list<ARegistrar*>::iterator it = records.begin(); it != records.end(); ) {
 		(*(it++))->remove(*this);
 	}
-	
+
 	assert(records.empty());
 
 	if (unit)
@@ -89,17 +89,17 @@ bool CCoverageCell::addUnit(CUnit* u) {
 
 std::ostream& operator<<(std::ostream& out, const CCoverageCell& obj) {
 	std::stringstream ss;
-	
+
 	if (obj.unit)
 		ss << "CoverageCell(" << obj.unit->def->humanName;
 	else
 		ss << "CoverageCell(Unknown";
-	
+
 	ss << "):" << " type(" << obj.type2str[obj.type] << "), range(" << obj.range << "), amount(" << obj.units.size() << ")";
 
 	std::string s = ss.str();
-	
+
 	out << s;
-	
+
 	return out;
 }

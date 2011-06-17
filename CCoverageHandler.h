@@ -14,14 +14,14 @@ class CCoverageHandler: ARegistrar {
 public:
 	CCoverageHandler(AIClasses* _ai): ai(_ai) { visualizationEnabled = false; }
 	~CCoverageHandler() {}
-	
+
 	/* Register unit */
 	void addUnit(CUnit* unit);
 	/* Get closest build site */
 	float3 getNextClosestBuildSite(const CUnit* builder, UnitType* toBuild);
 	/* Get the most valuable build site */
 	float3 getNextImportantBuildSite(UnitType* toBuild);
-	
+
 	float3 getClosestDefendedPos(float3& pos) const;
 	/* Not implemented */
 	float3 getBestDefendedPos(float safetyLevel = 0.0f) const;
@@ -39,7 +39,7 @@ public:
 	bool isUnitCovered(int uid, CCoverageCell::NType layer);
 
 	ARegistrar::NType regtype() const { return ARegistrar::COVERAGE_HANDLER; }
-		
+
 	bool toggleVisualization();
 
 protected:

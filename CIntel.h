@@ -29,11 +29,11 @@ public:
 	std::multimap<float, unitCategory> roulette; // <weight, unit_cat>
 		// containts counter-enemy unit categories sorted by weight
 	std::list<unitCategory> allowedFactories;
-		// contains allowed factories for current map, and also preferable 
+		// contains allowed factories for current map, and also preferable
 		// order of their appearance
 	TargetCategoryMap targets;
 		// contains lists of targets per each military group behaviour
-	
+
 	void update(int frame);
 	void init();
 	bool enemyInbound();
@@ -51,7 +51,7 @@ private:
 	unsigned int totalEnemyCount;
 		// total number of enemy mobile military units
 	unsigned int totalCounterCount;
-		// total number of potential counter-enemy units 
+		// total number of potential counter-enemy units
 	float3 enemyvector;
 		// general direction towards enemy
 	std::map<unitCategory, unsigned int, UnitCategoryCompare> enemyCounter;
