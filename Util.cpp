@@ -11,6 +11,7 @@
 
 namespace util {
 	std::string GetAbsFileName(IAICallback* cb, const std::string& relFileName, bool readonly) {
+		// this size equals the one used in "AIAICallback::GetValue(AIVAL_LOCATE_FILE_..."
 		char dst[2048];
 
 		SNPRINTF(dst, sizeof(dst), "%s", relFileName.c_str());
