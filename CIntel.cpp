@@ -237,6 +237,8 @@ void CIntel::updateEnemyVector() {
 	int numUnits = ai->cbc->GetEnemyUnits(&ai->unitIDs[0], MAX_PLAYERS);
 
 	enemyvector = ZeroVector;
+	if (numUnits == 0)
+		return;
 	for (int i = 0; i < numUnits; i++) {
 		enemyvector += ai->cbc->GetUnitPos(ai->unitIDs[i]);
 	}
