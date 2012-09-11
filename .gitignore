@@ -1,5 +1,11 @@
 # compiled releases
 /releases/E323AI*
+/libSkirmishAI.so
 
 # vim swapfiles
 .*.swp
+
+# cmake generated files
+/CMakeFiles
+/Makefile
+/cmake_install.cmake
