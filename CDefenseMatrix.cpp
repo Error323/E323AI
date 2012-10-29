@@ -27,6 +27,8 @@ CDefenseMatrix::~CDefenseMatrix() {
 }
 
 float3 CDefenseMatrix::getBestDefendedPos(int n) {
+	if (clusters.empty())
+		return ERRORVECTOR;
 	n = std::min<int>(n, clusters.size() - 1);
 	std::multimap<float, Cluster*>::iterator i;
 	int j = 0;
