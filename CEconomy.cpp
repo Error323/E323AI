@@ -285,8 +285,10 @@ void CEconomy::buildOrAssist(CGroup& group, buildType bt, unitCategory include, 
 		case BUILD_MSTORAGE: case BUILD_ESTORAGE: {
 			/* Start building storage after enough ingame time */
 			if (!taskInProgress(bt) && ai->cb->GetCurrentFrame() > 30*60*7) {
-				pos = ai->defensematrix->getBestDefendedPos(0);
-				ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, pos));
+				goal = ai->defensematrix->getBestDefendedPos(0);
+				if (goal == ERRORVECTOR)
+					goal = pos;
+				ai->tasks->addTask(new BuildTask(ai, bt, i->second, group, goal));
 			}
 			break;
 		}
