@@ -33,10 +33,10 @@ void CWishList::push(unitCategory include, unitCategory exclude, Wish::NPriority
 			/* Determine which buildables we can afford */
 			std::multimap<float, UnitType*>::iterator i = candidates.begin();
 			int iterations = candidates.size();
-			bool affordable = false;
+			//bool affordable = false;
 			while(iterations >= 0) {
 				if (ai->economy->canAffordToBuild(fac, i->second))
-					affordable = true;
+					;//affordable = true;
 				else
 					break;
 

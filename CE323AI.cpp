@@ -367,7 +367,7 @@ void CE323AI::GotChatMsg(const char* msg, int player) {
 		cmdPrefix[] = "!e323ai",
 		modTM[] = "threatmap",
 		modMil[] = "military",
-		modEco[] = "economy",
+	//	modEco[] = "economy",
 		modPF[] = "pathfinder",
 		modPG[] = "pathgraph",
 		modDM[] = "defensematrix",

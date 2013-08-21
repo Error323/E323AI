@@ -434,7 +434,7 @@ void CPathfinder::updateFollowers() {
 				 * s2-s1 */
 				float3 uP = (path->second[s1] - path->second[s2]);
 				uP.y = 0.0f;
-				uP.Normalize();
+				uP.SafeNormalize();
 				float3 up = upos - path->second[s2];
 				/* proj_P(x) = (x dot u) * u */
 				float3 uproj = uP * (up.x * uP.x + up.z * uP.z);
