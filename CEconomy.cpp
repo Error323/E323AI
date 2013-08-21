@@ -526,7 +526,7 @@ void CEconomy::update() {
 			continue;
 		}
 
-		float3 pos = group->pos();
+		//float3 pos = group->pos();
 
 		// NOTE: we're using special algo for commander to prevent
 		// it walking outside the base
@@ -682,7 +682,7 @@ void CEconomy::update() {
 
 bool CEconomy::taskInProgress(buildType bt) {
 	int tasksCounter = 0;
-	int maxTechLevel = ai->cfgparser->getMaxTechLevel();
+	//int maxTechLevel = ai->cfgparser->getMaxTechLevel();
 	std::map<int, ATask*>::iterator it;
 
 	for (it = ai->tasks->activeTasks[TASK_BUILD].begin(); it != ai->tasks->activeTasks[TASK_BUILD].end(); ++it) {
@@ -1065,7 +1065,7 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 	if (mstall || estall)
 		return;
 
-	bool allow;
+	//bool allow;
 	int size;
 	float k;
 	unitCategory incCats, excCats;
@@ -1098,7 +1098,7 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 	size = ai->coverage->getLayerSize(layer);
 	k = size / (ai->unittable->staticUnits.size() - size + 1.0f);
 
-	switch (ai->difficulty) {
+/*	switch (ai->difficulty) {
 		case DIFFICULTY_EASY:
 			allow = k < 0.11f;
 			break;
@@ -1108,7 +1108,7 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 		case DIFFICULTY_HARD:
 			allow = k < 0.51f;
 			break;
-	}
+	}*/
 
 	buildOrAssist(*group, bt, incCats, excCats);
 }
