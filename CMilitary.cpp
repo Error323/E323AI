@@ -175,6 +175,8 @@ void CMilitary::update(int frame) {
 			case AIRFIGHTER:
 				tf.threatFactor = 100.0f;
 				break;
+			case HARASS: //FIXME
+				break;
 		}
 
 		// NOTE: start with random group ID because some groups can't reach the
@@ -218,6 +220,8 @@ void CMilitary::update(int frame) {
 				case BOMBER:
 					tf.threatCeiling = group->strength + group->firstUnit()->type->dps;
 					break;
+				case HARASS: case ENGAGE: case AIRFIGHTER: //FIXME
+					break;
 			}
 
 			// basic target selection...
@@ -256,6 +260,8 @@ void CMilitary::update(int frame) {
 								break;
 							case AIRFIGHTER:
 								canAssist = assisters < 3;
+								break;
+							case HARASS: //FIXME
 								break;
 						}
 
