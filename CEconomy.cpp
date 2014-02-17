@@ -1067,7 +1067,6 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 
 	//bool allow;
 	int size;
-	float k;
 	unitCategory incCats, excCats;
 	buildType bt;
 	CCoverageCell::NType layer;
@@ -1096,9 +1095,9 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 	}
 
 	size = ai->coverage->getLayerSize(layer);
-	k = size / (ai->unittable->staticUnits.size() - size + 1.0f);
+/*	const float k = size / (ai->unittable->staticUnits.size() - size + 1.0f);
 
-/*	switch (ai->difficulty) {
+	switch (ai->difficulty) {
 		case DIFFICULTY_EASY:
 			allow = k < 0.11f;
 			break;
