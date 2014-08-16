@@ -1065,8 +1065,6 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 	if (mstall || estall)
 		return;
 
-	//bool allow;
-	int size;
 	unitCategory incCats, excCats;
 	buildType bt;
 	CCoverageCell::NType layer;
@@ -1094,8 +1092,10 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 		excCats = ANTIAIR|TORPEDO;
 	}
 
-	size = ai->coverage->getLayerSize(layer);
-/*	const float k = size / (ai->unittable->staticUnits.size() - size + 1.0f);
+/*
+	int size = ai->coverage->getLayerSize(layer);
+	const float k = size / (ai->unittable->staticUnits.size() - size + 1.0f);
+	bool allow;
 
 	switch (ai->difficulty) {
 		case DIFFICULTY_EASY:
@@ -1107,7 +1107,8 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 		case DIFFICULTY_HARD:
 			allow = k < 0.51f;
 			break;
-	}*/
+	}
+*/
 
 	buildOrAssist(*group, bt, incCats, excCats);
 }
