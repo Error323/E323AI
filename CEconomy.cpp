@@ -1065,23 +1065,20 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 	if (mstall || estall)
 		return;
 
-	//bool allow;
-	int size;
-	float k;
 	unitCategory incCats, excCats;
 	buildType bt;
-	CCoverageCell::NType layer;
+//	CCoverageCell::NType layer;
 
 	if (ai->intel->getEnemyCount(AIR) > 0 && rng.RandFloat() > 0.66f) {
 		bt = BUILD_AA_DEFENSE;
-		layer = CCoverageCell::DEFENSE_ANTIAIR;
+//		layer = CCoverageCell::DEFENSE_ANTIAIR;
 		// TODO: replace STATIC with DEFENSE after all config files updated
 		incCats = STATIC|ANTIAIR;
 		excCats = TORPEDO;
 	}
 	else if (ai->gamemap->IsWaterMap() && rng.RandFloat() > 0.5f) {
 		bt = BUILD_UW_DEFENSE;
-		layer = CCoverageCell::DEFENSE_UNDERWATER;
+//		layer = CCoverageCell::DEFENSE_UNDERWATER;
 		// TODO: replace STATIC with DEFENSE after all config files updated
 		incCats = STATIC|TORPEDO;
 		// NOTE: we do not support coastal torpedo launchers
@@ -1090,15 +1087,17 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 	else
 	{
 		bt = BUILD_AG_DEFENSE;
-		layer = CCoverageCell::DEFENSE_GROUND;
+//		layer = CCoverageCell::DEFENSE_GROUND;
 		incCats = ATTACKER|DEFENSE;
 		excCats = ANTIAIR|TORPEDO;
 	}
 
-	size = ai->coverage->getLayerSize(layer);
-	k = size / (ai->unittable->staticUnits.size() - size + 1.0f);
+/*
+	int size = ai->coverage->getLayerSize(layer);
+	const float k = size / (ai->unittable->staticUnits.size() - size + 1.0f);
+	bool allow;
 
-/*	switch (ai->difficulty) {
+	switch (ai->difficulty) {
 		case DIFFICULTY_EASY:
 			allow = k < 0.11f;
 			break;
@@ -1108,7 +1107,8 @@ void CEconomy::tryBuildingDefense(CGroup* group) {
 		case DIFFICULTY_HARD:
 			allow = k < 0.51f;
 			break;
-	}*/
+	}
+*/
 
 	buildOrAssist(*group, bt, incCats, excCats);
 }
